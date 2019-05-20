@@ -1,0 +1,54 @@
+*** dumps/p4_16_samples/issue281.p4/pruned/issue281-BMV2::SimpleSwitchMidEnd_13_ExpandEmit.p4	2019-05-20 16:59:05.539186400 +0200
+--- dumps/p4_16_samples/issue281.p4/pruned/issue281-BMV2::SimpleSwitchMidEnd_14_SimplifyParsers.p4	2019-05-20 16:59:05.543654600 +0200
+*************** parser MyParser(packet_in b, out h hdr,
+*** 43,63 ****
+          hdr_2.ether.setInvalid();
+          hdr_2.vlan.setInvalid();
+          hdr_2.ipv4.setInvalid();
+-         transition L2_start;
+-     }
+-     state L2_start {
+          l2_ether_0.setInvalid();
+-         transition L2_EthernetParser_start;
+-     }
+-     state L2_EthernetParser_start {
+          b.extract<ethernet_t>(l2_ether_0);
+-         transition L2_start_0;
+-     }
+-     state L2_start_0 {
+          hdr_2.ether = l2_ether_0;
+-         transition start_1;
+-     }
+-     state start_1 {
+          hdr = hdr_2;
+          hdr_3 = hdr;
+          transition L3_start;
+--- 43,51 ----
+*************** parser MyParser(packet_in b, out h hdr,
+*** 72,96 ****
+      }
+      state L3_ipv4 {
+          l3_ipv4_0.setInvalid();
+-         transition L3_Ipv4Parser_start;
+-     }
+-     state L3_Ipv4Parser_start {
+          b.extract<ipv4_t>(l3_ipv4_0);
+-         transition L3_ipv4_0;
+-     }
+-     state L3_ipv4_0 {
+          hdr_3.ipv4 = l3_ipv4_0;
+          transition start_2;
+      }
+      state L3_vlan {
+          l3_vlan_0.setInvalid();
+-         transition L3_VlanParser_start;
+-     }
+-     state L3_VlanParser_start {
+          b.extract<vlan_t>(l3_vlan_0);
+-         transition L3_vlan_0;
+-     }
+-     state L3_vlan_0 {
+          hdr_3.vlan = l3_vlan_0;
+          transition L3_start;
+      }
+--- 60,72 ----
