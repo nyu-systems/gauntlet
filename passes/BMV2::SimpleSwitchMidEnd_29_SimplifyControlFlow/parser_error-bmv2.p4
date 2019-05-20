@@ -1,21 +1,13 @@
-*** dumps/p4_16_samples/parser_error-bmv2.p4/pruned/parser_error-bmv2-BMV2::SimpleSwitchMidEnd_28_ValidateTableProperties.p4	2019-05-20 16:59:54.874060400 +0200
---- dumps/p4_16_samples/parser_error-bmv2.p4/pruned/parser_error-bmv2-BMV2::SimpleSwitchMidEnd_29_SimplifyControlFlow.p4	2019-05-20 16:59:54.882535100 +0200
-*************** control egress(inout parsed_packet_t hdr
-*** 32,40 ****
-  }
-  control deparser(packet_out b, in parsed_packet_t hdr) {
-      apply {
-!         {
-!             b.emit<Ethernet>(hdr.eth);
-!         }
-      }
-  }
-  control verify_checks(inout parsed_packet_t hdr, inout local_metadata_t local_metadata) {
---- 32,38 ----
-  }
-  control deparser(packet_out b, in parsed_packet_t hdr) {
-      apply {
-!         b.emit<Ethernet>(hdr.eth);
-      }
-  }
-  control verify_checks(inout parsed_packet_t hdr, inout local_metadata_t local_metadata) {
+--- dumps/p4_16_samples/parser_error-bmv2.p4/pruned/parser_error-bmv2-BMV2::SimpleSwitchMidEnd_28_ValidateTableProperties.p4	2019-05-20 17:31:31.153977100 +0200
++++ dumps/p4_16_samples/parser_error-bmv2.p4/pruned/parser_error-bmv2-BMV2::SimpleSwitchMidEnd_29_SimplifyControlFlow.p4	2019-05-20 17:31:31.156281100 +0200
+@@ -32,9 +32,7 @@ control egress(inout parsed_packet_t hdr
+ }
+ control deparser(packet_out b, in parsed_packet_t hdr) {
+     apply {
+-        {
+-            b.emit<Ethernet>(hdr.eth);
+-        }
++        b.emit<Ethernet>(hdr.eth);
+     }
+ }
+ control verify_checks(inout parsed_packet_t hdr, inout local_metadata_t local_metadata) {

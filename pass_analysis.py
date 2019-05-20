@@ -45,7 +45,7 @@ def diff_files(p4_prune_dir, p4_file):
         pass_dir = f"passes/{p4_pass}"
         diff_file = f"{pass_dir}/{p4_file}"
         check_dir(pass_dir)
-        diff_cmd = "diff -rpP "
+        diff_cmd = "diff -rupP "
         diff_cmd += f"{pass_before[0]} {pass_after[0]}"
         diff_cmd += f"> {diff_file}"
         log.debug(f"Creating a diff of the file")
