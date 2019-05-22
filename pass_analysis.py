@@ -55,6 +55,21 @@ def diff_files(p4_prune_dir, p4_file):
             os.remove(diff_file)
 
 
+def get_links_to_passes():
+    p4_dir = "passes"
+    passes = {}
+    for p4_file in glob.glob(f"{p4_dir}/**/*.p4"):
+        split_p4 = p4_file.split('/')
+        passes.setdefault(split_p4[1], []).append(split_p4[2])
+    with open("matches.txt", 'w+') as match_file:
+        for key in passes.keys():
+            match_file.write(key + "###########\n")
+            for p4_test in passes[key]:
+                src_dir = "https://github.com/p4lang/p4c/blob/master/"
+                src_dir += "testdata/p4_16_samples/"
+                match_file.write(f"{src_dir}{p4_test}\n")
+
+
 def main():
 
     p4_dir = "p4_16_samples"
@@ -72,6 +87,7 @@ def main():
         diff_files(prune_dir, os.path.basename(p4_file))
         shutil.rmtree(p4_dmp_dir)
     shutil.rmtree("dumps")
+    get_links_to_passes()
 
 
 if __name__ == '__main__':
