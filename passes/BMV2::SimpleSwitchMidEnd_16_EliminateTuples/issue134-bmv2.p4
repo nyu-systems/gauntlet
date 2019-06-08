@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/issue134-bmv2.p4/pruned/issue134-bmv2-BMV2::SimpleSwitchMidEnd_15_StrengthReduction.p4	2019-05-20 17:30:13.494695500 +0200
-+++ dumps/p4_16_samples/issue134-bmv2.p4/pruned/issue134-bmv2-BMV2::SimpleSwitchMidEnd_16_EliminateTuples.p4	2019-05-20 17:30:13.497552000 +0200
+--- dumps/pruned/issue134-bmv2-BMV2::SimpleSwitchMidEnd_15_StrengthReduction.p4	2019-06-08 18:31:59.519982200 +0200
++++ dumps/pruned/issue134-bmv2-BMV2::SimpleSwitchMidEnd_16_EliminateTuples.p4	2019-06-08 18:31:59.522025800 +0200
 @@ -31,9 +31,12 @@ control VerifyChecksumI(inout H hdr, ino
      apply {
      }

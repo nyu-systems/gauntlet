@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/newtype1.p4/pruned/newtype1-BMV2::SimpleSwitchMidEnd_0_CheckTableSize.p4	2019-05-20 17:31:27.328747000 +0200
-+++ dumps/p4_16_samples/newtype1.p4/pruned/newtype1-BMV2::SimpleSwitchMidEnd_1_EliminateNewtype.p4	2019-05-20 17:31:27.355680800 +0200
+--- dumps/pruned/newtype1-BMV2::SimpleSwitchMidEnd_0_CheckTableSize.p4	2019-06-08 18:33:00.876838700 +0200
++++ dumps/pruned/newtype1-BMV2::SimpleSwitchMidEnd_1_EliminateNewtype.p4	2019-06-08 18:33:00.929799200 +0200
 @@ -1,14 +1,14 @@
  typedef bit<9> Narrow_t;
 -type Narrow_t Narrow;

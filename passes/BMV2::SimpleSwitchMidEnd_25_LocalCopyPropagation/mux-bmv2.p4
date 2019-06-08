@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/mux-bmv2.p4/pruned/mux-bmv2-BMV2::SimpleSwitchMidEnd_24_ConstantFolding.p4	2019-05-20 17:31:24.638219900 +0200
-+++ dumps/p4_16_samples/mux-bmv2.p4/pruned/mux-bmv2-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-05-20 17:31:24.644810000 +0200
+--- dumps/pruned/mux-bmv2-BMV2::SimpleSwitchMidEnd_24_ConstantFolding.p4	2019-06-08 18:32:58.162641400 +0200
++++ dumps/pruned/mux-bmv2-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-06-08 18:32:58.165807700 +0200
 @@ -14,29 +14,18 @@ control Ing(inout Headers headers, inout
      }
  }

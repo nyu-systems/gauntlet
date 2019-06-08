@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/psa-example-counters-bmv2.p4/pruned/psa-example-counters-bmv2-BMV2::SimpleSwitchMidEnd_18_CopyStructures.p4	2019-05-20 17:31:43.481261100 +0200
-+++ dumps/p4_16_samples/psa-example-counters-bmv2.p4/pruned/psa-example-counters-bmv2-BMV2::SimpleSwitchMidEnd_19_NestedStructs.p4	2019-05-20 17:31:43.486071400 +0200
+--- dumps/pruned/psa-example-counters-bmv2-BMV2::SimpleSwitchMidEnd_18_CopyStructures.p4	2019-06-08 18:33:16.646665500 +0200
++++ dumps/pruned/psa-example-counters-bmv2-BMV2::SimpleSwitchMidEnd_19_NestedStructs.p4	2019-06-08 18:33:16.652064800 +0200
 @@ -34,29 +34,30 @@ struct headers {
      ipv4_t     ipv4;
  }

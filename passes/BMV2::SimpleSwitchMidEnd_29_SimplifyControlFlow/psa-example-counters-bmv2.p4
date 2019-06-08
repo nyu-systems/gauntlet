@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/psa-example-counters-bmv2.p4/pruned/psa-example-counters-bmv2-BMV2::SimpleSwitchMidEnd_28_ValidateTableProperties.p4	2019-05-20 17:31:43.525983900 +0200
-+++ dumps/p4_16_samples/psa-example-counters-bmv2.p4/pruned/psa-example-counters-bmv2-BMV2::SimpleSwitchMidEnd_29_SimplifyControlFlow.p4	2019-05-20 17:31:43.528732300 +0200
+--- dumps/pruned/psa-example-counters-bmv2-BMV2::SimpleSwitchMidEnd_28_ValidateTableProperties.p4	2019-06-08 18:33:16.698902400 +0200
++++ dumps/pruned/psa-example-counters-bmv2-BMV2::SimpleSwitchMidEnd_29_SimplifyControlFlow.p4	2019-06-08 18:33:16.703466500 +0200
 @@ -40,10 +40,6 @@ parser IngressParserImpl(packet_in buffe
      state start {
          parsed_hdr_2_ethernet.setInvalid();

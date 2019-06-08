@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/mux-bmv2.p4/pruned/mux-bmv2-BMV2::SimpleSwitchMidEnd_22_Predication.p4	2019-05-20 17:31:24.631733200 +0200
-+++ dumps/p4_16_samples/mux-bmv2.p4/pruned/mux-bmv2-BMV2::SimpleSwitchMidEnd_23_MoveDeclarations.p4	2019-05-20 17:31:24.634172400 +0200
+--- dumps/pruned/mux-bmv2-BMV2::SimpleSwitchMidEnd_22_Predication.p4	2019-06-08 18:32:58.155156000 +0200
++++ dumps/pruned/mux-bmv2-BMV2::SimpleSwitchMidEnd_23_MoveDeclarations.p4	2019-06-08 18:32:58.158912000 +0200
 @@ -19,14 +19,14 @@ control Eg(inout Headers hdrs, inout Met
      bit<32> tmp_0;
      bool p_1;

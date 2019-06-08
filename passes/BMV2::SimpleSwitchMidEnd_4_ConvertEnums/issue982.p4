@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/issue982.p4/pruned/issue982-BMV2::SimpleSwitchMidEnd_3_RemoveActionParameters.p4	2019-05-20 17:31:16.955362600 +0200
-+++ dumps/p4_16_samples/issue982.p4/pruned/issue982-BMV2::SimpleSwitchMidEnd_4_ConvertEnums.p4	2019-05-20 17:31:16.962621300 +0200
+--- dumps/pruned/issue982-BMV2::SimpleSwitchMidEnd_3_RemoveActionParameters.p4	2019-06-08 18:32:50.605877300 +0200
++++ dumps/pruned/issue982-BMV2::SimpleSwitchMidEnd_4_ConvertEnums.p4	2019-06-08 18:32:50.609566300 +0200
 @@ -21,19 +21,13 @@ typedef bit<14> PacketLength_t;
  typedef bit<16> EgressInstance_t;
  typedef bit<48> Timestamp_t;

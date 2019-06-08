@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/synth-action.p4/pruned/synth-action-BMV2::SimpleSwitchMidEnd_28_ValidateTableProperties.p4	2019-05-20 17:32:24.754385600 +0200
-+++ dumps/p4_16_samples/synth-action.p4/pruned/synth-action-BMV2::SimpleSwitchMidEnd_29_SimplifyControlFlow.p4	2019-05-20 17:32:24.816513400 +0200
+--- dumps/pruned/synth-action-BMV2::SimpleSwitchMidEnd_28_ValidateTableProperties.p4	2019-06-08 18:34:12.541489100 +0200
++++ dumps/pruned/synth-action-BMV2::SimpleSwitchMidEnd_29_SimplifyControlFlow.p4	2019-06-08 18:34:12.608832900 +0200
 @@ -1,10 +1,8 @@
  control c(inout bit<32> x) {
      apply {

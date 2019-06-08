@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/inline-function.p4/pruned/inline-function-BMV2::SimpleSwitchMidEnd_2_EliminateSerEnums.p4	2019-05-20 17:30:02.768256600 +0200
-+++ dumps/p4_16_samples/inline-function.p4/pruned/inline-function-BMV2::SimpleSwitchMidEnd_3_RemoveActionParameters.p4	2019-05-20 17:30:02.791972100 +0200
+--- dumps/pruned/inline-function-BMV2::SimpleSwitchMidEnd_2_EliminateSerEnums.p4	2019-06-08 18:31:50.153991300 +0200
++++ dumps/pruned/inline-function-BMV2::SimpleSwitchMidEnd_3_RemoveActionParameters.p4	2019-06-08 18:31:50.174076000 +0200
 @@ -1,19 +1,25 @@
  control c(inout bit<32> x) {
      bit<32> tmp_3;

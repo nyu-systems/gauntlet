@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/calc-ebpf.p4/pruned/calc-ebpf-BMV2::SimpleSwitchMidEnd_11_SimplifySelectCases.p4	2019-05-20 17:29:15.074336700 +0200
-+++ dumps/p4_16_samples/calc-ebpf.p4/pruned/calc-ebpf-BMV2::SimpleSwitchMidEnd_12_ExpandLookahead.p4	2019-05-20 17:29:15.077087800 +0200
+--- dumps/pruned/calc-ebpf-BMV2::SimpleSwitchMidEnd_11_SimplifySelectCases.p4	2019-06-08 18:31:14.610282900 +0200
++++ dumps/pruned/calc-ebpf-BMV2::SimpleSwitchMidEnd_12_ExpandLookahead.p4	2019-06-08 18:31:14.612766200 +0200
 @@ -22,6 +22,9 @@ parser Parser(packet_in packet, out head
      p4calc_t tmp_3;
      p4calc_t tmp_4;

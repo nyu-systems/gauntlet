@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/issue982.p4/pruned/issue982-BMV2::SimpleSwitchMidEnd_24_ConstantFolding.p4	2019-05-20 17:31:16.899062400 +0200
-+++ dumps/p4_16_samples/issue982.p4/pruned/issue982-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-05-20 17:31:16.904601800 +0200
+--- dumps/pruned/issue982-BMV2::SimpleSwitchMidEnd_24_ConstantFolding.p4	2019-06-08 18:32:50.571431000 +0200
++++ dumps/pruned/issue982-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-06-08 18:32:50.573735500 +0200
 @@ -385,16 +385,14 @@ control ingress(inout headers hdr, inout
      }
  }

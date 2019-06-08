@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/mux-bmv2.p4/pruned/mux-bmv2-BMV2::SimpleSwitchMidEnd_2_EliminateSerEnums.p4	2019-05-20 17:31:24.659823900 +0200
-+++ dumps/p4_16_samples/mux-bmv2.p4/pruned/mux-bmv2-BMV2::SimpleSwitchMidEnd_3_RemoveActionParameters.p4	2019-05-20 17:31:24.684262100 +0200
+--- dumps/pruned/mux-bmv2-BMV2::SimpleSwitchMidEnd_2_EliminateSerEnums.p4	2019-06-08 18:32:58.182100600 +0200
++++ dumps/pruned/mux-bmv2-BMV2::SimpleSwitchMidEnd_3_RemoveActionParameters.p4	2019-06-08 18:32:58.212789300 +0200
 @@ -17,7 +17,11 @@ control Eg(inout Headers hdrs, inout Met
      bit<32> _sub;
      bit<64> res;

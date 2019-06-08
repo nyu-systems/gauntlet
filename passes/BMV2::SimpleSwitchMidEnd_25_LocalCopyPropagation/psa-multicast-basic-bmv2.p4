@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/psa-multicast-basic-bmv2.p4/pruned/psa-multicast-basic-bmv2-BMV2::SimpleSwitchMidEnd_24_ConstantFolding.p4	2019-05-20 17:31:51.125297700 +0200
-+++ dumps/p4_16_samples/psa-multicast-basic-bmv2.p4/pruned/psa-multicast-basic-bmv2-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-05-20 17:31:51.129099900 +0200
+--- dumps/pruned/psa-multicast-basic-bmv2-BMV2::SimpleSwitchMidEnd_24_ConstantFolding.p4	2019-06-08 18:33:24.450030400 +0200
++++ dumps/pruned/psa-multicast-basic-bmv2-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-06-08 18:33:24.452007900 +0200
 @@ -20,29 +20,12 @@ parser IngressParserImpl(packet_in pkt,
      }
  }

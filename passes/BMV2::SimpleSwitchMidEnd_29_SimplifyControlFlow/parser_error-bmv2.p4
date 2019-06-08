@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/parser_error-bmv2.p4/pruned/parser_error-bmv2-BMV2::SimpleSwitchMidEnd_28_ValidateTableProperties.p4	2019-05-20 17:31:31.153977100 +0200
-+++ dumps/p4_16_samples/parser_error-bmv2.p4/pruned/parser_error-bmv2-BMV2::SimpleSwitchMidEnd_29_SimplifyControlFlow.p4	2019-05-20 17:31:31.156281100 +0200
+--- dumps/pruned/parser_error-bmv2-BMV2::SimpleSwitchMidEnd_28_ValidateTableProperties.p4	2019-06-08 18:33:05.313279200 +0200
++++ dumps/pruned/parser_error-bmv2-BMV2::SimpleSwitchMidEnd_29_SimplifyControlFlow.p4	2019-06-08 18:33:05.320939300 +0200
 @@ -32,9 +32,7 @@ control egress(inout parsed_packet_t hdr
  }
  control deparser(packet_out b, in parsed_packet_t hdr) {

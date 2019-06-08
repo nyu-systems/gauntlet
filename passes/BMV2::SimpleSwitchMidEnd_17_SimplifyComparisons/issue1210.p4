@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/issue1210.p4/pruned/issue1210-BMV2::SimpleSwitchMidEnd_16_EliminateTuples.p4	2019-05-20 17:30:11.658537800 +0200
-+++ dumps/p4_16_samples/issue1210.p4/pruned/issue1210-BMV2::SimpleSwitchMidEnd_17_SimplifyComparisons.p4	2019-05-20 17:30:11.660493500 +0200
+--- dumps/pruned/issue1210-BMV2::SimpleSwitchMidEnd_16_EliminateTuples.p4	2019-06-08 18:31:57.757895700 +0200
++++ dumps/pruned/issue1210-BMV2::SimpleSwitchMidEnd_17_SimplifyComparisons.p4	2019-06-08 18:31:57.760393200 +0200
 @@ -16,9 +16,9 @@ parser ParserImpl(packet_in packet, out
  }
  control IngressImpl(inout parsed_headers_t hdr, inout metadata_t meta, inout standard_metadata_t standard_metadata) {

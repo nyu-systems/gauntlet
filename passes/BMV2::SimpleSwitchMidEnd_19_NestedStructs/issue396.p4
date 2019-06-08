@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/issue396.p4/pruned/issue396-BMV2::SimpleSwitchMidEnd_18_CopyStructures.p4	2019-05-20 17:30:45.739721100 +0200
-+++ dumps/p4_16_samples/issue396.p4/pruned/issue396-BMV2::SimpleSwitchMidEnd_19_NestedStructs.p4	2019-05-20 17:30:45.846035600 +0200
+--- dumps/pruned/issue396-BMV2::SimpleSwitchMidEnd_18_CopyStructures.p4	2019-06-08 18:32:24.964201200 +0200
++++ dumps/pruned/issue396-BMV2::SimpleSwitchMidEnd_19_NestedStructs.p4	2019-06-08 18:32:25.067516100 +0200
 @@ -9,8 +9,8 @@ package top(c _c);
  control d(out bool b) {
      H h_1;

@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/action_param.p4/pruned/action_param-BMV2::SimpleSwitchMidEnd_24_ConstantFolding.p4	2019-05-20 17:29:01.212877200 +0200
-+++ dumps/p4_16_samples/action_param.p4/pruned/action_param-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-05-20 17:29:01.216370600 +0200
+--- dumps/pruned/action_param-BMV2::SimpleSwitchMidEnd_24_ConstantFolding.p4	2019-06-08 18:31:01.032996100 +0200
++++ dumps/pruned/action_param-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-06-08 18:31:01.035398900 +0200
 @@ -1,8 +1,6 @@
  control c(inout bit<32> x) {
 -    bit<32> arg_1;

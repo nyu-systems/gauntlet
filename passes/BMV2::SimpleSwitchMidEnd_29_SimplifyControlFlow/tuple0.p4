@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/tuple0.p4/pruned/tuple0-BMV2::SimpleSwitchMidEnd_28_ValidateTableProperties.p4	2019-05-20 17:32:31.183597800 +0200
-+++ dumps/p4_16_samples/tuple0.p4/pruned/tuple0-BMV2::SimpleSwitchMidEnd_29_SimplifyControlFlow.p4	2019-05-20 17:32:31.251360800 +0200
+--- dumps/pruned/tuple0-BMV2::SimpleSwitchMidEnd_28_ValidateTableProperties.p4	2019-06-08 18:34:17.746731800 +0200
++++ dumps/pruned/tuple0-BMV2::SimpleSwitchMidEnd_29_SimplifyControlFlow.p4	2019-06-08 18:34:17.788713500 +0200
 @@ -8,10 +8,8 @@ package top(proto _p);
  control c() {
      tuple_0 x;

@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/issue232-bmv2.p4/pruned/issue232-bmv2-BMV2::SimpleSwitchMidEnd_28_ValidateTableProperties.p4	2019-05-20 17:30:36.372212600 +0200
-+++ dumps/p4_16_samples/issue232-bmv2.p4/pruned/issue232-bmv2-BMV2::SimpleSwitchMidEnd_29_SimplifyControlFlow.p4	2019-05-20 17:30:36.424228700 +0200
+--- dumps/pruned/issue232-bmv2-BMV2::SimpleSwitchMidEnd_28_ValidateTableProperties.p4	2019-06-08 18:32:18.057748100 +0200
++++ dumps/pruned/issue232-bmv2-BMV2::SimpleSwitchMidEnd_29_SimplifyControlFlow.p4	2019-06-08 18:32:18.128119400 +0200
 @@ -22,24 +22,8 @@ control Ing(inout Headers headers, inout
  control Eg(inout Headers hdrs, inout Metadata meta, inout standard_metadata_t standard_meta) {
      Value val_2;

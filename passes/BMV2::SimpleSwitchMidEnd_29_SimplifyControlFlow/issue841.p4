@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/issue841.p4/pruned/issue841-BMV2::SimpleSwitchMidEnd_28_ValidateTableProperties.p4	2019-05-20 17:31:08.030364300 +0200
-+++ dumps/p4_16_samples/issue841.p4/pruned/issue841-BMV2::SimpleSwitchMidEnd_29_SimplifyControlFlow.p4	2019-05-20 17:31:08.084202200 +0200
+--- dumps/pruned/issue841-BMV2::SimpleSwitchMidEnd_28_ValidateTableProperties.p4	2019-06-08 18:32:43.131943500 +0200
++++ dumps/pruned/issue841-BMV2::SimpleSwitchMidEnd_29_SimplifyControlFlow.p4	2019-06-08 18:32:43.184458400 +0200
 @@ -38,11 +38,9 @@ control MyComputeChecksum(inout headers
      @name("MyComputeChecksum.checksum") Checksum16() checksum;
      apply {

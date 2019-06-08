@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/issue1452.p4/pruned/issue1452-BMV2::SimpleSwitchMidEnd_24_ConstantFolding.p4	2019-05-20 17:30:16.326381600 +0200
-+++ dumps/p4_16_samples/issue1452.p4/pruned/issue1452-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-05-20 17:30:16.328846900 +0200
+--- dumps/pruned/issue1452-BMV2::SimpleSwitchMidEnd_24_ConstantFolding.p4	2019-06-08 18:32:01.888202800 +0200
++++ dumps/pruned/issue1452-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-06-08 18:32:01.890966300 +0200
 @@ -1,13 +1,7 @@
  control c() {
      bit<32> x;

@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/issue1334.p4/pruned/issue1334-BMV2::SimpleSwitchMidEnd_24_ConstantFolding.p4	2019-05-20 17:30:13.167973900 +0200
-+++ dumps/p4_16_samples/issue1334.p4/pruned/issue1334-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-05-20 17:30:13.170168000 +0200
+--- dumps/pruned/issue1334-BMV2::SimpleSwitchMidEnd_24_ConstantFolding.p4	2019-06-08 18:31:59.186105300 +0200
++++ dumps/pruned/issue1334-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-06-08 18:31:59.188074800 +0200
 @@ -10,7 +10,6 @@ extern Overloaded {
      void f(bit<32> a, bit<16> b);
  }

@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/nested-tuple.p4/pruned/nested-tuple-BMV2::SimpleSwitchMidEnd_15_StrengthReduction.p4	2019-05-20 17:31:26.159165200 +0200
-+++ dumps/p4_16_samples/nested-tuple.p4/pruned/nested-tuple-BMV2::SimpleSwitchMidEnd_16_EliminateTuples.p4	2019-05-20 17:31:26.163318100 +0200
+--- dumps/pruned/nested-tuple-BMV2::SimpleSwitchMidEnd_15_StrengthReduction.p4	2019-06-08 18:32:59.759659400 +0200
++++ dumps/pruned/nested-tuple-BMV2::SimpleSwitchMidEnd_16_EliminateTuples.p4	2019-06-08 18:32:59.762376700 +0200
 @@ -1,10 +1,14 @@
  struct T {
      bit<1> f;

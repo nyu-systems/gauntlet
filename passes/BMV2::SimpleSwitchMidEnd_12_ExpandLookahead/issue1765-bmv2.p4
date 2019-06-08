@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/issue1765-bmv2.p4/pruned/issue1765-bmv2-BMV2::SimpleSwitchMidEnd_11_SimplifySelectCases.p4	2019-05-20 17:30:27.155224800 +0200
-+++ dumps/p4_16_samples/issue1765-bmv2.p4/pruned/issue1765-bmv2-BMV2::SimpleSwitchMidEnd_12_ExpandLookahead.p4	2019-05-20 17:30:27.157587300 +0200
+--- dumps/pruned/issue1765-bmv2-BMV2::SimpleSwitchMidEnd_11_SimplifySelectCases.p4	2019-06-08 18:32:10.940654400 +0200
++++ dumps/pruned/issue1765-bmv2-BMV2::SimpleSwitchMidEnd_12_ExpandLookahead.p4	2019-06-08 18:32:10.943208600 +0200
 @@ -62,6 +62,7 @@ parser parserI(packet_in pkt, out header
      bit<9> tmp_6;
      bit<9> tmp_7;

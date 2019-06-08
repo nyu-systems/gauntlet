@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/issue982.p4/pruned/issue982-BMV2::SimpleSwitchMidEnd_18_CopyStructures.p4	2019-05-20 17:31:16.872563000 +0200
-+++ dumps/p4_16_samples/issue982.p4/pruned/issue982-BMV2::SimpleSwitchMidEnd_19_NestedStructs.p4	2019-05-20 17:31:16.985410600 +0200
+--- dumps/pruned/issue982-BMV2::SimpleSwitchMidEnd_18_CopyStructures.p4	2019-06-08 18:32:50.557859500 +0200
++++ dumps/pruned/issue982-BMV2::SimpleSwitchMidEnd_19_NestedStructs.p4	2019-06-08 18:32:50.626886100 +0200
 @@ -190,10 +190,20 @@ struct headers {
      ipv4_t     ipv4;
  }

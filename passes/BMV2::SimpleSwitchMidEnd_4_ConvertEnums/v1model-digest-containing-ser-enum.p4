@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/v1model-digest-containing-ser-enum.p4/pruned/v1model-digest-containing-ser-enum-BMV2::SimpleSwitchMidEnd_3_RemoveActionParameters.p4	2019-05-20 17:32:24.488503800 +0200
-+++ dumps/p4_16_samples/v1model-digest-containing-ser-enum.p4/pruned/v1model-digest-containing-ser-enum-BMV2::SimpleSwitchMidEnd_4_ConvertEnums.p4	2019-05-20 17:32:24.382595400 +0200
+--- dumps/pruned/v1model-digest-containing-ser-enum-BMV2::SimpleSwitchMidEnd_3_RemoveActionParameters.p4	2019-06-08 18:34:12.228577800 +0200
++++ dumps/pruned/v1model-digest-containing-ser-enum-BMV2::SimpleSwitchMidEnd_4_ConvertEnums.p4	2019-06-08 18:34:12.118248900 +0200
 @@ -25,14 +25,10 @@ header ipv4_t {
      ip4Addr_t srcAddr;
      ip4Addr_t dstAddr;

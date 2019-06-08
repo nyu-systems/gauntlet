@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/issue232-bmv2.p4/pruned/issue232-bmv2-BMV2::SimpleSwitchMidEnd_21_RemoveSelectBooleans.p4	2019-05-20 17:30:36.346414900 +0200
-+++ dumps/p4_16_samples/issue232-bmv2.p4/pruned/issue232-bmv2-BMV2::SimpleSwitchMidEnd_22_Predication.p4	2019-05-20 17:30:36.351885500 +0200
+--- dumps/pruned/issue232-bmv2-BMV2::SimpleSwitchMidEnd_21_RemoveSelectBooleans.p4	2019-06-08 18:32:18.031518700 +0200
++++ dumps/pruned/issue232-bmv2-BMV2::SimpleSwitchMidEnd_22_Predication.p4	2019-06-08 18:32:18.035043700 +0200
 @@ -40,13 +40,21 @@ control Eg(inout Headers hdrs, inout Met
          }
          done = false;

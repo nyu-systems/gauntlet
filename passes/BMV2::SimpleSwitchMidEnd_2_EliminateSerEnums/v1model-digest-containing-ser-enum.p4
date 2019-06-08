@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/v1model-digest-containing-ser-enum.p4/pruned/v1model-digest-containing-ser-enum-BMV2::SimpleSwitchMidEnd_1_EliminateNewtype.p4	2019-05-20 17:32:24.415654000 +0200
-+++ dumps/p4_16_samples/v1model-digest-containing-ser-enum.p4/pruned/v1model-digest-containing-ser-enum-BMV2::SimpleSwitchMidEnd_2_EliminateSerEnums.p4	2019-05-20 17:32:24.451919300 +0200
+--- dumps/pruned/v1model-digest-containing-ser-enum-BMV2::SimpleSwitchMidEnd_1_EliminateNewtype.p4	2019-06-08 18:34:12.151937300 +0200
++++ dumps/pruned/v1model-digest-containing-ser-enum-BMV2::SimpleSwitchMidEnd_2_EliminateSerEnums.p4	2019-06-08 18:34:12.189395900 +0200
 @@ -29,19 +29,14 @@ enum MyPacketTypes {
      IPv4,
      Other

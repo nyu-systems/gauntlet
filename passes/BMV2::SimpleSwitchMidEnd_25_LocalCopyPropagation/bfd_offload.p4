@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/bfd_offload.p4/pruned/bfd_offload-BMV2::SimpleSwitchMidEnd_24_ConstantFolding.p4	2019-05-20 17:29:12.034890600 +0200
-+++ dumps/p4_16_samples/bfd_offload.p4/pruned/bfd_offload-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-05-20 17:29:12.037096500 +0200
+--- dumps/pruned/bfd_offload-BMV2::SimpleSwitchMidEnd_24_ConstantFolding.p4	2019-06-08 18:31:10.906413100 +0200
++++ dumps/pruned/bfd_offload-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-06-08 18:31:10.908725000 +0200
 @@ -11,15 +11,11 @@ BFD_Offload(16w32768) bfd_session_livene
      }
      bool on_tx(in bit<16> index) {

@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/issue949.p4/pruned/issue949-BMV2::SimpleSwitchMidEnd_2_EliminateSerEnums.p4	2019-05-20 17:31:15.197338000 +0200
-+++ dumps/p4_16_samples/issue949.p4/pruned/issue949-BMV2::SimpleSwitchMidEnd_3_RemoveActionParameters.p4	2019-05-20 17:31:15.268388700 +0200
+--- dumps/pruned/issue949-BMV2::SimpleSwitchMidEnd_2_EliminateSerEnums.p4	2019-06-08 18:32:49.491202000 +0200
++++ dumps/pruned/issue949-BMV2::SimpleSwitchMidEnd_3_RemoveActionParameters.p4	2019-06-08 18:32:49.506451000 +0200
 @@ -38,9 +38,9 @@ control egress(inout headers hdr, inout
      }
  }

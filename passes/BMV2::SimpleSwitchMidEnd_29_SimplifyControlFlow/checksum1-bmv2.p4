@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/checksum1-bmv2.p4/pruned/checksum1-bmv2-BMV2::SimpleSwitchMidEnd_28_ValidateTableProperties.p4	2019-05-20 17:29:17.934843300 +0200
-+++ dumps/p4_16_samples/checksum1-bmv2.p4/pruned/checksum1-bmv2-BMV2::SimpleSwitchMidEnd_29_SimplifyControlFlow.p4	2019-05-20 17:29:17.990155600 +0200
+--- dumps/pruned/checksum1-bmv2-BMV2::SimpleSwitchMidEnd_28_ValidateTableProperties.p4	2019-06-08 18:31:17.479958800 +0200
++++ dumps/pruned/checksum1-bmv2-BMV2::SimpleSwitchMidEnd_29_SimplifyControlFlow.p4	2019-06-08 18:31:17.551223800 +0200
 @@ -70,14 +70,10 @@ parser parserI(packet_in pkt, out header
          }
      }

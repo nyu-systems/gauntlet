@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/inline.p4/pruned/inline-BMV2::SimpleSwitchMidEnd_2_EliminateSerEnums.p4	2019-05-20 17:30:04.392684900 +0200
-+++ dumps/p4_16_samples/inline.p4/pruned/inline-BMV2::SimpleSwitchMidEnd_3_RemoveActionParameters.p4	2019-05-20 17:30:04.419326800 +0200
+--- dumps/pruned/inline-BMV2::SimpleSwitchMidEnd_2_EliminateSerEnums.p4	2019-06-08 18:31:51.335700900 +0200
++++ dumps/pruned/inline-BMV2::SimpleSwitchMidEnd_3_RemoveActionParameters.p4	2019-06-08 18:31:51.358384900 +0200
 @@ -2,25 +2,31 @@ control p(out bit<1> y) {
      bit<1> x;
      bit<1> z;

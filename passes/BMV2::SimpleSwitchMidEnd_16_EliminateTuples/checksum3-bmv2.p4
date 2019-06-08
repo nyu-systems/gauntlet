@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/checksum3-bmv2.p4/pruned/checksum3-bmv2-BMV2::SimpleSwitchMidEnd_15_StrengthReduction.p4	2019-05-20 17:29:19.196104200 +0200
-+++ dumps/p4_16_samples/checksum3-bmv2.p4/pruned/checksum3-bmv2-BMV2::SimpleSwitchMidEnd_16_EliminateTuples.p4	2019-05-20 17:29:19.200168600 +0200
+--- dumps/pruned/checksum3-bmv2-BMV2::SimpleSwitchMidEnd_15_StrengthReduction.p4	2019-06-08 18:31:18.771264100 +0200
++++ dumps/pruned/checksum3-bmv2-BMV2::SimpleSwitchMidEnd_16_EliminateTuples.p4	2019-06-08 18:31:18.773350700 +0200
 @@ -90,9 +90,22 @@ control vc(inout headers hdr, inout meta
      apply {
      }

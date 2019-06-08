@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/issue696-bmv2.p4/pruned/issue696-bmv2-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-05-20 17:31:02.998426200 +0200
-+++ dumps/p4_16_samples/issue696-bmv2.p4/pruned/issue696-bmv2-BMV2::SimpleSwitchMidEnd_26_ConstantFolding.p4	2019-05-20 17:31:03.002252200 +0200
+--- dumps/pruned/issue696-bmv2-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-06-08 18:32:39.868933300 +0200
++++ dumps/pruned/issue696-bmv2-BMV2::SimpleSwitchMidEnd_26_ConstantFolding.p4	2019-06-08 18:32:39.872693900 +0200
 @@ -60,15 +60,15 @@ control Eg(inout Headers hdrs, inout Met
          }
          {

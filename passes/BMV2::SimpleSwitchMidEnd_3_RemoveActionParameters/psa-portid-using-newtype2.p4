@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/psa-portid-using-newtype2.p4/pruned/psa-portid-using-newtype2-BMV2::SimpleSwitchMidEnd_2_EliminateSerEnums.p4	2019-05-20 17:31:52.636771500 +0200
-+++ dumps/p4_16_samples/psa-portid-using-newtype2.p4/pruned/psa-portid-using-newtype2-BMV2::SimpleSwitchMidEnd_3_RemoveActionParameters.p4	2019-05-20 17:31:52.694092500 +0200
+--- dumps/pruned/psa-portid-using-newtype2-BMV2::SimpleSwitchMidEnd_2_EliminateSerEnums.p4	2019-06-08 18:33:25.931138000 +0200
++++ dumps/pruned/psa-portid-using-newtype2-BMV2::SimpleSwitchMidEnd_3_RemoveActionParameters.p4	2019-06-08 18:33:25.967644800 +0200
 @@ -134,6 +134,7 @@ parser FabricParser(packet_in packet, ou
      }
  }

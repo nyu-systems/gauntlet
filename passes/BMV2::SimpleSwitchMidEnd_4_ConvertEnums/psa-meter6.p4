@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/psa-meter6.p4/pruned/psa-meter6-BMV2::SimpleSwitchMidEnd_3_RemoveActionParameters.p4	2019-05-20 17:31:50.306175100 +0200
-+++ dumps/p4_16_samples/psa-meter6.p4/pruned/psa-meter6-BMV2::SimpleSwitchMidEnd_4_ConvertEnums.p4	2019-05-20 17:31:50.308455800 +0200
+--- dumps/pruned/psa-meter6-BMV2::SimpleSwitchMidEnd_3_RemoveActionParameters.p4	2019-06-08 18:33:23.893077000 +0200
++++ dumps/pruned/psa-meter6-BMV2::SimpleSwitchMidEnd_4_ConvertEnums.p4	2019-06-08 18:33:23.895619500 +0200
 @@ -24,7 +24,7 @@ control MyIC(inout ethernet_t a, inout E
      }
      @name(".NoAction") action NoAction_3() {

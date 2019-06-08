@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/issue1478-bmv2.p4/pruned/issue1478-bmv2-FrontEnd_49_FrontEndLast.p4	2019-05-20 17:30:18.004526400 +0200
-+++ dumps/p4_16_samples/issue1478-bmv2.p4/pruned/issue1478-bmv2-BMV2::SimpleSwitchMidEnd_0_CheckTableSize.p4	2019-05-20 17:30:17.852999000 +0200
+--- dumps/pruned/issue1478-bmv2-FrontEnd_49_FrontEndLast.p4	2019-06-08 18:32:03.312130000 +0200
++++ dumps/pruned/issue1478-bmv2-BMV2::SimpleSwitchMidEnd_0_CheckTableSize.p4	2019-06-08 18:32:03.089093700 +0200
 @@ -33,7 +33,6 @@ control ingress(inout Headers h, inout M
      @name(".NoAction") action NoAction_3() {
      }

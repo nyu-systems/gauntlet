@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/equality-bmv2.p4/pruned/equality-bmv2-BMV2::SimpleSwitchMidEnd_23_MoveDeclarations.p4	2019-05-20 17:29:40.198753000 +0200
-+++ dumps/p4_16_samples/equality-bmv2.p4/pruned/equality-bmv2-BMV2::SimpleSwitchMidEnd_24_ConstantFolding.p4	2019-05-20 17:29:40.202960000 +0200
+--- dumps/pruned/equality-bmv2-BMV2::SimpleSwitchMidEnd_23_MoveDeclarations.p4	2019-06-08 18:31:34.666165400 +0200
++++ dumps/pruned/equality-bmv2-BMV2::SimpleSwitchMidEnd_24_ConstantFolding.p4	2019-06-08 18:31:34.667725100 +0200
 @@ -36,7 +36,7 @@ control ingress(inout headers hdr, inout
              hdr.same.same = hdr.same.same | 8w4;
          tmp[0] = hdr.h;

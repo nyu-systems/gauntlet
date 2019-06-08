@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/issue1412-bmv2.p4/pruned/issue1412-bmv2-BMV2::SimpleSwitchMidEnd_22_Predication.p4	2019-05-20 17:30:15.646368200 +0200
-+++ dumps/p4_16_samples/issue1412-bmv2.p4/pruned/issue1412-bmv2-BMV2::SimpleSwitchMidEnd_23_MoveDeclarations.p4	2019-05-20 17:30:15.648985300 +0200
+--- dumps/pruned/issue1412-bmv2-BMV2::SimpleSwitchMidEnd_22_Predication.p4	2019-06-08 18:32:01.380287800 +0200
++++ dumps/pruned/issue1412-bmv2-BMV2::SimpleSwitchMidEnd_23_MoveDeclarations.p4	2019-06-08 18:32:01.382262000 +0200
 @@ -20,13 +20,13 @@ control IngressImpl(inout headers_t hdr,
      }
  }

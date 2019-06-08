@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/structArg.p4/pruned/structArg-BMV2::SimpleSwitchMidEnd_24_ConstantFolding.p4	2019-05-20 17:32:17.295824900 +0200
-+++ dumps/p4_16_samples/structArg.p4/pruned/structArg-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-05-20 17:32:17.298709300 +0200
+--- dumps/pruned/structArg-BMV2::SimpleSwitchMidEnd_24_ConstantFolding.p4	2019-06-08 18:34:06.329672300 +0200
++++ dumps/pruned/structArg-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-06-08 18:34:06.333442200 +0200
 @@ -2,10 +2,7 @@ struct S {
      bit<32> f;
  }

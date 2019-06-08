@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/key-bmv2.p4/pruned/key-bmv2-BMV2::SimpleSwitchMidEnd_22_Predication.p4	2019-05-20 17:31:19.999237000 +0200
-+++ dumps/p4_16_samples/key-bmv2.p4/pruned/key-bmv2-BMV2::SimpleSwitchMidEnd_23_MoveDeclarations.p4	2019-05-20 17:31:20.007803400 +0200
+--- dumps/pruned/key-bmv2-BMV2::SimpleSwitchMidEnd_22_Predication.p4	2019-06-08 18:32:53.503493200 +0200
++++ dumps/pruned/key-bmv2-BMV2::SimpleSwitchMidEnd_23_MoveDeclarations.p4	2019-06-08 18:32:53.505988200 +0200
 @@ -33,12 +33,12 @@ control deparser(packet_out b, in Header
      }
  }

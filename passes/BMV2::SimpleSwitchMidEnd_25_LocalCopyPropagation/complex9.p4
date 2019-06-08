@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/complex9.p4/pruned/complex9-BMV2::SimpleSwitchMidEnd_24_ConstantFolding.p4	2019-05-20 17:29:23.228400600 +0200
-+++ dumps/p4_16_samples/complex9.p4/pruned/complex9-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-05-20 17:29:23.231016500 +0200
+--- dumps/pruned/complex9-BMV2::SimpleSwitchMidEnd_24_ConstantFolding.p4	2019-06-08 18:31:24.151582700 +0200
++++ dumps/pruned/complex9-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-06-08 18:31:24.155029900 +0200
 @@ -1,19 +1,15 @@
  extern bit<32> f(in bit<32> x);
  control c(inout bit<32> r) {

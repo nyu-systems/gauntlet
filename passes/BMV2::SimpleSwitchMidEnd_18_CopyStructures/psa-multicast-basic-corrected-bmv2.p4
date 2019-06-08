@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/psa-multicast-basic-corrected-bmv2.p4/pruned/psa-multicast-basic-corrected-bmv2-BMV2::SimpleSwitchMidEnd_17_SimplifyComparisons.p4	2019-05-20 17:31:51.920171900 +0200
-+++ dumps/p4_16_samples/psa-multicast-basic-corrected-bmv2.p4/pruned/psa-multicast-basic-corrected-bmv2-BMV2::SimpleSwitchMidEnd_18_CopyStructures.p4	2019-05-20 17:31:51.819346900 +0200
+--- dumps/pruned/psa-multicast-basic-corrected-bmv2-BMV2::SimpleSwitchMidEnd_17_SimplifyComparisons.p4	2019-06-08 18:33:25.252169000 +0200
++++ dumps/pruned/psa-multicast-basic-corrected-bmv2-BMV2::SimpleSwitchMidEnd_18_CopyStructures.p4	2019-06-08 18:33:25.184046900 +0200
 @@ -23,11 +23,27 @@ control cIngress(inout headers_t hdr, in
      psa_ingress_output_metadata_t meta_1;
      MulticastGroup_t multicast_group_1;

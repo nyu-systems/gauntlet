@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/issue420.p4/pruned/issue420-BMV2::SimpleSwitchMidEnd_28_ValidateTableProperties.p4	2019-05-20 17:30:47.524708700 +0200
-+++ dumps/p4_16_samples/issue420.p4/pruned/issue420-BMV2::SimpleSwitchMidEnd_29_SimplifyControlFlow.p4	2019-05-20 17:30:47.585445500 +0200
+--- dumps/pruned/issue420-BMV2::SimpleSwitchMidEnd_28_ValidateTableProperties.p4	2019-06-08 18:32:26.644742400 +0200
++++ dumps/pruned/issue420-BMV2::SimpleSwitchMidEnd_29_SimplifyControlFlow.p4	2019-06-08 18:32:26.691265400 +0200
 @@ -28,18 +28,8 @@ control cIngress(inout Parsed_packet hdr
      @name(".NoAction") action NoAction_0() {
      }

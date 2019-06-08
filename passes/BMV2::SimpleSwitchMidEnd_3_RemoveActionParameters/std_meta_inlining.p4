@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/std_meta_inlining.p4/pruned/std_meta_inlining-BMV2::SimpleSwitchMidEnd_2_EliminateSerEnums.p4	2019-05-20 17:32:13.319278700 +0200
-+++ dumps/p4_16_samples/std_meta_inlining.p4/pruned/std_meta_inlining-BMV2::SimpleSwitchMidEnd_3_RemoveActionParameters.p4	2019-05-20 17:32:13.256614500 +0200
+--- dumps/pruned/std_meta_inlining-BMV2::SimpleSwitchMidEnd_2_EliminateSerEnums.p4	2019-06-08 18:34:04.268131800 +0200
++++ dumps/pruned/std_meta_inlining-BMV2::SimpleSwitchMidEnd_3_RemoveActionParameters.p4	2019-06-08 18:34:04.251047000 +0200
 @@ -14,8 +14,11 @@ control DeparserImpl(packet_out packet,
      }
  }

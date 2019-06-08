@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/issue1897-bmv2.p4/pruned/issue1897-bmv2-BMV2::SimpleSwitchMidEnd_12_ExpandLookahead.p4	2019-05-20 17:30:35.303932800 +0200
-+++ dumps/p4_16_samples/issue1897-bmv2.p4/pruned/issue1897-bmv2-BMV2::SimpleSwitchMidEnd_13_ExpandEmit.p4	2019-05-20 17:30:35.306526600 +0200
+--- dumps/pruned/issue1897-bmv2-BMV2::SimpleSwitchMidEnd_12_ExpandLookahead.p4	2019-06-08 18:32:16.919410700 +0200
++++ dumps/pruned/issue1897-bmv2-BMV2::SimpleSwitchMidEnd_13_ExpandEmit.p4	2019-06-08 18:32:16.921148300 +0200
 @@ -89,7 +89,13 @@ control ProtComputeChecksum(inout header
  }
  control ProtDeparser(packet_out packet, in headers hdr) {

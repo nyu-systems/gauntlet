@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/issue561.p4/pruned/issue561-BMV2::SimpleSwitchMidEnd_24_ConstantFolding.p4	2019-05-20 17:30:57.825363800 +0200
-+++ dumps/p4_16_samples/issue561.p4/pruned/issue561-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-05-20 17:30:57.827876700 +0200
+--- dumps/pruned/issue561-BMV2::SimpleSwitchMidEnd_24_ConstantFolding.p4	2019-06-08 18:32:36.674818900 +0200
++++ dumps/pruned/issue561-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-06-08 18:32:36.678044900 +0200
 @@ -13,19 +13,18 @@ package top(ct _ct);
  control c(out bit<32> x) {
      U u;

@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/hit_ebpf.p4/pruned/hit_ebpf-BMV2::SimpleSwitchMidEnd_28_ValidateTableProperties.p4	2019-05-20 17:29:59.160016200 +0200
-+++ dumps/p4_16_samples/hit_ebpf.p4/pruned/hit_ebpf-BMV2::SimpleSwitchMidEnd_29_SimplifyControlFlow.p4	2019-05-20 17:29:59.209424600 +0200
+--- dumps/pruned/hit_ebpf-BMV2::SimpleSwitchMidEnd_28_ValidateTableProperties.p4	2019-06-08 18:31:48.036832700 +0200
++++ dumps/pruned/hit_ebpf-BMV2::SimpleSwitchMidEnd_29_SimplifyControlFlow.p4	2019-06-08 18:31:48.082741200 +0200
 @@ -65,9 +65,8 @@ control pipe(inout Headers_t headers, ou
              pass = false;
              hasReturned_0 = true;

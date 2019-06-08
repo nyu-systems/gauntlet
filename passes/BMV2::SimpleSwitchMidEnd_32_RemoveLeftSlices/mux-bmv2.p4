@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/mux-bmv2.p4/pruned/mux-bmv2-BMV2::SimpleSwitchMidEnd_31_TableHit.p4	2019-05-20 17:31:24.667941500 +0200
-+++ dumps/p4_16_samples/mux-bmv2.p4/pruned/mux-bmv2-BMV2::SimpleSwitchMidEnd_32_RemoveLeftSlices.p4	2019-05-20 17:31:24.671583200 +0200
+--- dumps/pruned/mux-bmv2-BMV2::SimpleSwitchMidEnd_31_TableHit.p4	2019-06-08 18:32:58.189269500 +0200
++++ dumps/pruned/mux-bmv2-BMV2::SimpleSwitchMidEnd_32_RemoveLeftSlices.p4	2019-06-08 18:32:58.193373600 +0200
 @@ -21,7 +21,7 @@ control Eg(inout Headers hdrs, inout Met
          val = res;
          tmp_0 = res[31:0];

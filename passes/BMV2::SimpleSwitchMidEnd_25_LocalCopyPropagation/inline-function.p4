@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/inline-function.p4/pruned/inline-function-BMV2::SimpleSwitchMidEnd_24_ConstantFolding.p4	2019-05-20 17:30:02.754030200 +0200
-+++ dumps/p4_16_samples/inline-function.p4/pruned/inline-function-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-05-20 17:30:02.756212700 +0200
+--- dumps/pruned/inline-function-BMV2::SimpleSwitchMidEnd_24_ConstantFolding.p4	2019-06-08 18:31:50.143583100 +0200
++++ dumps/pruned/inline-function-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-06-08 18:31:50.145652500 +0200
 @@ -1,39 +1,15 @@
  control c(inout bit<32> x) {
 -    bit<32> tmp_3;

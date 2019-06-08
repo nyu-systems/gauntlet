@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/inline-action.p4/pruned/inline-action-BMV2::SimpleSwitchMidEnd_24_ConstantFolding.p4	2019-05-20 17:28:58.701223700 +0200
-+++ dumps/p4_16_samples/inline-action.p4/pruned/inline-action-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-05-20 17:28:58.703927800 +0200
+--- dumps/pruned/inline-action-BMV2::SimpleSwitchMidEnd_24_ConstantFolding.p4	2019-06-08 18:30:57.577961800 +0200
++++ dumps/pruned/inline-action-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-06-08 18:30:57.581113600 +0200
 @@ -1,16 +1,10 @@
  control p(inout bit<1> bt) {
 -    bit<1> y0_0;

@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/initializers.p4/pruned/initializers-BMV2::SimpleSwitchMidEnd_24_ConstantFolding.p4	2019-05-20 17:30:00.703381700 +0200
-+++ dumps/p4_16_samples/initializers.p4/pruned/initializers-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-05-20 17:30:00.706291900 +0200
+--- dumps/pruned/initializers-BMV2::SimpleSwitchMidEnd_24_ConstantFolding.p4	2019-06-08 18:31:48.750091300 +0200
++++ dumps/pruned/initializers-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-06-08 18:31:48.752521300 +0200
 @@ -13,13 +13,9 @@ parser P() {
      }
  }

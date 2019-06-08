@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/generic1.p4/pruned/generic1-BMV2::SimpleSwitchMidEnd_24_ConstantFolding.p4	2019-05-20 17:29:12.980828700 +0200
-+++ dumps/p4_16_samples/generic1.p4/pruned/generic1-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-05-20 17:29:12.984425300 +0200
+--- dumps/pruned/generic1-BMV2::SimpleSwitchMidEnd_24_ConstantFolding.p4	2019-06-08 18:31:12.145095600 +0200
++++ dumps/pruned/generic1-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-06-08 18:31:12.147730200 +0200
 @@ -5,15 +5,12 @@ extern Generic<T> {
  }
  extern void f<T>(in T arg);

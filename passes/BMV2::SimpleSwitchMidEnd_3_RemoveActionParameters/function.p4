@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/function.p4/pruned/function-BMV2::SimpleSwitchMidEnd_2_EliminateSerEnums.p4	2019-05-20 17:29:48.328933700 +0200
-+++ dumps/p4_16_samples/function.p4/pruned/function-BMV2::SimpleSwitchMidEnd_3_RemoveActionParameters.p4	2019-05-20 17:29:48.355611200 +0200
+--- dumps/pruned/function-BMV2::SimpleSwitchMidEnd_2_EliminateSerEnums.p4	2019-06-08 18:31:40.960940800 +0200
++++ dumps/pruned/function-BMV2::SimpleSwitchMidEnd_3_RemoveActionParameters.p4	2019-06-08 18:31:40.990218200 +0200
 @@ -1,11 +1,14 @@
  control c(out bit<16> b) {
      bit<16> tmp_0;

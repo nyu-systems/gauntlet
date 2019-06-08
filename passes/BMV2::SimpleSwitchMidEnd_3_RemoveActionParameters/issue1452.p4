@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/issue1452.p4/pruned/issue1452-BMV2::SimpleSwitchMidEnd_2_EliminateSerEnums.p4	2019-05-20 17:30:16.400148700 +0200
-+++ dumps/p4_16_samples/issue1452.p4/pruned/issue1452-BMV2::SimpleSwitchMidEnd_3_RemoveActionParameters.p4	2019-05-20 17:30:16.363296200 +0200
+--- dumps/pruned/issue1452-BMV2::SimpleSwitchMidEnd_2_EliminateSerEnums.p4	2019-06-08 18:32:01.947698100 +0200
++++ dumps/pruned/issue1452-BMV2::SimpleSwitchMidEnd_3_RemoveActionParameters.p4	2019-06-08 18:32:01.922370500 +0200
 @@ -1,12 +1,16 @@
  control c() {
      bit<32> x;

@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/list-compare.p4/pruned/list-compare-BMV2::SimpleSwitchMidEnd_17_SimplifyComparisons.p4	2019-05-20 17:32:19.103985700 +0200
-+++ dumps/p4_16_samples/list-compare.p4/pruned/list-compare-BMV2::SimpleSwitchMidEnd_18_CopyStructures.p4	2019-05-20 17:32:19.109788500 +0200
+--- dumps/pruned/list-compare-BMV2::SimpleSwitchMidEnd_17_SimplifyComparisons.p4	2019-06-08 18:34:07.906651100 +0200
++++ dumps/pruned/list-compare-BMV2::SimpleSwitchMidEnd_18_CopyStructures.p4	2019-06-08 18:34:07.909188300 +0200
 @@ -12,8 +12,14 @@ control test(out bool zout) {
      tuple_0 p;
      S q;

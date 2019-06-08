@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/issue249.p4/pruned/issue249-BMV2::SimpleSwitchMidEnd_15_StrengthReduction.p4	2019-05-20 17:30:37.399201400 +0200
-+++ dumps/p4_16_samples/issue249.p4/pruned/issue249-BMV2::SimpleSwitchMidEnd_16_EliminateTuples.p4	2019-05-20 17:30:37.401434100 +0200
+--- dumps/pruned/issue249-BMV2::SimpleSwitchMidEnd_15_StrengthReduction.p4	2019-06-08 18:32:19.031671300 +0200
++++ dumps/pruned/issue249-BMV2::SimpleSwitchMidEnd_16_EliminateTuples.p4	2019-06-08 18:32:19.033446400 +0200
 @@ -46,14 +46,27 @@ control DeparserImpl(packet_out packet,
      apply {
      }

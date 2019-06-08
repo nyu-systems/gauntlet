@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/issue1607-bmv2.p4/pruned/issue1607-bmv2-BMV2::SimpleSwitchMidEnd_28_ValidateTableProperties.p4	2019-05-20 17:30:23.136684400 +0200
-+++ dumps/p4_16_samples/issue1607-bmv2.p4/pruned/issue1607-bmv2-BMV2::SimpleSwitchMidEnd_29_SimplifyControlFlow.p4	2019-05-20 17:30:23.223104300 +0200
+--- dumps/pruned/issue1607-bmv2-BMV2::SimpleSwitchMidEnd_28_ValidateTableProperties.p4	2019-06-08 18:32:07.326337700 +0200
++++ dumps/pruned/issue1607-bmv2-BMV2::SimpleSwitchMidEnd_29_SimplifyControlFlow.p4	2019-06-08 18:32:07.356973100 +0200
 @@ -35,108 +35,106 @@ control MyComputeChecksum(inout headers
  }
  control MyDeparser(packet_out packet, in headers hdr) {

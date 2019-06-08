@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/psa-register1.p4/pruned/psa-register1-BMV2::SimpleSwitchMidEnd_2_EliminateSerEnums.p4	2019-05-20 17:31:54.166403700 +0200
-+++ dumps/p4_16_samples/psa-register1.p4/pruned/psa-register1-BMV2::SimpleSwitchMidEnd_3_RemoveActionParameters.p4	2019-05-20 17:31:54.192091600 +0200
+--- dumps/pruned/psa-register1-BMV2::SimpleSwitchMidEnd_2_EliminateSerEnums.p4	2019-06-08 18:33:27.159756600 +0200
++++ dumps/pruned/psa-register1-BMV2::SimpleSwitchMidEnd_3_RemoveActionParameters.p4	2019-06-08 18:33:27.180970600 +0200
 @@ -20,9 +20,9 @@ parser MyEP(packet_in buffer, out EMPTY
      }
  }

@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/basic_routing-bmv2.p4/pruned/basic_routing-bmv2-BMV2::SimpleSwitchMidEnd_15_StrengthReduction.p4	2019-05-20 17:29:10.762056300 +0200
-+++ dumps/p4_16_samples/basic_routing-bmv2.p4/pruned/basic_routing-bmv2-BMV2::SimpleSwitchMidEnd_16_EliminateTuples.p4	2019-05-20 17:29:10.768501400 +0200
+--- dumps/pruned/basic_routing-bmv2-BMV2::SimpleSwitchMidEnd_15_StrengthReduction.p4	2019-06-08 18:31:09.948910500 +0200
++++ dumps/pruned/basic_routing-bmv2-BMV2::SimpleSwitchMidEnd_16_EliminateTuples.p4	2019-06-08 18:31:09.950588100 +0200
 @@ -182,14 +182,27 @@ control DeparserImpl(packet_out packet,
          packet.emit<ipv4_t>(hdr = hdr.ipv4);
      }

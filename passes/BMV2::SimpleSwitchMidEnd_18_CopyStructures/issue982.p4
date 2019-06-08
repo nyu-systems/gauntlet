@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/issue982.p4/pruned/issue982-BMV2::SimpleSwitchMidEnd_17_SimplifyComparisons.p4	2019-05-20 17:31:16.869701200 +0200
-+++ dumps/p4_16_samples/issue982.p4/pruned/issue982-BMV2::SimpleSwitchMidEnd_18_CopyStructures.p4	2019-05-20 17:31:16.872563000 +0200
+--- dumps/pruned/issue982-BMV2::SimpleSwitchMidEnd_17_SimplifyComparisons.p4	2019-06-08 18:32:50.555983500 +0200
++++ dumps/pruned/issue982-BMV2::SimpleSwitchMidEnd_18_CopyStructures.p4	2019-06-08 18:32:50.557859500 +0200
 @@ -203,7 +203,14 @@ parser EgressParserImpl(packet_in buffer
      state parse_ethernet {
          parsed_hdr_2.ethernet.setInvalid();

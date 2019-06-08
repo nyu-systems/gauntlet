@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/stack2.p4/pruned/stack2-BMV2::SimpleSwitchMidEnd_24_ConstantFolding.p4	2019-05-20 17:32:10.653466100 +0200
-+++ dumps/p4_16_samples/stack2.p4/pruned/stack2-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-05-20 17:32:10.656280000 +0200
+--- dumps/pruned/stack2-BMV2::SimpleSwitchMidEnd_24_ConstantFolding.p4	2019-06-08 18:34:02.146209600 +0200
++++ dumps/pruned/stack2-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-06-08 18:34:02.148720700 +0200
 @@ -2,10 +2,8 @@
  header h {
  }

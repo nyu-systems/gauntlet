@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/equality.p4/pruned/equality-BMV2::SimpleSwitchMidEnd_18_CopyStructures.p4	2019-05-20 17:29:41.091149500 +0200
-+++ dumps/p4_16_samples/equality.p4/pruned/equality-BMV2::SimpleSwitchMidEnd_19_NestedStructs.p4	2019-05-20 17:29:41.177745000 +0200
+--- dumps/pruned/equality-BMV2::SimpleSwitchMidEnd_18_CopyStructures.p4	2019-06-08 18:31:35.163338100 +0200
++++ dumps/pruned/equality-BMV2::SimpleSwitchMidEnd_19_NestedStructs.p4	2019-06-08 18:31:35.263713800 +0200
 @@ -11,8 +11,10 @@ control c(out bit<1> x) {
      varbit<32> b_1;
      H h1;

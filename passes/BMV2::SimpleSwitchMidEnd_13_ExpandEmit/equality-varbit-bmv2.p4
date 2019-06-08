@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/equality-varbit-bmv2.p4/pruned/equality-varbit-bmv2-BMV2::SimpleSwitchMidEnd_12_ExpandLookahead.p4	2019-05-20 17:29:40.692333400 +0200
-+++ dumps/p4_16_samples/equality-varbit-bmv2.p4/pruned/equality-varbit-bmv2-BMV2::SimpleSwitchMidEnd_13_ExpandEmit.p4	2019-05-20 17:29:40.695278200 +0200
+--- dumps/pruned/equality-varbit-bmv2-BMV2::SimpleSwitchMidEnd_12_ExpandLookahead.p4	2019-06-08 18:31:34.920611100 +0200
++++ dumps/pruned/equality-varbit-bmv2-BMV2::SimpleSwitchMidEnd_13_ExpandEmit.p4	2019-06-08 18:31:34.922499400 +0200
 @@ -38,7 +38,9 @@ control uc(inout headers hdr, inout meta
  }
  control deparser(packet_out packet, in headers hdr) {

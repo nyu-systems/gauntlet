@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/list-compare.p4/pruned/list-compare-BMV2::SimpleSwitchMidEnd_24_ConstantFolding.p4	2019-05-20 17:32:19.145183600 +0200
-+++ dumps/p4_16_samples/list-compare.p4/pruned/list-compare-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-05-20 17:32:19.148592300 +0200
+--- dumps/pruned/list-compare-BMV2::SimpleSwitchMidEnd_24_ConstantFolding.p4	2019-06-08 18:34:07.927881500 +0200
++++ dumps/pruned/list-compare-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-06-08 18:34:07.930321900 +0200
 @@ -9,19 +9,13 @@ struct tuple_0 {
      bit<32> field_0;
  }

@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/two_ebpf.p4/pruned/two_ebpf-BMV2::SimpleSwitchMidEnd_2_EliminateSerEnums.p4	2019-05-20 17:32:32.800819200 +0200
-+++ dumps/p4_16_samples/two_ebpf.p4/pruned/two_ebpf-BMV2::SimpleSwitchMidEnd_3_RemoveActionParameters.p4	2019-05-20 17:32:32.830341000 +0200
+--- dumps/pruned/two_ebpf-BMV2::SimpleSwitchMidEnd_2_EliminateSerEnums.p4	2019-06-08 18:34:18.724785600 +0200
++++ dumps/pruned/two_ebpf-BMV2::SimpleSwitchMidEnd_3_RemoveActionParameters.p4	2019-06-08 18:34:18.745773700 +0200
 @@ -39,10 +39,11 @@ parser prs(packet_in p, out Headers_t he
      }
  }

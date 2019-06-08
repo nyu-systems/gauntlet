@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/issue887.p4/pruned/issue887-BMV2::SimpleSwitchMidEnd_12_ExpandLookahead.p4	2019-05-20 17:31:09.208448200 +0200
-+++ dumps/p4_16_samples/issue887.p4/pruned/issue887-BMV2::SimpleSwitchMidEnd_13_ExpandEmit.p4	2019-05-20 17:31:09.212329600 +0200
+--- dumps/pruned/issue887-BMV2::SimpleSwitchMidEnd_12_ExpandLookahead.p4	2019-06-08 18:32:44.143144200 +0200
++++ dumps/pruned/issue887-BMV2::SimpleSwitchMidEnd_13_ExpandEmit.p4	2019-06-08 18:32:44.146588600 +0200
 @@ -31,8 +31,16 @@ control MyComputeChecksum(inout my_packe
  }
  control MyDeparser(packet_out b, in my_packet p) {

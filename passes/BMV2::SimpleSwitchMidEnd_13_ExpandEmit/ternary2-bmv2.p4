@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/ternary2-bmv2.p4/pruned/ternary2-bmv2-BMV2::SimpleSwitchMidEnd_12_ExpandLookahead.p4	2019-05-20 17:32:29.867326900 +0200
-+++ dumps/p4_16_samples/ternary2-bmv2.p4/pruned/ternary2-bmv2-BMV2::SimpleSwitchMidEnd_13_ExpandEmit.p4	2019-05-20 17:32:29.870239500 +0200
+--- dumps/pruned/ternary2-bmv2-BMV2::SimpleSwitchMidEnd_12_ExpandLookahead.p4	2019-06-08 18:34:16.755586900 +0200
++++ dumps/pruned/ternary2-bmv2-BMV2::SimpleSwitchMidEnd_13_ExpandEmit.p4	2019-06-08 18:34:16.758090900 +0200
 @@ -162,7 +162,12 @@ control egress(inout packet_t hdrs, inou
  control deparser(packet_out b, in packet_t hdrs) {
      apply {

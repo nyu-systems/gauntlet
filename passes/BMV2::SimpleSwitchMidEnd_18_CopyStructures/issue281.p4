@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/issue281.p4/pruned/issue281-BMV2::SimpleSwitchMidEnd_17_SimplifyComparisons.p4	2019-05-20 17:30:39.636988600 +0200
-+++ dumps/p4_16_samples/issue281.p4/pruned/issue281-BMV2::SimpleSwitchMidEnd_18_CopyStructures.p4	2019-05-20 17:30:39.639991700 +0200
+--- dumps/pruned/issue281-BMV2::SimpleSwitchMidEnd_17_SimplifyComparisons.p4	2019-06-08 18:32:20.652579100 +0200
++++ dumps/pruned/issue281-BMV2::SimpleSwitchMidEnd_18_CopyStructures.p4	2019-06-08 18:32:20.656336400 +0200
 @@ -46,8 +46,16 @@ parser MyParser(packet_in b, out h hdr,
          l2_ether_0.setInvalid();
          b.extract<ethernet_t>(l2_ether_0);

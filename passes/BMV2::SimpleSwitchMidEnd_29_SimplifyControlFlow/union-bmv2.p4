@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/union-bmv2.p4/pruned/union-bmv2-BMV2::SimpleSwitchMidEnd_28_ValidateTableProperties.p4	2019-05-20 17:32:34.467813000 +0200
-+++ dumps/p4_16_samples/union-bmv2.p4/pruned/union-bmv2-BMV2::SimpleSwitchMidEnd_29_SimplifyControlFlow.p4	2019-05-20 17:32:34.470209600 +0200
+--- dumps/pruned/union-bmv2-BMV2::SimpleSwitchMidEnd_28_ValidateTableProperties.p4	2019-06-08 18:34:20.056682800 +0200
++++ dumps/pruned/union-bmv2-BMV2::SimpleSwitchMidEnd_29_SimplifyControlFlow.p4	2019-06-08 18:34:20.063346800 +0200
 @@ -48,10 +48,8 @@ control egress(inout Headers h, inout Me
  control deparser(packet_out b, in Headers h) {
      apply {

@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/named-arg.p4/pruned/named-arg-BMV2::SimpleSwitchMidEnd_24_ConstantFolding.p4	2019-05-20 17:31:24.983947500 +0200
-+++ dumps/p4_16_samples/named-arg.p4/pruned/named-arg-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-05-20 17:31:24.986352500 +0200
+--- dumps/pruned/named-arg-BMV2::SimpleSwitchMidEnd_24_ConstantFolding.p4	2019-06-08 18:32:58.610208400 +0200
++++ dumps/pruned/named-arg-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-06-08 18:32:58.614799500 +0200
 @@ -1,11 +1,7 @@
  extern void f(in bit<16> x, in bool y);
  control c() {

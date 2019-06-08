@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/decl2.p4/pruned/decl2-BMV2::SimpleSwitchMidEnd_24_ConstantFolding.p4	2019-05-20 17:29:29.664408400 +0200
-+++ dumps/p4_16_samples/decl2.p4/pruned/decl2-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-05-20 17:29:29.666976500 +0200
+--- dumps/pruned/decl2-BMV2::SimpleSwitchMidEnd_24_ConstantFolding.p4	2019-06-08 18:31:29.497542100 +0200
++++ dumps/pruned/decl2-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-06-08 18:31:29.500293100 +0200
 @@ -1,16 +1,6 @@
  control p() {
 -    bit<1> z;

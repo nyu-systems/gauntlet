@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/pvs-struct.p4/pruned/pvs-struct-BMV2::SimpleSwitchMidEnd_7_TypeChecking.p4	2019-05-20 17:31:55.840452500 +0200
-+++ dumps/p4_16_samples/pvs-struct.p4/pruned/pvs-struct-BMV2::SimpleSwitchMidEnd_8_SimplifyKey.p4	2019-05-20 17:31:55.843131200 +0200
+--- dumps/pruned/pvs-struct-BMV2::SimpleSwitchMidEnd_7_TypeChecking.p4	2019-06-08 18:33:29.519419800 +0200
++++ dumps/pruned/pvs-struct-BMV2::SimpleSwitchMidEnd_8_SimplifyKey.p4	2019-06-08 18:33:29.523845100 +0200
 @@ -35,18 +35,22 @@ control MyIngress(inout my_packet p, ino
      }
      @name("MyIngress.set_data") action set_data_0() {

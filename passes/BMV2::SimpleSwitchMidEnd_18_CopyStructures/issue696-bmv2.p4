@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/issue696-bmv2.p4/pruned/issue696-bmv2-BMV2::SimpleSwitchMidEnd_17_SimplifyComparisons.p4	2019-05-20 17:31:02.956144900 +0200
-+++ dumps/p4_16_samples/issue696-bmv2.p4/pruned/issue696-bmv2-BMV2::SimpleSwitchMidEnd_18_CopyStructures.p4	2019-05-20 17:31:02.964697500 +0200
+--- dumps/pruned/issue696-bmv2-BMV2::SimpleSwitchMidEnd_17_SimplifyComparisons.p4	2019-06-08 18:32:39.840050800 +0200
++++ dumps/pruned/issue696-bmv2-BMV2::SimpleSwitchMidEnd_18_CopyStructures.p4	2019-06-08 18:32:39.843525100 +0200
 @@ -56,7 +56,9 @@ control Eg(inout Headers hdrs, inout Met
      bit<32> tmp_1;
      bit<32> tmp_2;

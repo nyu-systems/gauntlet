@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/stack_ebpf.p4/pruned/stack_ebpf-BMV2::SimpleSwitchMidEnd_22_Predication.p4	2019-05-20 17:32:11.800291000 +0200
-+++ dumps/p4_16_samples/stack_ebpf.p4/pruned/stack_ebpf-BMV2::SimpleSwitchMidEnd_23_MoveDeclarations.p4	2019-05-20 17:32:11.802423700 +0200
+--- dumps/pruned/stack_ebpf-BMV2::SimpleSwitchMidEnd_22_Predication.p4	2019-06-08 18:34:02.783454500 +0200
++++ dumps/pruned/stack_ebpf-BMV2::SimpleSwitchMidEnd_23_MoveDeclarations.p4	2019-06-08 18:34:02.786961500 +0200
 @@ -40,13 +40,13 @@ parser prs(packet_in p, out Headers_t he
      }
  }

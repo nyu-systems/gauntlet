@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/ternary2-bmv2.p4/pruned/ternary2-bmv2-BMV2::SimpleSwitchMidEnd_28_ValidateTableProperties.p4	2019-05-20 17:32:29.937033000 +0200
-+++ dumps/p4_16_samples/ternary2-bmv2.p4/pruned/ternary2-bmv2-BMV2::SimpleSwitchMidEnd_29_SimplifyControlFlow.p4	2019-05-20 17:32:30.035756100 +0200
+--- dumps/pruned/ternary2-bmv2-BMV2::SimpleSwitchMidEnd_28_ValidateTableProperties.p4	2019-06-08 18:34:16.794896000 +0200
++++ dumps/pruned/ternary2-bmv2-BMV2::SimpleSwitchMidEnd_29_SimplifyControlFlow.p4	2019-06-08 18:34:16.841456700 +0200
 @@ -130,17 +130,15 @@ control ingress(inout packet_t hdrs, ino
      }
      apply {

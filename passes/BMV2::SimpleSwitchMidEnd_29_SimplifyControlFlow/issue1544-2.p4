@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/issue1544-2.p4/pruned/issue1544-2-BMV2::SimpleSwitchMidEnd_28_ValidateTableProperties.p4	2019-05-20 17:30:19.528716500 +0200
-+++ dumps/p4_16_samples/issue1544-2.p4/pruned/issue1544-2-BMV2::SimpleSwitchMidEnd_29_SimplifyControlFlow.p4	2019-05-20 17:30:19.531543400 +0200
+--- dumps/pruned/issue1544-2-BMV2::SimpleSwitchMidEnd_28_ValidateTableProperties.p4	2019-06-08 18:32:04.904005100 +0200
++++ dumps/pruned/issue1544-2-BMV2::SimpleSwitchMidEnd_29_SimplifyControlFlow.p4	2019-06-08 18:32:04.907167100 +0200
 @@ -2,23 +2,17 @@ control c(inout bit<32> x) {
      bit<32> tmp_6;
      bit<32> tmp_10;

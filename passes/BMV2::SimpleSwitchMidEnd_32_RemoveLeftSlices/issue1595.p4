@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/issue1595.p4/pruned/issue1595-BMV2::SimpleSwitchMidEnd_31_TableHit.p4	2019-05-20 17:30:22.631440300 +0200
-+++ dumps/p4_16_samples/issue1595.p4/pruned/issue1595-BMV2::SimpleSwitchMidEnd_32_RemoveLeftSlices.p4	2019-05-20 17:30:22.633321200 +0200
+--- dumps/pruned/issue1595-BMV2::SimpleSwitchMidEnd_31_TableHit.p4	2019-06-08 18:32:06.950263400 +0200
++++ dumps/pruned/issue1595-BMV2::SimpleSwitchMidEnd_32_RemoveLeftSlices.p4	2019-06-08 18:32:06.952415400 +0200
 @@ -31,13 +31,13 @@ control cIngress(inout Parsed_packet hdr
          hdr.ethernet.srcAddr = 48w1;
      }

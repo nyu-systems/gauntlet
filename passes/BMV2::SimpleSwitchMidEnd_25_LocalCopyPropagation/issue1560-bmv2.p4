@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/issue1560-bmv2.p4/pruned/issue1560-bmv2-BMV2::SimpleSwitchMidEnd_24_ConstantFolding.p4	2019-05-20 17:30:20.374672400 +0200
-+++ dumps/p4_16_samples/issue1560-bmv2.p4/pruned/issue1560-bmv2-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-05-20 17:30:20.378255200 +0200
+--- dumps/pruned/issue1560-bmv2-BMV2::SimpleSwitchMidEnd_24_ConstantFolding.p4	2019-06-08 18:32:05.578577700 +0200
++++ dumps/pruned/issue1560-bmv2-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-06-08 18:32:05.581767300 +0200
 @@ -152,8 +152,8 @@ control cIngress(inout headers hdr, inou
              @defaultonly NoAction_5();
          }

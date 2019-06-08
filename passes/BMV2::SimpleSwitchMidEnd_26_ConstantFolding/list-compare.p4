@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/list-compare.p4/pruned/list-compare-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-05-20 17:32:19.148592300 +0200
-+++ dumps/p4_16_samples/list-compare.p4/pruned/list-compare-BMV2::SimpleSwitchMidEnd_26_ConstantFolding.p4	2019-05-20 17:32:19.151649000 +0200
+--- dumps/pruned/list-compare-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-06-08 18:34:07.930321900 +0200
++++ dumps/pruned/list-compare-BMV2::SimpleSwitchMidEnd_26_ConstantFolding.p4	2019-06-08 18:34:07.932335500 +0200
 @@ -14,8 +14,8 @@ control test(out bool zout) {
          }
          {

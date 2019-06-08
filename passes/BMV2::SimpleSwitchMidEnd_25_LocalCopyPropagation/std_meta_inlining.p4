@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/std_meta_inlining.p4/pruned/std_meta_inlining-BMV2::SimpleSwitchMidEnd_24_ConstantFolding.p4	2019-05-20 17:32:13.188346900 +0200
-+++ dumps/p4_16_samples/std_meta_inlining.p4/pruned/std_meta_inlining-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-05-20 17:32:13.191867100 +0200
+--- dumps/pruned/std_meta_inlining-BMV2::SimpleSwitchMidEnd_24_ConstantFolding.p4	2019-06-08 18:34:04.228155100 +0200
++++ dumps/pruned/std_meta_inlining-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-06-08 18:34:04.229792300 +0200
 @@ -14,54 +14,11 @@ control DeparserImpl(packet_out packet,
      }
  }

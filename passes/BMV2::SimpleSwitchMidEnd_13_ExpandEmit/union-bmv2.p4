@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/union-bmv2.p4/pruned/union-bmv2-BMV2::SimpleSwitchMidEnd_12_ExpandLookahead.p4	2019-05-20 17:32:34.405212600 +0200
-+++ dumps/p4_16_samples/union-bmv2.p4/pruned/union-bmv2-BMV2::SimpleSwitchMidEnd_13_ExpandEmit.p4	2019-05-20 17:32:34.412495500 +0200
+--- dumps/pruned/union-bmv2-BMV2::SimpleSwitchMidEnd_12_ExpandLookahead.p4	2019-06-08 18:34:19.960014400 +0200
++++ dumps/pruned/union-bmv2-BMV2::SimpleSwitchMidEnd_13_ExpandEmit.p4	2019-06-08 18:34:19.964624100 +0200
 @@ -48,7 +48,10 @@ control egress(inout Headers h, inout Me
  control deparser(packet_out b, in Headers h) {
      apply {

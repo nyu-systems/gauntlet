@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/issue512.p4/pruned/issue512-BMV2::SimpleSwitchMidEnd_24_ConstantFolding.p4	2019-05-20 17:30:53.691523300 +0200
-+++ dumps/p4_16_samples/issue512.p4/pruned/issue512-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-05-20 17:30:53.693857800 +0200
+--- dumps/pruned/issue512-BMV2::SimpleSwitchMidEnd_24_ConstantFolding.p4	2019-06-08 18:32:32.778194500 +0200
++++ dumps/pruned/issue512-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-06-08 18:32:32.780232300 +0200
 @@ -25,29 +25,20 @@ parser parserI(packet_in pkt, out Parsed
      }
  }

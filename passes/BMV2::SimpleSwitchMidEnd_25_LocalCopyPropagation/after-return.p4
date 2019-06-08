@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/after-return.p4/pruned/after-return-BMV2::SimpleSwitchMidEnd_24_ConstantFolding.p4	2019-05-20 17:29:02.149973100 +0200
-+++ dumps/p4_16_samples/after-return.p4/pruned/after-return-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-05-20 17:29:02.152744800 +0200
+--- dumps/pruned/after-return-BMV2::SimpleSwitchMidEnd_24_ConstantFolding.p4	2019-06-08 18:31:01.928696300 +0200
++++ dumps/pruned/after-return-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-06-08 18:31:01.931339600 +0200
 @@ -1,13 +1,5 @@
  control ctrl() {
 -    bit<32> a;

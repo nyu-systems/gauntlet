@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/issue696-bmv2.p4/pruned/issue696-bmv2-BMV2::SimpleSwitchMidEnd_24_ConstantFolding.p4	2019-05-20 17:31:02.989960600 +0200
-+++ dumps/p4_16_samples/issue696-bmv2.p4/pruned/issue696-bmv2-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-05-20 17:31:02.998426200 +0200
+--- dumps/pruned/issue696-bmv2-BMV2::SimpleSwitchMidEnd_24_ConstantFolding.p4	2019-06-08 18:32:39.865163000 +0200
++++ dumps/pruned/issue696-bmv2-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-06-08 18:32:39.868933300 +0200
 @@ -51,38 +51,24 @@ control Ing(inout Headers headers, inout
  }
  control Eg(inout Headers hdrs, inout Metadata meta, inout standard_metadata_t standard_meta) {

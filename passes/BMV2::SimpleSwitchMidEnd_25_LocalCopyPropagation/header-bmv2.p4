@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/header-bmv2.p4/pruned/header-bmv2-BMV2::SimpleSwitchMidEnd_24_ConstantFolding.p4	2019-05-20 17:29:55.565389200 +0200
-+++ dumps/p4_16_samples/header-bmv2.p4/pruned/header-bmv2-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-05-20 17:29:55.568612400 +0200
+--- dumps/pruned/header-bmv2-BMV2::SimpleSwitchMidEnd_24_ConstantFolding.p4	2019-06-08 18:31:45.372052600 +0200
++++ dumps/pruned/header-bmv2-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-06-08 18:31:45.375994600 +0200
 @@ -32,10 +32,8 @@ control deparser(packet_out b, in Header
      }
  }

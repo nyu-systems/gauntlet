@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/psa-hash.p4/pruned/psa-hash-BMV2::SimpleSwitchMidEnd_3_RemoveActionParameters.p4	2019-05-20 17:31:47.515420300 +0200
-+++ dumps/p4_16_samples/psa-hash.p4/pruned/psa-hash-BMV2::SimpleSwitchMidEnd_4_ConvertEnums.p4	2019-05-20 17:31:47.519303800 +0200
+--- dumps/pruned/psa-hash-BMV2::SimpleSwitchMidEnd_3_RemoveActionParameters.p4	2019-06-08 18:33:20.441229300 +0200
++++ dumps/pruned/psa-hash-BMV2::SimpleSwitchMidEnd_4_ConvertEnums.p4	2019-06-08 18:33:20.445063300 +0200
 @@ -26,7 +26,7 @@ control MyIC(inout ethernet_t a, inout u
      bit<16> tmp_0;
      @name(".NoAction") action NoAction_0() {

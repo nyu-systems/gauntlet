@@ -82,7 +82,6 @@ control MyIngress(inout headers hdr,
     }
 
     apply {
-        //only if IPV4 the rule is applied. Therefore other packets will not be forwarded.
         if (hdr.eth.isValid()){
             mac_check.apply();
         }

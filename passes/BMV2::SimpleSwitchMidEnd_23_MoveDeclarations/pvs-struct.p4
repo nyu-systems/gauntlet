@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/pvs-struct.p4/pruned/pvs-struct-BMV2::SimpleSwitchMidEnd_22_Predication.p4	2019-05-20 17:31:55.765646100 +0200
-+++ dumps/p4_16_samples/pvs-struct.p4/pruned/pvs-struct-BMV2::SimpleSwitchMidEnd_23_MoveDeclarations.p4	2019-05-20 17:31:55.769369600 +0200
+--- dumps/pruned/pvs-struct-BMV2::SimpleSwitchMidEnd_22_Predication.p4	2019-06-08 18:33:29.419496700 +0200
++++ dumps/pruned/pvs-struct-BMV2::SimpleSwitchMidEnd_23_MoveDeclarations.p4	2019-06-08 18:33:29.425061400 +0200
 @@ -31,11 +31,11 @@ control MyVerifyChecksum(inout my_packet
      }
  }

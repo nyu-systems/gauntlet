@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/header-stack-ops-bmv2.p4/pruned/header-stack-ops-bmv2-BMV2::SimpleSwitchMidEnd_12_ExpandLookahead.p4	2019-05-20 17:29:57.190326500 +0200
-+++ dumps/p4_16_samples/header-stack-ops-bmv2.p4/pruned/header-stack-ops-bmv2-BMV2::SimpleSwitchMidEnd_13_ExpandEmit.p4	2019-05-20 17:29:57.194649100 +0200
+--- dumps/pruned/header-stack-ops-bmv2-BMV2::SimpleSwitchMidEnd_12_ExpandLookahead.p4	2019-06-08 18:31:46.127547400 +0200
++++ dumps/pruned/header-stack-ops-bmv2-BMV2::SimpleSwitchMidEnd_13_ExpandEmit.p4	2019-06-08 18:31:46.133066600 +0200
 @@ -400,7 +400,13 @@ control uc(inout headers hdr, inout meta
  control DeparserI(packet_out packet, in headers hdr) {
      apply {

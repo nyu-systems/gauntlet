@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/header-stack-ops-bmv2.p4/pruned/header-stack-ops-bmv2-BMV2::SimpleSwitchMidEnd_24_ConstantFolding.p4	2019-05-20 17:29:57.316107700 +0200
-+++ dumps/p4_16_samples/header-stack-ops-bmv2.p4/pruned/header-stack-ops-bmv2-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-05-20 17:29:57.321003300 +0200
+--- dumps/pruned/header-stack-ops-bmv2-BMV2::SimpleSwitchMidEnd_24_ConstantFolding.p4	2019-06-08 18:31:46.272197800 +0200
++++ dumps/pruned/header-stack-ops-bmv2-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-06-08 18:31:46.277445400 +0200
 @@ -54,78 +54,56 @@ parser parserI(packet_in pkt, out header
      }
  }

@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/concat.p4/pruned/concat-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-05-20 17:29:24.328112700 +0200
-+++ dumps/p4_16_samples/concat.p4/pruned/concat-BMV2::SimpleSwitchMidEnd_26_ConstantFolding.p4	2019-05-20 17:29:24.337217300 +0200
+--- dumps/pruned/concat-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-06-08 18:31:25.756902100 +0200
++++ dumps/pruned/concat-BMV2::SimpleSwitchMidEnd_26_ConstantFolding.p4	2019-06-08 18:31:25.764493900 +0200
 @@ -2,7 +2,7 @@ control proto(out bit<32> x);
  package top(proto _c);
  control c(out bit<32> x) {

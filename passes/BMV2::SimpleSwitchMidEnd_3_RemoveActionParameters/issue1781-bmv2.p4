@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/issue1781-bmv2.p4/pruned/issue1781-bmv2-BMV2::SimpleSwitchMidEnd_2_EliminateSerEnums.p4	2019-05-20 17:30:30.325928200 +0200
-+++ dumps/p4_16_samples/issue1781-bmv2.p4/pruned/issue1781-bmv2-BMV2::SimpleSwitchMidEnd_3_RemoveActionParameters.p4	2019-05-20 17:30:30.354063400 +0200
+--- dumps/pruned/issue1781-bmv2-BMV2::SimpleSwitchMidEnd_2_EliminateSerEnums.p4	2019-06-08 18:32:13.628114800 +0200
++++ dumps/pruned/issue1781-bmv2-BMV2::SimpleSwitchMidEnd_3_RemoveActionParameters.p4	2019-06-08 18:32:13.659221600 +0200
 @@ -10,8 +10,9 @@ parser ParserImpl(packet_in packet, out
      }
  }

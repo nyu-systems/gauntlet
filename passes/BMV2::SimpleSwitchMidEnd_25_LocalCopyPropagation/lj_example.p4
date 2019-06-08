@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/lj_example.p4/pruned/lj_example-BMV2::SimpleSwitchMidEnd_24_ConstantFolding.p4	2019-05-20 17:31:22.813765300 +0200
-+++ dumps/p4_16_samples/lj_example.p4/pruned/lj_example-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-05-20 17:31:22.816297500 +0200
+--- dumps/pruned/lj_example-BMV2::SimpleSwitchMidEnd_24_ConstantFolding.p4	2019-06-08 18:32:56.192980300 +0200
++++ dumps/pruned/lj_example-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-06-08 18:32:56.196790500 +0200
 @@ -31,10 +31,8 @@ parser LJparse(packet_in b, out Parsed_r
      }
  }

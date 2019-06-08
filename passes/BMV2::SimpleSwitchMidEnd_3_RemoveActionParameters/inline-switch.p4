@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/inline-switch.p4/pruned/inline-switch-BMV2::SimpleSwitchMidEnd_2_EliminateSerEnums.p4	2019-05-20 17:30:04.113090500 +0200
-+++ dumps/p4_16_samples/inline-switch.p4/pruned/inline-switch-BMV2::SimpleSwitchMidEnd_3_RemoveActionParameters.p4	2019-05-20 17:30:04.133518100 +0200
+--- dumps/pruned/inline-switch-BMV2::SimpleSwitchMidEnd_2_EliminateSerEnums.p4	2019-06-08 18:31:51.078651200 +0200
++++ dumps/pruned/inline-switch-BMV2::SimpleSwitchMidEnd_3_RemoveActionParameters.p4	2019-06-08 18:31:51.095744500 +0200
 @@ -1,4 +1,5 @@
  control d(out bit<32> x) {
 +    bool cinst_hasReturned_0;

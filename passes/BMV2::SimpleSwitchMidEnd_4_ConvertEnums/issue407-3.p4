@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/issue407-3.p4/pruned/issue407-3-BMV2::SimpleSwitchMidEnd_3_RemoveActionParameters.p4	2019-05-20 17:30:46.711307600 +0200
-+++ dumps/p4_16_samples/issue407-3.p4/pruned/issue407-3-BMV2::SimpleSwitchMidEnd_4_ConvertEnums.p4	2019-05-20 17:30:46.713652600 +0200
+--- dumps/pruned/issue407-3-BMV2::SimpleSwitchMidEnd_3_RemoveActionParameters.p4	2019-06-08 18:32:25.725195600 +0200
++++ dumps/pruned/issue407-3-BMV2::SimpleSwitchMidEnd_4_ConvertEnums.p4	2019-06-08 18:32:25.727479500 +0200
 @@ -11,11 +11,6 @@ struct mystruct2 {
      bit<4>    a;
      bit<4>    b;

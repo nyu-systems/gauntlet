@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/stack_ebpf.p4/pruned/stack_ebpf-BMV2::SimpleSwitchMidEnd_7_TypeChecking.p4	2019-05-20 17:32:11.867909700 +0200
-+++ dumps/p4_16_samples/stack_ebpf.p4/pruned/stack_ebpf-BMV2::SimpleSwitchMidEnd_8_SimplifyKey.p4	2019-05-20 17:32:11.870412800 +0200
+--- dumps/pruned/stack_ebpf-BMV2::SimpleSwitchMidEnd_7_TypeChecking.p4	2019-06-08 18:34:02.854317800 +0200
++++ dumps/pruned/stack_ebpf-BMV2::SimpleSwitchMidEnd_8_SimplifyKey.p4	2019-06-08 18:34:02.857945700 +0200
 @@ -46,9 +46,10 @@ control pipe(inout Headers_t headers, ou
          pass = false;
          headers.ipv4[0].srcAddr = add;

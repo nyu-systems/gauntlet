@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/issue323.p4/pruned/issue323-BMV2::SimpleSwitchMidEnd_2_EliminateSerEnums.p4	2019-05-20 17:30:43.001114900 +0200
-+++ dumps/p4_16_samples/issue323.p4/pruned/issue323-BMV2::SimpleSwitchMidEnd_3_RemoveActionParameters.p4	2019-05-20 17:30:43.029641600 +0200
+--- dumps/pruned/issue323-BMV2::SimpleSwitchMidEnd_2_EliminateSerEnums.p4	2019-06-08 18:32:23.083818200 +0200
++++ dumps/pruned/issue323-BMV2::SimpleSwitchMidEnd_3_RemoveActionParameters.p4	2019-06-08 18:32:23.103776500 +0200
 @@ -32,15 +32,19 @@ control deparser(packet_out b, in Header
      }
  }

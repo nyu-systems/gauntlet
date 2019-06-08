@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/ternary2-bmv2.p4/pruned/ternary2-bmv2-BMV2::SimpleSwitchMidEnd_7_TypeChecking.p4	2019-05-20 17:32:30.010249600 +0200
-+++ dumps/p4_16_samples/ternary2-bmv2.p4/pruned/ternary2-bmv2-BMV2::SimpleSwitchMidEnd_8_SimplifyKey.p4	2019-05-20 17:32:30.013590100 +0200
+--- dumps/pruned/ternary2-bmv2-BMV2::SimpleSwitchMidEnd_7_TypeChecking.p4	2019-06-08 18:34:16.828381900 +0200
++++ dumps/pruned/ternary2-bmv2-BMV2::SimpleSwitchMidEnd_8_SimplifyKey.p4	2019-06-08 18:34:16.831030900 +0200
 @@ -93,9 +93,10 @@ control ingress(inout packet_t hdrs, ino
          }
          default_action = noop_0();

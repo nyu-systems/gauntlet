@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/def-use.p4/pruned/def-use-BMV2::SimpleSwitchMidEnd_24_ConstantFolding.p4	2019-05-20 17:29:30.780175200 +0200
-+++ dumps/p4_16_samples/def-use.p4/pruned/def-use-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-05-20 17:29:30.784818700 +0200
+--- dumps/pruned/def-use-BMV2::SimpleSwitchMidEnd_24_ConstantFolding.p4	2019-06-08 18:31:29.861380800 +0200
++++ dumps/pruned/def-use-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-06-08 18:31:29.863096600 +0200
 @@ -15,7 +15,6 @@ control IngressI(inout H hdr, inout M me
      }
  }

@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/issue1560-bmv2.p4/pruned/issue1560-bmv2-BMV2::SimpleSwitchMidEnd_17_SimplifyComparisons.p4	2019-05-20 17:30:20.345181700 +0200
-+++ dumps/p4_16_samples/issue1560-bmv2.p4/pruned/issue1560-bmv2-BMV2::SimpleSwitchMidEnd_18_CopyStructures.p4	2019-05-20 17:30:20.349744700 +0200
+--- dumps/pruned/issue1560-bmv2-BMV2::SimpleSwitchMidEnd_17_SimplifyComparisons.p4	2019-06-08 18:32:05.560778100 +0200
++++ dumps/pruned/issue1560-bmv2-BMV2::SimpleSwitchMidEnd_18_CopyStructures.p4	2019-06-08 18:32:05.563158400 +0200
 @@ -74,7 +74,10 @@ parser parserI(packet_in pkt, out header
          {
              tmp = pkt.lookahead<bit<8>>();

@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/psa-register1.p4/pruned/psa-register1-BMV2::SimpleSwitchMidEnd_24_ConstantFolding.p4	2019-05-20 17:31:54.148660500 +0200
-+++ dumps/p4_16_samples/psa-register1.p4/pruned/psa-register1-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-05-20 17:31:54.152007500 +0200
+--- dumps/pruned/psa-register1-BMV2::SimpleSwitchMidEnd_24_ConstantFolding.p4	2019-06-08 18:33:27.145583700 +0200
++++ dumps/pruned/psa-register1-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-06-08 18:33:27.147430700 +0200
 @@ -20,12 +20,11 @@ parser MyEP(packet_in buffer, out EMPTY
      }
  }

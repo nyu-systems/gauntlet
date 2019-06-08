@@ -1,12 +1,30 @@
 import os
 import glob
 import shutil
+import argparse
 
 # configure logging
 import logging
 logging.basicConfig(format="%(levelname)s:%(message)s",
                     level=logging.INFO)
 log = logging.getLogger(__name__)
+PARSER = argparse.ArgumentParser()
+PARSER.add_argument("-i", "--p4_input", dest="p4_input",
+                    default="p4_16_samples", help="A P4 file or path to a "
+                    "directory which contains P4 files.")
+
+FAILURE = 1
+SUCCESS = 0
+
+
+def check_path(path):
+    """Checks if a path is an actual directory and converts the input
+        to an absolute path"""
+    if not os.path.exists(path):
+        msg = "{0} does not exist".format(path)
+        raise argparse.ArgumentTypeError(msg)
+    else:
+        return os.path.abspath(os.path.expanduser(path))
 
 
 def check_dir(directory):
@@ -32,36 +50,45 @@ def prune_files(p4_dmp_dir):
     return p4_prune_dir
 
 
-def diff_files(p4_prune_dir, p4_file):
+def diff_files(pass_dir, p4_prune_dir, p4_file):
     passes = []
     with open("passes.txt") as f:
         passes = f.read().splitlines()
+    p4_base = os.path.splitext(os.path.basename(p4_file))[0]
 
     for index, p4_pass in enumerate(passes[1:]):
         pass_before = glob.glob(f"{p4_prune_dir}/*{passes[index]}*.p4")
         pass_after = glob.glob(f"{p4_prune_dir}/*{passes[index+1]}*.p4")
         if not(pass_before and pass_after):
-            return
-        pass_dir = f"passes/{p4_pass}"
-        diff_file = f"{pass_dir}/{p4_file}"
-        check_dir(pass_dir)
+            log.error(f"Could not find the P4 files!")
+            return FAILURE
+        # pass_before = f"{p4_prune_dir}/{p4_base}-{passes[index]}.p4"
+        # pass_after = f"{p4_prune_dir}/{p4_base}-{passes[index+1]}.p4"
+        pass_before = pass_before[0]
+        pass_after = pass_after[0]
+        diff_dir = f"{pass_dir}/{p4_pass}"
+        diff_file = f"{diff_dir}/{p4_file}"
+        check_dir(diff_dir)
         diff_cmd = "diff -rupP "
-        diff_cmd += f"{pass_before[0]} {pass_after[0]}"
+        diff_cmd += f"{pass_before} {pass_after}"
         diff_cmd += f"> {diff_file}"
         log.debug(f"Creating a diff of the file")
         log.debug(f"Command: {diff_cmd}")
         os.system(diff_cmd)
         if os.stat(diff_file).st_size == 0:
             os.remove(diff_file)
+        else:
+            shutil.copyfile(pass_after, f"{diff_dir}/full_{p4_file}")
+    return SUCCESS
 
 
-def get_links_to_passes():
-    p4_dir = "passes"
+def get_links_to_passes(pass_dir, p4_input):
+    p4_name = os.path.splitext(os.path.basename(p4_input))[0]
     passes = {}
-    for p4_file in glob.glob(f"{p4_dir}/**/*.p4"):
+    for p4_file in glob.glob(f"{pass_dir}/**/full_{p4_name}*.p4"):
         split_p4 = p4_file.split('/')
         passes.setdefault(split_p4[1], []).append(split_p4[2])
-    with open("matches.txt", 'w+') as match_file:
+    with open(f"{pass_dir}/{p4_name}_matches.txt", 'w+') as match_file:
         for key in passes.keys():
             match_file.write(key + "###########\n")
             for p4_test in passes[key]:
@@ -70,24 +97,37 @@ def get_links_to_passes():
                 match_file.write(f"{src_dir}{p4_test}\n")
 
 
-def main():
+def analyse_p4_file(p4_file, pass_dir):
+    log.info(f"Analysing {p4_file}")
+    p4_dmp_dir = f"dumps"
+    check_dir(p4_dmp_dir)
+    p4_cmd = "p4c-bm2-ss "
+    p4_cmd += "--top4 FrontEndLast,MidEnd "
+    p4_cmd += f"--dump {p4_dmp_dir} "
+    p4_cmd += p4_file
+    log.debug(f"Running dumps with command {p4_cmd}")
+    os.system(p4_cmd)
+    prune_dir = prune_files(p4_dmp_dir)
+    err = diff_files(pass_dir, prune_dir, os.path.basename(p4_file))
+    shutil.rmtree(p4_dmp_dir)
+    return err
 
-    p4_dir = "p4_16_samples"
-    for p4_file in glob.glob(f"{p4_dir}/*.p4"):
-        log.info(f"Analysing {p4_file}")
-        p4_dmp_dir = f"dumps/{p4_file}"
-        check_dir(p4_dmp_dir)
-        p4_cmd = "p4c-bm2-ss "
-        p4_cmd += "--top4 FrontEndLast,MidEnd "
-        p4_cmd += f"--dump {p4_dmp_dir} "
-        p4_cmd += p4_file
-        log.debug(f"Running dumps with command {p4_cmd}")
-        os.system(p4_cmd)
-        prune_dir = prune_files(p4_dmp_dir)
-        diff_files(prune_dir, os.path.basename(p4_file))
-        shutil.rmtree(p4_dmp_dir)
-    shutil.rmtree("dumps")
-    get_links_to_passes()
+
+def main():
+    # Parse options and process argv
+    args = PARSER.parse_args()
+    p4_input = args.p4_input
+    if (os.path.isfile(p4_input)):
+        pass_dir = "single_passes"
+        err = analyse_p4_file(p4_input, pass_dir)
+        if not err == FAILURE:
+            get_links_to_passes(pass_dir, p4_input)
+
+    else:
+        pass_dir = "passes"
+        for p4_file in glob.glob(f"{p4_input}/*.p4"):
+            analyse_p4_file(p4_file, pass_dir)
+        get_links_to_passes(pass_dir, p4_input)
 
 
 if __name__ == '__main__':

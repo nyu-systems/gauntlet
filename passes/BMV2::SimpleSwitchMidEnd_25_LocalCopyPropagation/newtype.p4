@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/newtype.p4/pruned/newtype-BMV2::SimpleSwitchMidEnd_24_ConstantFolding.p4	2019-05-20 17:31:27.112121300 +0200
-+++ dumps/p4_16_samples/newtype.p4/pruned/newtype-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-05-20 17:31:27.114149000 +0200
+--- dumps/pruned/newtype-BMV2::SimpleSwitchMidEnd_24_ConstantFolding.p4	2019-06-08 18:33:00.614885400 +0200
++++ dumps/pruned/newtype-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-06-08 18:33:00.617546100 +0200
 @@ -10,10 +10,6 @@ header H {
  }
  control c(out B32 x) {

@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/issue1127-bmv2.p4/pruned/issue1127-bmv2-BMV2::SimpleSwitchMidEnd_18_CopyStructures.p4	2019-05-20 17:30:09.367135400 +0200
-+++ dumps/p4_16_samples/issue1127-bmv2.p4/pruned/issue1127-bmv2-BMV2::SimpleSwitchMidEnd_19_NestedStructs.p4	2019-05-20 17:30:09.369358400 +0200
+--- dumps/pruned/issue1127-bmv2-BMV2::SimpleSwitchMidEnd_18_CopyStructures.p4	2019-06-08 18:31:55.200937300 +0200
++++ dumps/pruned/issue1127-bmv2-BMV2::SimpleSwitchMidEnd_19_NestedStructs.p4	2019-06-08 18:31:55.203826600 +0200
 @@ -17,50 +17,50 @@ parser parserI(packet_in pkt, out header
      }
  }

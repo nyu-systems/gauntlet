@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/issue242.p4/pruned/issue242-BMV2::SimpleSwitchMidEnd_21_RemoveSelectBooleans.p4	2019-05-20 17:30:36.961100800 +0200
-+++ dumps/p4_16_samples/issue242.p4/pruned/issue242-BMV2::SimpleSwitchMidEnd_22_Predication.p4	2019-05-20 17:30:36.967605500 +0200
+--- dumps/pruned/issue242-BMV2::SimpleSwitchMidEnd_21_RemoveSelectBooleans.p4	2019-06-08 18:32:18.694110600 +0200
++++ dumps/pruned/issue242-BMV2::SimpleSwitchMidEnd_22_Predication.p4	2019-06-08 18:32:18.696049200 +0200
 @@ -60,15 +60,31 @@ control Eg(inout Headers hdrs, inout Met
              val.field1 = 32w0;
          }

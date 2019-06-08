@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/issue870_ebpf.p4/pruned/issue870_ebpf-BMV2::SimpleSwitchMidEnd_31_TableHit.p4	2019-05-20 17:31:08.503229600 +0200
-+++ dumps/p4_16_samples/issue870_ebpf.p4/pruned/issue870_ebpf-BMV2::SimpleSwitchMidEnd_32_RemoveLeftSlices.p4	2019-05-20 17:31:08.506534600 +0200
+--- dumps/pruned/issue870_ebpf-BMV2::SimpleSwitchMidEnd_31_TableHit.p4	2019-06-08 18:32:43.486208800 +0200
++++ dumps/pruned/issue870_ebpf-BMV2::SimpleSwitchMidEnd_32_RemoveLeftSlices.p4	2019-06-08 18:32:43.489537500 +0200
 @@ -44,7 +44,7 @@ control pipe(inout Headers_t headers, ou
      }
      @name("pipe.Reject") action Reject_0(IPv4Address add) {

@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/issue1806.p4/pruned/issue1806-BMV2::SimpleSwitchMidEnd_7_TypeChecking.p4	2019-05-20 17:30:30.764220000 +0200
-+++ dumps/p4_16_samples/issue1806.p4/pruned/issue1806-BMV2::SimpleSwitchMidEnd_8_SimplifyKey.p4	2019-05-20 17:30:30.768113800 +0200
+--- dumps/pruned/issue1806-BMV2::SimpleSwitchMidEnd_7_TypeChecking.p4	2019-06-08 18:32:14.136572900 +0200
++++ dumps/pruned/issue1806-BMV2::SimpleSwitchMidEnd_8_SimplifyKey.p4	2019-06-08 18:32:14.138578900 +0200
 @@ -18,9 +18,10 @@ control c(inout Headers h, inout standar
      }
      @name("c.do_act") action do_act_0() {

@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/tuple1.p4/pruned/tuple1-BMV2::SimpleSwitchMidEnd_15_StrengthReduction.p4	2019-05-20 17:32:31.451421900 +0200
-+++ dumps/p4_16_samples/tuple1.p4/pruned/tuple1-BMV2::SimpleSwitchMidEnd_16_EliminateTuples.p4	2019-05-20 17:32:31.455169300 +0200
+--- dumps/pruned/tuple1-BMV2::SimpleSwitchMidEnd_15_StrengthReduction.p4	2019-06-08 18:34:17.946620400 +0200
++++ dumps/pruned/tuple1-BMV2::SimpleSwitchMidEnd_16_EliminateTuples.p4	2019-06-08 18:34:17.948816400 +0200
 @@ -1,11 +1,15 @@
  extern void f<T>(in T data);
  control proto();

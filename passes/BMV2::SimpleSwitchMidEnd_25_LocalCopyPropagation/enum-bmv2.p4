@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/enum-bmv2.p4/pruned/enum-bmv2-BMV2::SimpleSwitchMidEnd_24_ConstantFolding.p4	2019-05-20 17:29:38.881206100 +0200
-+++ dumps/p4_16_samples/enum-bmv2.p4/pruned/enum-bmv2-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-05-20 17:29:38.884845200 +0200
+--- dumps/pruned/enum-bmv2-BMV2::SimpleSwitchMidEnd_24_ConstantFolding.p4	2019-06-08 18:31:33.834540400 +0200
++++ dumps/pruned/enum-bmv2-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-06-08 18:31:33.836329500 +0200
 @@ -34,10 +34,8 @@ control deparser(packet_out b, in Header
      }
  }

@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/pipe.p4/pruned/pipe-BMV2::SimpleSwitchMidEnd_28_ValidateTableProperties.p4	2019-05-20 17:32:19.851007000 +0200
-+++ dumps/p4_16_samples/pipe.p4/pruned/pipe-BMV2::SimpleSwitchMidEnd_29_SimplifyControlFlow.p4	2019-05-20 17:32:19.939372100 +0200
+--- dumps/pruned/pipe-BMV2::SimpleSwitchMidEnd_28_ValidateTableProperties.p4	2019-06-08 18:34:08.316533000 +0200
++++ dumps/pruned/pipe-BMV2::SimpleSwitchMidEnd_29_SimplifyControlFlow.p4	2019-06-08 18:34:08.370214200 +0200
 @@ -62,27 +62,15 @@ control Q_pipe(inout TArg1 qArg1, inout
          const default_action = NoAction_0();
      }

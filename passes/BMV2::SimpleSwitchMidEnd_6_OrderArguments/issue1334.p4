@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/issue1334.p4/pruned/issue1334-BMV2::SimpleSwitchMidEnd_5_VisitFunctor.p4	2019-05-20 17:30:13.209804700 +0200
-+++ dumps/p4_16_samples/issue1334.p4/pruned/issue1334-BMV2::SimpleSwitchMidEnd_6_OrderArguments.p4	2019-05-20 17:30:13.212422700 +0200
+--- dumps/pruned/issue1334-BMV2::SimpleSwitchMidEnd_5_VisitFunctor.p4	2019-06-08 18:31:59.227099900 +0200
++++ dumps/pruned/issue1334-BMV2::SimpleSwitchMidEnd_6_OrderArguments.p4	2019-06-08 18:31:59.229459700 +0200
 @@ -17,12 +17,12 @@ control c() {
          f(a = 32w2);
          f(b = 16w1);

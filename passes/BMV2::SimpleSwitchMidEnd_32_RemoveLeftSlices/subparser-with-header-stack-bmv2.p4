@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/subparser-with-header-stack-bmv2.p4/pruned/subparser-with-header-stack-bmv2-BMV2::SimpleSwitchMidEnd_31_TableHit.p4	2019-05-20 17:32:18.379770500 +0200
-+++ dumps/p4_16_samples/subparser-with-header-stack-bmv2.p4/pruned/subparser-with-header-stack-bmv2-BMV2::SimpleSwitchMidEnd_32_RemoveLeftSlices.p4	2019-05-20 17:32:18.383573100 +0200
+--- dumps/pruned/subparser-with-header-stack-bmv2-BMV2::SimpleSwitchMidEnd_31_TableHit.p4	2019-06-08 18:34:07.456388300 +0200
++++ dumps/pruned/subparser-with-header-stack-bmv2-BMV2::SimpleSwitchMidEnd_32_RemoveLeftSlices.p4	2019-06-08 18:34:07.458185900 +0200
 @@ -79,15 +79,15 @@ control cIngress(inout headers hdr, inou
      apply {
          hdr.h1.h2_valid_bits = 8w0;

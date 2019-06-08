@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/inline-stack-bmv2.p4/pruned/inline-stack-bmv2-BMV2::SimpleSwitchMidEnd_18_CopyStructures.p4	2019-05-20 17:30:03.737724700 +0200
-+++ dumps/p4_16_samples/inline-stack-bmv2.p4/pruned/inline-stack-bmv2-BMV2::SimpleSwitchMidEnd_19_NestedStructs.p4	2019-05-20 17:30:03.740791700 +0200
+--- dumps/pruned/inline-stack-bmv2-BMV2::SimpleSwitchMidEnd_18_CopyStructures.p4	2019-06-08 18:31:50.785754600 +0200
++++ dumps/pruned/inline-stack-bmv2-BMV2::SimpleSwitchMidEnd_19_NestedStructs.p4	2019-06-08 18:31:50.787828500 +0200
 @@ -23,19 +23,19 @@ control ComputeChecksumI(inout H hdr, in
      }
  }

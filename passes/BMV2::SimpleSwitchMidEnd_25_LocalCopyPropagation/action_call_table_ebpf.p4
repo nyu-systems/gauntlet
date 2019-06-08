@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/action_call_table_ebpf.p4/pruned/action_call_table_ebpf-BMV2::SimpleSwitchMidEnd_24_ConstantFolding.p4	2019-05-20 17:29:00.989356600 +0200
-+++ dumps/p4_16_samples/action_call_table_ebpf.p4/pruned/action_call_table_ebpf-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-05-20 17:29:00.992439600 +0200
+--- dumps/pruned/action_call_table_ebpf-BMV2::SimpleSwitchMidEnd_24_ConstantFolding.p4	2019-06-08 18:31:00.744153600 +0200
++++ dumps/pruned/action_call_table_ebpf-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-06-08 18:31:00.746634200 +0200
 @@ -8,26 +8,16 @@ parser prs(packet_in p, out Headers_t he
      }
  }

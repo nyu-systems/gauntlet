@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/issue407-3.p4/pruned/issue407-3-BMV2::SimpleSwitchMidEnd_15_StrengthReduction.p4	2019-05-20 17:30:46.634750900 +0200
-+++ dumps/p4_16_samples/issue407-3.p4/pruned/issue407-3-BMV2::SimpleSwitchMidEnd_16_EliminateTuples.p4	2019-05-20 17:30:46.637023400 +0200
+--- dumps/pruned/issue407-3-BMV2::SimpleSwitchMidEnd_15_StrengthReduction.p4	2019-06-08 18:32:25.646892100 +0200
++++ dumps/pruned/issue407-3-BMV2::SimpleSwitchMidEnd_16_EliminateTuples.p4	2019-06-08 18:32:25.650145600 +0200
 @@ -16,7 +16,11 @@ header Ethernet_h {
      EthernetAddress srcAddr;
      bit<16>         etherType;

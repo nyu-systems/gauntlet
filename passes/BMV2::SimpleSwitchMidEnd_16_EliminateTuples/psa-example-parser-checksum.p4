@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/psa-example-parser-checksum.p4/pruned/psa-example-parser-checksum-BMV2::SimpleSwitchMidEnd_15_StrengthReduction.p4	2019-05-20 17:32:22.112111900 +0200
-+++ dumps/p4_16_samples/psa-example-parser-checksum.p4/pruned/psa-example-parser-checksum-BMV2::SimpleSwitchMidEnd_16_EliminateTuples.p4	2019-05-20 17:32:22.116190500 +0200
+--- dumps/pruned/psa-example-parser-checksum-BMV2::SimpleSwitchMidEnd_15_StrengthReduction.p4	2019-06-08 18:34:10.539475100 +0200
++++ dumps/pruned/psa-example-parser-checksum-BMV2::SimpleSwitchMidEnd_16_EliminateTuples.p4	2019-06-08 18:34:10.541704800 +0200
 @@ -51,6 +51,19 @@ struct headers {
  }
  typedef bit<32> PacketCounter_t;

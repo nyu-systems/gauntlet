@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/issue655.p4/pruned/issue655-BMV2::SimpleSwitchMidEnd_15_StrengthReduction.p4	2019-05-20 17:31:00.733097500 +0200
-+++ dumps/p4_16_samples/issue655.p4/pruned/issue655-BMV2::SimpleSwitchMidEnd_16_EliminateTuples.p4	2019-05-20 17:31:00.737012600 +0200
+--- dumps/pruned/issue655-BMV2::SimpleSwitchMidEnd_15_StrengthReduction.p4	2019-06-08 18:32:38.395514600 +0200
++++ dumps/pruned/issue655-BMV2::SimpleSwitchMidEnd_16_EliminateTuples.p4	2019-06-08 18:32:38.397514200 +0200
 @@ -29,14 +29,17 @@ control cEgress(inout Parsed_packet hdr,
      apply {
      }

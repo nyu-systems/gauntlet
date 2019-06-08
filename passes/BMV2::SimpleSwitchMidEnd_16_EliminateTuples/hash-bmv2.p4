@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/hash-bmv2.p4/pruned/hash-bmv2-BMV2::SimpleSwitchMidEnd_15_StrengthReduction.p4	2019-05-20 17:29:54.209941100 +0200
-+++ dumps/p4_16_samples/hash-bmv2.p4/pruned/hash-bmv2-BMV2::SimpleSwitchMidEnd_16_EliminateTuples.p4	2019-05-20 17:29:54.215839900 +0200
+--- dumps/pruned/hash-bmv2-BMV2::SimpleSwitchMidEnd_15_StrengthReduction.p4	2019-06-08 18:31:44.641946400 +0200
++++ dumps/pruned/hash-bmv2-BMV2::SimpleSwitchMidEnd_16_EliminateTuples.p4	2019-06-08 18:31:44.643647400 +0200
 @@ -26,9 +26,12 @@ control ComputeChecksumI(inout H hdr, in
      apply {
      }

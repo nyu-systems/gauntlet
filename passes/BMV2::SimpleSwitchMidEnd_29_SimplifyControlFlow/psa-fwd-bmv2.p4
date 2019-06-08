@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/psa-fwd-bmv2.p4/pruned/psa-fwd-bmv2-BMV2::SimpleSwitchMidEnd_28_ValidateTableProperties.p4	2019-05-20 17:31:46.770305000 +0200
-+++ dumps/p4_16_samples/psa-fwd-bmv2.p4/pruned/psa-fwd-bmv2-BMV2::SimpleSwitchMidEnd_29_SimplifyControlFlow.p4	2019-05-20 17:31:46.853771400 +0200
+--- dumps/pruned/psa-fwd-bmv2-BMV2::SimpleSwitchMidEnd_28_ValidateTableProperties.p4	2019-06-08 18:33:19.438615100 +0200
++++ dumps/pruned/psa-fwd-bmv2-BMV2::SimpleSwitchMidEnd_29_SimplifyControlFlow.p4	2019-06-08 18:33:19.522213200 +0200
 @@ -21,18 +21,8 @@ parser IngressParserImpl(packet_in buffe
      fwd_metadata_t user_meta_2_fwd_metadata;
      state start {

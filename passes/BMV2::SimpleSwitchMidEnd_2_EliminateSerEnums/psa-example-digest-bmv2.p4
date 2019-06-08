@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/psa-example-digest-bmv2.p4/pruned/psa-example-digest-bmv2-BMV2::SimpleSwitchMidEnd_1_EliminateNewtype.p4	2019-05-20 17:31:44.966810000 +0200
-+++ dumps/p4_16_samples/psa-example-digest-bmv2.p4/pruned/psa-example-digest-bmv2-BMV2::SimpleSwitchMidEnd_2_EliminateSerEnums.p4	2019-05-20 17:31:44.832396100 +0200
+--- dumps/pruned/psa-example-digest-bmv2-BMV2::SimpleSwitchMidEnd_1_EliminateNewtype.p4	2019-06-08 18:33:17.871618200 +0200
++++ dumps/pruned/psa-example-digest-bmv2-BMV2::SimpleSwitchMidEnd_2_EliminateSerEnums.p4	2019-06-08 18:33:17.899539700 +0200
 @@ -1,14 +1,5 @@
  #include <core.p4>
  #include <psa.p4>

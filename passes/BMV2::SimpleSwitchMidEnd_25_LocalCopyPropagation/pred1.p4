@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/pred1.p4/pruned/pred1-BMV2::SimpleSwitchMidEnd_24_ConstantFolding.p4	2019-05-20 17:31:33.122891700 +0200
-+++ dumps/p4_16_samples/pred1.p4/pruned/pred1-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-05-20 17:31:33.125367600 +0200
+--- dumps/pruned/pred1-BMV2::SimpleSwitchMidEnd_24_ConstantFolding.p4	2019-06-08 18:33:06.762620400 +0200
++++ dumps/pruned/pred1-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-06-08 18:33:06.767163500 +0200
 @@ -3,13 +3,9 @@
  control empty();
  package top(empty e);

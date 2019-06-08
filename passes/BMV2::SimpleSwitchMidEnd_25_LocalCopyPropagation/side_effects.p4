@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/side_effects.p4/pruned/side_effects-BMV2::SimpleSwitchMidEnd_24_ConstantFolding.p4	2019-05-20 17:31:59.634029600 +0200
-+++ dumps/p4_16_samples/side_effects.p4/pruned/side_effects-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-05-20 17:31:59.636210300 +0200
+--- dumps/pruned/side_effects-BMV2::SimpleSwitchMidEnd_24_ConstantFolding.p4	2019-06-08 18:33:53.800861300 +0200
++++ dumps/pruned/side_effects-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-06-08 18:33:53.803406400 +0200
 @@ -9,39 +9,32 @@ control my() {
      bit<1> a;
      H[2] s;

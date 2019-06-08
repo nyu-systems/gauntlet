@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/nested-tuple1.p4/pruned/nested-tuple1-BMV2::SimpleSwitchMidEnd_24_ConstantFolding.p4	2019-05-20 17:31:26.472907700 +0200
-+++ dumps/p4_16_samples/nested-tuple1.p4/pruned/nested-tuple1-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-05-20 17:31:26.476183800 +0200
+--- dumps/pruned/nested-tuple1-BMV2::SimpleSwitchMidEnd_24_ConstantFolding.p4	2019-06-08 18:33:00.081071400 +0200
++++ dumps/pruned/nested-tuple1-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-06-08 18:33:00.083465900 +0200
 @@ -15,8 +15,6 @@ control c(inout bit<1> r) {
      T s_0_f1_field;
      T s_0_f1_field_0;

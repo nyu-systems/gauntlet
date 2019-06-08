@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/function.p4/pruned/function-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-05-20 17:29:48.309898400 +0200
-+++ dumps/p4_16_samples/function.p4/pruned/function-BMV2::SimpleSwitchMidEnd_26_ConstantFolding.p4	2019-05-20 17:29:48.312751000 +0200
+--- dumps/pruned/function-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-06-08 18:31:40.945318100 +0200
++++ dumps/pruned/function-BMV2::SimpleSwitchMidEnd_26_ConstantFolding.p4	2019-06-08 18:31:40.948275700 +0200
 @@ -4,10 +4,7 @@ control c(out bit<16> b) {
      apply {
          {

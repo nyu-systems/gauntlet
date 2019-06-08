@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/issue512.p4/pruned/issue512-BMV2::SimpleSwitchMidEnd_21_RemoveSelectBooleans.p4	2019-05-20 17:30:53.679658900 +0200
-+++ dumps/p4_16_samples/issue512.p4/pruned/issue512-BMV2::SimpleSwitchMidEnd_22_Predication.p4	2019-05-20 17:30:53.684941900 +0200
+--- dumps/pruned/issue512-BMV2::SimpleSwitchMidEnd_21_RemoveSelectBooleans.p4	2019-06-08 18:32:32.770790600 +0200
++++ dumps/pruned/issue512-BMV2::SimpleSwitchMidEnd_22_Predication.p4	2019-06-08 18:32:32.773999300 +0200
 @@ -29,12 +29,27 @@ control cIngress(inout Parsed_packet hdr
      @name("cIngress.foo") action foo_0() {
          hasReturned_0 = false;

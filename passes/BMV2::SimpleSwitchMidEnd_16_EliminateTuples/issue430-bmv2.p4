@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/issue430-bmv2.p4/pruned/issue430-bmv2-BMV2::SimpleSwitchMidEnd_15_StrengthReduction.p4	2019-05-20 17:30:49.002462100 +0200
-+++ dumps/p4_16_samples/issue430-bmv2.p4/pruned/issue430-bmv2-BMV2::SimpleSwitchMidEnd_16_EliminateTuples.p4	2019-05-20 17:30:49.005063700 +0200
+--- dumps/pruned/issue430-bmv2-BMV2::SimpleSwitchMidEnd_15_StrengthReduction.p4	2019-06-08 18:32:27.864884200 +0200
++++ dumps/pruned/issue430-bmv2-BMV2::SimpleSwitchMidEnd_16_EliminateTuples.p4	2019-06-08 18:32:27.867669600 +0200
 @@ -17,10 +17,13 @@ control MyVerifyChecksum(inout my_packet
      apply {
      }

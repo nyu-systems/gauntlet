@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/issue355-bmv2.p4/pruned/issue355-bmv2-BMV2::SimpleSwitchMidEnd_11_SimplifySelectCases.p4	2019-05-20 17:30:43.754402400 +0200
-+++ dumps/p4_16_samples/issue355-bmv2.p4/pruned/issue355-bmv2-BMV2::SimpleSwitchMidEnd_12_ExpandLookahead.p4	2019-05-20 17:30:43.761196100 +0200
+--- dumps/pruned/issue355-bmv2-BMV2::SimpleSwitchMidEnd_11_SimplifySelectCases.p4	2019-06-08 18:32:23.562132600 +0200
++++ dumps/pruned/issue355-bmv2-BMV2::SimpleSwitchMidEnd_12_ExpandLookahead.p4	2019-06-08 18:32:23.563962400 +0200
 @@ -15,8 +15,13 @@ control DeparserI(packet_out packet, in
  }
  parser parserI(packet_in pkt, out H hdr, inout M meta, inout standard_metadata_t stdmeta) {

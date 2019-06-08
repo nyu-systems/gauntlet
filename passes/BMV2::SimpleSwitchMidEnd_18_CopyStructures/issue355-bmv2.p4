@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/issue355-bmv2.p4/pruned/issue355-bmv2-BMV2::SimpleSwitchMidEnd_17_SimplifyComparisons.p4	2019-05-20 17:30:43.780543500 +0200
-+++ dumps/p4_16_samples/issue355-bmv2.p4/pruned/issue355-bmv2-BMV2::SimpleSwitchMidEnd_18_CopyStructures.p4	2019-05-20 17:30:43.783679600 +0200
+--- dumps/pruned/issue355-bmv2-BMV2::SimpleSwitchMidEnd_17_SimplifyComparisons.p4	2019-06-08 18:32:23.573737400 +0200
++++ dumps/pruned/issue355-bmv2-BMV2::SimpleSwitchMidEnd_18_CopyStructures.p4	2019-06-08 18:32:23.577351800 +0200
 @@ -20,7 +20,11 @@ parser parserI(packet_in pkt, out H hdr,
          {
              tmp = pkt.lookahead<bit<112>>();

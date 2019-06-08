@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/equality.p4/pruned/equality-BMV2::SimpleSwitchMidEnd_16_EliminateTuples.p4	2019-05-20 17:29:41.079921900 +0200
-+++ dumps/p4_16_samples/equality.p4/pruned/equality-BMV2::SimpleSwitchMidEnd_17_SimplifyComparisons.p4	2019-05-20 17:29:41.083251500 +0200
+--- dumps/pruned/equality-BMV2::SimpleSwitchMidEnd_16_EliminateTuples.p4	2019-06-08 18:31:35.156437100 +0200
++++ dumps/pruned/equality-BMV2::SimpleSwitchMidEnd_17_SimplifyComparisons.p4	2019-06-08 18:31:35.160120200 +0200
 @@ -19,13 +19,13 @@ control c(out bit<1> x) {
          if (a_1 == b_1) 
              x = 1w1;

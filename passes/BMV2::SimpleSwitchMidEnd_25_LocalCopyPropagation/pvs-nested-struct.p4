@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/pvs-nested-struct.p4/pruned/pvs-nested-struct-BMV2::SimpleSwitchMidEnd_24_ConstantFolding.p4	2019-05-20 17:32:23.338626800 +0200
-+++ dumps/p4_16_samples/pvs-nested-struct.p4/pruned/pvs-nested-struct-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-05-20 17:32:23.341931300 +0200
+--- dumps/pruned/pvs-nested-struct-BMV2::SimpleSwitchMidEnd_24_ConstantFolding.p4	2019-06-08 18:34:11.347154800 +0200
++++ dumps/pruned/pvs-nested-struct-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-06-08 18:34:11.350230600 +0200
 @@ -35,7 +35,6 @@ control MyVerifyChecksum(inout my_packet
      }
  }

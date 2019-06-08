@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/struct_init.p4/pruned/struct_init-BMV2::SimpleSwitchMidEnd_16_EliminateTuples.p4	2019-05-20 17:32:17.596010200 +0200
-+++ dumps/p4_16_samples/struct_init.p4/pruned/struct_init-BMV2::SimpleSwitchMidEnd_17_SimplifyComparisons.p4	2019-05-20 17:32:17.598235600 +0200
+--- dumps/pruned/struct_init-BMV2::SimpleSwitchMidEnd_16_EliminateTuples.p4	2019-06-08 18:34:06.668595800 +0200
++++ dumps/pruned/struct_init-BMV2::SimpleSwitchMidEnd_17_SimplifyComparisons.p4	2019-06-08 18:34:06.676267700 +0200
 @@ -6,7 +6,7 @@ struct metadata_t {
  }
  control I(inout metadata_t meta) {

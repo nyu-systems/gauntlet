@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/named-arg1.p4/pruned/named-arg1-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-05-20 17:31:25.357458700 +0200
-+++ dumps/p4_16_samples/named-arg1.p4/pruned/named-arg1-BMV2::SimpleSwitchMidEnd_26_ConstantFolding.p4	2019-05-20 17:31:25.359614200 +0200
+--- dumps/pruned/named-arg1-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-06-08 18:32:59.137304700 +0200
++++ dumps/pruned/named-arg1-BMV2::SimpleSwitchMidEnd_26_ConstantFolding.p4	2019-06-08 18:32:59.140196500 +0200
 @@ -15,10 +15,10 @@ control c(out bool b) {
      bit<16> xv;
      bool b_3;

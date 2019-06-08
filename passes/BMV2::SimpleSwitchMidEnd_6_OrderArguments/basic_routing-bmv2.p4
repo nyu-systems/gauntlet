@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/basic_routing-bmv2.p4/pruned/basic_routing-bmv2-BMV2::SimpleSwitchMidEnd_5_VisitFunctor.p4	2019-05-20 17:29:10.804456600 +0200
-+++ dumps/p4_16_samples/basic_routing-bmv2.p4/pruned/basic_routing-bmv2-BMV2::SimpleSwitchMidEnd_6_OrderArguments.p4	2019-05-20 17:29:10.808180100 +0200
+--- dumps/pruned/basic_routing-bmv2-BMV2::SimpleSwitchMidEnd_5_VisitFunctor.p4	2019-06-08 18:31:09.970819700 +0200
++++ dumps/pruned/basic_routing-bmv2-BMV2::SimpleSwitchMidEnd_6_OrderArguments.p4	2019-06-08 18:31:09.972475800 +0200
 @@ -184,12 +184,12 @@ control DeparserImpl(packet_out packet,
  }
  control verifyChecksum(inout headers hdr, inout metadata meta) {

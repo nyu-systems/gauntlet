@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/issue1642-bmv2.p4/pruned/issue1642-bmv2-BMV2::SimpleSwitchMidEnd_28_ValidateTableProperties.p4	2019-05-20 17:30:23.712499200 +0200
-+++ dumps/p4_16_samples/issue1642-bmv2.p4/pruned/issue1642-bmv2-BMV2::SimpleSwitchMidEnd_29_SimplifyControlFlow.p4	2019-05-20 17:30:23.782845800 +0200
+--- dumps/pruned/issue1642-bmv2-BMV2::SimpleSwitchMidEnd_28_ValidateTableProperties.p4	2019-06-08 18:32:07.684002300 +0200
++++ dumps/pruned/issue1642-bmv2-BMV2::SimpleSwitchMidEnd_29_SimplifyControlFlow.p4	2019-06-08 18:32:07.723243500 +0200
 @@ -26,10 +26,8 @@ control ingress(inout parsed_packet_t hd
      apply {
          local_metadata.s.setValid();

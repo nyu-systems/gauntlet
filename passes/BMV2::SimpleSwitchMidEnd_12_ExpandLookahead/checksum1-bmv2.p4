@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/checksum1-bmv2.p4/pruned/checksum1-bmv2-BMV2::SimpleSwitchMidEnd_11_SimplifySelectCases.p4	2019-05-20 17:29:17.881552600 +0200
-+++ dumps/p4_16_samples/checksum1-bmv2.p4/pruned/checksum1-bmv2-BMV2::SimpleSwitchMidEnd_12_ExpandLookahead.p4	2019-05-20 17:29:17.884162100 +0200
+--- dumps/pruned/checksum1-bmv2-BMV2::SimpleSwitchMidEnd_11_SimplifySelectCases.p4	2019-06-08 18:31:17.433155300 +0200
++++ dumps/pruned/checksum1-bmv2-BMV2::SimpleSwitchMidEnd_12_ExpandLookahead.p4	2019-06-08 18:31:17.435947700 +0200
 @@ -61,6 +61,7 @@ parser parserI(packet_in pkt, out header
      bit<9> tmp_6;
      bit<9> tmp_7;

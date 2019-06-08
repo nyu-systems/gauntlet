@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/issue1025-bmv2.p4/pruned/issue1025-bmv2-BMV2::SimpleSwitchMidEnd_28_ValidateTableProperties.p4	2019-05-20 17:30:29.292858000 +0200
-+++ dumps/p4_16_samples/issue1025-bmv2.p4/pruned/issue1025-bmv2-BMV2::SimpleSwitchMidEnd_29_SimplifyControlFlow.p4	2019-05-20 17:30:29.369434400 +0200
+--- dumps/pruned/issue1025-bmv2-BMV2::SimpleSwitchMidEnd_28_ValidateTableProperties.p4	2019-06-08 18:32:12.417575100 +0200
++++ dumps/pruned/issue1025-bmv2-BMV2::SimpleSwitchMidEnd_29_SimplifyControlFlow.p4	2019-06-08 18:32:12.488012600 +0200
 @@ -63,14 +63,10 @@ parser parserI(packet_in pkt, out header
          }
      }

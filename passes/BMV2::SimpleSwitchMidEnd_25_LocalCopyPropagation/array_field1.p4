@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/array_field1.p4/pruned/array_field1-BMV2::SimpleSwitchMidEnd_24_ConstantFolding.p4	2019-05-20 17:29:09.828581300 +0200
-+++ dumps/p4_16_samples/array_field1.p4/pruned/array_field1-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-05-20 17:29:09.832279600 +0200
+--- dumps/pruned/array_field1-BMV2::SimpleSwitchMidEnd_24_ConstantFolding.p4	2019-06-08 18:31:09.092877200 +0200
++++ dumps/pruned/array_field1-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-06-08 18:31:09.098909200 +0200
 @@ -5,33 +5,21 @@ extern bit<1> f(inout bit<1> x, in bit<1
  control c(out H[2] h);
  package top(c _c);

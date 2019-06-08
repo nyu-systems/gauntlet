@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/ternary2-bmv2.p4/pruned/ternary2-bmv2-BMV2::SimpleSwitchMidEnd_22_Predication.p4	2019-05-20 17:32:29.913111600 +0200
-+++ dumps/p4_16_samples/ternary2-bmv2.p4/pruned/ternary2-bmv2-BMV2::SimpleSwitchMidEnd_23_MoveDeclarations.p4	2019-05-20 17:32:29.916050100 +0200
+--- dumps/pruned/ternary2-bmv2-BMV2::SimpleSwitchMidEnd_22_Predication.p4	2019-06-08 18:34:16.780310300 +0200
++++ dumps/pruned/ternary2-bmv2-BMV2::SimpleSwitchMidEnd_23_MoveDeclarations.p4	2019-06-08 18:34:16.782617600 +0200
 @@ -40,6 +40,11 @@ control update(inout packet_t h, inout M
      }
  }

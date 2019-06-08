@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/issue1470-bmv2.p4/pruned/issue1470-bmv2-BMV2::SimpleSwitchMidEnd_13_ExpandEmit.p4	2019-05-20 17:30:17.361561000 +0200
-+++ dumps/p4_16_samples/issue1470-bmv2.p4/pruned/issue1470-bmv2-BMV2::SimpleSwitchMidEnd_14_SimplifyParsers.p4	2019-05-20 17:30:17.364422000 +0200
+--- dumps/pruned/issue1470-bmv2-BMV2::SimpleSwitchMidEnd_13_ExpandEmit.p4	2019-06-08 18:32:02.597345300 +0200
++++ dumps/pruned/issue1470-bmv2-BMV2::SimpleSwitchMidEnd_14_SimplifyParsers.p4	2019-06-08 18:32:02.599748400 +0200
 @@ -30,9 +30,6 @@ parser OuterParser(packet_in pkt, out he
      state start {
          hdr_1.eth.setInvalid();

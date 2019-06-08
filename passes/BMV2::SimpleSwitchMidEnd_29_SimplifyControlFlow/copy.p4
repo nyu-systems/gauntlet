@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/copy.p4/pruned/copy-BMV2::SimpleSwitchMidEnd_28_ValidateTableProperties.p4	2019-05-20 17:29:28.027115500 +0200
-+++ dumps/p4_16_samples/copy.p4/pruned/copy-BMV2::SimpleSwitchMidEnd_29_SimplifyControlFlow.p4	2019-05-20 17:29:28.116736600 +0200
+--- dumps/pruned/copy-BMV2::SimpleSwitchMidEnd_28_ValidateTableProperties.p4	2019-06-08 18:31:28.712227800 +0200
++++ dumps/pruned/copy-BMV2::SimpleSwitchMidEnd_29_SimplifyControlFlow.p4	2019-06-08 18:31:28.753046400 +0200
 @@ -3,12 +3,6 @@ struct S {
  }
  control c(inout bit<32> b) {

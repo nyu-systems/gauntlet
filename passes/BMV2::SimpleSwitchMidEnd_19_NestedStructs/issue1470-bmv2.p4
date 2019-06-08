@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/issue1470-bmv2.p4/pruned/issue1470-bmv2-BMV2::SimpleSwitchMidEnd_18_CopyStructures.p4	2019-05-20 17:30:17.380048700 +0200
-+++ dumps/p4_16_samples/issue1470-bmv2.p4/pruned/issue1470-bmv2-BMV2::SimpleSwitchMidEnd_19_NestedStructs.p4	2019-05-20 17:30:17.383361600 +0200
+--- dumps/pruned/issue1470-bmv2-BMV2::SimpleSwitchMidEnd_18_CopyStructures.p4	2019-06-08 18:32:02.614258000 +0200
++++ dumps/pruned/issue1470-bmv2-BMV2::SimpleSwitchMidEnd_19_NestedStructs.p4	2019-06-08 18:32:02.616806500 +0200
 @@ -26,24 +26,25 @@ struct headers_t {
      ipv4_h ipv4;
  }

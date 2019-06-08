@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/direct-action1.p4/pruned/direct-action1-BMV2::SimpleSwitchMidEnd_24_ConstantFolding.p4	2019-05-20 17:29:35.111913200 +0200
-+++ dumps/p4_16_samples/direct-action1.p4/pruned/direct-action1-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-05-20 17:29:35.118476400 +0200
+--- dumps/pruned/direct-action1-BMV2::SimpleSwitchMidEnd_24_ConstantFolding.p4	2019-06-08 18:31:31.802425200 +0200
++++ dumps/pruned/direct-action1-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-06-08 18:31:31.805009400 +0200
 @@ -1,9 +1,7 @@
  control c(inout bit<16> y) {
      bit<32> x;

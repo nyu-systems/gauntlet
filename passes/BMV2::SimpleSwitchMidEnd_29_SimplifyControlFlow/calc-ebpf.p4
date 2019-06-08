@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/calc-ebpf.p4/pruned/calc-ebpf-BMV2::SimpleSwitchMidEnd_28_ValidateTableProperties.p4	2019-05-20 17:29:15.147528000 +0200
-+++ dumps/p4_16_samples/calc-ebpf.p4/pruned/calc-ebpf-BMV2::SimpleSwitchMidEnd_29_SimplifyControlFlow.p4	2019-05-20 17:29:15.149993600 +0200
+--- dumps/pruned/calc-ebpf-BMV2::SimpleSwitchMidEnd_28_ValidateTableProperties.p4	2019-06-08 18:31:14.679721800 +0200
++++ dumps/pruned/calc-ebpf-BMV2::SimpleSwitchMidEnd_29_SimplifyControlFlow.p4	2019-06-08 18:31:14.682901800 +0200
 @@ -33,45 +33,33 @@ parser Parser(packet_in packet, out head
          }
      }

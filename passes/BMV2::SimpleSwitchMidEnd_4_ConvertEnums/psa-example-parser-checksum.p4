@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/psa-example-parser-checksum.p4/pruned/psa-example-parser-checksum-BMV2::SimpleSwitchMidEnd_3_RemoveActionParameters.p4	2019-05-20 17:32:22.145363100 +0200
-+++ dumps/p4_16_samples/psa-example-parser-checksum.p4/pruned/psa-example-parser-checksum-BMV2::SimpleSwitchMidEnd_4_ConvertEnums.p4	2019-05-20 17:32:22.148367600 +0200
+--- dumps/pruned/psa-example-parser-checksum-BMV2::SimpleSwitchMidEnd_3_RemoveActionParameters.p4	2019-06-08 18:34:10.562844200 +0200
++++ dumps/pruned/psa-example-parser-checksum-BMV2::SimpleSwitchMidEnd_4_ConvertEnums.p4	2019-06-08 18:34:10.564821500 +0200
 @@ -89,7 +89,7 @@ control ingress(inout headers hdr, inout
          meta_1.drop = true;
          ostd = meta_1;

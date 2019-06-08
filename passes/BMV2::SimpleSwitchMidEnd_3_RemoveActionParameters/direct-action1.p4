@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/direct-action1.p4/pruned/direct-action1-BMV2::SimpleSwitchMidEnd_2_EliminateSerEnums.p4	2019-05-20 17:29:35.136194400 +0200
-+++ dumps/p4_16_samples/direct-action1.p4/pruned/direct-action1-BMV2::SimpleSwitchMidEnd_3_RemoveActionParameters.p4	2019-05-20 17:29:35.171626400 +0200
+--- dumps/pruned/direct-action1-BMV2::SimpleSwitchMidEnd_2_EliminateSerEnums.p4	2019-06-08 18:31:31.816022800 +0200
++++ dumps/pruned/direct-action1-BMV2::SimpleSwitchMidEnd_3_RemoveActionParameters.p4	2019-06-08 18:31:31.833293600 +0200
 @@ -1,11 +1,13 @@
  control c(inout bit<16> y) {
      bit<32> x;

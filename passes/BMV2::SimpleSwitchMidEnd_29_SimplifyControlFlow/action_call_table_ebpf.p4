@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/action_call_table_ebpf.p4/pruned/action_call_table_ebpf-BMV2::SimpleSwitchMidEnd_28_ValidateTableProperties.p4	2019-05-20 17:29:01.001075300 +0200
-+++ dumps/p4_16_samples/action_call_table_ebpf.p4/pruned/action_call_table_ebpf-BMV2::SimpleSwitchMidEnd_29_SimplifyControlFlow.p4	2019-05-20 17:29:01.003021800 +0200
+--- dumps/pruned/action_call_table_ebpf-BMV2::SimpleSwitchMidEnd_28_ValidateTableProperties.p4	2019-06-08 18:31:00.753901200 +0200
++++ dumps/pruned/action_call_table_ebpf-BMV2::SimpleSwitchMidEnd_29_SimplifyControlFlow.p4	2019-06-08 18:31:00.756560600 +0200
 @@ -9,17 +9,9 @@ parser prs(packet_in p, out Headers_t he
  }
  control pipe(inout Headers_t headers, out bool pass) {

@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/psa-example-counters-bmv2.p4/pruned/psa-example-counters-bmv2-BMV2::SimpleSwitchMidEnd_3_RemoveActionParameters.p4	2019-05-20 17:31:43.449178000 +0200
-+++ dumps/p4_16_samples/psa-example-counters-bmv2.p4/pruned/psa-example-counters-bmv2-BMV2::SimpleSwitchMidEnd_4_ConvertEnums.p4	2019-05-20 17:31:43.453255500 +0200
+--- dumps/pruned/psa-example-counters-bmv2-BMV2::SimpleSwitchMidEnd_3_RemoveActionParameters.p4	2019-06-08 18:33:16.601277500 +0200
++++ dumps/pruned/psa-example-counters-bmv2-BMV2::SimpleSwitchMidEnd_4_ConvertEnums.p4	2019-06-08 18:33:16.609184300 +0200
 @@ -89,8 +89,8 @@ control ingress(inout headers hdr, inout
      psa_ingress_output_metadata_t meta_0;
      PortId_t egress_port_0;

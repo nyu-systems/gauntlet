@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/newtype.p4/pruned/newtype-BMV2::SimpleSwitchMidEnd_0_CheckTableSize.p4	2019-05-20 17:31:27.067517100 +0200
-+++ dumps/p4_16_samples/newtype.p4/pruned/newtype-BMV2::SimpleSwitchMidEnd_1_EliminateNewtype.p4	2019-05-20 17:31:27.096328800 +0200
+--- dumps/pruned/newtype-BMV2::SimpleSwitchMidEnd_0_CheckTableSize.p4	2019-06-08 18:33:00.563202000 +0200
++++ dumps/pruned/newtype-BMV2::SimpleSwitchMidEnd_1_EliminateNewtype.p4	2019-06-08 18:33:00.594586600 +0200
 @@ -1,6 +1,6 @@
  #include <core.p4>
  typedef bit<32> B32;

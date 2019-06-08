@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/array_field1.p4/pruned/array_field1-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-05-20 17:29:09.832279600 +0200
-+++ dumps/p4_16_samples/array_field1.p4/pruned/array_field1-BMV2::SimpleSwitchMidEnd_26_ConstantFolding.p4	2019-05-20 17:29:09.835245500 +0200
+--- dumps/pruned/array_field1-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-06-08 18:31:09.098909200 +0200
++++ dumps/pruned/array_field1-BMV2::SimpleSwitchMidEnd_26_ConstantFolding.p4	2019-06-08 18:31:09.106416100 +0200
 @@ -12,7 +12,7 @@ control my(out H[2] s) {
      bit<1> tmp_17;
      @name("my.act") action act_0() {

@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/uninit.p4/pruned/uninit-BMV2::SimpleSwitchMidEnd_24_ConstantFolding.p4	2019-05-20 17:32:33.933394000 +0200
-+++ dumps/p4_16_samples/uninit.p4/pruned/uninit-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-05-20 17:32:33.935891800 +0200
+--- dumps/pruned/uninit-BMV2::SimpleSwitchMidEnd_24_ConstantFolding.p4	2019-06-08 18:34:19.400388900 +0200
++++ dumps/pruned/uninit-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-06-08 18:34:19.402548400 +0200
 @@ -44,18 +44,12 @@ parser p1(packet_in p, out Header h) {
      }
  }

@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/issue983-bmv2.p4/pruned/issue983-bmv2-BMV2::SimpleSwitchMidEnd_31_TableHit.p4	2019-05-20 17:31:17.487843700 +0200
-+++ dumps/p4_16_samples/issue983-bmv2.p4/pruned/issue983-bmv2-BMV2::SimpleSwitchMidEnd_32_RemoveLeftSlices.p4	2019-05-20 17:31:17.491272000 +0200
+--- dumps/pruned/issue983-bmv2-BMV2::SimpleSwitchMidEnd_31_TableHit.p4	2019-06-08 18:32:50.983495900 +0200
++++ dumps/pruned/issue983-bmv2-BMV2::SimpleSwitchMidEnd_32_RemoveLeftSlices.p4	2019-06-08 18:32:50.985264200 +0200
 @@ -67,15 +67,15 @@ control ingress(inout headers hdr, inout
          user_meta.fwd_meta.exp_x4 = 32w0xfffff7ff;
          hdr.ethernet.dstAddr = 48w0;

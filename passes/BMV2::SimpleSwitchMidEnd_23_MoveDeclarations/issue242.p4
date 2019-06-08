@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/issue242.p4/pruned/issue242-BMV2::SimpleSwitchMidEnd_22_Predication.p4	2019-05-20 17:30:36.967605500 +0200
-+++ dumps/p4_16_samples/issue242.p4/pruned/issue242-BMV2::SimpleSwitchMidEnd_23_MoveDeclarations.p4	2019-05-20 17:30:36.972876000 +0200
+--- dumps/pruned/issue242-BMV2::SimpleSwitchMidEnd_22_Predication.p4	2019-06-08 18:32:18.696049200 +0200
++++ dumps/pruned/issue242-BMV2::SimpleSwitchMidEnd_23_MoveDeclarations.p4	2019-06-08 18:32:18.697953800 +0200
 @@ -53,6 +53,10 @@ control Eg(inout Headers hdrs, inout Met
      bit<32> inc;
      bit<32> tmp_1;

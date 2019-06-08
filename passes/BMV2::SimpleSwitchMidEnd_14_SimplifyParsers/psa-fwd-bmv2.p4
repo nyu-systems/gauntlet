@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/psa-fwd-bmv2.p4/pruned/psa-fwd-bmv2-BMV2::SimpleSwitchMidEnd_13_ExpandEmit.p4	2019-05-20 17:31:46.711513900 +0200
-+++ dumps/p4_16_samples/psa-fwd-bmv2.p4/pruned/psa-fwd-bmv2-BMV2::SimpleSwitchMidEnd_14_SimplifyParsers.p4	2019-05-20 17:31:46.715209100 +0200
+--- dumps/pruned/psa-fwd-bmv2-BMV2::SimpleSwitchMidEnd_13_ExpandEmit.p4	2019-06-08 18:33:19.349919200 +0200
++++ dumps/pruned/psa-fwd-bmv2-BMV2::SimpleSwitchMidEnd_14_SimplifyParsers.p4	2019-06-08 18:33:19.354313000 +0200
 @@ -22,13 +22,7 @@ parser IngressParserImpl(packet_in buffe
      state start {
          parsed_hdr_2.ethernet.setInvalid();

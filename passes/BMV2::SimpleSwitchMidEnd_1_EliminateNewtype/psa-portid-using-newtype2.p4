@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/psa-portid-using-newtype2.p4/pruned/psa-portid-using-newtype2-BMV2::SimpleSwitchMidEnd_0_CheckTableSize.p4	2019-05-20 17:31:52.639562000 +0200
-+++ dumps/p4_16_samples/psa-portid-using-newtype2.p4/pruned/psa-portid-using-newtype2-BMV2::SimpleSwitchMidEnd_1_EliminateNewtype.p4	2019-05-20 17:31:52.734173200 +0200
+--- dumps/pruned/psa-portid-using-newtype2-BMV2::SimpleSwitchMidEnd_0_CheckTableSize.p4	2019-06-08 18:33:25.933731800 +0200
++++ dumps/pruned/psa-portid-using-newtype2-BMV2::SimpleSwitchMidEnd_1_EliminateNewtype.p4	2019-06-08 18:33:25.989873200 +0200
 @@ -1,7 +1,7 @@
  #include <core.p4>
  typedef bit<9> PortIdUInt_t;

@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/issue1025-bmv2.p4/pruned/issue1025-bmv2-BMV2::SimpleSwitchMidEnd_11_SimplifySelectCases.p4	2019-05-20 17:30:29.220216200 +0200
-+++ dumps/p4_16_samples/issue1025-bmv2.p4/pruned/issue1025-bmv2-BMV2::SimpleSwitchMidEnd_12_ExpandLookahead.p4	2019-05-20 17:30:29.223866400 +0200
+--- dumps/pruned/issue1025-bmv2-BMV2::SimpleSwitchMidEnd_11_SimplifySelectCases.p4	2019-06-08 18:32:12.368490100 +0200
++++ dumps/pruned/issue1025-bmv2-BMV2::SimpleSwitchMidEnd_12_ExpandLookahead.p4	2019-06-08 18:32:12.370766300 +0200
 @@ -54,6 +54,7 @@ parser parserI(packet_in pkt, out header
      IPv4_up_to_ihl_only_h tmp_2;
      bit<9> tmp_3;

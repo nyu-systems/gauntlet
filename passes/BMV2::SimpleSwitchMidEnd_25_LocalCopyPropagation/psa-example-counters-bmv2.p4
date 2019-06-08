@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/psa-example-counters-bmv2.p4/pruned/psa-example-counters-bmv2-BMV2::SimpleSwitchMidEnd_24_ConstantFolding.p4	2019-05-20 17:31:43.508938300 +0200
-+++ dumps/p4_16_samples/psa-example-counters-bmv2.p4/pruned/psa-example-counters-bmv2-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-05-20 17:31:43.514024800 +0200
+--- dumps/pruned/psa-example-counters-bmv2-BMV2::SimpleSwitchMidEnd_24_ConstantFolding.p4	2019-06-08 18:33:16.682175500 +0200
++++ dumps/pruned/psa-example-counters-bmv2-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-06-08 18:33:16.686691300 +0200
 @@ -100,35 +100,17 @@ parser EgressParserImpl(packet_in buffer
      }
  }

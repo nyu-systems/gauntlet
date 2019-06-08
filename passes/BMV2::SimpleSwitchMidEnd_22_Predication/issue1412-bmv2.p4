@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/issue1412-bmv2.p4/pruned/issue1412-bmv2-BMV2::SimpleSwitchMidEnd_21_RemoveSelectBooleans.p4	2019-05-20 17:30:15.644190500 +0200
-+++ dumps/p4_16_samples/issue1412-bmv2.p4/pruned/issue1412-bmv2-BMV2::SimpleSwitchMidEnd_22_Predication.p4	2019-05-20 17:30:15.646368200 +0200
+--- dumps/pruned/issue1412-bmv2-BMV2::SimpleSwitchMidEnd_21_RemoveSelectBooleans.p4	2019-06-08 18:32:01.378308800 +0200
++++ dumps/pruned/issue1412-bmv2-BMV2::SimpleSwitchMidEnd_22_Predication.p4	2019-06-08 18:32:01.380287800 +0200
 @@ -23,8 +23,15 @@ control EgressImpl(inout headers_t hdr,
      @name(".NoAction") action NoAction_0() {
      }

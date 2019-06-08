@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/tuple.p4/pruned/tuple-BMV2::SimpleSwitchMidEnd_24_ConstantFolding.p4	2019-05-20 17:32:30.784304400 +0200
-+++ dumps/p4_16_samples/tuple.p4/pruned/tuple-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-05-20 17:32:30.787624800 +0200
+--- dumps/pruned/tuple-BMV2::SimpleSwitchMidEnd_24_ConstantFolding.p4	2019-06-08 18:34:17.524972600 +0200
++++ dumps/pruned/tuple-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-06-08 18:34:17.528111600 +0200
 @@ -9,11 +9,8 @@ struct tuple_0 {
      bool    field_0;
  }

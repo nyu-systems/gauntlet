@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/vss-example.p4/pruned/vss-example-BMV2::SimpleSwitchMidEnd_2_EliminateSerEnums.p4	2019-05-20 17:32:43.116338000 +0200
-+++ dumps/p4_16_samples/vss-example.p4/pruned/vss-example-BMV2::SimpleSwitchMidEnd_3_RemoveActionParameters.p4	2019-05-20 17:32:43.055387800 +0200
+--- dumps/pruned/vss-example-BMV2::SimpleSwitchMidEnd_2_EliminateSerEnums.p4	2019-06-08 18:34:27.624048300 +0200
++++ dumps/pruned/vss-example-BMV2::SimpleSwitchMidEnd_3_RemoveActionParameters.p4	2019-06-08 18:34:27.598627500 +0200
 @@ -71,9 +71,10 @@ parser TopParser(packet_in b, out Parsed
      }
  }

@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/named-arg1.p4/pruned/named-arg1-BMV2::SimpleSwitchMidEnd_2_EliminateSerEnums.p4	2019-05-20 17:31:25.409509900 +0200
-+++ dumps/p4_16_samples/named-arg1.p4/pruned/named-arg1-BMV2::SimpleSwitchMidEnd_3_RemoveActionParameters.p4	2019-05-20 17:31:25.386868400 +0200
+--- dumps/pruned/named-arg1-BMV2::SimpleSwitchMidEnd_2_EliminateSerEnums.p4	2019-06-08 18:32:59.193672700 +0200
++++ dumps/pruned/named-arg1-BMV2::SimpleSwitchMidEnd_3_RemoveActionParameters.p4	2019-06-08 18:32:59.171615700 +0200
 @@ -23,15 +23,23 @@ control c(out bool b) {
      bool b_2;
      bit<16> x_6;

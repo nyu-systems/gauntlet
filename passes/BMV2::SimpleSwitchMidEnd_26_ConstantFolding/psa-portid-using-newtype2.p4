@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/psa-portid-using-newtype2.p4/pruned/psa-portid-using-newtype2-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-05-20 17:31:52.761473000 +0200
-+++ dumps/p4_16_samples/psa-portid-using-newtype2.p4/pruned/psa-portid-using-newtype2-BMV2::SimpleSwitchMidEnd_26_ConstantFolding.p4	2019-05-20 17:31:52.765033900 +0200
+--- dumps/pruned/psa-portid-using-newtype2-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-06-08 18:33:26.003092600 +0200
++++ dumps/pruned/psa-portid-using-newtype2-BMV2::SimpleSwitchMidEnd_26_ConstantFolding.p4	2019-06-08 18:33:26.005299900 +0200
 @@ -161,7 +161,7 @@ control FabricIngress(inout parsed_heade
          filtering_t_0.apply();
          forwarding_t_0.apply();

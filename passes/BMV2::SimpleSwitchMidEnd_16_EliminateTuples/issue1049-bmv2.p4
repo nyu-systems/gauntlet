@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/issue1049-bmv2.p4/pruned/issue1049-bmv2-BMV2::SimpleSwitchMidEnd_15_StrengthReduction.p4	2019-05-20 17:31:10.341092300 +0200
-+++ dumps/p4_16_samples/issue1049-bmv2.p4/pruned/issue1049-bmv2-BMV2::SimpleSwitchMidEnd_16_EliminateTuples.p4	2019-05-20 17:31:10.346760700 +0200
+--- dumps/pruned/issue1049-bmv2-BMV2::SimpleSwitchMidEnd_15_StrengthReduction.p4	2019-06-08 18:32:44.956846000 +0200
++++ dumps/pruned/issue1049-bmv2-BMV2::SimpleSwitchMidEnd_16_EliminateTuples.p4	2019-06-08 18:32:44.958600100 +0200
 @@ -44,11 +44,16 @@ parser parserI(packet_in pkt, out header
          transition accept;
      }

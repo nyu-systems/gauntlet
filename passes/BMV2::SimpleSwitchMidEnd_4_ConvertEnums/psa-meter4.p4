@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/psa-meter4.p4/pruned/psa-meter4-BMV2::SimpleSwitchMidEnd_3_RemoveActionParameters.p4	2019-05-20 17:31:49.094154300 +0200
-+++ dumps/p4_16_samples/psa-meter4.p4/pruned/psa-meter4-BMV2::SimpleSwitchMidEnd_4_ConvertEnums.p4	2019-05-20 17:31:49.096628900 +0200
+--- dumps/pruned/psa-meter4-BMV2::SimpleSwitchMidEnd_3_RemoveActionParameters.p4	2019-06-08 18:33:22.046096400 +0200
++++ dumps/pruned/psa-meter4-BMV2::SimpleSwitchMidEnd_4_ConvertEnums.p4	2019-06-08 18:33:22.048316200 +0200
 @@ -22,7 +22,7 @@ parser MyEP(packet_in buffer, out EMPTY
  control MyIC(inout ethernet_t a, inout EMPTY b, in psa_ingress_input_metadata_t c, inout psa_ingress_output_metadata_t d) {
      @name(".NoAction") action NoAction_0() {

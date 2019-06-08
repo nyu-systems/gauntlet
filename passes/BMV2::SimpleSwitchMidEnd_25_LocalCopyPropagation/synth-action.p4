@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/synth-action.p4/pruned/synth-action-BMV2::SimpleSwitchMidEnd_24_ConstantFolding.p4	2019-05-20 17:32:24.742226800 +0200
-+++ dumps/p4_16_samples/synth-action.p4/pruned/synth-action-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-05-20 17:32:24.746179300 +0200
+--- dumps/pruned/synth-action-BMV2::SimpleSwitchMidEnd_24_ConstantFolding.p4	2019-06-08 18:34:12.525452400 +0200
++++ dumps/pruned/synth-action-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-06-08 18:34:12.529927100 +0200
 @@ -1,12 +1,12 @@
  control c(inout bit<32> x) {
      apply {

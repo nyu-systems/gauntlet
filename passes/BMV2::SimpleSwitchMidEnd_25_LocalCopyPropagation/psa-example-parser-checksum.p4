@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/psa-example-parser-checksum.p4/pruned/psa-example-parser-checksum-BMV2::SimpleSwitchMidEnd_24_ConstantFolding.p4	2019-05-20 17:32:22.195497400 +0200
-+++ dumps/p4_16_samples/psa-example-parser-checksum.p4/pruned/psa-example-parser-checksum-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-05-20 17:32:22.198517000 +0200
+--- dumps/pruned/psa-example-parser-checksum-BMV2::SimpleSwitchMidEnd_24_ConstantFolding.p4	2019-06-08 18:34:10.601437300 +0200
++++ dumps/pruned/psa-example-parser-checksum-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-06-08 18:34:10.604138900 +0200
 @@ -96,26 +96,11 @@ parser IngressParserImpl(packet_in buffe
      }
  }

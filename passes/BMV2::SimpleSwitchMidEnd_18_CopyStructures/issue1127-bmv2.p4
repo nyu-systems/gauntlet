@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/issue1127-bmv2.p4/pruned/issue1127-bmv2-BMV2::SimpleSwitchMidEnd_17_SimplifyComparisons.p4	2019-05-20 17:30:09.365040000 +0200
-+++ dumps/p4_16_samples/issue1127-bmv2.p4/pruned/issue1127-bmv2-BMV2::SimpleSwitchMidEnd_18_CopyStructures.p4	2019-05-20 17:30:09.367135400 +0200
+--- dumps/pruned/issue1127-bmv2-BMV2::SimpleSwitchMidEnd_17_SimplifyComparisons.p4	2019-06-08 18:31:55.195752400 +0200
++++ dumps/pruned/issue1127-bmv2-BMV2::SimpleSwitchMidEnd_18_CopyStructures.p4	2019-06-08 18:31:55.200937300 +0200
 @@ -24,28 +24,44 @@ control cIngress(inout headers hdr, inou
      headers hdr_1;
      bit<8> op;

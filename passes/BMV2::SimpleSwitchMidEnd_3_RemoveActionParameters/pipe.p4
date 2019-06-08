@@ -1,5 +1,5 @@
---- dumps/p4_16_samples/pipe.p4/pruned/pipe-BMV2::SimpleSwitchMidEnd_2_EliminateSerEnums.p4	2019-05-20 17:32:19.853816200 +0200
-+++ dumps/p4_16_samples/pipe.p4/pruned/pipe-BMV2::SimpleSwitchMidEnd_3_RemoveActionParameters.p4	2019-05-20 17:32:19.898152200 +0200
+--- dumps/pruned/pipe-BMV2::SimpleSwitchMidEnd_2_EliminateSerEnums.p4	2019-06-08 18:34:08.321506700 +0200
++++ dumps/pruned/pipe-BMV2::SimpleSwitchMidEnd_3_RemoveActionParameters.p4	2019-06-08 18:34:08.345631500 +0200
 @@ -26,12 +26,14 @@ extern bs {
  struct Packet_data {
  }
