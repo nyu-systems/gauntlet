@@ -1,5 +1,5 @@
---- dumps/pruned/issue1127-bmv2-BMV2::SimpleSwitchMidEnd_17_SimplifyComparisons.p4	2019-06-08 18:31:55.195752400 +0200
-+++ dumps/pruned/issue1127-bmv2-BMV2::SimpleSwitchMidEnd_18_CopyStructures.p4	2019-06-08 18:31:55.200937300 +0200
+--- before_pass
++++ after_pass
 @@ -24,28 +24,44 @@ control cIngress(inout headers hdr, inou
      headers hdr_1;
      bit<8> op;

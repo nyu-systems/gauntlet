@@ -1,5 +1,5 @@
---- dumps/pruned/serenum-BMV2::SimpleSwitchMidEnd_1_EliminateNewtype.p4	2019-06-08 18:33:33.127577900 +0200
-+++ dumps/pruned/serenum-BMV2::SimpleSwitchMidEnd_2_EliminateSerEnums.p4	2019-06-08 18:33:33.154601300 +0200
+--- before_pass
++++ after_pass
 @@ -1,17 +1,8 @@
  #include <core.p4>
 -enum bit<16> EthTypes {

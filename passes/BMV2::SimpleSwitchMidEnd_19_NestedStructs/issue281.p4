@@ -1,5 +1,5 @@
---- dumps/pruned/issue281-BMV2::SimpleSwitchMidEnd_18_CopyStructures.p4	2019-06-08 18:32:20.656336400 +0200
-+++ dumps/pruned/issue281-BMV2::SimpleSwitchMidEnd_19_NestedStructs.p4	2019-06-08 18:32:20.762111200 +0200
+--- before_pass
++++ after_pass
 @@ -33,33 +33,37 @@ struct h {
  struct m {
  }

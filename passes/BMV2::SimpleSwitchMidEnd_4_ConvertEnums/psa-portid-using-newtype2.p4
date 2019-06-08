@@ -1,5 +1,5 @@
---- dumps/pruned/psa-portid-using-newtype2-BMV2::SimpleSwitchMidEnd_3_RemoveActionParameters.p4	2019-06-08 18:33:25.967644800 +0200
-+++ dumps/pruned/psa-portid-using-newtype2-BMV2::SimpleSwitchMidEnd_4_ConvertEnums.p4	2019-06-08 18:33:25.969946000 +0200
+--- before_pass
++++ after_pass
 @@ -37,29 +37,20 @@ match_kind {
      @alias("intrinsic_metadata.recirculate_flag") 
      bit<32>  recirculate_flag;

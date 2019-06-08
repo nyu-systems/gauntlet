@@ -1,5 +1,5 @@
---- dumps/pruned/psa-example-parser-checksum-BMV2::SimpleSwitchMidEnd_17_SimplifyComparisons.p4	2019-06-08 18:34:10.516699400 +0200
-+++ dumps/pruned/psa-example-parser-checksum-BMV2::SimpleSwitchMidEnd_18_CopyStructures.p4	2019-06-08 18:34:10.586413400 +0200
+--- before_pass
++++ after_pass
 @@ -98,9 +98,25 @@ parser IngressParserImpl(packet_in buffe
  control ingress(inout headers hdr, inout metadata user_meta, in psa_ingress_input_metadata_t istd, inout psa_ingress_output_metadata_t ostd) {
      psa_ingress_output_metadata_t meta_1;

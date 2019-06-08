@@ -1,5 +1,5 @@
---- dumps/pruned/header-stack-ops-bmv2-BMV2::SimpleSwitchMidEnd_31_TableHit.p4	2019-06-08 18:31:46.164346800 +0200
-+++ dumps/pruned/header-stack-ops-bmv2-BMV2::SimpleSwitchMidEnd_32_RemoveLeftSlices.p4	2019-06-08 18:31:46.169458700 +0200
+--- before_pass
++++ after_pass
 @@ -353,15 +353,15 @@ control cIngress(inout headers hdr, inou
          hdr.h2 = hdr_1_h2;
          hdr.h1.h2_valid_bits = 8w0;

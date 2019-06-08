@@ -1,5 +1,5 @@
---- dumps/pruned/std_meta_inlining-BMV2::SimpleSwitchMidEnd_24_ConstantFolding.p4	2019-06-08 18:34:04.228155100 +0200
-+++ dumps/pruned/std_meta_inlining-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-06-08 18:34:04.229792300 +0200
+--- before_pass
++++ after_pass
 @@ -14,54 +14,11 @@ control DeparserImpl(packet_out packet,
      }
  }

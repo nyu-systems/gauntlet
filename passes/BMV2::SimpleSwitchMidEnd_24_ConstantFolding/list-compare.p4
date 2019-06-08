@@ -1,5 +1,5 @@
---- dumps/pruned/list-compare-BMV2::SimpleSwitchMidEnd_23_MoveDeclarations.p4	2019-06-08 18:34:07.925250000 +0200
-+++ dumps/pruned/list-compare-BMV2::SimpleSwitchMidEnd_24_ConstantFolding.p4	2019-06-08 18:34:07.927881500 +0200
+--- before_pass
++++ after_pass
 @@ -20,8 +20,8 @@ control test(out bool zout) {
              q.l = 32w2;
              q.r = 32w3;

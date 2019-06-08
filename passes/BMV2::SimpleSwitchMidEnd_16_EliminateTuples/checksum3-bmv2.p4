@@ -1,5 +1,5 @@
---- dumps/pruned/checksum3-bmv2-BMV2::SimpleSwitchMidEnd_15_StrengthReduction.p4	2019-06-08 18:31:18.771264100 +0200
-+++ dumps/pruned/checksum3-bmv2-BMV2::SimpleSwitchMidEnd_16_EliminateTuples.p4	2019-06-08 18:31:18.773350700 +0200
+--- before_pass
++++ after_pass
 @@ -90,9 +90,22 @@ control vc(inout headers hdr, inout meta
      apply {
      }

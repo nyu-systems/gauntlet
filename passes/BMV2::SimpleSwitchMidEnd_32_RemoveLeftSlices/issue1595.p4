@@ -1,5 +1,5 @@
---- dumps/pruned/issue1595-BMV2::SimpleSwitchMidEnd_31_TableHit.p4	2019-06-08 18:32:06.950263400 +0200
-+++ dumps/pruned/issue1595-BMV2::SimpleSwitchMidEnd_32_RemoveLeftSlices.p4	2019-06-08 18:32:06.952415400 +0200
+--- before_pass
++++ after_pass
 @@ -31,13 +31,13 @@ control cIngress(inout Parsed_packet hdr
          hdr.ethernet.srcAddr = 48w1;
      }

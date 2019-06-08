@@ -1,5 +1,5 @@
---- dumps/pruned/issue1452-BMV2::SimpleSwitchMidEnd_24_ConstantFolding.p4	2019-06-08 18:32:01.888202800 +0200
-+++ dumps/pruned/issue1452-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-06-08 18:32:01.890966300 +0200
+--- before_pass
++++ after_pass
 @@ -1,13 +1,7 @@
  control c() {
      bit<32> x;

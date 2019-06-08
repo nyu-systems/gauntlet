@@ -1,5 +1,5 @@
---- dumps/pruned/issue1765-bmv2-BMV2::SimpleSwitchMidEnd_15_StrengthReduction.p4	2019-06-08 18:32:10.950341600 +0200
-+++ dumps/pruned/issue1765-bmv2-BMV2::SimpleSwitchMidEnd_16_EliminateTuples.p4	2019-06-08 18:32:10.952459600 +0200
+--- before_pass
++++ after_pass
 @@ -116,14 +116,28 @@ control cEgress(inout headers hdr, inout
      apply {
      }

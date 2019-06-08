@@ -1,5 +1,5 @@
---- dumps/pruned/psa-multicast-basic-bmv2-BMV2::SimpleSwitchMidEnd_2_EliminateSerEnums.p4	2019-06-08 18:33:24.377728900 +0200
-+++ dumps/pruned/psa-multicast-basic-bmv2-BMV2::SimpleSwitchMidEnd_3_RemoveActionParameters.p4	2019-06-08 18:33:24.415700300 +0200
+--- before_pass
++++ after_pass
 @@ -20,12 +20,17 @@ parser IngressParserImpl(packet_in pkt,
      }
  }

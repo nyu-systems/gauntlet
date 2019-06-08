@@ -1,5 +1,5 @@
---- dumps/pruned/issue982-BMV2::SimpleSwitchMidEnd_13_ExpandEmit.p4	2019-06-08 18:32:50.548110900 +0200
-+++ dumps/pruned/issue982-BMV2::SimpleSwitchMidEnd_14_SimplifyParsers.p4	2019-06-08 18:32:50.549968400 +0200
+--- before_pass
++++ after_pass
 @@ -204,9 +204,6 @@ parser EgressParserImpl(packet_in buffer
          parsed_hdr_2.ethernet.setInvalid();
          parsed_hdr_2.ipv4.setInvalid();

@@ -1,5 +1,5 @@
---- dumps/pruned/issue1897-bmv2-BMV2::SimpleSwitchMidEnd_17_SimplifyComparisons.p4	2019-06-08 18:32:16.931618300 +0200
-+++ dumps/pruned/issue1897-bmv2-BMV2::SimpleSwitchMidEnd_18_CopyStructures.p4	2019-06-08 18:32:16.934208500 +0200
+--- before_pass
++++ after_pass
 @@ -43,7 +43,10 @@ parser ProtParser(packet_in packet, out
          transition start_0;
      }

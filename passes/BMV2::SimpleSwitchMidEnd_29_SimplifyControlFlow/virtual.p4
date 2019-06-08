@@ -1,5 +1,5 @@
---- dumps/pruned/virtual-BMV2::SimpleSwitchMidEnd_28_ValidateTableProperties.p4	2019-06-08 18:34:26.895750800 +0200
-+++ dumps/pruned/virtual-BMV2::SimpleSwitchMidEnd_29_SimplifyControlFlow.p4	2019-06-08 18:34:26.962044900 +0200
+--- before_pass
++++ after_pass
 @@ -15,10 +15,8 @@ control c(inout bit<16> p) {
          }
          void g(inout data x) {

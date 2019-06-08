@@ -1,5 +1,5 @@
---- dumps/pruned/subparser-with-header-stack-bmv2-BMV2::SimpleSwitchMidEnd_17_SimplifyComparisons.p4	2019-06-08 18:34:07.467116900 +0200
-+++ dumps/pruned/subparser-with-header-stack-bmv2-BMV2::SimpleSwitchMidEnd_18_CopyStructures.p4	2019-06-08 18:34:07.430992100 +0200
+--- before_pass
++++ after_pass
 @@ -42,11 +42,19 @@ parser parserI(packet_in pkt, out header
          }
      }

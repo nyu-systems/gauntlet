@@ -1,5 +1,5 @@
---- dumps/pruned/issue648-BMV2::SimpleSwitchMidEnd_31_TableHit.p4	2019-06-08 18:32:38.106748100 +0200
-+++ dumps/pruned/issue648-BMV2::SimpleSwitchMidEnd_32_RemoveLeftSlices.p4	2019-06-08 18:32:38.108746200 +0200
+--- before_pass
++++ after_pass
 @@ -6,8 +6,8 @@ header hdr {
  }
  control ingress(inout hdr h) {

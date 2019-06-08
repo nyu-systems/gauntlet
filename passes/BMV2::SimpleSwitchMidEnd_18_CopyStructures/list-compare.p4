@@ -1,5 +1,5 @@
---- dumps/pruned/list-compare-BMV2::SimpleSwitchMidEnd_17_SimplifyComparisons.p4	2019-06-08 18:34:07.906651100 +0200
-+++ dumps/pruned/list-compare-BMV2::SimpleSwitchMidEnd_18_CopyStructures.p4	2019-06-08 18:34:07.909188300 +0200
+--- before_pass
++++ after_pass
 @@ -12,8 +12,14 @@ control test(out bool zout) {
      tuple_0 p;
      S q;

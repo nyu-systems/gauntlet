@@ -1,5 +1,5 @@
---- dumps/pruned/union-valid-bmv2-BMV2::SimpleSwitchMidEnd_22_Predication.p4	2019-06-08 18:34:21.174126100 +0200
-+++ dumps/pruned/union-valid-bmv2-BMV2::SimpleSwitchMidEnd_23_MoveDeclarations.p4	2019-06-08 18:34:21.177496900 +0200
+--- before_pass
++++ after_pass
 @@ -51,9 +51,9 @@ control deparser(packet_out b, in Header
      }
  }

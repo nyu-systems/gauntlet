@@ -1,5 +1,5 @@
---- dumps/pruned/std_meta_inlining-BMV2::SimpleSwitchMidEnd_2_EliminateSerEnums.p4	2019-06-08 18:34:04.268131800 +0200
-+++ dumps/pruned/std_meta_inlining-BMV2::SimpleSwitchMidEnd_3_RemoveActionParameters.p4	2019-06-08 18:34:04.251047000 +0200
+--- before_pass
++++ after_pass
 @@ -14,8 +14,11 @@ control DeparserImpl(packet_out packet,
      }
  }

@@ -1,5 +1,5 @@
---- dumps/pruned/issue823-BMV2::SimpleSwitchMidEnd_18_CopyStructures.p4	2019-06-08 18:32:42.608173200 +0200
-+++ dumps/pruned/issue823-BMV2::SimpleSwitchMidEnd_19_NestedStructs.p4	2019-06-08 18:32:42.686772700 +0200
+--- before_pass
++++ after_pass
 @@ -9,9 +9,9 @@ struct headers_t {
      data_h data;
  }

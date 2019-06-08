@@ -1,5 +1,5 @@
---- dumps/pruned/synth-action-BMV2::SimpleSwitchMidEnd_28_ValidateTableProperties.p4	2019-06-08 18:34:12.541489100 +0200
-+++ dumps/pruned/synth-action-BMV2::SimpleSwitchMidEnd_29_SimplifyControlFlow.p4	2019-06-08 18:34:12.608832900 +0200
+--- before_pass
++++ after_pass
 @@ -1,10 +1,8 @@
  control c(inout bit<32> x) {
      apply {

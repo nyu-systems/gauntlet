@@ -1,5 +1,5 @@
---- dumps/pruned/ternary2-bmv2-BMV2::SimpleSwitchMidEnd_24_ConstantFolding.p4	2019-06-08 18:34:16.785022200 +0200
-+++ dumps/pruned/ternary2-bmv2-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-06-08 18:34:16.787639900 +0200
+--- before_pass
++++ after_pass
 @@ -40,11 +40,6 @@ control update(inout packet_t h, inout M
      }
  }

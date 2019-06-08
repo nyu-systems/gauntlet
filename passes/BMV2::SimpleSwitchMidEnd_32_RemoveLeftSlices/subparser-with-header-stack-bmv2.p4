@@ -1,5 +1,5 @@
---- dumps/pruned/subparser-with-header-stack-bmv2-BMV2::SimpleSwitchMidEnd_31_TableHit.p4	2019-06-08 18:34:07.456388300 +0200
-+++ dumps/pruned/subparser-with-header-stack-bmv2-BMV2::SimpleSwitchMidEnd_32_RemoveLeftSlices.p4	2019-06-08 18:34:07.458185900 +0200
+--- before_pass
++++ after_pass
 @@ -79,15 +79,15 @@ control cIngress(inout headers hdr, inou
      apply {
          hdr.h1.h2_valid_bits = 8w0;

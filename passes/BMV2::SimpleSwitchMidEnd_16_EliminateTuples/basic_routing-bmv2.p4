@@ -1,5 +1,5 @@
---- dumps/pruned/basic_routing-bmv2-BMV2::SimpleSwitchMidEnd_15_StrengthReduction.p4	2019-06-08 18:31:09.948910500 +0200
-+++ dumps/pruned/basic_routing-bmv2-BMV2::SimpleSwitchMidEnd_16_EliminateTuples.p4	2019-06-08 18:31:09.950588100 +0200
+--- before_pass
++++ after_pass
 @@ -182,14 +182,27 @@ control DeparserImpl(packet_out packet,
          packet.emit<ipv4_t>(hdr = hdr.ipv4);
      }

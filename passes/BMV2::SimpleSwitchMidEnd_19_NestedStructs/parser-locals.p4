@@ -1,5 +1,5 @@
---- dumps/pruned/parser-locals-BMV2::SimpleSwitchMidEnd_18_CopyStructures.p4	2019-06-08 18:33:04.460950900 +0200
-+++ dumps/pruned/parser-locals-BMV2::SimpleSwitchMidEnd_19_NestedStructs.p4	2019-06-08 18:33:04.464701200 +0200
+--- before_pass
++++ after_pass
 @@ -9,10 +9,12 @@ struct S {
      bit<32> c;
  }

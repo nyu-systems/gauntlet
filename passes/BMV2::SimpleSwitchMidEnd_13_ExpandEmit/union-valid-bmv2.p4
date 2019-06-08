@@ -1,5 +1,5 @@
---- dumps/pruned/union-valid-bmv2-BMV2::SimpleSwitchMidEnd_12_ExpandLookahead.p4	2019-06-08 18:34:21.136696300 +0200
-+++ dumps/pruned/union-valid-bmv2-BMV2::SimpleSwitchMidEnd_13_ExpandEmit.p4	2019-06-08 18:34:21.140445500 +0200
+--- before_pass
++++ after_pass
 @@ -44,7 +44,10 @@ control egress(inout Headers h, inout Me
  control deparser(packet_out b, in Headers h) {
      apply {

@@ -1,5 +1,5 @@
---- dumps/pruned/issue447-bmv2-BMV2::SimpleSwitchMidEnd_28_ValidateTableProperties.p4	2019-06-08 18:32:30.765398500 +0200
-+++ dumps/pruned/issue447-bmv2-BMV2::SimpleSwitchMidEnd_29_SimplifyControlFlow.p4	2019-06-08 18:32:30.829113300 +0200
+--- before_pass
++++ after_pass
 @@ -10,9 +10,7 @@ struct Metadata {
  }
  control DeparserI(packet_out packet, in Parsed_packet hdr) {

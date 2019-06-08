@@ -1,5 +1,5 @@
---- dumps/pruned/equality-BMV2::SimpleSwitchMidEnd_23_MoveDeclarations.p4	2019-06-08 18:31:35.184323400 +0200
-+++ dumps/pruned/equality-BMV2::SimpleSwitchMidEnd_24_ConstantFolding.p4	2019-06-08 18:31:35.188086600 +0200
+--- before_pass
++++ after_pass
 @@ -24,10 +24,10 @@ control c(out bit<1> x) {
              if (!h1.isValid() && !h2.isValid() || h1.isValid() && h2.isValid() && h1.a == h2.a && h1.b == h2.b) 
                  x = 1w1;

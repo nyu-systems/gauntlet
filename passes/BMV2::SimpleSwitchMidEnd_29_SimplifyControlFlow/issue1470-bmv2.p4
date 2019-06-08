@@ -1,5 +1,5 @@
---- dumps/pruned/issue1470-bmv2-BMV2::SimpleSwitchMidEnd_28_ValidateTableProperties.p4	2019-06-08 18:32:02.644440200 +0200
-+++ dumps/pruned/issue1470-bmv2-BMV2::SimpleSwitchMidEnd_29_SimplifyControlFlow.p4	2019-06-08 18:32:02.693303700 +0200
+--- before_pass
++++ after_pass
 @@ -42,10 +42,8 @@ parser OuterParser(packet_in pkt, out he
          transition start_0;
      }

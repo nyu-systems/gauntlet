@@ -1,5 +1,5 @@
---- dumps/pruned/psa-example-parser-checksum-BMV2::SimpleSwitchMidEnd_28_ValidateTableProperties.p4	2019-06-08 18:34:10.613935900 +0200
-+++ dumps/pruned/psa-example-parser-checksum-BMV2::SimpleSwitchMidEnd_29_SimplifyControlFlow.p4	2019-06-08 18:34:10.617034100 +0200
+--- before_pass
++++ after_pass
 @@ -97,11 +97,7 @@ parser IngressParserImpl(packet_in buffe
  }
  control ingress(inout headers hdr, inout metadata user_meta, in psa_ingress_input_metadata_t istd, inout psa_ingress_output_metadata_t ostd) {

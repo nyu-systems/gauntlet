@@ -1,5 +1,5 @@
---- dumps/pruned/issue1006-BMV2::SimpleSwitchMidEnd_15_StrengthReduction.p4	2019-06-08 18:32:11.925664300 +0200
-+++ dumps/pruned/issue1006-BMV2::SimpleSwitchMidEnd_16_EliminateTuples.p4	2019-06-08 18:32:11.930094800 +0200
+--- before_pass
++++ after_pass
 @@ -6,8 +6,11 @@ struct foo {
  }
  control c();

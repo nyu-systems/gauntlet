@@ -1,5 +1,5 @@
---- dumps/pruned/header-stack-ops-bmv2-BMV2::SimpleSwitchMidEnd_24_ConstantFolding.p4	2019-06-08 18:31:46.272197800 +0200
-+++ dumps/pruned/header-stack-ops-bmv2-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-06-08 18:31:46.277445400 +0200
+--- before_pass
++++ after_pass
 @@ -54,78 +54,56 @@ parser parserI(packet_in pkt, out header
      }
  }

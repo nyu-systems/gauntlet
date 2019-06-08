@@ -1,5 +1,5 @@
---- dumps/pruned/issue420-BMV2::SimpleSwitchMidEnd_28_ValidateTableProperties.p4	2019-06-08 18:32:26.644742400 +0200
-+++ dumps/pruned/issue420-BMV2::SimpleSwitchMidEnd_29_SimplifyControlFlow.p4	2019-06-08 18:32:26.691265400 +0200
+--- before_pass
++++ after_pass
 @@ -28,18 +28,8 @@ control cIngress(inout Parsed_packet hdr
      @name(".NoAction") action NoAction_0() {
      }

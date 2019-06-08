@@ -1,5 +1,5 @@
---- dumps/pruned/struct_init-BMV2::SimpleSwitchMidEnd_23_MoveDeclarations.p4	2019-06-08 18:34:06.703451100 +0200
-+++ dumps/pruned/struct_init-BMV2::SimpleSwitchMidEnd_24_ConstantFolding.p4	2019-06-08 18:34:06.707272200 +0200
+--- before_pass
++++ after_pass
 @@ -6,7 +6,7 @@ struct metadata_t {
  }
  control I(inout metadata_t meta) {

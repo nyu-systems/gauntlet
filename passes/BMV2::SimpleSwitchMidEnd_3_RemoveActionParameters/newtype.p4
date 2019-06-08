@@ -1,5 +1,5 @@
---- dumps/pruned/newtype-BMV2::SimpleSwitchMidEnd_2_EliminateSerEnums.p4	2019-06-08 18:33:00.627276200 +0200
-+++ dumps/pruned/newtype-BMV2::SimpleSwitchMidEnd_3_RemoveActionParameters.p4	2019-06-08 18:33:00.644256800 +0200
+--- before_pass
++++ after_pass
 @@ -9,13 +9,13 @@ header H {
      N32 field;
  }

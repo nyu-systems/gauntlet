@@ -1,5 +1,5 @@
---- dumps/pruned/nested-tuple1-BMV2::SimpleSwitchMidEnd_18_CopyStructures.p4	2019-06-08 18:33:00.062720600 +0200
-+++ dumps/pruned/nested-tuple1-BMV2::SimpleSwitchMidEnd_19_NestedStructs.p4	2019-06-08 18:33:00.066234000 +0200
+--- before_pass
++++ after_pass
 @@ -12,25 +12,28 @@ struct S {
  }
  extern void f<D>(in D data);

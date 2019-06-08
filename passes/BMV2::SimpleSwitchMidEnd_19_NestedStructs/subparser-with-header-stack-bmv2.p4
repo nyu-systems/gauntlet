@@ -1,5 +1,5 @@
---- dumps/pruned/subparser-with-header-stack-bmv2-BMV2::SimpleSwitchMidEnd_18_CopyStructures.p4	2019-06-08 18:34:07.430992100 +0200
-+++ dumps/pruned/subparser-with-header-stack-bmv2-BMV2::SimpleSwitchMidEnd_19_NestedStructs.p4	2019-06-08 18:34:07.432609100 +0200
+--- before_pass
++++ after_pass
 @@ -30,7 +30,9 @@ struct metadata {
  }
  parser parserI(packet_in pkt, out headers hdr, inout metadata meta, inout standard_metadata_t stdmeta) {

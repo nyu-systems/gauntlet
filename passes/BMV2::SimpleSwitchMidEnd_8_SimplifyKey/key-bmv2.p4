@@ -1,5 +1,5 @@
---- dumps/pruned/key-bmv2-BMV2::SimpleSwitchMidEnd_7_TypeChecking.p4	2019-06-08 18:32:53.551681300 +0200
-+++ dumps/pruned/key-bmv2-BMV2::SimpleSwitchMidEnd_8_SimplifyKey.p4	2019-06-08 18:32:53.554310600 +0200
+--- before_pass
++++ after_pass
 @@ -38,9 +38,10 @@ control ingress(inout Headers h, inout M
      @name("ingress.c.a") action c_a() {
          h.h.b = h.h.a;

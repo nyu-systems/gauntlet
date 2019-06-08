@@ -1,5 +1,5 @@
---- dumps/pruned/issue982-BMV2::SimpleSwitchMidEnd_28_ValidateTableProperties.p4	2019-06-08 18:32:50.580375600 +0200
-+++ dumps/pruned/issue982-BMV2::SimpleSwitchMidEnd_29_SimplifyControlFlow.p4	2019-06-08 18:32:50.629357000 +0200
+--- before_pass
++++ after_pass
 @@ -213,14 +213,10 @@ parser EgressParserImpl(packet_in buffer
      state parse_ethernet {
          parsed_hdr_2_ethernet.setInvalid();

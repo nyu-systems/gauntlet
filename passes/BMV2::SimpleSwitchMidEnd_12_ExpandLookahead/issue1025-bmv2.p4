@@ -1,5 +1,5 @@
---- dumps/pruned/issue1025-bmv2-BMV2::SimpleSwitchMidEnd_11_SimplifySelectCases.p4	2019-06-08 18:32:12.368490100 +0200
-+++ dumps/pruned/issue1025-bmv2-BMV2::SimpleSwitchMidEnd_12_ExpandLookahead.p4	2019-06-08 18:32:12.370766300 +0200
+--- before_pass
++++ after_pass
 @@ -54,6 +54,7 @@ parser parserI(packet_in pkt, out header
      IPv4_up_to_ihl_only_h tmp_2;
      bit<9> tmp_3;

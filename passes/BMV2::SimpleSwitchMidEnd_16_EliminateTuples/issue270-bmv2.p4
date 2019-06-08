@@ -1,5 +1,5 @@
---- dumps/pruned/issue270-bmv2-BMV2::SimpleSwitchMidEnd_15_StrengthReduction.p4	2019-06-08 18:32:19.421096200 +0200
-+++ dumps/pruned/issue270-bmv2-BMV2::SimpleSwitchMidEnd_16_EliminateTuples.p4	2019-06-08 18:32:19.423038500 +0200
+--- before_pass
++++ after_pass
 @@ -33,16 +33,29 @@ control Eg(inout H hdrs, inout M meta, i
      apply {
      }

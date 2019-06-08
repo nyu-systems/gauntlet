@@ -1,5 +1,5 @@
---- dumps/pruned/psa-multicast-basic-bmv2-BMV2::SimpleSwitchMidEnd_17_SimplifyComparisons.p4	2019-06-08 18:33:24.375951300 +0200
-+++ dumps/pruned/psa-multicast-basic-bmv2-BMV2::SimpleSwitchMidEnd_18_CopyStructures.p4	2019-06-08 18:33:24.435479100 +0200
+--- before_pass
++++ after_pass
 @@ -23,11 +23,27 @@ control cIngress(inout headers_t hdr, in
      psa_ingress_output_metadata_t meta_1;
      MulticastGroup_t multicast_group_1;

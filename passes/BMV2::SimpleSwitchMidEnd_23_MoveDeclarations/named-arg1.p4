@@ -1,5 +1,5 @@
---- dumps/pruned/named-arg1-BMV2::SimpleSwitchMidEnd_22_Predication.p4	2019-06-08 18:32:59.128763500 +0200
-+++ dumps/pruned/named-arg1-BMV2::SimpleSwitchMidEnd_23_MoveDeclarations.p4	2019-06-08 18:32:59.131733900 +0200
+--- before_pass
++++ after_pass
 @@ -19,13 +19,13 @@ control c(out bool b) {
      bool b_3;
      bit<16> bi;

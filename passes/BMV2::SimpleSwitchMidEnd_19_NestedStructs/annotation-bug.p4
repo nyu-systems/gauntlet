@@ -1,5 +1,5 @@
---- dumps/pruned/annotation-bug-BMV2::SimpleSwitchMidEnd_18_CopyStructures.p4	2019-06-08 18:31:02.555828000 +0200
-+++ dumps/pruned/annotation-bug-BMV2::SimpleSwitchMidEnd_19_NestedStructs.p4	2019-06-08 18:31:02.558703500 +0200
+--- before_pass
++++ after_pass
 @@ -14,13 +14,13 @@ struct tuple_0 {
  }
  extern bit<16> get<T>(in T data);

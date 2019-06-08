@@ -1,5 +1,5 @@
---- dumps/pruned/issue281-BMV2::SimpleSwitchMidEnd_13_ExpandEmit.p4	2019-06-08 18:32:20.637463500 +0200
-+++ dumps/pruned/issue281-BMV2::SimpleSwitchMidEnd_14_SimplifyParsers.p4	2019-06-08 18:32:20.641167900 +0200
+--- before_pass
++++ after_pass
 @@ -43,21 +43,9 @@ parser MyParser(packet_in b, out h hdr,
          hdr_2.ether.setInvalid();
          hdr_2.vlan.setInvalid();

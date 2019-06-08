@@ -1,5 +1,5 @@
---- dumps/pruned/functors2-BMV2::SimpleSwitchMidEnd_13_ExpandEmit.p4	2019-06-08 18:31:41.743870700 +0200
-+++ dumps/pruned/functors2-BMV2::SimpleSwitchMidEnd_14_SimplifyParsers.p4	2019-06-08 18:31:41.745713100 +0200
+--- before_pass
++++ after_pass
 @@ -9,29 +9,11 @@ parser p2_0(out bit<2> z2) {
      bit<2> z1_3;
      bit<2> z1_4;

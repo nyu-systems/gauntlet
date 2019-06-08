@@ -1,5 +1,5 @@
---- dumps/pruned/key-bmv2-BMV2::SimpleSwitchMidEnd_22_Predication.p4	2019-06-08 18:32:53.503493200 +0200
-+++ dumps/pruned/key-bmv2-BMV2::SimpleSwitchMidEnd_23_MoveDeclarations.p4	2019-06-08 18:32:53.505988200 +0200
+--- before_pass
++++ after_pass
 @@ -33,12 +33,12 @@ control deparser(packet_out b, in Header
      }
  }

@@ -1,5 +1,5 @@
---- dumps/pruned/psa-example-register2-bmv2-BMV2::SimpleSwitchMidEnd_31_TableHit.p4	2019-06-08 18:33:18.683347800 +0200
-+++ dumps/pruned/psa-example-register2-bmv2-BMV2::SimpleSwitchMidEnd_32_RemoveLeftSlices.p4	2019-06-08 18:33:18.686330200 +0200
+--- before_pass
++++ after_pass
 @@ -51,8 +51,8 @@ control ingress(inout headers hdr, inout
      PacketByteCountState_t s;
      @name(".update_pkt_ip_byte_count") action update_pkt_ip_byte_count() {

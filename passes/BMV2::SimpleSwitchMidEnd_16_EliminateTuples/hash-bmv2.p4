@@ -1,5 +1,5 @@
---- dumps/pruned/hash-bmv2-BMV2::SimpleSwitchMidEnd_15_StrengthReduction.p4	2019-06-08 18:31:44.641946400 +0200
-+++ dumps/pruned/hash-bmv2-BMV2::SimpleSwitchMidEnd_16_EliminateTuples.p4	2019-06-08 18:31:44.643647400 +0200
+--- before_pass
++++ after_pass
 @@ -26,9 +26,12 @@ control ComputeChecksumI(inout H hdr, in
      apply {
      }

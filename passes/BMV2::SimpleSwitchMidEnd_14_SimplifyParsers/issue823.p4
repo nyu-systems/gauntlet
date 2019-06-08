@@ -1,5 +1,5 @@
---- dumps/pruned/issue823-BMV2::SimpleSwitchMidEnd_13_ExpandEmit.p4	2019-06-08 18:32:42.578609900 +0200
-+++ dumps/pruned/issue823-BMV2::SimpleSwitchMidEnd_14_SimplifyParsers.p4	2019-06-08 18:32:42.586986000 +0200
+--- before_pass
++++ after_pass
 @@ -12,9 +12,6 @@ parser MyP1(packet_in pkt, out headers_t
      headers_t hdr_1;
      state start {

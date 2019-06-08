@@ -1,5 +1,5 @@
---- dumps/pruned/psa-fwd-bmv2-BMV2::SimpleSwitchMidEnd_18_CopyStructures.p4	2019-06-08 18:33:19.380943400 +0200
-+++ dumps/pruned/psa-fwd-bmv2-BMV2::SimpleSwitchMidEnd_19_NestedStructs.p4	2019-06-08 18:33:19.385350400 +0200
+--- before_pass
++++ after_pass
 @@ -17,17 +17,17 @@ struct headers {
      ethernet_t ethernet;
  }

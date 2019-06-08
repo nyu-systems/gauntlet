@@ -1,5 +1,5 @@
---- dumps/pruned/concat-BMV2::SimpleSwitchMidEnd_24_ConstantFolding.p4	2019-06-08 18:31:25.754179000 +0200
-+++ dumps/pruned/concat-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-06-08 18:31:25.756902100 +0200
+--- before_pass
++++ after_pass
 @@ -1,12 +1,8 @@
  control proto(out bit<32> x);
  package top(proto _c);

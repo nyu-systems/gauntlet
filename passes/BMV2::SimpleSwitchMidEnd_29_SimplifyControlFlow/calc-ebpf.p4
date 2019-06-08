@@ -1,5 +1,5 @@
---- dumps/pruned/calc-ebpf-BMV2::SimpleSwitchMidEnd_28_ValidateTableProperties.p4	2019-06-08 18:31:14.679721800 +0200
-+++ dumps/pruned/calc-ebpf-BMV2::SimpleSwitchMidEnd_29_SimplifyControlFlow.p4	2019-06-08 18:31:14.682901800 +0200
+--- before_pass
++++ after_pass
 @@ -33,45 +33,33 @@ parser Parser(packet_in packet, out head
          }
      }

@@ -1,5 +1,5 @@
---- dumps/pruned/simplify-BMV2::SimpleSwitchMidEnd_2_EliminateSerEnums.p4	2019-06-08 18:33:54.184613000 +0200
-+++ dumps/pruned/simplify-BMV2::SimpleSwitchMidEnd_3_RemoveActionParameters.p4	2019-06-08 18:33:54.231825500 +0200
+--- before_pass
++++ after_pass
 @@ -1,12 +1,12 @@
  #include <core.p4>
  control c(out bool x) {

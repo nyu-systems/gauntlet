@@ -1,5 +1,5 @@
---- dumps/pruned/complex1-BMV2::SimpleSwitchMidEnd_24_ConstantFolding.p4	2019-06-08 18:31:20.343679600 +0200
-+++ dumps/pruned/complex1-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-06-08 18:31:20.349177200 +0200
+--- before_pass
++++ after_pass
 @@ -1,20 +1,14 @@
  extern bit<32> f(in bit<32> x, in bit<32> y);
  control c(inout bit<32> r) {

@@ -1,5 +1,5 @@
---- dumps/pruned/checksum1-bmv2-BMV2::SimpleSwitchMidEnd_17_SimplifyComparisons.p4	2019-06-08 18:31:17.446039700 +0200
-+++ dumps/pruned/checksum1-bmv2-BMV2::SimpleSwitchMidEnd_18_CopyStructures.p4	2019-06-08 18:31:17.448082500 +0200
+--- before_pass
++++ after_pass
 @@ -73,7 +73,10 @@ parser parserI(packet_in pkt, out header
          {
              tmp = pkt.lookahead<bit<8>>();

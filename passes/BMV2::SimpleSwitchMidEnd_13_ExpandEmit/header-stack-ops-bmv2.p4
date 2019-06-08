@@ -1,5 +1,5 @@
---- dumps/pruned/header-stack-ops-bmv2-BMV2::SimpleSwitchMidEnd_12_ExpandLookahead.p4	2019-06-08 18:31:46.127547400 +0200
-+++ dumps/pruned/header-stack-ops-bmv2-BMV2::SimpleSwitchMidEnd_13_ExpandEmit.p4	2019-06-08 18:31:46.133066600 +0200
+--- before_pass
++++ after_pass
 @@ -400,7 +400,13 @@ control uc(inout headers hdr, inout meta
  control DeparserI(packet_out packet, in headers hdr) {
      apply {

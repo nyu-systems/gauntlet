@@ -1,5 +1,5 @@
---- dumps/pruned/issue696-bmv2-BMV2::SimpleSwitchMidEnd_22_Predication.p4	2019-06-08 18:32:39.857850900 +0200
-+++ dumps/pruned/issue696-bmv2-BMV2::SimpleSwitchMidEnd_23_MoveDeclarations.p4	2019-06-08 18:32:39.861468400 +0200
+--- before_pass
++++ after_pass
 @@ -55,15 +55,17 @@ control Eg(inout Headers hdrs, inout Met
      bit<32> inc;
      bit<32> tmp_1;

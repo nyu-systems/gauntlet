@@ -1,5 +1,5 @@
---- dumps/pruned/named-arg1-BMV2::SimpleSwitchMidEnd_2_EliminateSerEnums.p4	2019-06-08 18:32:59.193672700 +0200
-+++ dumps/pruned/named-arg1-BMV2::SimpleSwitchMidEnd_3_RemoveActionParameters.p4	2019-06-08 18:32:59.171615700 +0200
+--- before_pass
++++ after_pass
 @@ -23,15 +23,23 @@ control c(out bool b) {
      bool b_2;
      bit<16> x_6;

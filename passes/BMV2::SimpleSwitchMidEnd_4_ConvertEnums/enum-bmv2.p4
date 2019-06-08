@@ -1,5 +1,5 @@
---- dumps/pruned/enum-bmv2-BMV2::SimpleSwitchMidEnd_3_RemoveActionParameters.p4	2019-06-08 18:31:33.859200700 +0200
-+++ dumps/pruned/enum-bmv2-BMV2::SimpleSwitchMidEnd_4_ConvertEnums.p4	2019-06-08 18:31:33.861040500 +0200
+--- before_pass
++++ after_pass
 @@ -5,10 +5,6 @@ header hdr {
      bit<32> b;
      bit<32> c;

@@ -1,5 +1,5 @@
---- dumps/pruned/psa-example-digest-bmv2-BMV2::SimpleSwitchMidEnd_1_EliminateNewtype.p4	2019-06-08 18:33:17.871618200 +0200
-+++ dumps/pruned/psa-example-digest-bmv2-BMV2::SimpleSwitchMidEnd_2_EliminateSerEnums.p4	2019-06-08 18:33:17.899539700 +0200
+--- before_pass
++++ after_pass
 @@ -1,14 +1,5 @@
  #include <core.p4>
  #include <psa.p4>

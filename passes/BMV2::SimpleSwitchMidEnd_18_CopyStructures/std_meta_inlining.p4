@@ -1,5 +1,5 @@
---- dumps/pruned/std_meta_inlining-BMV2::SimpleSwitchMidEnd_17_SimplifyComparisons.p4	2019-06-08 18:34:04.215400400 +0200
-+++ dumps/pruned/std_meta_inlining-BMV2::SimpleSwitchMidEnd_18_CopyStructures.p4	2019-06-08 18:34:04.217236400 +0200
+--- before_pass
++++ after_pass
 @@ -16,9 +16,53 @@ control DeparserImpl(packet_out packet,
  control ingress(inout headers_t hdr, inout metadata_t meta, inout standard_metadata_t standard_metadata) {
      standard_metadata_t standard_metadata_1;

@@ -1,5 +1,5 @@
---- dumps/pruned/issue1210-BMV2::SimpleSwitchMidEnd_23_MoveDeclarations.p4	2019-06-08 18:31:57.779711500 +0200
-+++ dumps/pruned/issue1210-BMV2::SimpleSwitchMidEnd_24_ConstantFolding.p4	2019-06-08 18:31:57.782532700 +0200
+--- before_pass
++++ after_pass
 @@ -16,9 +16,9 @@ parser ParserImpl(packet_in packet, out
  }
  control IngressImpl(inout parsed_headers_t hdr, inout metadata_t meta, inout standard_metadata_t standard_metadata) {

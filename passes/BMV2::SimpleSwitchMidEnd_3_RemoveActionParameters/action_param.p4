@@ -1,5 +1,5 @@
---- dumps/pruned/action_param-BMV2::SimpleSwitchMidEnd_2_EliminateSerEnums.p4	2019-06-08 18:31:01.044774700 +0200
-+++ dumps/pruned/action_param-BMV2::SimpleSwitchMidEnd_3_RemoveActionParameters.p4	2019-06-08 18:31:01.062934700 +0200
+--- before_pass
++++ after_pass
 @@ -1,12 +1,14 @@
  control c(inout bit<32> x) {
 -    @name("c.a") action a_0(in bit<32> arg_1) {

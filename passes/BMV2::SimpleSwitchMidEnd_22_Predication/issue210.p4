@@ -1,5 +1,5 @@
---- dumps/pruned/issue210-BMV2::SimpleSwitchMidEnd_21_RemoveSelectBooleans.p4	2019-06-08 18:32:17.266882300 +0200
-+++ dumps/pruned/issue210-BMV2::SimpleSwitchMidEnd_22_Predication.p4	2019-06-08 18:32:17.270589800 +0200
+--- before_pass
++++ after_pass
 @@ -2,10 +2,18 @@
  control Ing(out bit<32> a) {
      bool b;

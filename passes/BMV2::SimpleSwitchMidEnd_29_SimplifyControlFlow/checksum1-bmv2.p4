@@ -1,5 +1,5 @@
---- dumps/pruned/checksum1-bmv2-BMV2::SimpleSwitchMidEnd_28_ValidateTableProperties.p4	2019-06-08 18:31:17.479958800 +0200
-+++ dumps/pruned/checksum1-bmv2-BMV2::SimpleSwitchMidEnd_29_SimplifyControlFlow.p4	2019-06-08 18:31:17.551223800 +0200
+--- before_pass
++++ after_pass
 @@ -70,14 +70,10 @@ parser parserI(packet_in pkt, out header
          }
      }

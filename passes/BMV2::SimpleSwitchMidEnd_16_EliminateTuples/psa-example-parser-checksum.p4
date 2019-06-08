@@ -1,5 +1,5 @@
---- dumps/pruned/psa-example-parser-checksum-BMV2::SimpleSwitchMidEnd_15_StrengthReduction.p4	2019-06-08 18:34:10.539475100 +0200
-+++ dumps/pruned/psa-example-parser-checksum-BMV2::SimpleSwitchMidEnd_16_EliminateTuples.p4	2019-06-08 18:34:10.541704800 +0200
+--- before_pass
++++ after_pass
 @@ -51,6 +51,19 @@ struct headers {
  }
  typedef bit<32> PacketCounter_t;

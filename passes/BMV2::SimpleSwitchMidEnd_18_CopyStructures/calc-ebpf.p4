@@ -1,5 +1,5 @@
---- dumps/pruned/calc-ebpf-BMV2::SimpleSwitchMidEnd_17_SimplifyComparisons.p4	2019-06-08 18:31:14.631632000 +0200
-+++ dumps/pruned/calc-ebpf-BMV2::SimpleSwitchMidEnd_18_CopyStructures.p4	2019-06-08 18:31:14.635116500 +0200
+--- before_pass
++++ after_pass
 @@ -36,17 +36,41 @@ parser Parser(packet_in packet, out head
          {
              tmp = packet.lookahead<bit<128>>();

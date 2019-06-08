@@ -1,5 +1,5 @@
---- dumps/pruned/issue983-bmv2-BMV2::SimpleSwitchMidEnd_24_ConstantFolding.p4	2019-06-08 18:32:50.970549800 +0200
-+++ dumps/pruned/issue983-bmv2-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-06-08 18:32:50.972475400 +0200
+--- before_pass
++++ after_pass
 @@ -31,9 +31,6 @@ parser IngressParserImpl(packet_in buffe
      }
  }

@@ -1,5 +1,5 @@
---- dumps/pruned/issue870_ebpf-BMV2::SimpleSwitchMidEnd_31_TableHit.p4	2019-06-08 18:32:43.486208800 +0200
-+++ dumps/pruned/issue870_ebpf-BMV2::SimpleSwitchMidEnd_32_RemoveLeftSlices.p4	2019-06-08 18:32:43.489537500 +0200
+--- before_pass
++++ after_pass
 @@ -44,7 +44,7 @@ control pipe(inout Headers_t headers, ou
      }
      @name("pipe.Reject") action Reject_0(IPv4Address add) {

@@ -1,5 +1,5 @@
---- dumps/pruned/issue1897-bmv2-BMV2::SimpleSwitchMidEnd_13_ExpandEmit.p4	2019-06-08 18:32:16.921148300 +0200
-+++ dumps/pruned/issue1897-bmv2-BMV2::SimpleSwitchMidEnd_14_SimplifyParsers.p4	2019-06-08 18:32:16.923290600 +0200
+--- before_pass
++++ after_pass
 @@ -29,9 +29,6 @@ parser ProtParser(packet_in packet, out
          addrType = hdr.addr_type.dstType;
          addr_1.ipv4.setInvalid();

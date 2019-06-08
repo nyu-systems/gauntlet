@@ -1,5 +1,5 @@
---- dumps/pruned/key-issue-1020_ebpf-BMV2::SimpleSwitchMidEnd_22_Predication.p4	2019-06-08 18:32:53.953445400 +0200
-+++ dumps/pruned/key-issue-1020_ebpf-BMV2::SimpleSwitchMidEnd_23_MoveDeclarations.p4	2019-06-08 18:32:53.957492000 +0200
+--- before_pass
++++ after_pass
 @@ -40,6 +40,8 @@ parser prs(packet_in p, out Headers_t he
  }
  control pipe(inout Headers_t headers, out bool pass) {

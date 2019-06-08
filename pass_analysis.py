@@ -60,7 +60,8 @@ def diff_files(pass_dir, p4_prune_dir, p4_file):
         pass_before = glob.glob(f"{p4_prune_dir}/*{passes[index]}*.p4")
         pass_after = glob.glob(f"{p4_prune_dir}/*{passes[index+1]}*.p4")
         if not(pass_before and pass_after):
-            log.error(f"Could not find the P4 files!")
+            log.error(f"Could not find the P4 files! "
+                      "Passes not generated.")
             return FAILURE
         # pass_before = f"{p4_prune_dir}/{p4_base}-{passes[index]}.p4"
         # pass_after = f"{p4_prune_dir}/{p4_base}-{passes[index+1]}.p4"
@@ -70,6 +71,7 @@ def diff_files(pass_dir, p4_prune_dir, p4_file):
         diff_file = f"{diff_dir}/{p4_file}"
         check_dir(diff_dir)
         diff_cmd = "diff -rupP "
+        diff_cmd += "--label=\"before_pass\" --label=\"after_pass\" "
         diff_cmd += f"{pass_before} {pass_after}"
         diff_cmd += f"> {diff_file}"
         log.debug(f"Creating a diff of the file")
@@ -83,6 +85,7 @@ def diff_files(pass_dir, p4_prune_dir, p4_file):
 
 
 def get_links_to_passes(pass_dir, p4_input):
+    check_dir(pass_dir)
     p4_name = os.path.splitext(os.path.basename(p4_input))[0]
     passes = {}
     for p4_file in glob.glob(f"{pass_dir}/**/full_{p4_name}*.p4"):
@@ -92,8 +95,8 @@ def get_links_to_passes(pass_dir, p4_input):
         for key in passes.keys():
             match_file.write(key + "###########\n")
             for p4_test in passes[key]:
-                src_dir = "https://github.com/p4lang/p4c/blob/master/"
-                src_dir += "testdata/p4_16_samples/"
+                src_dir = "https://github.com/fruffy/p4_tv/tree/master/"
+                src_dir += "p4_16_samples/"
                 match_file.write(f"{src_dir}{p4_test}\n")
 
 
@@ -110,7 +113,6 @@ def analyse_p4_file(p4_file, pass_dir):
     prune_dir = prune_files(p4_dmp_dir)
     err = diff_files(pass_dir, prune_dir, os.path.basename(p4_file))
     shutil.rmtree(p4_dmp_dir)
-    return err
 
 
 def main():
@@ -119,15 +121,13 @@ def main():
     p4_input = args.p4_input
     if (os.path.isfile(p4_input)):
         pass_dir = "single_passes"
-        err = analyse_p4_file(p4_input, pass_dir)
-        if not err == FAILURE:
-            get_links_to_passes(pass_dir, p4_input)
-
+        analyse_p4_file(p4_input, pass_dir)
+        get_links_to_passes(pass_dir, p4_input)
     else:
         pass_dir = "passes"
         for p4_file in glob.glob(f"{p4_input}/*.p4"):
             analyse_p4_file(p4_file, pass_dir)
-        get_links_to_passes(pass_dir, p4_input)
+            get_links_to_passes(pass_dir, p4_file)
 
 
 if __name__ == '__main__':

@@ -1,5 +1,5 @@
---- dumps/pruned/issue1412-bmv2-BMV2::SimpleSwitchMidEnd_24_ConstantFolding.p4	2019-06-08 18:32:01.384361100 +0200
-+++ dumps/pruned/issue1412-bmv2-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-06-08 18:32:01.386415800 +0200
+--- before_pass
++++ after_pass
 @@ -20,16 +20,12 @@ control IngressImpl(inout headers_t hdr,
      }
  }

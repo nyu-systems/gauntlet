@@ -1,5 +1,5 @@
---- dumps/pruned/named-arg1-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-06-08 18:32:59.137304700 +0200
-+++ dumps/pruned/named-arg1-BMV2::SimpleSwitchMidEnd_26_ConstantFolding.p4	2019-06-08 18:32:59.140196500 +0200
+--- before_pass
++++ after_pass
 @@ -15,10 +15,10 @@ control c(out bool b) {
      bit<16> xv;
      bool b_3;

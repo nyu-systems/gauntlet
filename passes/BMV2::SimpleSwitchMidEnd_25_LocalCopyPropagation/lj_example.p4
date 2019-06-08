@@ -1,5 +1,5 @@
---- dumps/pruned/lj_example-BMV2::SimpleSwitchMidEnd_24_ConstantFolding.p4	2019-06-08 18:32:56.192980300 +0200
-+++ dumps/pruned/lj_example-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-06-08 18:32:56.196790500 +0200
+--- before_pass
++++ after_pass
 @@ -31,10 +31,8 @@ parser LJparse(packet_in b, out Parsed_r
      }
  }

@@ -1,5 +1,5 @@
---- dumps/pruned/parser-conditional-BMV2::SimpleSwitchMidEnd_20_SimplifySelectList.p4	2019-06-08 18:33:04.021918100 +0200
-+++ dumps/pruned/parser-conditional-BMV2::SimpleSwitchMidEnd_21_RemoveSelectBooleans.p4	2019-06-08 18:33:04.024464200 +0200
+--- before_pass
++++ after_pass
 @@ -6,9 +6,9 @@ parser p(out bit<32> b) {
      bit<32> tmp_4;
      state start {

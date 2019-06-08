@@ -1,5 +1,5 @@
---- dumps/pruned/issue281-BMV2::SimpleSwitchMidEnd_28_ValidateTableProperties.p4	2019-06-08 18:32:20.696957300 +0200
-+++ dumps/pruned/issue281-BMV2::SimpleSwitchMidEnd_29_SimplifyControlFlow.p4	2019-06-08 18:32:20.766361800 +0200
+--- before_pass
++++ after_pass
 @@ -50,16 +50,12 @@ parser MyParser(packet_in b, out h hdr,
          l2_ether_0.setInvalid();
          b.extract<ethernet_t>(l2_ether_0);

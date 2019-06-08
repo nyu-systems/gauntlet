@@ -1,5 +1,5 @@
---- dumps/pruned/psa-example-register2-bmv2-BMV2::SimpleSwitchMidEnd_2_EliminateSerEnums.p4	2019-06-08 18:33:18.638229600 +0200
-+++ dumps/pruned/psa-example-register2-bmv2-BMV2::SimpleSwitchMidEnd_3_RemoveActionParameters.p4	2019-06-08 18:33:18.701158500 +0200
+--- before_pass
++++ after_pass
 @@ -46,19 +46,24 @@ parser IngressParserImpl(packet_in buffe
      }
  }

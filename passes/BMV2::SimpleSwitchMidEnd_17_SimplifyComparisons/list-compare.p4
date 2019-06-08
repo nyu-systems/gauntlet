@@ -1,5 +1,5 @@
---- dumps/pruned/list-compare-BMV2::SimpleSwitchMidEnd_16_EliminateTuples.p4	2019-06-08 18:34:07.904435900 +0200
-+++ dumps/pruned/list-compare-BMV2::SimpleSwitchMidEnd_17_SimplifyComparisons.p4	2019-06-08 18:34:07.906651100 +0200
+--- before_pass
++++ after_pass
 @@ -14,8 +14,8 @@ control test(out bool zout) {
      apply {
          p = { 32w4, 32w5 };

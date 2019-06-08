@@ -1,5 +1,5 @@
---- dumps/pruned/side_effects-BMV2::SimpleSwitchMidEnd_24_ConstantFolding.p4	2019-06-08 18:33:53.800861300 +0200
-+++ dumps/pruned/side_effects-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-06-08 18:33:53.803406400 +0200
+--- before_pass
++++ after_pass
 @@ -9,39 +9,32 @@ control my() {
      bit<1> a;
      H[2] s;

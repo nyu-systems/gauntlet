@@ -1,5 +1,5 @@
---- dumps/pruned/mux-bmv2-BMV2::SimpleSwitchMidEnd_31_TableHit.p4	2019-06-08 18:32:58.189269500 +0200
-+++ dumps/pruned/mux-bmv2-BMV2::SimpleSwitchMidEnd_32_RemoveLeftSlices.p4	2019-06-08 18:32:58.193373600 +0200
+--- before_pass
++++ after_pass
 @@ -21,7 +21,7 @@ control Eg(inout Headers hdrs, inout Met
          val = res;
          tmp_0 = res[31:0];

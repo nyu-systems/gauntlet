@@ -1,5 +1,5 @@
---- dumps/pruned/annotation-bug-BMV2::SimpleSwitchMidEnd_17_SimplifyComparisons.p4	2019-06-08 18:31:02.553383900 +0200
-+++ dumps/pruned/annotation-bug-BMV2::SimpleSwitchMidEnd_18_CopyStructures.p4	2019-06-08 18:31:02.555828000 +0200
+--- before_pass
++++ after_pass
 @@ -17,7 +17,9 @@ control cc() {
      headers hdr_1;
      headers tmp_0;

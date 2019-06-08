@@ -1,5 +1,5 @@
---- dumps/pruned/issue1595-1-BMV2::SimpleSwitchMidEnd_31_TableHit.p4	2019-06-08 18:32:06.575963600 +0200
-+++ dumps/pruned/issue1595-1-BMV2::SimpleSwitchMidEnd_32_RemoveLeftSlices.p4	2019-06-08 18:32:06.577737800 +0200
+--- before_pass
++++ after_pass
 @@ -10,7 +10,7 @@ control c(inout bit<32> b) {
      apply {
          switch (t.apply().action_run) {

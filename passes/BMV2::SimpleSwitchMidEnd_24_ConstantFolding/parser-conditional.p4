@@ -1,5 +1,5 @@
---- dumps/pruned/parser-conditional-BMV2::SimpleSwitchMidEnd_23_MoveDeclarations.p4	2019-06-08 18:33:04.029254100 +0200
-+++ dumps/pruned/parser-conditional-BMV2::SimpleSwitchMidEnd_24_ConstantFolding.p4	2019-06-08 18:33:04.031663100 +0200
+--- before_pass
++++ after_pass
 @@ -7,8 +7,8 @@ parser p(out bit<32> b) {
      state start {
          a = 32w1;

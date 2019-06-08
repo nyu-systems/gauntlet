@@ -1,5 +1,5 @@
---- dumps/pruned/ternary2-bmv2-BMV2::SimpleSwitchMidEnd_28_ValidateTableProperties.p4	2019-06-08 18:34:16.794896000 +0200
-+++ dumps/pruned/ternary2-bmv2-BMV2::SimpleSwitchMidEnd_29_SimplifyControlFlow.p4	2019-06-08 18:34:16.841456700 +0200
+--- before_pass
++++ after_pass
 @@ -130,17 +130,15 @@ control ingress(inout packet_t hdrs, ino
      }
      apply {

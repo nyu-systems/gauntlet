@@ -1,5 +1,5 @@
---- dumps/pruned/psa-multicast-basic-corrected-bmv2-BMV2::SimpleSwitchMidEnd_24_ConstantFolding.p4	2019-06-08 18:33:25.210321000 +0200
-+++ dumps/pruned/psa-multicast-basic-corrected-bmv2-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-06-08 18:33:25.255052000 +0200
+--- before_pass
++++ after_pass
 @@ -20,29 +20,12 @@ parser IngressParserImpl(packet_in pkt,
      }
  }

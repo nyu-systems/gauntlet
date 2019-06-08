@@ -1,5 +1,5 @@
---- dumps/pruned/psa-example-counters-bmv2-BMV2::SimpleSwitchMidEnd_13_ExpandEmit.p4	2019-06-08 18:33:16.552413700 +0200
-+++ dumps/pruned/psa-example-counters-bmv2-BMV2::SimpleSwitchMidEnd_14_SimplifyParsers.p4	2019-06-08 18:33:16.556296700 +0200
+--- before_pass
++++ after_pass
 @@ -40,9 +40,6 @@ parser IngressParserImpl(packet_in buffe
          parsed_hdr_2.ethernet.setInvalid();
          parsed_hdr_2.ipv4.setInvalid();

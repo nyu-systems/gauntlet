@@ -1,5 +1,5 @@
---- dumps/pruned/subparser-with-header-stack-bmv2-BMV2::SimpleSwitchMidEnd_12_ExpandLookahead.p4	2019-06-08 18:34:07.409875400 +0200
-+++ dumps/pruned/subparser-with-header-stack-bmv2-BMV2::SimpleSwitchMidEnd_13_ExpandEmit.p4	2019-06-08 18:34:07.411639400 +0200
+--- before_pass
++++ after_pass
 @@ -105,7 +105,13 @@ control uc(inout headers hdr, inout meta
  control DeparserI(packet_out packet, in headers hdr) {
      apply {

@@ -1,5 +1,5 @@
---- dumps/pruned/psa-example-digest-bmv2-BMV2::SimpleSwitchMidEnd_18_CopyStructures.p4	2019-06-08 18:33:17.867084700 +0200
-+++ dumps/pruned/psa-example-digest-bmv2-BMV2::SimpleSwitchMidEnd_19_NestedStructs.p4	2019-06-08 18:33:17.869506000 +0200
+--- before_pass
++++ after_pass
 @@ -36,78 +36,84 @@ struct metadata {
      mac_learn_digest_t mac_learn_msg;
  }

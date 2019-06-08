@@ -1,5 +1,5 @@
---- dumps/pruned/issue242-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-06-08 18:32:18.701900300 +0200
-+++ dumps/pruned/issue242-BMV2::SimpleSwitchMidEnd_26_ConstantFolding.p4	2019-06-08 18:32:18.703936900 +0200
+--- before_pass
++++ after_pass
 @@ -60,15 +60,15 @@ control Eg(inout Headers hdrs, inout Met
          }
          {

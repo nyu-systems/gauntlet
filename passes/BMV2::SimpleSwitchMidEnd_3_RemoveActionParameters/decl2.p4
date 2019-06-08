@@ -1,5 +1,5 @@
---- dumps/pruned/decl2-BMV2::SimpleSwitchMidEnd_2_EliminateSerEnums.p4	2019-06-08 18:31:29.513306900 +0200
-+++ dumps/pruned/decl2-BMV2::SimpleSwitchMidEnd_3_RemoveActionParameters.p4	2019-06-08 18:31:29.532670100 +0200
+--- before_pass
++++ after_pass
 @@ -3,14 +3,18 @@ control p() {
      bit<1> x;
      bit<1> x_1;

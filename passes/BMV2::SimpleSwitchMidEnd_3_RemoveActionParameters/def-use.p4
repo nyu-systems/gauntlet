@@ -1,5 +1,5 @@
---- dumps/pruned/def-use-BMV2::SimpleSwitchMidEnd_2_EliminateSerEnums.p4	2019-06-08 18:31:29.873406600 +0200
-+++ dumps/pruned/def-use-BMV2::SimpleSwitchMidEnd_3_RemoveActionParameters.p4	2019-06-08 18:31:29.891767200 +0200
+--- before_pass
++++ after_pass
 @@ -15,6 +15,7 @@ control IngressI(inout H hdr, inout M me
      }
  }

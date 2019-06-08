@@ -1,5 +1,5 @@
---- dumps/pruned/issue1863-BMV2::SimpleSwitchMidEnd_17_SimplifyComparisons.p4	2019-06-08 18:32:15.964389200 +0200
-+++ dumps/pruned/issue1863-BMV2::SimpleSwitchMidEnd_18_CopyStructures.p4	2019-06-08 18:32:15.966630800 +0200
+--- before_pass
++++ after_pass
 @@ -5,8 +5,14 @@ struct S {
  control c(out bit<1> b) {
      S s;

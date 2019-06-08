@@ -1,5 +1,5 @@
---- dumps/pruned/test_ebpf-BMV2::SimpleSwitchMidEnd_2_EliminateSerEnums.p4	2019-06-08 18:34:17.327193700 +0200
-+++ dumps/pruned/test_ebpf-BMV2::SimpleSwitchMidEnd_3_RemoveActionParameters.p4	2019-06-08 18:34:17.303647500 +0200
+--- before_pass
++++ after_pass
 @@ -39,6 +39,7 @@ parser prs(packet_in p, out Headers_t he
      }
  }

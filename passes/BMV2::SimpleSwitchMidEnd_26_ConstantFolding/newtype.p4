@@ -1,5 +1,5 @@
---- dumps/pruned/newtype-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-06-08 18:33:00.617546100 +0200
-+++ dumps/pruned/newtype-BMV2::SimpleSwitchMidEnd_26_ConstantFolding.p4	2019-06-08 18:33:00.619998900 +0200
+--- before_pass
++++ after_pass
 @@ -23,12 +23,10 @@ control c(out B32 x) {
      }
      apply {

@@ -1,5 +1,5 @@
---- dumps/pruned/checksum1-bmv2-BMV2::SimpleSwitchMidEnd_11_SimplifySelectCases.p4	2019-06-08 18:31:17.433155300 +0200
-+++ dumps/pruned/checksum1-bmv2-BMV2::SimpleSwitchMidEnd_12_ExpandLookahead.p4	2019-06-08 18:31:17.435947700 +0200
+--- before_pass
++++ after_pass
 @@ -61,6 +61,7 @@ parser parserI(packet_in pkt, out header
      bit<9> tmp_6;
      bit<9> tmp_7;

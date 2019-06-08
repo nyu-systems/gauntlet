@@ -1,5 +1,5 @@
---- dumps/pruned/newtype1-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-06-08 18:33:00.944965700 +0200
-+++ dumps/pruned/newtype1-BMV2::SimpleSwitchMidEnd_26_ConstantFolding.p4	2019-06-08 18:33:00.947635700 +0200
+--- before_pass
++++ after_pass
 @@ -4,7 +4,7 @@ typedef bit<32> Wide_t;
  typedef Wide_t Wide;
  control c(out bool b) {

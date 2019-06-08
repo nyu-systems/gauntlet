@@ -1,0 +1,6 @@
+BMV2::SimpleSwitchMidEnd_24_ConstantFolding###########
+https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_struct_init.p4
+BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation###########
+https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_structArg.p4
+BMV2::SimpleSwitchMidEnd_17_SimplifyComparisons###########
+https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_struct_init.p4

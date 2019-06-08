@@ -1,5 +1,5 @@
---- dumps/pruned/inline-control-BMV2::SimpleSwitchMidEnd_2_EliminateSerEnums.p4	2019-06-08 18:31:49.720482100 +0200
-+++ dumps/pruned/inline-control-BMV2::SimpleSwitchMidEnd_3_RemoveActionParameters.p4	2019-06-08 18:31:49.736906900 +0200
+--- before_pass
++++ after_pass
 @@ -3,8 +3,8 @@ extern Y {
      bit<32> get();
  }

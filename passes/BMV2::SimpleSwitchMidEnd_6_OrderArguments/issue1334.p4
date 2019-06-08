@@ -1,5 +1,5 @@
---- dumps/pruned/issue1334-BMV2::SimpleSwitchMidEnd_5_VisitFunctor.p4	2019-06-08 18:31:59.227099900 +0200
-+++ dumps/pruned/issue1334-BMV2::SimpleSwitchMidEnd_6_OrderArguments.p4	2019-06-08 18:31:59.229459700 +0200
+--- before_pass
++++ after_pass
 @@ -17,12 +17,12 @@ control c() {
          f(a = 32w2);
          f(b = 16w1);

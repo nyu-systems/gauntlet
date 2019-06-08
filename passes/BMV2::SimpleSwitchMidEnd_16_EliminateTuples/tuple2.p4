@@ -1,5 +1,5 @@
---- dumps/pruned/tuple2-BMV2::SimpleSwitchMidEnd_15_StrengthReduction.p4	2019-06-08 18:34:18.180317100 +0200
-+++ dumps/pruned/tuple2-BMV2::SimpleSwitchMidEnd_16_EliminateTuples.p4	2019-06-08 18:34:18.182340900 +0200
+--- before_pass
++++ after_pass
 @@ -1,11 +1,15 @@
  extern void f<T>(in T data);
  control proto();

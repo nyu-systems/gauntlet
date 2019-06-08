@@ -1,5 +1,5 @@
---- dumps/pruned/pvs-struct-BMV2::SimpleSwitchMidEnd_24_ConstantFolding.p4	2019-06-08 18:33:29.429425800 +0200
-+++ dumps/pruned/pvs-struct-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-06-08 18:33:29.434246900 +0200
+--- before_pass
++++ after_pass
 @@ -31,7 +31,6 @@ control MyVerifyChecksum(inout my_packet
      }
  }

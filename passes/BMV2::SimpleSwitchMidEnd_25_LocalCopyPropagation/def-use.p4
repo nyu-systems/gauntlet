@@ -1,5 +1,5 @@
---- dumps/pruned/def-use-BMV2::SimpleSwitchMidEnd_24_ConstantFolding.p4	2019-06-08 18:31:29.861380800 +0200
-+++ dumps/pruned/def-use-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-06-08 18:31:29.863096600 +0200
+--- before_pass
++++ after_pass
 @@ -15,7 +15,6 @@ control IngressI(inout H hdr, inout M me
      }
  }

@@ -1,5 +1,5 @@
---- dumps/pruned/inline-BMV2::SimpleSwitchMidEnd_24_ConstantFolding.p4	2019-06-08 18:31:51.322691700 +0200
-+++ dumps/pruned/inline-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-06-08 18:31:51.326023200 +0200
+--- before_pass
++++ after_pass
 @@ -1,28 +1,11 @@
  control p(out bit<1> y) {
 -    bit<1> x;

@@ -1,5 +1,5 @@
---- dumps/pruned/issue430-bmv2-BMV2::SimpleSwitchMidEnd_15_StrengthReduction.p4	2019-06-08 18:32:27.864884200 +0200
-+++ dumps/pruned/issue430-bmv2-BMV2::SimpleSwitchMidEnd_16_EliminateTuples.p4	2019-06-08 18:32:27.867669600 +0200
+--- before_pass
++++ after_pass
 @@ -17,10 +17,13 @@ control MyVerifyChecksum(inout my_packet
      apply {
      }

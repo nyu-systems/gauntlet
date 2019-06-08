@@ -1,5 +1,5 @@
---- dumps/pruned/issue420-BMV2::SimpleSwitchMidEnd_21_RemoveSelectBooleans.p4	2019-06-08 18:32:26.624942000 +0200
-+++ dumps/pruned/issue420-BMV2::SimpleSwitchMidEnd_22_Predication.p4	2019-06-08 18:32:26.627551200 +0200
+--- before_pass
++++ after_pass
 @@ -31,12 +31,27 @@ control cIngress(inout Parsed_packet hdr
      }
      @name("cIngress.foo") action foo_0(bit<16> bar) {

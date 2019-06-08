@@ -1,5 +1,5 @@
---- dumps/pruned/equality-BMV2::SimpleSwitchMidEnd_18_CopyStructures.p4	2019-06-08 18:31:35.163338100 +0200
-+++ dumps/pruned/equality-BMV2::SimpleSwitchMidEnd_19_NestedStructs.p4	2019-06-08 18:31:35.263713800 +0200
+--- before_pass
++++ after_pass
 @@ -11,8 +11,10 @@ control c(out bit<1> x) {
      varbit<32> b_1;
      H h1;

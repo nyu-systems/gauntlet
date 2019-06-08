@@ -1,5 +1,5 @@
---- dumps/pruned/copy-BMV2::SimpleSwitchMidEnd_17_SimplifyComparisons.p4	2019-06-08 18:31:28.676484000 +0200
-+++ dumps/pruned/copy-BMV2::SimpleSwitchMidEnd_18_CopyStructures.p4	2019-06-08 18:31:28.679110600 +0200
+--- before_pass
++++ after_pass
 @@ -5,9 +5,15 @@ control c(inout bit<32> b) {
      S s1;
      S s2;

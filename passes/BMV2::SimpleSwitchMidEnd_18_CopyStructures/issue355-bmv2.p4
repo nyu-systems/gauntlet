@@ -1,5 +1,5 @@
---- dumps/pruned/issue355-bmv2-BMV2::SimpleSwitchMidEnd_17_SimplifyComparisons.p4	2019-06-08 18:32:23.573737400 +0200
-+++ dumps/pruned/issue355-bmv2-BMV2::SimpleSwitchMidEnd_18_CopyStructures.p4	2019-06-08 18:32:23.577351800 +0200
+--- before_pass
++++ after_pass
 @@ -20,7 +20,11 @@ parser parserI(packet_in pkt, out H hdr,
          {
              tmp = pkt.lookahead<bit<112>>();

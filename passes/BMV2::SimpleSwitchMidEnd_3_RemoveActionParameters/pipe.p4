@@ -1,5 +1,5 @@
---- dumps/pruned/pipe-BMV2::SimpleSwitchMidEnd_2_EliminateSerEnums.p4	2019-06-08 18:34:08.321506700 +0200
-+++ dumps/pruned/pipe-BMV2::SimpleSwitchMidEnd_3_RemoveActionParameters.p4	2019-06-08 18:34:08.345631500 +0200
+--- before_pass
++++ after_pass
 @@ -26,12 +26,14 @@ extern bs {
  struct Packet_data {
  }

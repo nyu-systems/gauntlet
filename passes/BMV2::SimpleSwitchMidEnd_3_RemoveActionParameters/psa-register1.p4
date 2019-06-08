@@ -1,5 +1,5 @@
---- dumps/pruned/psa-register1-BMV2::SimpleSwitchMidEnd_2_EliminateSerEnums.p4	2019-06-08 18:33:27.159756600 +0200
-+++ dumps/pruned/psa-register1-BMV2::SimpleSwitchMidEnd_3_RemoveActionParameters.p4	2019-06-08 18:33:27.180970600 +0200
+--- before_pass
++++ after_pass
 @@ -20,9 +20,9 @@ parser MyEP(packet_in buffer, out EMPTY
      }
  }

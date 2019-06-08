@@ -1,5 +1,5 @@
---- dumps/pruned/issue1566-BMV2::SimpleSwitchMidEnd_24_ConstantFolding.p4	2019-06-08 18:32:06.300456700 +0200
-+++ dumps/pruned/issue1566-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-06-08 18:32:06.303396700 +0200
+--- before_pass
++++ after_pass
 @@ -20,20 +20,15 @@ parser parserI(packet_in pkt, out Parsed
      }
  }

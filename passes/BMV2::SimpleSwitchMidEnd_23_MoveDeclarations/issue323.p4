@@ -1,5 +1,5 @@
---- dumps/pruned/issue323-BMV2::SimpleSwitchMidEnd_22_Predication.p4	2019-06-08 18:32:23.069703400 +0200
-+++ dumps/pruned/issue323-BMV2::SimpleSwitchMidEnd_23_MoveDeclarations.p4	2019-06-08 18:32:23.071595500 +0200
+--- before_pass
++++ after_pass
 @@ -35,11 +35,11 @@ control deparser(packet_out b, in Header
  }
  control ingress(inout Headers h, inout Meta m, inout standard_metadata_t sm) {

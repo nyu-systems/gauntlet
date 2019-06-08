@@ -1,5 +1,5 @@
---- dumps/pruned/action-bind-BMV2::SimpleSwitchMidEnd_24_ConstantFolding.p4	2019-06-08 18:30:58.620338400 +0200
-+++ dumps/pruned/action-bind-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-06-08 18:30:58.622599300 +0200
+--- before_pass
++++ after_pass
 @@ -1,9 +1,6 @@
  control c(inout bit<32> x) {
 -    bit<32> b;

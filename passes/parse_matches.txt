@@ -1,0 +1,12 @@
+BMV2::SimpleSwitchMidEnd_21_RemoveSelectBooleans###########
+https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_parser-conditional.p4
+BMV2::SimpleSwitchMidEnd_24_ConstantFolding###########
+https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_parser-conditional.p4
+BMV2::SimpleSwitchMidEnd_29_SimplifyControlFlow###########
+https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_parser_error-bmv2.p4
+BMV2::SimpleSwitchMidEnd_13_ExpandEmit###########
+https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_parser_error-bmv2.p4
+BMV2::SimpleSwitchMidEnd_14_SimplifyParsers###########
+https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_parser-arg.p4
+BMV2::SimpleSwitchMidEnd_19_NestedStructs###########
+https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_parser-locals.p4

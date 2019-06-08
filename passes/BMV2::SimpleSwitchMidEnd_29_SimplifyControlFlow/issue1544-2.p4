@@ -1,5 +1,5 @@
---- dumps/pruned/issue1544-2-BMV2::SimpleSwitchMidEnd_28_ValidateTableProperties.p4	2019-06-08 18:32:04.904005100 +0200
-+++ dumps/pruned/issue1544-2-BMV2::SimpleSwitchMidEnd_29_SimplifyControlFlow.p4	2019-06-08 18:32:04.907167100 +0200
+--- before_pass
++++ after_pass
 @@ -2,23 +2,17 @@ control c(inout bit<32> x) {
      bit<32> tmp_6;
      bit<32> tmp_10;

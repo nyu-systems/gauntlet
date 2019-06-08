@@ -1,5 +1,5 @@
---- dumps/pruned/inline-action-BMV2::SimpleSwitchMidEnd_2_EliminateSerEnums.p4	2019-06-08 18:30:57.590032900 +0200
-+++ dumps/pruned/inline-action-BMV2::SimpleSwitchMidEnd_3_RemoveActionParameters.p4	2019-06-08 18:30:57.615921500 +0200
+--- before_pass
++++ after_pass
 @@ -1,12 +1,14 @@
  control p(inout bit<1> bt) {
 +    bit<1> y0_0;

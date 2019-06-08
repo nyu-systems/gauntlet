@@ -1,5 +1,5 @@
---- dumps/pruned/psa-portid-using-newtype2-BMV2::SimpleSwitchMidEnd_2_EliminateSerEnums.p4	2019-06-08 18:33:25.931138000 +0200
-+++ dumps/pruned/psa-portid-using-newtype2-BMV2::SimpleSwitchMidEnd_3_RemoveActionParameters.p4	2019-06-08 18:33:25.967644800 +0200
+--- before_pass
++++ after_pass
 @@ -134,6 +134,7 @@ parser FabricParser(packet_in packet, ou
      }
  }

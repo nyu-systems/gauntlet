@@ -1,5 +1,5 @@
---- dumps/pruned/newtype1-BMV2::SimpleSwitchMidEnd_0_CheckTableSize.p4	2019-06-08 18:33:00.876838700 +0200
-+++ dumps/pruned/newtype1-BMV2::SimpleSwitchMidEnd_1_EliminateNewtype.p4	2019-06-08 18:33:00.929799200 +0200
+--- before_pass
++++ after_pass
 @@ -1,14 +1,14 @@
  typedef bit<9> Narrow_t;
 -type Narrow_t Narrow;

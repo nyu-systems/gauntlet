@@ -1,5 +1,5 @@
---- dumps/pruned/psa-fwd-bmv2-BMV2::SimpleSwitchMidEnd_17_SimplifyComparisons.p4	2019-06-08 18:33:19.372033000 +0200
-+++ dumps/pruned/psa-fwd-bmv2-BMV2::SimpleSwitchMidEnd_18_CopyStructures.p4	2019-06-08 18:33:19.380943400 +0200
+--- before_pass
++++ after_pass
 @@ -21,10 +21,18 @@ parser IngressParserImpl(packet_in buffe
      metadata user_meta_2;
      state start {

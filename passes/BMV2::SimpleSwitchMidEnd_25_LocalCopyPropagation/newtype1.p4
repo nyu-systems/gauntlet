@@ -1,5 +1,5 @@
---- dumps/pruned/newtype1-BMV2::SimpleSwitchMidEnd_24_ConstantFolding.p4	2019-06-08 18:33:00.942532500 +0200
-+++ dumps/pruned/newtype1-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-06-08 18:33:00.944965700 +0200
+--- before_pass
++++ after_pass
 @@ -3,12 +3,8 @@ typedef Narrow_t Narrow;
  typedef bit<32> Wide_t;
  typedef Wide_t Wide;

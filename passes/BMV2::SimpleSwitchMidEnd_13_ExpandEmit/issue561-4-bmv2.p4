@@ -1,5 +1,5 @@
---- dumps/pruned/issue561-4-bmv2-BMV2::SimpleSwitchMidEnd_12_ExpandLookahead.p4	2019-06-08 18:32:34.799704700 +0200
-+++ dumps/pruned/issue561-4-bmv2-BMV2::SimpleSwitchMidEnd_13_ExpandEmit.p4	2019-06-08 18:32:34.803388300 +0200
+--- before_pass
++++ after_pass
 @@ -85,7 +85,11 @@ control egress(inout headers hdr, inout
  }
  control DeparserImpl(packet_out packet, in headers hdr) {

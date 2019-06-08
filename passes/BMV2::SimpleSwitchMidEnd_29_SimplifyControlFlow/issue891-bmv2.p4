@@ -1,5 +1,5 @@
---- dumps/pruned/issue891-bmv2-BMV2::SimpleSwitchMidEnd_28_ValidateTableProperties.p4	2019-06-08 18:32:44.552996700 +0200
-+++ dumps/pruned/issue891-bmv2-BMV2::SimpleSwitchMidEnd_29_SimplifyControlFlow.p4	2019-06-08 18:32:44.585447000 +0200
+--- before_pass
++++ after_pass
 @@ -32,16 +32,14 @@ control MyComputeChecksum(inout my_packe
  }
  control MyDeparser(packet_out b, in my_packet p) {

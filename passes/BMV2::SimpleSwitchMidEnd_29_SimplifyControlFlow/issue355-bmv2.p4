@@ -1,5 +1,5 @@
---- dumps/pruned/issue355-bmv2-BMV2::SimpleSwitchMidEnd_28_ValidateTableProperties.p4	2019-06-08 18:32:23.602001500 +0200
-+++ dumps/pruned/issue355-bmv2-BMV2::SimpleSwitchMidEnd_29_SimplifyControlFlow.p4	2019-06-08 18:32:23.637685300 +0200
+--- before_pass
++++ after_pass
 @@ -17,15 +17,11 @@ parser parserI(packet_in pkt, out H hdr,
      ethernet_t tmp_0;
      bit<112> tmp;

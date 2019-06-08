@@ -1,5 +1,5 @@
---- dumps/pruned/issue355-bmv2-BMV2::SimpleSwitchMidEnd_11_SimplifySelectCases.p4	2019-06-08 18:32:23.562132600 +0200
-+++ dumps/pruned/issue355-bmv2-BMV2::SimpleSwitchMidEnd_12_ExpandLookahead.p4	2019-06-08 18:32:23.563962400 +0200
+--- before_pass
++++ after_pass
 @@ -15,8 +15,13 @@ control DeparserI(packet_out packet, in
  }
  parser parserI(packet_in pkt, out H hdr, inout M meta, inout standard_metadata_t stdmeta) {

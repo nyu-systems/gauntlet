@@ -1,5 +1,5 @@
---- dumps/pruned/mux-bmv2-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-06-08 18:32:58.165807700 +0200
-+++ dumps/pruned/mux-bmv2-BMV2::SimpleSwitchMidEnd_26_ConstantFolding.p4	2019-06-08 18:32:58.169182300 +0200
+--- before_pass
++++ after_pass
 @@ -21,8 +21,8 @@ control Eg(inout Headers hdrs, inout Met
          val = res;
          {

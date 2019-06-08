@@ -1,5 +1,5 @@
---- dumps/pruned/nested-tuple-BMV2::SimpleSwitchMidEnd_24_ConstantFolding.p4	2019-06-08 18:32:59.786797800 +0200
-+++ dumps/pruned/nested-tuple-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-06-08 18:32:59.789124700 +0200
+--- before_pass
++++ after_pass
 @@ -19,7 +19,6 @@ control c(inout bit<1> r) {
      T s_f1_field;
      T s_f1_field_0;

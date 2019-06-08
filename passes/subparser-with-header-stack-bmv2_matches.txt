@@ -1,0 +1,12 @@
+BMV2::SimpleSwitchMidEnd_29_SimplifyControlFlow###########
+https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_subparser-with-header-stack-bmv2.p4
+BMV2::SimpleSwitchMidEnd_32_RemoveLeftSlices###########
+https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_subparser-with-header-stack-bmv2.p4
+BMV2::SimpleSwitchMidEnd_13_ExpandEmit###########
+https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_subparser-with-header-stack-bmv2.p4
+BMV2::SimpleSwitchMidEnd_14_SimplifyParsers###########
+https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_subparser-with-header-stack-bmv2.p4
+BMV2::SimpleSwitchMidEnd_18_CopyStructures###########
+https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_subparser-with-header-stack-bmv2.p4
+BMV2::SimpleSwitchMidEnd_19_NestedStructs###########
+https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_subparser-with-header-stack-bmv2.p4

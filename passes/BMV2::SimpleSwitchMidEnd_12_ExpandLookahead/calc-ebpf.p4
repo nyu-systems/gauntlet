@@ -1,5 +1,5 @@
---- dumps/pruned/calc-ebpf-BMV2::SimpleSwitchMidEnd_11_SimplifySelectCases.p4	2019-06-08 18:31:14.610282900 +0200
-+++ dumps/pruned/calc-ebpf-BMV2::SimpleSwitchMidEnd_12_ExpandLookahead.p4	2019-06-08 18:31:14.612766200 +0200
+--- before_pass
++++ after_pass
 @@ -22,6 +22,9 @@ parser Parser(packet_in packet, out head
      p4calc_t tmp_3;
      p4calc_t tmp_4;

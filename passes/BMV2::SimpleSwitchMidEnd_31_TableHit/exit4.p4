@@ -1,5 +1,5 @@
---- dumps/pruned/exit4-BMV2::SimpleSwitchMidEnd_30_CompileTimeOperations.p4	2019-06-08 18:31:37.247174400 +0200
-+++ dumps/pruned/exit4-BMV2::SimpleSwitchMidEnd_31_TableHit.p4	2019-06-08 18:31:37.249232800 +0200
+--- before_pass
++++ after_pass
 @@ -10,7 +10,10 @@ control ctrl() {
          default_action = e_0();
      }

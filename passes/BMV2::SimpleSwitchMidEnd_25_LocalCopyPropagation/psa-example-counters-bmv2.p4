@@ -1,5 +1,5 @@
---- dumps/pruned/psa-example-counters-bmv2-BMV2::SimpleSwitchMidEnd_24_ConstantFolding.p4	2019-06-08 18:33:16.682175500 +0200
-+++ dumps/pruned/psa-example-counters-bmv2-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-06-08 18:33:16.686691300 +0200
+--- before_pass
++++ after_pass
 @@ -100,35 +100,17 @@ parser EgressParserImpl(packet_in buffer
      }
  }

@@ -1,5 +1,5 @@
---- dumps/pruned/equality-bmv2-BMV2::SimpleSwitchMidEnd_24_ConstantFolding.p4	2019-06-08 18:31:34.667725100 +0200
-+++ dumps/pruned/equality-bmv2-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-06-08 18:31:34.669293200 +0200
+--- before_pass
++++ after_pass
 @@ -29,7 +29,7 @@ control ingress(inout headers hdr, inout
          hdr.same.same = 8w0;
          stdmeta.egress_spec = 9w0;

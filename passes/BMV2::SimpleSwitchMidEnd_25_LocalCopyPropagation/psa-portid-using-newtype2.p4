@@ -1,5 +1,5 @@
---- dumps/pruned/psa-portid-using-newtype2-BMV2::SimpleSwitchMidEnd_24_ConstantFolding.p4	2019-06-08 18:33:26.000787400 +0200
-+++ dumps/pruned/psa-portid-using-newtype2-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-06-08 18:33:26.003092600 +0200
+--- before_pass
++++ after_pass
 @@ -115,7 +115,6 @@ parser FabricParser(packet_in packet, ou
      }
  }

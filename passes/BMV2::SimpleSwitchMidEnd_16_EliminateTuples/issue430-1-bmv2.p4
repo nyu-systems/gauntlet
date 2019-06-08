@@ -1,5 +1,5 @@
---- dumps/pruned/issue430-1-bmv2-BMV2::SimpleSwitchMidEnd_15_StrengthReduction.p4	2019-06-08 18:32:27.365649200 +0200
-+++ dumps/pruned/issue430-1-bmv2-BMV2::SimpleSwitchMidEnd_16_EliminateTuples.p4	2019-06-08 18:32:27.367526300 +0200
+--- before_pass
++++ after_pass
 @@ -20,9 +20,12 @@ parser parserI(packet_in pkt, out Parsed
          transition accept;
      }

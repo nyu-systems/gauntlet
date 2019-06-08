@@ -1,5 +1,5 @@
---- dumps/pruned/function-BMV2::SimpleSwitchMidEnd_2_EliminateSerEnums.p4	2019-06-08 18:31:40.960940800 +0200
-+++ dumps/pruned/function-BMV2::SimpleSwitchMidEnd_3_RemoveActionParameters.p4	2019-06-08 18:31:40.990218200 +0200
+--- before_pass
++++ after_pass
 @@ -1,11 +1,14 @@
  control c(out bit<16> b) {
      bit<16> tmp_0;

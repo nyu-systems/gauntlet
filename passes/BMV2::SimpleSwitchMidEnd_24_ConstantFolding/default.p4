@@ -1,5 +1,5 @@
---- dumps/pruned/default-BMV2::SimpleSwitchMidEnd_23_MoveDeclarations.p4	2019-06-08 18:31:30.569278800 +0200
-+++ dumps/pruned/default-BMV2::SimpleSwitchMidEnd_24_ConstantFolding.p4	2019-06-08 18:31:30.572087900 +0200
+--- before_pass
++++ after_pass
 @@ -8,14 +8,14 @@ parser p0(packet_in p, out Header h) {
          b = true;
          p.extract<Header>(h);

@@ -1,5 +1,5 @@
---- dumps/pruned/issue891-bmv2-BMV2::SimpleSwitchMidEnd_12_ExpandLookahead.p4	2019-06-08 18:32:44.521240900 +0200
-+++ dumps/pruned/issue891-bmv2-BMV2::SimpleSwitchMidEnd_13_ExpandEmit.p4	2019-06-08 18:32:44.523603300 +0200
+--- before_pass
++++ after_pass
 @@ -32,7 +32,16 @@ control MyComputeChecksum(inout my_packe
  }
  control MyDeparser(packet_out b, in my_packet p) {

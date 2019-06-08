@@ -1,5 +1,5 @@
---- dumps/pruned/pvs-nested-struct-BMV2::SimpleSwitchMidEnd_22_Predication.p4	2019-06-08 18:34:11.338219600 +0200
-+++ dumps/pruned/pvs-nested-struct-BMV2::SimpleSwitchMidEnd_23_MoveDeclarations.p4	2019-06-08 18:34:11.344000600 +0200
+--- before_pass
++++ after_pass
 @@ -35,11 +35,11 @@ control MyVerifyChecksum(inout my_packet
      }
  }

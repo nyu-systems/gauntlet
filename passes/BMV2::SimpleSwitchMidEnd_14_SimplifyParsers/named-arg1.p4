@@ -1,5 +1,5 @@
---- dumps/pruned/named-arg1-BMV2::SimpleSwitchMidEnd_13_ExpandEmit.p4	2019-06-08 18:32:59.097044200 +0200
-+++ dumps/pruned/named-arg1-BMV2::SimpleSwitchMidEnd_14_SimplifyParsers.p4	2019-06-08 18:32:59.101896200 +0200
+--- before_pass
++++ after_pass
 @@ -5,13 +5,7 @@ parser par(out bool b) {
      bit<32> x_4;
      state start {

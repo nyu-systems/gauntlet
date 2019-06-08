@@ -1,5 +1,5 @@
---- dumps/pruned/lj_example-BMV2::SimpleSwitchMidEnd_2_EliminateSerEnums.p4	2019-06-08 18:32:56.242377100 +0200
-+++ dumps/pruned/lj_example-BMV2::SimpleSwitchMidEnd_3_RemoveActionParameters.p4	2019-06-08 18:32:56.223848200 +0200
+--- before_pass
++++ after_pass
 @@ -31,8 +31,10 @@ parser LJparse(packet_in b, out Parsed_r
      }
  }

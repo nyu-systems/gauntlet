@@ -1,5 +1,5 @@
---- dumps/pruned/psa-example-register2-bmv2-BMV2::SimpleSwitchMidEnd_24_ConstantFolding.p4	2019-06-08 18:33:18.746269400 +0200
-+++ dumps/pruned/psa-example-register2-bmv2-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-06-08 18:33:18.748504500 +0200
+--- before_pass
++++ after_pass
 @@ -49,12 +49,10 @@ control ingress(inout headers hdr, inout
      PacketByteCountState_t tmp_1;
      bit<80> tmp_2;

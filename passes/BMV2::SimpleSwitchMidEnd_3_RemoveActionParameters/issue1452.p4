@@ -1,5 +1,5 @@
---- dumps/pruned/issue1452-BMV2::SimpleSwitchMidEnd_2_EliminateSerEnums.p4	2019-06-08 18:32:01.947698100 +0200
-+++ dumps/pruned/issue1452-BMV2::SimpleSwitchMidEnd_3_RemoveActionParameters.p4	2019-06-08 18:32:01.922370500 +0200
+--- before_pass
++++ after_pass
 @@ -1,12 +1,16 @@
  control c() {
      bit<32> x;

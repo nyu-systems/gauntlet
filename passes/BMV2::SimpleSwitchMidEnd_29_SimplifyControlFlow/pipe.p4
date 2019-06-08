@@ -1,5 +1,5 @@
---- dumps/pruned/pipe-BMV2::SimpleSwitchMidEnd_28_ValidateTableProperties.p4	2019-06-08 18:34:08.316533000 +0200
-+++ dumps/pruned/pipe-BMV2::SimpleSwitchMidEnd_29_SimplifyControlFlow.p4	2019-06-08 18:34:08.370214200 +0200
+--- before_pass
++++ after_pass
 @@ -62,27 +62,15 @@ control Q_pipe(inout TArg1 qArg1, inout
          const default_action = NoAction_0();
      }

@@ -1,5 +1,5 @@
---- dumps/pruned/key-issue-1020_ebpf-BMV2::SimpleSwitchMidEnd_28_ValidateTableProperties.p4	2019-06-08 18:32:53.973277100 +0200
-+++ dumps/pruned/key-issue-1020_ebpf-BMV2::SimpleSwitchMidEnd_29_SimplifyControlFlow.p4	2019-06-08 18:32:53.976373200 +0200
+--- before_pass
++++ after_pass
 @@ -64,11 +64,9 @@ control pipe(inout Headers_t headers, ou
          default_action = drop_0();
      }

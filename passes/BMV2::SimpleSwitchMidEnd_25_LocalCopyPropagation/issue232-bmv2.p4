@@ -1,5 +1,5 @@
---- dumps/pruned/issue232-bmv2-BMV2::SimpleSwitchMidEnd_24_ConstantFolding.p4	2019-06-08 18:32:18.042938900 +0200
-+++ dumps/pruned/issue232-bmv2-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-06-08 18:32:18.046896300 +0200
+--- before_pass
++++ after_pass
 @@ -20,39 +20,22 @@ control Ing(inout Headers headers, inout
      }
  }

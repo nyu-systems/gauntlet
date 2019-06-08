@@ -1,5 +1,5 @@
---- dumps/pruned/issue1412-bmv2-BMV2::SimpleSwitchMidEnd_22_Predication.p4	2019-06-08 18:32:01.380287800 +0200
-+++ dumps/pruned/issue1412-bmv2-BMV2::SimpleSwitchMidEnd_23_MoveDeclarations.p4	2019-06-08 18:32:01.382262000 +0200
+--- before_pass
++++ after_pass
 @@ -20,13 +20,13 @@ control IngressImpl(inout headers_t hdr,
      }
  }

@@ -1,5 +1,5 @@
---- dumps/pruned/v1model-digest-containing-ser-enum-BMV2::SimpleSwitchMidEnd_15_StrengthReduction.p4	2019-06-08 18:34:12.110621400 +0200
-+++ dumps/pruned/v1model-digest-containing-ser-enum-BMV2::SimpleSwitchMidEnd_16_EliminateTuples.p4	2019-06-08 18:34:12.114487500 +0200
+--- before_pass
++++ after_pass
 @@ -142,9 +142,22 @@ control MyEgress(inout headers hdr, inou
          send_frame.apply();
      }

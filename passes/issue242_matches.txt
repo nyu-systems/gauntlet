@@ -1,0 +1,12 @@
+BMV2::SimpleSwitchMidEnd_22_Predication###########
+https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_issue242.p4
+BMV2::SimpleSwitchMidEnd_23_MoveDeclarations###########
+https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_issue242.p4
+BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation###########
+https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_issue242.p4
+BMV2::SimpleSwitchMidEnd_26_ConstantFolding###########
+https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_issue242.p4
+BMV2::SimpleSwitchMidEnd_29_SimplifyControlFlow###########
+https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_issue242.p4
+BMV2::SimpleSwitchMidEnd_18_CopyStructures###########
+https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_issue242.p4

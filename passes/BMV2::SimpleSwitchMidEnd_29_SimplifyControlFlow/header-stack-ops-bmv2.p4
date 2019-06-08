@@ -1,5 +1,5 @@
---- dumps/pruned/header-stack-ops-bmv2-BMV2::SimpleSwitchMidEnd_28_ValidateTableProperties.p4	2019-06-08 18:31:46.293576100 +0200
-+++ dumps/pruned/header-stack-ops-bmv2-BMV2::SimpleSwitchMidEnd_29_SimplifyControlFlow.p4	2019-06-08 18:31:46.299023100 +0200
+--- before_pass
++++ after_pass
 @@ -56,11 +56,7 @@ parser parserI(packet_in pkt, out header
  control cIngress(inout headers hdr, inout metadata meta, inout standard_metadata_t stdmeta) {
      h2_t[5] hdr_1_h2;

@@ -1,5 +1,5 @@
---- dumps/pruned/issue407-3-BMV2::SimpleSwitchMidEnd_3_RemoveActionParameters.p4	2019-06-08 18:32:25.725195600 +0200
-+++ dumps/pruned/issue407-3-BMV2::SimpleSwitchMidEnd_4_ConvertEnums.p4	2019-06-08 18:32:25.727479500 +0200
+--- before_pass
++++ after_pass
 @@ -11,11 +11,6 @@ struct mystruct2 {
      bit<4>    a;
      bit<4>    b;

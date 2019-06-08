@@ -1,5 +1,5 @@
---- dumps/pruned/issue512-BMV2::SimpleSwitchMidEnd_2_EliminateSerEnums.p4	2019-06-08 18:32:32.788329000 +0200
-+++ dumps/pruned/issue512-BMV2::SimpleSwitchMidEnd_3_RemoveActionParameters.p4	2019-06-08 18:32:32.808747500 +0200
+--- before_pass
++++ after_pass
 @@ -25,8 +25,9 @@ parser parserI(packet_in pkt, out Parsed
      }
  }

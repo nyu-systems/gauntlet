@@ -1,5 +1,5 @@
---- dumps/pruned/issue396-BMV2::SimpleSwitchMidEnd_17_SimplifyComparisons.p4	2019-06-08 18:32:24.961721900 +0200
-+++ dumps/pruned/issue396-BMV2::SimpleSwitchMidEnd_18_CopyStructures.p4	2019-06-08 18:32:24.964201200 +0200
+--- before_pass
++++ after_pass
 @@ -15,15 +15,23 @@ control d(out bool b) {
      H tmp_0;
      apply {

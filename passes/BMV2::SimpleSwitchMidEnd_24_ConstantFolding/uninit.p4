@@ -1,5 +1,5 @@
---- dumps/pruned/uninit-BMV2::SimpleSwitchMidEnd_23_MoveDeclarations.p4	2019-06-08 18:34:19.398081400 +0200
-+++ dumps/pruned/uninit-BMV2::SimpleSwitchMidEnd_24_ConstantFolding.p4	2019-06-08 18:34:19.400388900 +0200
+--- before_pass
++++ after_pass
 @@ -26,8 +26,8 @@ parser p1(packet_in p, out Header h) {
          h.data2 = h.data3 + 32w1;
          stack[1].isValid();

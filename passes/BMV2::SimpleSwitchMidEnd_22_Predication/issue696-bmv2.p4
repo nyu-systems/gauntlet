@@ -1,5 +1,5 @@
---- dumps/pruned/issue696-bmv2-BMV2::SimpleSwitchMidEnd_21_RemoveSelectBooleans.p4	2019-06-08 18:32:39.854002000 +0200
-+++ dumps/pruned/issue696-bmv2-BMV2::SimpleSwitchMidEnd_22_Predication.p4	2019-06-08 18:32:39.857850900 +0200
+--- before_pass
++++ after_pass
 @@ -60,15 +60,31 @@ control Eg(inout Headers hdrs, inout Met
              val.field1 = 32w0;
          }

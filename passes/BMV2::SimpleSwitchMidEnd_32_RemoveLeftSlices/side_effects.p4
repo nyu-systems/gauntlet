@@ -1,5 +1,5 @@
---- dumps/pruned/side_effects-BMV2::SimpleSwitchMidEnd_31_TableHit.p4	2019-06-08 18:33:53.816649000 +0200
-+++ dumps/pruned/side_effects-BMV2::SimpleSwitchMidEnd_32_RemoveLeftSlices.p4	2019-06-08 18:33:53.818662300 +0200
+--- before_pass
++++ after_pass
 @@ -33,7 +33,7 @@ control my() {
          tmp_22 = g(a);
          a = tmp_22;

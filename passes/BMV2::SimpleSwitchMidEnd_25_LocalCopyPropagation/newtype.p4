@@ -1,5 +1,5 @@
---- dumps/pruned/newtype-BMV2::SimpleSwitchMidEnd_24_ConstantFolding.p4	2019-06-08 18:33:00.614885400 +0200
-+++ dumps/pruned/newtype-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-06-08 18:33:00.617546100 +0200
+--- before_pass
++++ after_pass
 @@ -10,10 +10,6 @@ header H {
  }
  control c(out B32 x) {

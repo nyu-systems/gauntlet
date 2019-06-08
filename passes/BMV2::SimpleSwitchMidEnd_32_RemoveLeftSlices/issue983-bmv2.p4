@@ -1,5 +1,5 @@
---- dumps/pruned/issue983-bmv2-BMV2::SimpleSwitchMidEnd_31_TableHit.p4	2019-06-08 18:32:50.983495900 +0200
-+++ dumps/pruned/issue983-bmv2-BMV2::SimpleSwitchMidEnd_32_RemoveLeftSlices.p4	2019-06-08 18:32:50.985264200 +0200
+--- before_pass
++++ after_pass
 @@ -67,15 +67,15 @@ control ingress(inout headers hdr, inout
          user_meta.fwd_meta.exp_x4 = 32w0xfffff7ff;
          hdr.ethernet.dstAddr = 48w0;

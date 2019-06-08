@@ -1,5 +1,5 @@
---- dumps/pruned/issue396-BMV2::SimpleSwitchMidEnd_28_ValidateTableProperties.p4	2019-06-08 18:32:25.012009000 +0200
-+++ dumps/pruned/issue396-BMV2::SimpleSwitchMidEnd_29_SimplifyControlFlow.p4	2019-06-08 18:32:25.071359800 +0200
+--- before_pass
++++ after_pass
 @@ -15,23 +15,15 @@ control d(out bool b) {
      H tmp_0;
      apply {

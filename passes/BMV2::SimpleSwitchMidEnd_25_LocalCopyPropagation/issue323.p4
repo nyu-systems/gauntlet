@@ -1,5 +1,5 @@
---- dumps/pruned/issue323-BMV2::SimpleSwitchMidEnd_24_ConstantFolding.p4	2019-06-08 18:32:23.073673400 +0200
-+++ dumps/pruned/issue323-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-06-08 18:32:23.075840200 +0200
+--- before_pass
++++ after_pass
 @@ -34,15 +34,11 @@ control deparser(packet_out b, in Header
      }
  }

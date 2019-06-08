@@ -1,5 +1,5 @@
---- dumps/pruned/copy-BMV2::SimpleSwitchMidEnd_24_ConstantFolding.p4	2019-06-08 18:31:28.699064900 +0200
-+++ dumps/pruned/copy-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-06-08 18:31:28.701628300 +0200
+--- before_pass
++++ after_pass
 @@ -2,19 +2,14 @@ struct S {
      bit<32> x;
  }

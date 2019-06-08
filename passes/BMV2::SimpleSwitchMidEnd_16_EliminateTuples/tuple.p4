@@ -1,5 +1,5 @@
---- dumps/pruned/tuple-BMV2::SimpleSwitchMidEnd_15_StrengthReduction.p4	2019-06-08 18:34:17.493974800 +0200
-+++ dumps/pruned/tuple-BMV2::SimpleSwitchMidEnd_16_EliminateTuples.p4	2019-06-08 18:34:17.496074100 +0200
+--- before_pass
++++ after_pass
 @@ -4,8 +4,12 @@ struct S {
  }
  control proto();

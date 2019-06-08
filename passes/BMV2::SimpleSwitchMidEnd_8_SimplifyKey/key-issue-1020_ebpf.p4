@@ -1,5 +1,5 @@
---- dumps/pruned/key-issue-1020_ebpf-BMV2::SimpleSwitchMidEnd_7_TypeChecking.p4	2019-06-08 18:32:53.926545700 +0200
-+++ dumps/pruned/key-issue-1020_ebpf-BMV2::SimpleSwitchMidEnd_8_SimplifyKey.p4	2019-06-08 18:32:53.929101100 +0200
+--- before_pass
++++ after_pass
 @@ -48,12 +48,14 @@ control pipe(inout Headers_t headers, ou
      @name("pipe.drop") action drop_0() {
          pass = false;

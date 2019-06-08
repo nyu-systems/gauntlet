@@ -1,5 +1,5 @@
---- dumps/pruned/issue982-BMV2::SimpleSwitchMidEnd_18_CopyStructures.p4	2019-06-08 18:32:50.557859500 +0200
-+++ dumps/pruned/issue982-BMV2::SimpleSwitchMidEnd_19_NestedStructs.p4	2019-06-08 18:32:50.626886100 +0200
+--- before_pass
++++ after_pass
 @@ -190,10 +190,20 @@ struct headers {
      ipv4_t     ipv4;
  }

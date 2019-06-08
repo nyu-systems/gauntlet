@@ -1,5 +1,5 @@
---- dumps/pruned/issue584-1-BMV2::SimpleSwitchMidEnd_24_ConstantFolding.p4	2019-06-08 18:32:37.309814100 +0200
-+++ dumps/pruned/issue584-1-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-06-08 18:32:37.312031500 +0200
+--- before_pass
++++ after_pass
 @@ -4,10 +4,8 @@ control p();
  package top(p _p);
  control c() {

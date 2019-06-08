@@ -1,5 +1,5 @@
---- dumps/pruned/issue249-BMV2::SimpleSwitchMidEnd_15_StrengthReduction.p4	2019-06-08 18:32:19.031671300 +0200
-+++ dumps/pruned/issue249-BMV2::SimpleSwitchMidEnd_16_EliminateTuples.p4	2019-06-08 18:32:19.033446400 +0200
+--- before_pass
++++ after_pass
 @@ -46,14 +46,27 @@ control DeparserImpl(packet_out packet,
      apply {
      }

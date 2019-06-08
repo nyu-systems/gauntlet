@@ -1,5 +1,5 @@
---- dumps/pruned/equality-varbit-bmv2-BMV2::SimpleSwitchMidEnd_12_ExpandLookahead.p4	2019-06-08 18:31:34.920611100 +0200
-+++ dumps/pruned/equality-varbit-bmv2-BMV2::SimpleSwitchMidEnd_13_ExpandEmit.p4	2019-06-08 18:31:34.922499400 +0200
+--- before_pass
++++ after_pass
 @@ -38,7 +38,9 @@ control uc(inout headers hdr, inout meta
  }
  control deparser(packet_out packet, in headers hdr) {

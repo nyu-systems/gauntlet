@@ -1,5 +1,5 @@
---- dumps/pruned/issue323-BMV2::SimpleSwitchMidEnd_2_EliminateSerEnums.p4	2019-06-08 18:32:23.083818200 +0200
-+++ dumps/pruned/issue323-BMV2::SimpleSwitchMidEnd_3_RemoveActionParameters.p4	2019-06-08 18:32:23.103776500 +0200
+--- before_pass
++++ after_pass
 @@ -32,15 +32,19 @@ control deparser(packet_out b, in Header
      }
  }

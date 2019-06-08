@@ -1,5 +1,5 @@
---- dumps/pruned/exit2-BMV2::SimpleSwitchMidEnd_24_ConstantFolding.p4	2019-06-08 18:31:36.428134500 +0200
-+++ dumps/pruned/exit2-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-06-08 18:31:36.431651300 +0200
+--- before_pass
++++ after_pass
 @@ -1,5 +1,4 @@
  control ctrl(out bit<32> c) {
 -    bit<32> a;

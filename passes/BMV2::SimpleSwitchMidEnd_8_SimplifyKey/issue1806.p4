@@ -1,5 +1,5 @@
---- dumps/pruned/issue1806-BMV2::SimpleSwitchMidEnd_7_TypeChecking.p4	2019-06-08 18:32:14.136572900 +0200
-+++ dumps/pruned/issue1806-BMV2::SimpleSwitchMidEnd_8_SimplifyKey.p4	2019-06-08 18:32:14.138578900 +0200
+--- before_pass
++++ after_pass
 @@ -18,9 +18,10 @@ control c(inout Headers h, inout standar
      }
      @name("c.do_act") action do_act_0() {

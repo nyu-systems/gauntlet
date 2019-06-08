@@ -1,5 +1,5 @@
---- dumps/pruned/issue562-bmv2-BMV2::SimpleSwitchMidEnd_17_SimplifyComparisons.p4	2019-06-08 18:32:37.011455900 +0200
-+++ dumps/pruned/issue562-bmv2-BMV2::SimpleSwitchMidEnd_18_CopyStructures.p4	2019-06-08 18:32:37.013620900 +0200
+--- before_pass
++++ after_pass
 @@ -20,7 +20,10 @@ parser parse(packet_in pk, out parsed_pa
  }
  control ingress(inout parsed_packet_t hdr, inout local_metadata_t local_metadata, inout standard_metadata_t standard_metadata) {

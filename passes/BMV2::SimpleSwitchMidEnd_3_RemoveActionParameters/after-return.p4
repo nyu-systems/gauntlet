@@ -1,5 +1,5 @@
---- dumps/pruned/after-return-BMV2::SimpleSwitchMidEnd_2_EliminateSerEnums.p4	2019-06-08 18:31:01.940776600 +0200
-+++ dumps/pruned/after-return-BMV2::SimpleSwitchMidEnd_3_RemoveActionParameters.p4	2019-06-08 18:31:01.981324300 +0200
+--- before_pass
++++ after_pass
 @@ -1,7 +1,8 @@
  control ctrl() {
      bit<32> a;

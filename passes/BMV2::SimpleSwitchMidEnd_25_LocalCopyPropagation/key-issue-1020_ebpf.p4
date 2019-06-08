@@ -1,5 +1,5 @@
---- dumps/pruned/key-issue-1020_ebpf-BMV2::SimpleSwitchMidEnd_24_ConstantFolding.p4	2019-06-08 18:32:53.960421300 +0200
-+++ dumps/pruned/key-issue-1020_ebpf-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation.p4	2019-06-08 18:32:53.962971200 +0200
+--- before_pass
++++ after_pass
 @@ -39,7 +39,6 @@ parser prs(packet_in p, out Headers_t he
      }
  }

@@ -1,5 +1,5 @@
---- dumps/pruned/rcp1-BMV2::SimpleSwitchMidEnd_3_RemoveActionParameters.p4	2019-06-08 18:33:31.340012900 +0200
-+++ dumps/pruned/rcp1-BMV2::SimpleSwitchMidEnd_4_ConvertEnums.p4	2019-06-08 18:33:31.352743800 +0200
+--- before_pass
++++ after_pass
 @@ -4,13 +4,8 @@ extern ConditionalAccumulator<T> {
      void read(out T value);
      void write(in T value, in bool condition);
