@@ -1,30 +1,29 @@
 --- before_pass
 +++ after_pass
-@@ -22,13 +22,7 @@ parser IngressParserImpl(packet_in buffe
+@@ -19,26 +19,14 @@ struct headers {
+ parser IngressParserImpl(packet_in buffer, out headers parsed_hdr, inout metadata user_meta, in psa_ingress_parser_input_metadata_t istd, in empty_t resubmit_meta, in empty_t recirculate_meta) {
      state start {
-         parsed_hdr_2.ethernet.setInvalid();
-         user_meta_2 = user_meta;
+         parsed_hdr.ethernet.setInvalid();
 -        transition CommonParser_start;
 -    }
 -    state CommonParser_start {
-         buffer.extract<ethernet_t>(parsed_hdr_2.ethernet);
+         buffer.extract<ethernet_t>(parsed_hdr.ethernet);
 -        transition start_0;
 -    }
 -    state start_0 {
-         parsed_hdr = parsed_hdr_2;
-         user_meta = user_meta_2;
          transition accept;
-@@ -40,13 +34,7 @@ parser EgressParserImpl(packet_in buffer
+     }
+ }
+ parser EgressParserImpl(packet_in buffer, out headers parsed_hdr, inout metadata user_meta, in psa_egress_parser_input_metadata_t istd, in empty_t normal_meta, in empty_t clone_i2e_meta, in empty_t clone_e2e_meta) {
      state start {
-         parsed_hdr_3.ethernet.setInvalid();
-         user_meta_3 = user_meta;
+         parsed_hdr.ethernet.setInvalid();
 -        transition CommonParser_start_0;
 -    }
 -    state CommonParser_start_0 {
-         buffer.extract<ethernet_t>(parsed_hdr_3.ethernet);
+         buffer.extract<ethernet_t>(parsed_hdr.ethernet);
 -        transition start_1;
 -    }
 -    state start_1 {
-         parsed_hdr = parsed_hdr_3;
-         user_meta = user_meta_3;
          transition accept;
+     }
+ }

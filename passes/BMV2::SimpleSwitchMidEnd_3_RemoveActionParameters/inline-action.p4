@@ -2,18 +2,18 @@
 +++ after_pass
 @@ -1,12 +1,14 @@
  control p(inout bit<1> bt) {
-+    bit<1> y0_0;
-+    bit<1> y0_2;
-     @name("p.b") action b_0() {
++    bit<1> y0;
++    bit<1> y0_1;
+     @name("p.b") action b() {
          {
--            bit<1> y0_0 = bt;
-+            y0_0 = bt;
-             y0_0 = y0_0 | 1w1;
-             bt = y0_0;
+-            bit<1> y0 = bt;
++            y0 = bt;
+             y0 = y0 | 1w1;
+             bt = y0;
          }
          {
--            bit<1> y0_2 = bt;
-+            y0_2 = bt;
-             y0_2 = y0_2 | 1w1;
-             bt = y0_2;
+-            bit<1> y0_1 = bt;
++            y0_1 = bt;
+             y0_1 = y0_1 | 1w1;
+             bt = y0_1;
          }

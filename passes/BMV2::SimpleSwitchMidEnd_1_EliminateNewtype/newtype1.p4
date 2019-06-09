@@ -8,15 +8,15 @@
 -type Wide_t Wide;
 +typedef Wide_t Wide;
  control c(out bool b) {
-     Wide x;
-     Narrow y;
+     Wide x_0;
+     Narrow y_0;
      apply {
--        x = (Wide)32w3;
--        y = (Narrow)(Narrow_t)(Wide_t)x;
--        b = y == (Narrow)9w10;
-+        x = 32w3;
-+        y = (Narrow_t)(Wide_t)x;
-+        b = y == 9w10;
+-        x_0 = (Wide)32w3;
+-        y_0 = (Narrow)(Narrow_t)(Wide_t)x_0;
+-        b = y_0 == (Narrow)9w10;
++        x_0 = 32w3;
++        y_0 = (Narrow_t)(Wide_t)x_0;
++        b = y_0 == 9w10;
      }
  }
  control ctrl(out bool b);

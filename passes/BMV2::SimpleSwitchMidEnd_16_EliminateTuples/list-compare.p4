@@ -9,8 +9,8 @@
 +    bit<32> field_0;
 +}
  control test(out bool zout) {
--    tuple<bit<32>, bit<32>> p;
-+    tuple_0 p;
-     S q;
+-    tuple<bit<32>, bit<32>> p_0;
++    tuple_0 p_0;
+     S q_0;
      apply {
-         p = { 32w4, 32w5 };
+         p_0 = { 32w4, 32w5 };

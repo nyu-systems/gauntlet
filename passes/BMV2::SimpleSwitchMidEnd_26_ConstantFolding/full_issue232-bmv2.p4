@@ -20,29 +20,46 @@ control Ing(inout Headers headers, inout Metadata meta, inout standard_metadata_
     }
 }
 control Eg(inout Headers hdrs, inout Metadata meta, inout standard_metadata_t standard_meta) {
-    Value val_2;
-    @name("Eg.test") action test_0() {
+    Key inKey_0;
+    Key defaultKey_0;
+    bool same_0;
+    Value val;
+    bool done_0;
+    bool ok_0;
+    Value val_0;
+    bool cond;
+    bool pred;
+    @name("Eg.test") action test() {
         {
+            inKey_0.field1 = 32w1;
         }
         {
+            defaultKey_0.field1 = 32w0;
         }
+        same_0 = inKey_0.field1 == defaultKey_0.field1;
         {
+            val.field1 = 32w0;
         }
+        done_0 = false;
+        ok_0 = !done_0 && same_0;
         {
             {
+                cond = ok_0;
+                pred = cond;
                 {
                     {
-                        val_2.field1 = val_2.field1;
+                        val_0.field1 = (pred ? val.field1 : val_0.field1);
                     }
-                    val_2.field1 = val_2.field1;
+                    val_0.field1 = (pred ? 32w8 : val_0.field1);
                     {
+                        val.field1 = (pred ? val_0.field1 : val.field1);
                     }
                 }
             }
         }
     }
     apply {
-        test_0();
+        test();
     }
 }
 control DP(packet_out b, in Headers p) {

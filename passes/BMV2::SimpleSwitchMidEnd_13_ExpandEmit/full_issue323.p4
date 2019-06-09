@@ -35,7 +35,7 @@ control deparser(packet_out b, in Headers h) {
 }
 control ingress(inout Headers h, inout Meta m, inout standard_metadata_t sm) {
     bit<32> v;
-    @name("ingress.my_a") action my_a_0() {
+    @name("ingress.my_a") action my_a() {
         v = 32w0;
         h.h.f = v;
     }
@@ -45,7 +45,7 @@ control ingress(inout Headers h, inout Meta m, inout standard_metadata_t sm) {
         h.h.f = v_1;
     }
     apply {
-        my_a_0();
+        my_a();
         my_a_2();
     }
 }

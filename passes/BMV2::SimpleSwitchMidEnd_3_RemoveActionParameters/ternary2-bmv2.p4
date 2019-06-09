@@ -4,9 +4,9 @@
      }
      @name("ingress.noop") action noop_8() {
      }
--    @name("ingress.setbyte") action setbyte_0(out bit<8> reg, bit<8> val) {
+-    @name("ingress.setbyte") action setbyte(out bit<8> reg, bit<8> val) {
 +    bit<8> reg;
-+    @name("ingress.setbyte") action setbyte_0(bit<8> val) {
++    @name("ingress.setbyte") action setbyte(bit<8> val) {
          reg = val;
 +        hdrs.extra[0].b1 = reg;
      }
@@ -28,17 +28,17 @@
          reg_3 = val;
 +        hdrs.extra[2].b2 = reg_3;
      }
-     @name("ingress.act1") action act1_0(bit<8> val) {
+     @name("ingress.act1") action act1(bit<8> val) {
          hdrs.extra[0].b1 = val;
 @@ -90,7 +98,7 @@ control ingress(inout packet_t hdrs, ino
              hdrs.extra[0].h: ternary @name("hdrs.extra[0].h") ;
          }
          actions = {
--            setbyte_0(hdrs.extra[0].b1);
-+            setbyte_0();
-             act1_0();
-             act2_0();
-             act3_0();
+-            setbyte(hdrs.extra[0].b1);
++            setbyte();
+             act1();
+             act2();
+             act3();
 @@ -103,7 +111,7 @@ control ingress(inout packet_t hdrs, ino
              hdrs.data.f2: ternary @name("hdrs.data.f2") ;
          }

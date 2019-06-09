@@ -10,8 +10,8 @@
  control proto();
  package top(proto _p);
  control c() {
--    tuple<bit<32>, bool> x;
-+    tuple_0 x;
+-    tuple<bit<32>, bool> x_0;
++    tuple_0 x_0;
      apply {
-         x = { 32w10, false };
-         f(x);
+         x_0 = { 32w10, false };
+         f(x_0);

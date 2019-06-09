@@ -1,8 +1,6 @@
-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation###########
+BMV2::SimpleSwitchMidEnd_19_NestedStructs ###########
 https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_annotation-bug.p4
-BMV2::SimpleSwitchMidEnd_29_SimplifyControlFlow###########
+BMV2::SimpleSwitchMidEnd_18_CopyStructures ###########
 https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_annotation-bug.p4
-BMV2::SimpleSwitchMidEnd_18_CopyStructures###########
-https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_annotation-bug.p4
-BMV2::SimpleSwitchMidEnd_19_NestedStructs###########
+BMV2::SimpleSwitchMidEnd_27_LocalCopyPropagation ###########
 https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_annotation-bug.p4

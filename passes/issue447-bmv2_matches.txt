@@ -1,4 +1,4 @@
-BMV2::SimpleSwitchMidEnd_29_SimplifyControlFlow###########
+BMV2::SimpleSwitchMidEnd_13_ExpandEmit ###########
 https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_issue447-bmv2.p4
-BMV2::SimpleSwitchMidEnd_13_ExpandEmit###########
+BMV2::SimpleSwitchMidEnd_32_SimplifyControlFlow ###########
 https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_issue447-bmv2.p4

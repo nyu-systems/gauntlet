@@ -1,16 +1,16 @@
 control c() {
-    bit<32> x;
-    bool hasReturned_0;
+    bit<32> x_0;
+    bool hasReturned;
     bit<32> arg;
-    @name("c.a") action a_0() {
-        arg = x;
-        hasReturned_0 = false;
+    @name("c.a") action a() {
+        arg = x_0;
+        hasReturned = false;
         arg = 32w1;
-        hasReturned_0 = true;
-        x = arg;
+        hasReturned = true;
+        x_0 = arg;
     }
     apply {
-        a_0();
+        a();
     }
 }
 control proto();

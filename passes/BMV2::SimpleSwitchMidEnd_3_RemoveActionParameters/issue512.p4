@@ -4,10 +4,10 @@
      }
  }
  control cIngress(inout Parsed_packet hdr, inout mystruct1 meta, inout standard_metadata_t stdmeta) {
-+    bool hasReturned_0;
-     @name("cIngress.foo") action foo_0() {
--        bool hasReturned_0 = false;
-+        hasReturned_0 = false;
++    bool hasReturned;
+     @name("cIngress.foo") action foo() {
+-        bool hasReturned = false;
++        hasReturned = false;
          meta.b = meta.b + 4w5;
          if (meta.b > 4w10) {
              meta.b = meta.b ^ 4w5;

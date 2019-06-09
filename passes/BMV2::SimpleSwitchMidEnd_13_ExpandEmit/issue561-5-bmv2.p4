@@ -1,13 +1,14 @@
 --- before_pass
 +++ after_pass
-@@ -65,7 +65,10 @@ control egress(inout headers hdr, inout
+@@ -65,7 +65,11 @@ control egress(inout headers hdr, inout
  }
  control DeparserImpl(packet_out packet, in headers hdr) {
      apply {
 -        packet.emit<headers>(hdr);
 +        {
 +            packet.emit<S>(hdr.base);
-+            packet.emit<U>(hdr.u[0]);
++            packet.emit<O1>(hdr.u[0].byte);
++            packet.emit<O2>(hdr.u[0].short);
 +        }
      }
  }

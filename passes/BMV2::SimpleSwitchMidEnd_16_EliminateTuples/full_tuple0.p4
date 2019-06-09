@@ -6,10 +6,10 @@ extern void f(in tuple_0 data);
 control proto();
 package top(proto _p);
 control c() {
-    tuple_0 x;
+    tuple_0 x_0;
     apply {
-        x = { 32w10, false };
-        f(x);
+        x_0 = { 32w10, false };
+        f(x_0);
         f({ 32w20, true });
     }
 }

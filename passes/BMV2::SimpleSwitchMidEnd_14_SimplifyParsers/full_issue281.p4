@@ -33,45 +33,34 @@ struct h {
 struct m {
 }
 parser MyParser(packet_in b, out h hdr, inout m meta, inout standard_metadata_t std) {
-    h hdr_2;
-    ethernet_t l2_ether_0;
-    h hdr_3;
-    bit<16> l3_etherType_0;
-    ipv4_t l3_ipv4_0;
-    vlan_t l3_vlan_0;
+    bit<16> l3_etherType;
     state start {
-        hdr_2.ether.setInvalid();
-        hdr_2.vlan.setInvalid();
-        hdr_2.ipv4.setInvalid();
-        l2_ether_0.setInvalid();
-        b.extract<ethernet_t>(l2_ether_0);
-        hdr_2.ether = l2_ether_0;
-        hdr = hdr_2;
-        hdr_3 = hdr;
+        hdr.ether.setInvalid();
+        hdr.vlan.setInvalid();
+        hdr.ipv4.setInvalid();
+        hdr.ether.setInvalid();
+        b.extract<ethernet_t>(hdr.ether);
         transition L3_start;
     }
     state L3_start {
-        l3_etherType_0 = hdr_3.ether.etherType;
-        transition select(l3_etherType_0) {
+        l3_etherType = hdr.ether.etherType;
+        transition select(l3_etherType) {
             16w0x800: L3_ipv4;
             16w0x8100: L3_vlan;
             default: start_2;
         }
     }
     state L3_ipv4 {
-        l3_ipv4_0.setInvalid();
-        b.extract<ipv4_t>(l3_ipv4_0);
-        hdr_3.ipv4 = l3_ipv4_0;
+        hdr.ipv4.setInvalid();
+        b.extract<ipv4_t>(hdr.ipv4);
         transition start_2;
     }
     state L3_vlan {
-        l3_vlan_0.setInvalid();
-        b.extract<vlan_t>(l3_vlan_0);
-        hdr_3.vlan = l3_vlan_0;
+        hdr.vlan.setInvalid();
+        b.extract<vlan_t>(hdr.vlan);
         transition L3_start;
     }
     state start_2 {
-        hdr = hdr_3;
         transition accept;
     }
 }

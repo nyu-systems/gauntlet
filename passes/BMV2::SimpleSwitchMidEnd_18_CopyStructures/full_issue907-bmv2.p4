@@ -13,13 +13,13 @@ parser P(packet_in b, out Headers p, inout Metadata meta, inout standard_metadat
     }
 }
 control Ing(inout Headers headers, inout Metadata meta, inout standard_metadata_t standard_meta) {
-    S s;
-    @name("Ing.r") register<S>(32w100) r;
+    S s_0;
+    @name("Ing.r") register<S>(32w100) r_0;
     apply {
         {
-            s.f = 32w0;
+            s_0.f = 32w0;
         }
-        r.write(32w0, s);
+        r_0.write(32w0, s_0);
     }
 }
 control Eg(inout Headers hdrs, inout Metadata meta, inout standard_metadata_t standard_meta) {

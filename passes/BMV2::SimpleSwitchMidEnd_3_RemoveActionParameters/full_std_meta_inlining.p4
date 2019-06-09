@@ -22,7 +22,7 @@ control ingress(inout headers_t hdr, inout metadata_t meta, inout standard_metad
     }
     @name(".NoAction") action NoAction_0() {
     }
-    @name("ingress.t0") table t0 {
+    @name("ingress.t0") table t0_0 {
         key = {
             standard_metadata.ingress_port: ternary @name("standard_metadata.ingress_port") ;
         }
@@ -33,7 +33,7 @@ control ingress(inout headers_t hdr, inout metadata_t meta, inout standard_metad
         default_action = NoAction_0();
     }
     apply {
-        t0.apply();
+        t0_0.apply();
     }
 }
 control egress(inout headers_t hdr, inout metadata_t meta, inout standard_metadata_t standard_metadata) {

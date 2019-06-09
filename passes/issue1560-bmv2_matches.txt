@@ -1,8 +1,14 @@
-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation###########
+BMV2::SimpleSwitchMidEnd_30_MoveDeclarations ###########
 https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_issue1560-bmv2.p4
-BMV2::SimpleSwitchMidEnd_29_SimplifyControlFlow###########
+BMV2::SimpleSwitchMidEnd_23_FlattenInterfaceStructs ###########
 https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_issue1560-bmv2.p4
-BMV2::SimpleSwitchMidEnd_12_ExpandLookahead###########
+BMV2::SimpleSwitchMidEnd_12_ExpandLookahead ###########
 https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_issue1560-bmv2.p4
-BMV2::SimpleSwitchMidEnd_18_CopyStructures###########
+BMV2::SimpleSwitchMidEnd_29_SimplifyKey ###########
+https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_issue1560-bmv2.p4
+BMV2::SimpleSwitchMidEnd_18_CopyStructures ###########
+https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_issue1560-bmv2.p4
+BMV2::SimpleSwitchMidEnd_32_SimplifyControlFlow ###########
+https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_issue1560-bmv2.p4
+BMV2::SimpleSwitchMidEnd_27_LocalCopyPropagation ###########
 https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_issue1560-bmv2.p4

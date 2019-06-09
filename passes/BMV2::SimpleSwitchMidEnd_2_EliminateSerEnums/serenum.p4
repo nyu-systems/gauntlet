@@ -23,8 +23,8 @@
      Ethernet eth;
 @@ -21,8 +12,8 @@ parser prs(packet_in p, out Headers h) {
      state start {
-         p.extract<Ethernet>(e);
-         transition select(e.type) {
+         p.extract<Ethernet>(e_0);
+         transition select(e_0.type) {
 -            EthTypes.IPv4: accept;
 -            EthTypes.ARP: accept;
 +            16w0x800: accept;
@@ -34,8 +34,8 @@
      }
 @@ -33,10 +24,10 @@ control c(inout Headers h) {
          if (!h.eth.isValid()) 
-             hasReturned_0 = true;
-         if (!hasReturned_0) 
+             hasReturned = true;
+         if (!hasReturned) 
 -            if (h.eth.type == EthTypes.IPv4) 
 +            if (h.eth.type == 16w0x800) 
                  h.eth.setInvalid();

@@ -35,9 +35,10 @@ control ingress(inout headers_t hdr, inout metadata_t meta, inout standard_metad
             standard_metadata_1.mcast_grp = standard_metadata.mcast_grp;
             standard_metadata_1.resubmit_flag = standard_metadata.resubmit_flag;
             standard_metadata_1.egress_rid = standard_metadata.egress_rid;
-            standard_metadata_1.checksum_error = standard_metadata.checksum_error;
             standard_metadata_1.recirculate_flag = standard_metadata.recirculate_flag;
+            standard_metadata_1.checksum_error = standard_metadata.checksum_error;
             standard_metadata_1.parser_error = standard_metadata.parser_error;
+            standard_metadata_1.priority = standard_metadata.priority;
         }
         standard_metadata_1.egress_spec = 9w64;
         {
@@ -59,14 +60,15 @@ control ingress(inout headers_t hdr, inout metadata_t meta, inout standard_metad
             standard_metadata.mcast_grp = standard_metadata_1.mcast_grp;
             standard_metadata.resubmit_flag = standard_metadata_1.resubmit_flag;
             standard_metadata.egress_rid = standard_metadata_1.egress_rid;
-            standard_metadata.checksum_error = standard_metadata_1.checksum_error;
             standard_metadata.recirculate_flag = standard_metadata_1.recirculate_flag;
+            standard_metadata.checksum_error = standard_metadata_1.checksum_error;
             standard_metadata.parser_error = standard_metadata_1.parser_error;
+            standard_metadata.priority = standard_metadata_1.priority;
         }
     }
     @name(".NoAction") action NoAction_0() {
     }
-    @name("ingress.t0") table t0 {
+    @name("ingress.t0") table t0_0 {
         key = {
             standard_metadata.ingress_port: ternary @name("standard_metadata.ingress_port") ;
         }
@@ -77,7 +79,7 @@ control ingress(inout headers_t hdr, inout metadata_t meta, inout standard_metad
         default_action = NoAction_0();
     }
     apply {
-        t0.apply();
+        t0_0.apply();
     }
 }
 control egress(inout headers_t hdr, inout metadata_t meta, inout standard_metadata_t standard_metadata) {

@@ -4,10 +4,10 @@
      }
  }
  control c(inout Headers h) {
-+    bool hasReturned_0;
++    bool hasReturned;
      apply {
--        bool hasReturned_0 = false;
-+        hasReturned_0 = false;
+-        bool hasReturned = false;
++        hasReturned = false;
          if (!h.eth.isValid()) 
-             hasReturned_0 = true;
-         if (!hasReturned_0) 
+             hasReturned = true;
+         if (!hasReturned) 

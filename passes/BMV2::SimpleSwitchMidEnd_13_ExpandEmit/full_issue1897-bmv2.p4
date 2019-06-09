@@ -22,52 +22,52 @@ struct headers {
     addr_t      addr_src;
 }
 parser ProtParser(packet_in packet, out headers hdr, inout metadata meta, inout standard_metadata_t standard_metadata) {
-    bit<8> addrType;
-    addr_t addr_1;
+    bit<8> addrType_0;
+    addr_t addr_0;
     state start {
         packet.extract<addr_type_t>(hdr.addr_type);
-        addrType = hdr.addr_type.dstType;
-        addr_1.ipv4.setInvalid();
-        addr_1.ipv6.setInvalid();
+        addrType_0 = hdr.addr_type.dstType;
+        addr_0.ipv4.setInvalid();
+        addr_0.ipv6.setInvalid();
         transition ProtAddrParser_start;
     }
     state ProtAddrParser_start {
-        transition select(addrType) {
+        transition select(addrType_0) {
             8w0x1: ProtAddrParser_ipv4;
             8w0x2: ProtAddrParser_ipv6;
         }
     }
     state ProtAddrParser_ipv4 {
-        packet.extract<addr_ipv4_t>(addr_1.ipv4);
+        packet.extract<addr_ipv4_t>(addr_0.ipv4);
         transition start_0;
     }
     state ProtAddrParser_ipv6 {
-        packet.extract<addr_ipv6_t>(addr_1.ipv6);
+        packet.extract<addr_ipv6_t>(addr_0.ipv6);
         transition start_0;
     }
     state start_0 {
-        hdr.addr_dst = addr_1;
-        addrType = hdr.addr_type.srcType;
-        addr_1.ipv4.setInvalid();
-        addr_1.ipv6.setInvalid();
+        hdr.addr_dst = addr_0;
+        addrType_0 = hdr.addr_type.srcType;
+        addr_0.ipv4.setInvalid();
+        addr_0.ipv6.setInvalid();
         transition ProtAddrParser_start_0;
     }
     state ProtAddrParser_start_0 {
-        transition select(addrType) {
+        transition select(addrType_0) {
             8w0x1: ProtAddrParser_ipv4_0;
             8w0x2: ProtAddrParser_ipv6_0;
         }
     }
     state ProtAddrParser_ipv4_0 {
-        packet.extract<addr_ipv4_t>(addr_1.ipv4);
+        packet.extract<addr_ipv4_t>(addr_0.ipv4);
         transition start_1;
     }
     state ProtAddrParser_ipv6_0 {
-        packet.extract<addr_ipv6_t>(addr_1.ipv6);
+        packet.extract<addr_ipv6_t>(addr_0.ipv6);
         transition start_1;
     }
     state start_1 {
-        hdr.addr_src = addr_1;
+        hdr.addr_src = addr_0;
         transition accept;
     }
 }

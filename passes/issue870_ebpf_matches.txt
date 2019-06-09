@@ -1,4 +1,4 @@
-BMV2::SimpleSwitchMidEnd_32_RemoveLeftSlices###########
+BMV2::SimpleSwitchMidEnd_35_RemoveLeftSlices ###########
 https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_issue870_ebpf.p4
-BMV2::SimpleSwitchMidEnd_3_RemoveActionParameters###########
+BMV2::SimpleSwitchMidEnd_3_RemoveActionParameters ###########
 https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_issue870_ebpf.p4

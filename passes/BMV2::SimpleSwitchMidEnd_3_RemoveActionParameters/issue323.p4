@@ -4,9 +4,9 @@
      }
  }
  control ingress(inout Headers h, inout Meta m, inout standard_metadata_t sm) {
--    @name("ingress.my_a") action my_a_0(bit<32> v) {
+-    @name("ingress.my_a") action my_a(bit<32> v) {
 +    bit<32> v;
-+    @name("ingress.my_a") action my_a_0() {
++    @name("ingress.my_a") action my_a() {
 +        v = 32w0;
          h.h.f = v;
      }
@@ -17,9 +17,9 @@
          h.h.f = v_1;
      }
      apply {
--        my_a_0(32w0);
+-        my_a(32w0);
 -        my_a_2(32w1);
-+        my_a_0();
++        my_a();
 +        my_a_2();
      }
  }

@@ -19,14 +19,14 @@
              hdr.packet_out.setInvalid();
              exit;
          }
-         filtering_t_0.apply();
-         forwarding_t_0.apply();
+         filtering_t.apply();
+         forwarding_t.apply();
 -        standard_metadata.egress_spec = (PortId_t)((PortIdUInt_t)standard_metadata.egress_spec + 9w1);
--        forwarding_mask_0 = (PortId_t)9w0xf;
--        standard_metadata.egress_spec = (PortId_t)((PortIdUInt_t)standard_metadata.egress_spec & (PortIdUInt_t)forwarding_mask_0);
+-        forwarding_mask = (PortId_t)9w0xf;
+-        standard_metadata.egress_spec = (PortId_t)((PortIdUInt_t)standard_metadata.egress_spec & (PortIdUInt_t)forwarding_mask);
 +        standard_metadata.egress_spec = (PortIdUInt_t)standard_metadata.egress_spec + 9w1;
-+        forwarding_mask_0 = 9w0xf;
-+        standard_metadata.egress_spec = (PortIdUInt_t)standard_metadata.egress_spec & (PortIdUInt_t)forwarding_mask_0;
++        forwarding_mask = 9w0xf;
++        standard_metadata.egress_spec = (PortIdUInt_t)standard_metadata.egress_spec & (PortIdUInt_t)forwarding_mask;
      }
  }
  control FabricEgress(inout parsed_headers_t hdr, inout fabric_metadata_t fabric_metadata, inout standard_metadata_t standard_metadata) {

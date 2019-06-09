@@ -2,12 +2,12 @@
 +++ after_pass
 @@ -35,18 +35,22 @@ control MyIngress(inout my_packet p, ino
      }
-     @name("MyIngress.set_data") action set_data_0() {
+     @name("MyIngress.set_data") action set_data() {
      }
 +    bit<32> key_0;
-     @name("MyIngress.t") table t {
+     @name("MyIngress.t") table t_0 {
          actions = {
-             set_data_0();
+             set_data();
              @defaultonly NoAction_0();
          }
          key = {
@@ -17,10 +17,10 @@
          default_action = NoAction_0();
      }
      apply {
--        t.apply();
+-        t_0.apply();
 +        {
 +            key_0 = meta.data[0].da;
-+            t.apply();
++            t_0.apply();
 +        }
      }
  }

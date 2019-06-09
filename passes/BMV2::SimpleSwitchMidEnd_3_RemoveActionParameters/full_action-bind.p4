@@ -1,18 +1,18 @@
 control c(inout bit<32> x) {
     bit<32> b;
-    @name("c.a") action a_0(bit<32> d) {
+    @name("c.a") action a(bit<32> d) {
         b = x;
         b = d;
         x = b;
     }
-    @name("c.t") table t {
+    @name("c.t") table t_0 {
         actions = {
-            a_0();
+            a();
         }
-        default_action = a_0(32w0);
+        default_action = a(32w0);
     }
     apply {
-        t.apply();
+        t_0.apply();
     }
 }
 control proto(inout bit<32> x);

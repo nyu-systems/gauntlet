@@ -1,6 +1,4 @@
-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation###########
+BMV2::SimpleSwitchMidEnd_28_ConstantFolding ###########
 https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_array_field.p4
-https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_array_field1.p4
-BMV2::SimpleSwitchMidEnd_26_ConstantFolding###########
+BMV2::SimpleSwitchMidEnd_27_LocalCopyPropagation ###########
 https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_array_field.p4
-https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_array_field1.p4

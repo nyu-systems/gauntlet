@@ -1,0 +1,8 @@
+BMV2::SimpleSwitchMidEnd_8_SimplifyKey ###########
+https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_issue1638.p4
+BMV2::SimpleSwitchMidEnd_32_SimplifyControlFlow ###########
+https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_issue1638.p4
+BMV2::SimpleSwitchMidEnd_9_ConstantFolding ###########
+https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_issue1638.p4
+BMV2::SimpleSwitchMidEnd_25_MoveDeclarations ###########
+https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_issue1638.p4

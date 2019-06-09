@@ -1,10 +1,3 @@
-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation###########
-https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_complex.p4
-https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_complex1.p4
-https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_complex10.p4
-https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_complex2.p4
+BMV2::SimpleSwitchMidEnd_27_LocalCopyPropagation ###########
 https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_complex3.p4
-https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_complex4.p4
-https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_complex5.p4
-https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_complex9.p4
-https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_complex6.p4
+https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_complex.p4

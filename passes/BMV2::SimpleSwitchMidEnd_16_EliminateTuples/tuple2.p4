@@ -9,12 +9,12 @@
 +    bool    field_0;
 +}
  control c() {
--    tuple<bit<32>, bool> x_0;
-+    tuple_0 x_0;
+-    tuple<bit<32>, bool> x;
++    tuple_0 x;
      apply {
-         x_0 = { 32w10, false };
--        f<tuple<bit<32>, bool>>(x_0);
-+        f<tuple_0>(x_0);
+         x = { 32w10, false };
+-        f<tuple<bit<32>, bool>>(x);
++        f<tuple_0>(x);
      }
  }
  top(c()) main;

@@ -4,22 +4,22 @@
      }
  }
  control cIngress(inout Parsed_packet hdr, inout mystruct1 meta, inout standard_metadata_t stdmeta) {
-+    bool hasReturned_1;
-+    bool hasReturned_2;
++    bool hasReturned;
++    bool hasReturned_0;
      @name(".NoAction") action NoAction_0() {
      }
-     @name("cIngress.foo") action foo_0(bit<16> bar) {
--        bool hasReturned_1 = false;
-+        hasReturned_1 = false;
+     @name("cIngress.foo") action foo(bit<16> bar) {
+-        bool hasReturned = false;
++        hasReturned = false;
          if (bar == 16w0xf00d) {
              hdr.ethernet.srcAddr = 48w0xdeadbeeff00d;
-             hasReturned_1 = true;
+             hasReturned = true;
 @@ -46,7 +48,7 @@ control cIngress(inout Parsed_packet hdr
          default_action = NoAction_0();
      }
      apply {
--        bool hasReturned_2 = false;
-+        hasReturned_2 = false;
-         tbl1.apply();
-         hasReturned_2 = true;
+-        bool hasReturned_0 = false;
++        hasReturned_0 = false;
+         tbl1_0.apply();
+         hasReturned_0 = true;
      }

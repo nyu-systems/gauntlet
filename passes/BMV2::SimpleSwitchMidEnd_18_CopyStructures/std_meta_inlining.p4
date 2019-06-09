@@ -1,6 +1,6 @@
 --- before_pass
 +++ after_pass
-@@ -16,9 +16,53 @@ control DeparserImpl(packet_out packet,
+@@ -16,9 +16,55 @@ control DeparserImpl(packet_out packet,
  control ingress(inout headers_t hdr, inout metadata_t meta, inout standard_metadata_t standard_metadata) {
      standard_metadata_t standard_metadata_1;
      @name(".send_to_cpu") action send_to_cpu() {
@@ -24,9 +24,10 @@
 +            standard_metadata_1.mcast_grp = standard_metadata.mcast_grp;
 +            standard_metadata_1.resubmit_flag = standard_metadata.resubmit_flag;
 +            standard_metadata_1.egress_rid = standard_metadata.egress_rid;
-+            standard_metadata_1.checksum_error = standard_metadata.checksum_error;
 +            standard_metadata_1.recirculate_flag = standard_metadata.recirculate_flag;
++            standard_metadata_1.checksum_error = standard_metadata.checksum_error;
 +            standard_metadata_1.parser_error = standard_metadata.parser_error;
++            standard_metadata_1.priority = standard_metadata.priority;
 +        }
          standard_metadata_1.egress_spec = 9w64;
 -        standard_metadata = standard_metadata_1;
@@ -49,9 +50,10 @@
 +            standard_metadata.mcast_grp = standard_metadata_1.mcast_grp;
 +            standard_metadata.resubmit_flag = standard_metadata_1.resubmit_flag;
 +            standard_metadata.egress_rid = standard_metadata_1.egress_rid;
-+            standard_metadata.checksum_error = standard_metadata_1.checksum_error;
 +            standard_metadata.recirculate_flag = standard_metadata_1.recirculate_flag;
++            standard_metadata.checksum_error = standard_metadata_1.checksum_error;
 +            standard_metadata.parser_error = standard_metadata_1.parser_error;
++            standard_metadata.priority = standard_metadata_1.priority;
 +        }
      }
      @name(".NoAction") action NoAction_0() {

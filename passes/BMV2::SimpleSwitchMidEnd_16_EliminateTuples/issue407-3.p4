@@ -1,6 +1,6 @@
 --- before_pass
 +++ after_pass
-@@ -16,7 +16,11 @@ header Ethernet_h {
+@@ -21,7 +21,11 @@ header Ethernet_h {
      EthernetAddress srcAddr;
      bit<16>         etherType;
  }

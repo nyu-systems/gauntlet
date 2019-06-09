@@ -11,6 +11,11 @@ struct mystruct2 {
     bit<4>    a;
     bit<4>    b;
 }
+enum myenum1 {
+    MY_ENUM1_VAL1,
+    MY_ENUM1_VAL2,
+    MY_ENUM1_VAL3
+}
 header Ethernet_h {
     EthernetAddress dstAddr;
     EthernetAddress srcAddr;

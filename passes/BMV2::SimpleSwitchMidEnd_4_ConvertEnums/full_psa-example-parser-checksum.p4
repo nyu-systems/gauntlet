@@ -52,10 +52,10 @@ struct headers {
 typedef bit<32> PacketCounter_t;
 typedef bit<8> ErrorIndex_t;
 parser IngressParserImpl(packet_in buffer, out headers hdr, inout metadata user_meta, in psa_ingress_parser_input_metadata_t istd, in empty_metadata_t resubmit_meta, in empty_metadata_t recirculate_meta) {
-    bit<16> tmp_3;
-    bool tmp_4;
-    bool tmp_5;
-    @name("IngressParserImpl.ck") InternetChecksum() ck;
+    bit<16> tmp;
+    bool tmp_0;
+    bool tmp_1;
+    @name("IngressParserImpl.ck") InternetChecksum() ck_0;
     state start {
         buffer.extract<ethernet_t>(hdr.ethernet);
         transition select(hdr.ethernet.etherType) {
@@ -66,12 +66,12 @@ parser IngressParserImpl(packet_in buffer, out headers hdr, inout metadata user_
     state parse_ipv4 {
         buffer.extract<ipv4_t>(hdr.ipv4);
         verify(hdr.ipv4.ihl == 4w5, error.UnhandledIPv4Options);
-        ck.clear();
-        ck.add<tuple<bit<4>, bit<4>, bit<8>, bit<16>, bit<16>, bit<3>, bit<13>, bit<8>, bit<8>, bit<32>, bit<32>>>({ hdr.ipv4.version, hdr.ipv4.ihl, hdr.ipv4.diffserv, hdr.ipv4.totalLen, hdr.ipv4.identification, hdr.ipv4.flags, hdr.ipv4.fragOffset, hdr.ipv4.ttl, hdr.ipv4.protocol, hdr.ipv4.srcAddr, hdr.ipv4.dstAddr });
-        tmp_3 = ck.get();
-        tmp_4 = tmp_3 == hdr.ipv4.hdrChecksum;
-        tmp_5 = tmp_4;
-        verify(tmp_5, error.BadIPv4HeaderChecksum);
+        ck_0.clear();
+        ck_0.add<tuple<bit<4>, bit<4>, bit<8>, bit<16>, bit<16>, bit<3>, bit<13>, bit<8>, bit<8>, bit<32>, bit<32>>>({ hdr.ipv4.version, hdr.ipv4.ihl, hdr.ipv4.diffserv, hdr.ipv4.totalLen, hdr.ipv4.identification, hdr.ipv4.flags, hdr.ipv4.fragOffset, hdr.ipv4.ttl, hdr.ipv4.protocol, hdr.ipv4.srcAddr, hdr.ipv4.dstAddr });
+        tmp = ck_0.get();
+        tmp_0 = tmp == hdr.ipv4.hdrChecksum;
+        tmp_1 = tmp_0;
+        verify(tmp_1, error.BadIPv4HeaderChecksum);
         transition select(hdr.ipv4.protocol) {
             8w6: parse_tcp;
             default: accept;
@@ -89,33 +89,33 @@ control ingress(inout headers hdr, inout metadata user_meta, in psa_ingress_inpu
         meta_1.drop = true;
         ostd = meta_1;
     }
-    @name("ingress.parser_error_counts") DirectCounter<PacketCounter_t>(32w0) parser_error_counts;
-    @name("ingress.set_error_idx") action set_error_idx_0(ErrorIndex_t idx) {
-        parser_error_counts.count();
+    @name("ingress.parser_error_counts") DirectCounter<PacketCounter_t>(32w0) parser_error_counts_0;
+    @name("ingress.set_error_idx") action set_error_idx(ErrorIndex_t idx) {
+        parser_error_counts_0.count();
     }
-    @name("ingress.parser_error_count_and_convert") table parser_error_count_and_convert {
+    @name("ingress.parser_error_count_and_convert") table parser_error_count_and_convert_0 {
         key = {
             istd.parser_error: exact @name("istd.parser_error") ;
         }
         actions = {
-            set_error_idx_0();
+            set_error_idx();
         }
-        default_action = set_error_idx_0(8w0);
+        default_action = set_error_idx(8w0);
         const entries = {
-                        error.NoError : set_error_idx_0(8w1);
-                        error.PacketTooShort : set_error_idx_0(8w2);
-                        error.NoMatch : set_error_idx_0(8w3);
-                        error.StackOutOfBounds : set_error_idx_0(8w4);
-                        error.HeaderTooShort : set_error_idx_0(8w5);
-                        error.ParserTimeout : set_error_idx_0(8w6);
-                        error.BadIPv4HeaderChecksum : set_error_idx_0(8w7);
-                        error.UnhandledIPv4Options : set_error_idx_0(8w8);
+                        error.NoError : set_error_idx(8w1);
+                        error.PacketTooShort : set_error_idx(8w2);
+                        error.NoMatch : set_error_idx(8w3);
+                        error.StackOutOfBounds : set_error_idx(8w4);
+                        error.HeaderTooShort : set_error_idx(8w5);
+                        error.ParserTimeout : set_error_idx(8w6);
+                        error.BadIPv4HeaderChecksum : set_error_idx(8w7);
+                        error.UnhandledIPv4Options : set_error_idx(8w8);
         }
-        psa_direct_counter = parser_error_counts;
+        psa_direct_counter = parser_error_counts_0;
     }
     apply {
         if (istd.parser_error != error.NoError) {
-            parser_error_count_and_convert.apply();
+            parser_error_count_and_convert_0.apply();
             ingress_drop();
             exit;
         }
@@ -138,13 +138,13 @@ control IngressDeparserImpl(packet_out packet, out empty_metadata_t clone_i2e_me
     }
 }
 control EgressDeparserImpl(packet_out packet, out empty_metadata_t clone_e2e_meta, out empty_metadata_t recirculate_meta, inout headers hdr, in metadata meta, in psa_egress_output_metadata_t istd, in psa_egress_deparser_input_metadata_t edstd) {
-    bit<16> tmp_6;
-    @name("EgressDeparserImpl.ck") InternetChecksum() ck_2;
+    bit<16> tmp_2;
+    @name("EgressDeparserImpl.ck") InternetChecksum() ck_1;
     apply {
-        ck_2.clear();
-        ck_2.add<tuple<bit<4>, bit<4>, bit<8>, bit<16>, bit<16>, bit<3>, bit<13>, bit<8>, bit<8>, bit<32>, bit<32>>>({ hdr.ipv4.version, hdr.ipv4.ihl, hdr.ipv4.diffserv, hdr.ipv4.totalLen, hdr.ipv4.identification, hdr.ipv4.flags, hdr.ipv4.fragOffset, hdr.ipv4.ttl, hdr.ipv4.protocol, hdr.ipv4.srcAddr, hdr.ipv4.dstAddr });
-        tmp_6 = ck_2.get();
-        hdr.ipv4.hdrChecksum = tmp_6;
+        ck_1.clear();
+        ck_1.add<tuple<bit<4>, bit<4>, bit<8>, bit<16>, bit<16>, bit<3>, bit<13>, bit<8>, bit<8>, bit<32>, bit<32>>>({ hdr.ipv4.version, hdr.ipv4.ihl, hdr.ipv4.diffserv, hdr.ipv4.totalLen, hdr.ipv4.identification, hdr.ipv4.flags, hdr.ipv4.fragOffset, hdr.ipv4.ttl, hdr.ipv4.protocol, hdr.ipv4.srcAddr, hdr.ipv4.dstAddr });
+        tmp_2 = ck_1.get();
+        hdr.ipv4.hdrChecksum = tmp_2;
         packet.emit<ethernet_t>(hdr.ethernet);
         packet.emit<ipv4_t>(hdr.ipv4);
         packet.emit<tcp_t>(hdr.tcp);

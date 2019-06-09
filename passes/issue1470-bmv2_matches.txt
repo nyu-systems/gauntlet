@@ -1,8 +1,2 @@
-BMV2::SimpleSwitchMidEnd_29_SimplifyControlFlow###########
-https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_issue1470-bmv2.p4
-BMV2::SimpleSwitchMidEnd_14_SimplifyParsers###########
-https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_issue1470-bmv2.p4
-BMV2::SimpleSwitchMidEnd_18_CopyStructures###########
-https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_issue1470-bmv2.p4
-BMV2::SimpleSwitchMidEnd_19_NestedStructs###########
+BMV2::SimpleSwitchMidEnd_14_SimplifyParsers ###########
 https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_issue1470-bmv2.p4

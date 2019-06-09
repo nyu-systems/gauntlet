@@ -32,7 +32,7 @@ control cIngress(inout headers_t hdr, inout metadata_t user_meta, in psa_ingress
             meta_1.multicast_group = ostd.multicast_group;
             meta_1.egress_port = ostd.egress_port;
         }
-        multicast_group_1 = (MulticastGroup_t)hdr.ethernet.dstAddr[31:0];
+        multicast_group_1 = hdr.ethernet.dstAddr[31:0];
         meta_1.drop = false;
         meta_1.multicast_group = multicast_group_1;
         {

@@ -2,21 +2,21 @@
 +++ after_pass
 @@ -1,12 +1,16 @@
  control c() {
-     bit<32> x;
--    @name("c.a") action a_0(inout bit<32> arg) {
--        bool hasReturned_0 = false;
-+    bool hasReturned_0;
+     bit<32> x_0;
+-    @name("c.a") action a(inout bit<32> arg) {
+-        bool hasReturned = false;
++    bool hasReturned;
 +    bit<32> arg;
-+    @name("c.a") action a_0() {
-+        arg = x;
-+        hasReturned_0 = false;
++    @name("c.a") action a() {
++        arg = x_0;
++        hasReturned = false;
          arg = 32w1;
-         hasReturned_0 = true;
-+        x = arg;
+         hasReturned = true;
++        x_0 = arg;
      }
      apply {
--        a_0(x);
-+        a_0();
+-        a(x_0);
++        a();
      }
  }
  control proto();

@@ -17,26 +17,16 @@ struct headers {
     ethernet_t ethernet;
 }
 parser IngressParserImpl(packet_in buffer, out headers parsed_hdr, inout metadata user_meta, in psa_ingress_parser_input_metadata_t istd, in empty_t resubmit_meta, in empty_t recirculate_meta) {
-    headers parsed_hdr_2;
-    metadata user_meta_2;
     state start {
-        parsed_hdr_2.ethernet.setInvalid();
-        user_meta_2 = user_meta;
-        buffer.extract<ethernet_t>(parsed_hdr_2.ethernet);
-        parsed_hdr = parsed_hdr_2;
-        user_meta = user_meta_2;
+        parsed_hdr.ethernet.setInvalid();
+        buffer.extract<ethernet_t>(parsed_hdr.ethernet);
         transition accept;
     }
 }
 parser EgressParserImpl(packet_in buffer, out headers parsed_hdr, inout metadata user_meta, in psa_egress_parser_input_metadata_t istd, in empty_t normal_meta, in empty_t clone_i2e_meta, in empty_t clone_e2e_meta) {
-    headers parsed_hdr_3;
-    metadata user_meta_3;
     state start {
-        parsed_hdr_3.ethernet.setInvalid();
-        user_meta_3 = user_meta;
-        buffer.extract<ethernet_t>(parsed_hdr_3.ethernet);
-        parsed_hdr = parsed_hdr_3;
-        user_meta = user_meta_3;
+        parsed_hdr.ethernet.setInvalid();
+        buffer.extract<ethernet_t>(parsed_hdr.ethernet);
         transition accept;
     }
 }

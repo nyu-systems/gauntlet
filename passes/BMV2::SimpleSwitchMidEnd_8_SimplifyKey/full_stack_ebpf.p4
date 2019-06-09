@@ -42,17 +42,17 @@ parser prs(packet_in p, out Headers_t headers) {
 control pipe(inout Headers_t headers, out bool pass) {
     @name(".NoAction") action NoAction_0() {
     }
-    @name("pipe.Reject") action Reject_0(IPv4Address add) {
+    @name("pipe.Reject") action Reject(IPv4Address add) {
         pass = false;
         headers.ipv4[0].srcAddr = add;
     }
     bit<32> key_0;
-    @name("pipe.Check_src_ip") table Check_src_ip {
+    @name("pipe.Check_src_ip") table Check_src_ip_0 {
         key = {
             key_0: exact @name("headers.ipv4[0].srcAddr") ;
         }
         actions = {
-            Reject_0();
+            Reject();
             NoAction_0();
         }
         implementation = hash_table(32w1024);
@@ -62,8 +62,8 @@ control pipe(inout Headers_t headers, out bool pass) {
         pass = true;
         {
             key_0 = headers.ipv4[0].srcAddr;
-            switch (Check_src_ip.apply().action_run) {
-                Reject_0: {
+            switch (Check_src_ip_0.apply().action_run) {
+                Reject: {
                     pass = false;
                 }
                 NoAction_0: {

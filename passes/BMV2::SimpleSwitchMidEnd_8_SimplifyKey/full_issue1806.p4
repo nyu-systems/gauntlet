@@ -16,15 +16,15 @@ parser prs(packet_in p, out Headers h) {
 control c(inout Headers h, inout standard_metadata_t sm) {
     @name(".NoAction") action NoAction_0() {
     }
-    @name("c.do_act") action do_act_0() {
+    @name("c.do_act") action do_act() {
     }
     bit<10> key_0;
-    @name("c.tns") table tns {
+    @name("c.tns") table tns_0 {
         key = {
             key_0: exact @name("h.eth.tst[13:4]") ;
         }
         actions = {
-            do_act_0();
+            do_act();
             @defaultonly NoAction_0();
         }
         default_action = NoAction_0();
@@ -32,7 +32,7 @@ control c(inout Headers h, inout standard_metadata_t sm) {
     apply {
         {
             key_0 = h.eth.tst[13:4];
-            tns.apply();
+            tns_0.apply();
         }
     }
 }

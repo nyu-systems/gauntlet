@@ -34,147 +34,119 @@ struct headers {
     ipv4_t     ipv4;
 }
 parser IngressParserImpl(packet_in buffer, out headers parsed_hdr, inout metadata user_meta, in psa_ingress_parser_input_metadata_t istd, in empty_metadata_t resubmit_meta, in empty_metadata_t recirculate_meta) {
-    headers parsed_hdr_2;
-    metadata user_meta_2;
     state start {
-        parsed_hdr_2.ethernet.setInvalid();
-        parsed_hdr_2.ipv4.setInvalid();
-        {
-            {
-            }
-        }
-        buffer.extract<ethernet_t>(parsed_hdr_2.ethernet);
-        transition select(parsed_hdr_2.ethernet.etherType) {
+        parsed_hdr.ethernet.setInvalid();
+        parsed_hdr.ipv4.setInvalid();
+        buffer.extract<ethernet_t>(parsed_hdr.ethernet);
+        transition select(parsed_hdr.ethernet.etherType) {
             16w0x800: CommonParser_parse_ipv4;
             default: start_0;
         }
     }
     state CommonParser_parse_ipv4 {
-        buffer.extract<ipv4_t>(parsed_hdr_2.ipv4);
+        buffer.extract<ipv4_t>(parsed_hdr.ipv4);
         transition start_0;
     }
     state start_0 {
-        {
-            parsed_hdr.ethernet = parsed_hdr_2.ethernet;
-            parsed_hdr.ipv4 = parsed_hdr_2.ipv4;
-        }
-        {
-            {
-            }
-        }
         transition accept;
     }
 }
 parser EgressParserImpl(packet_in buffer, out headers parsed_hdr, inout metadata user_meta, in psa_egress_parser_input_metadata_t istd, in empty_metadata_t normal_meta, in empty_metadata_t clone_i2e_meta, in empty_metadata_t clone_e2e_meta) {
-    headers parsed_hdr_3;
-    metadata user_meta_3;
     state start {
-        parsed_hdr_3.ethernet.setInvalid();
-        parsed_hdr_3.ipv4.setInvalid();
-        {
-            {
-            }
-        }
-        buffer.extract<ethernet_t>(parsed_hdr_3.ethernet);
-        transition select(parsed_hdr_3.ethernet.etherType) {
+        parsed_hdr.ethernet.setInvalid();
+        parsed_hdr.ipv4.setInvalid();
+        buffer.extract<ethernet_t>(parsed_hdr.ethernet);
+        transition select(parsed_hdr.ethernet.etherType) {
             16w0x800: CommonParser_parse_ipv4_0;
             default: start_1;
         }
     }
     state CommonParser_parse_ipv4_0 {
-        buffer.extract<ipv4_t>(parsed_hdr_3.ipv4);
+        buffer.extract<ipv4_t>(parsed_hdr.ipv4);
         transition start_1;
     }
     state start_1 {
-        {
-            parsed_hdr.ethernet = parsed_hdr_3.ethernet;
-            parsed_hdr.ipv4 = parsed_hdr_3.ipv4;
-        }
-        {
-            {
-            }
-        }
         transition accept;
     }
 }
 control ingress(inout headers hdr, inout metadata user_meta, in psa_ingress_input_metadata_t istd, inout psa_ingress_output_metadata_t ostd) {
-    psa_ingress_output_metadata_t meta_0;
-    PortId_t egress_port_0;
-    psa_ingress_output_metadata_t meta_1;
-    @name("ingress.port_bytes_in") Counter<ByteCounter_t, PortId_t>(32w512, 32w1) port_bytes_in;
-    @name("ingress.per_prefix_pkt_byte_count") DirectCounter<PacketByteCounter_t>(32w2) per_prefix_pkt_byte_count;
-    @name("ingress.next_hop") action next_hop_0(PortId_t oport) {
-        per_prefix_pkt_byte_count.count();
+    psa_ingress_output_metadata_t meta_2;
+    PortId_t egress_port_1;
+    psa_ingress_output_metadata_t meta_3;
+    @name("ingress.port_bytes_in") Counter<ByteCounter_t, PortId_t>(32w512, 32w1) port_bytes_in_0;
+    @name("ingress.per_prefix_pkt_byte_count") DirectCounter<PacketByteCounter_t>(32w2) per_prefix_pkt_byte_count_0;
+    @name("ingress.next_hop") action next_hop(PortId_t oport) {
+        per_prefix_pkt_byte_count_0.count();
         {
             {
-                meta_0.class_of_service = ostd.class_of_service;
-                meta_0.clone = ostd.clone;
-                meta_0.clone_session_id = ostd.clone_session_id;
-                meta_0.drop = ostd.drop;
-                meta_0.resubmit = ostd.resubmit;
-                meta_0.multicast_group = ostd.multicast_group;
-                meta_0.egress_port = ostd.egress_port;
+                meta_2.class_of_service = ostd.class_of_service;
+                meta_2.clone = ostd.clone;
+                meta_2.clone_session_id = ostd.clone_session_id;
+                meta_2.drop = ostd.drop;
+                meta_2.resubmit = ostd.resubmit;
+                meta_2.multicast_group = ostd.multicast_group;
+                meta_2.egress_port = ostd.egress_port;
             }
-            egress_port_0 = oport;
-            meta_0.drop = false;
-            meta_0.multicast_group = 10w0;
-            meta_0.egress_port = egress_port_0;
+            egress_port_1 = oport;
+            meta_2.drop = false;
+            meta_2.multicast_group = 32w0;
+            meta_2.egress_port = egress_port_1;
             {
-                ostd.class_of_service = meta_0.class_of_service;
-                ostd.clone = meta_0.clone;
-                ostd.clone_session_id = meta_0.clone_session_id;
-                ostd.drop = meta_0.drop;
-                ostd.resubmit = meta_0.resubmit;
-                ostd.multicast_group = meta_0.multicast_group;
-                ostd.egress_port = meta_0.egress_port;
+                ostd.class_of_service = meta_2.class_of_service;
+                ostd.clone = meta_2.clone;
+                ostd.clone_session_id = meta_2.clone_session_id;
+                ostd.drop = meta_2.drop;
+                ostd.resubmit = meta_2.resubmit;
+                ostd.multicast_group = meta_2.multicast_group;
+                ostd.egress_port = meta_2.egress_port;
             }
         }
     }
-    @name("ingress.default_route_drop") action default_route_drop_0() {
-        per_prefix_pkt_byte_count.count();
+    @name("ingress.default_route_drop") action default_route_drop() {
+        per_prefix_pkt_byte_count_0.count();
         {
             {
-                meta_1.class_of_service = ostd.class_of_service;
-                meta_1.clone = ostd.clone;
-                meta_1.clone_session_id = ostd.clone_session_id;
-                meta_1.drop = ostd.drop;
-                meta_1.resubmit = ostd.resubmit;
-                meta_1.multicast_group = ostd.multicast_group;
-                meta_1.egress_port = ostd.egress_port;
+                meta_3.class_of_service = ostd.class_of_service;
+                meta_3.clone = ostd.clone;
+                meta_3.clone_session_id = ostd.clone_session_id;
+                meta_3.drop = ostd.drop;
+                meta_3.resubmit = ostd.resubmit;
+                meta_3.multicast_group = ostd.multicast_group;
+                meta_3.egress_port = ostd.egress_port;
             }
-            meta_1.drop = true;
+            meta_3.drop = true;
             {
-                ostd.class_of_service = meta_1.class_of_service;
-                ostd.clone = meta_1.clone;
-                ostd.clone_session_id = meta_1.clone_session_id;
-                ostd.drop = meta_1.drop;
-                ostd.resubmit = meta_1.resubmit;
-                ostd.multicast_group = meta_1.multicast_group;
-                ostd.egress_port = meta_1.egress_port;
+                ostd.class_of_service = meta_3.class_of_service;
+                ostd.clone = meta_3.clone;
+                ostd.clone_session_id = meta_3.clone_session_id;
+                ostd.drop = meta_3.drop;
+                ostd.resubmit = meta_3.resubmit;
+                ostd.multicast_group = meta_3.multicast_group;
+                ostd.egress_port = meta_3.egress_port;
             }
         }
     }
-    @name("ingress.ipv4_da_lpm") table ipv4_da_lpm {
+    @name("ingress.ipv4_da_lpm") table ipv4_da_lpm_0 {
         key = {
             hdr.ipv4.dstAddr: lpm @name("hdr.ipv4.dstAddr") ;
         }
         actions = {
-            next_hop_0();
-            default_route_drop_0();
+            next_hop();
+            default_route_drop();
         }
-        default_action = default_route_drop_0();
-        psa_direct_counter = per_prefix_pkt_byte_count;
+        default_action = default_route_drop();
+        psa_direct_counter = per_prefix_pkt_byte_count_0;
     }
     apply {
-        port_bytes_in.count(istd.ingress_port);
+        port_bytes_in_0.count(istd.ingress_port);
         if (hdr.ipv4.isValid()) 
-            ipv4_da_lpm.apply();
+            ipv4_da_lpm_0.apply();
     }
 }
 control egress(inout headers hdr, inout metadata user_meta, in psa_egress_input_metadata_t istd, inout psa_egress_output_metadata_t ostd) {
-    @name("egress.port_bytes_out") Counter<ByteCounter_t, PortId_t>(32w512, 32w1) port_bytes_out;
+    @name("egress.port_bytes_out") Counter<ByteCounter_t, PortId_t>(32w512, 32w1) port_bytes_out_0;
     apply {
-        port_bytes_out.count(istd.egress_port);
+        port_bytes_out_0.count(istd.egress_port);
     }
 }
 control IngressDeparserImpl(packet_out buffer, out empty_metadata_t clone_i2e_meta, out empty_metadata_t resubmit_meta, out empty_metadata_t normal_meta, inout headers hdr, in metadata meta, in psa_ingress_output_metadata_t istd) {

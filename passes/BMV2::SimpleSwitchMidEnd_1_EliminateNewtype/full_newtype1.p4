@@ -3,12 +3,12 @@ typedef Narrow_t Narrow;
 typedef bit<32> Wide_t;
 typedef Wide_t Wide;
 control c(out bool b) {
-    Wide x;
-    Narrow y;
+    Wide x_0;
+    Narrow y_0;
     apply {
-        x = 32w3;
-        y = (Narrow_t)(Wide_t)x;
-        b = y == 9w10;
+        x_0 = 32w3;
+        y_0 = (Narrow_t)(Wide_t)x_0;
+        b = y_0 == 9w10;
     }
 }
 control ctrl(out bool b);

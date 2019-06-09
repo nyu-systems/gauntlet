@@ -4,16 +4,16 @@
      }
  }
  control EgressI(inout H hdr, inout M meta, inout std_meta_t std_meta) {
-+    bool hasReturned_0;
-     @name("EgressI.a") action a_0() {
++    bool hasReturned;
+     @name("EgressI.a") action a() {
      }
-     @name("EgressI.t") table t {
+     @name("EgressI.t") table t_0 {
 @@ -26,7 +27,7 @@ control EgressI(inout H hdr, inout M met
-         default_action = a_0();
+         default_action = a();
      }
      apply {
--        bool hasReturned_0 = false;
-+        hasReturned_0 = false;
-         switch (t.apply().action_run) {
-             a_0: {
-                 hasReturned_0 = true;
+-        bool hasReturned = false;
++        hasReturned = false;
+         switch (t_0.apply().action_run) {
+             a: {
+                 hasReturned = true;

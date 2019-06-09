@@ -24,12 +24,12 @@
  }
  struct empty_metadata_t {
  }
-@@ -128,7 +119,7 @@ control ingress(inout headers hdr, inout
-             ostd = meta_6;
+@@ -118,7 +109,7 @@ control ingress(inout headers hdr, inout
+             ostd = meta_1;
          }
      }
--    @name("ingress.do_tst") action do_tst_0(PortId_t egress_port, EthTypes serEnumT) {
-+    @name("ingress.do_tst") action do_tst_0(PortId_t egress_port, bit<16> serEnumT) {
+-    @name("ingress.do_tst") action do_tst(PortId_t egress_port, EthTypes serEnumT) {
++    @name("ingress.do_tst") action do_tst(PortId_t egress_port, bit<16> serEnumT) {
          {
-             psa_ingress_output_metadata_t meta_7 = ostd;
-             PortId_t egress_port_3 = egress_port;
+             psa_ingress_output_metadata_t meta_2 = ostd;
+             PortId_t egress_port_2 = egress_port;

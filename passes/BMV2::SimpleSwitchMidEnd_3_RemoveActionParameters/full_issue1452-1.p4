@@ -1,12 +1,12 @@
 control c() {
-    bit<32> x;
+    bit<32> x_0;
     bit<32> arg;
-    @name("c.b") action b_0() {
+    @name("c.b") action b() {
         arg = 32w2;
-        x = arg;
+        x_0 = arg;
     }
     apply {
-        b_0();
+        b();
     }
 }
 control proto();

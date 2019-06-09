@@ -3,17 +3,22 @@ struct S {
     bit<1> b;
 }
 control c(out bit<1> b) {
-    S s;
+    S s_0;
+    S tmp;
     apply {
         {
-            s.a = 1w0;
-            s.b = 1w1;
+            s_0.a = 1w0;
+            s_0.b = 1w1;
         }
         {
-            s.a = s.b;
-            s.b = s.a;
+            tmp.a = s_0.b;
+            tmp.b = s_0.a;
         }
-        b = s.a;
+        {
+            s_0.a = tmp.a;
+            s_0.b = tmp.b;
+        }
+        b = s_0.a;
     }
 }
 control e<T>(out T t);

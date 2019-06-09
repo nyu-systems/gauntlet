@@ -2,6 +2,7 @@ import os
 import glob
 import shutil
 import argparse
+import subprocess
 
 # configure logging
 import logging
@@ -50,19 +51,15 @@ def prune_files(p4_dmp_dir):
     return p4_prune_dir
 
 
-def diff_files(pass_dir, p4_prune_dir, p4_file):
-    passes = []
-    with open("passes.txt") as f:
-        passes = f.read().splitlines()
-    p4_base = os.path.splitext(os.path.basename(p4_file))[0]
+def diff_files(passes, pass_dir, p4_prune_dir, p4_file):
 
     for index, p4_pass in enumerate(passes[1:]):
         pass_before = glob.glob(f"{p4_prune_dir}/*{passes[index]}*.p4")
         pass_after = glob.glob(f"{p4_prune_dir}/*{passes[index+1]}*.p4")
         if not(pass_before and pass_after):
             log.error(f"Could not find the P4 files! "
-                      "Passes not generated.")
-            return FAILURE
+                      "Some passes were not generated.")
+            continue
         # pass_before = f"{p4_prune_dir}/{p4_base}-{passes[index]}.p4"
         # pass_after = f"{p4_prune_dir}/{p4_base}-{passes[index+1]}.p4"
         pass_before = pass_before[0]
@@ -84,26 +81,40 @@ def diff_files(pass_dir, p4_prune_dir, p4_file):
     return SUCCESS
 
 
-def get_links_to_passes(pass_dir, p4_input):
+def get_links_to_passes(pass_dir, p4_file):
     check_dir(pass_dir)
-    p4_name = os.path.splitext(os.path.basename(p4_input))[0]
+    p4_name = os.path.splitext(os.path.basename(p4_file))[0]
     passes = {}
     for p4_file in glob.glob(f"{pass_dir}/**/full_{p4_name}*.p4"):
         split_p4 = p4_file.split('/')
         passes.setdefault(split_p4[1], []).append(split_p4[2])
-    with open(f"{pass_dir}/{p4_name}_matches.txt", 'w+') as match_file:
-        for key in passes.keys():
-            match_file.write(key + "###########\n")
-            for p4_test in passes[key]:
-                src_dir = "https://github.com/fruffy/p4_tv/tree/master/"
-                src_dir += "p4_16_samples/"
-                match_file.write(f"{src_dir}{p4_test}\n")
+
+    if passes.keys():
+        with open(f"{pass_dir}/{p4_name}_matches.txt", 'w+') as match_file:
+            for key in passes.keys():
+                match_file.write(f"{key} ###########\n")
+                for p4_test in passes[key]:
+                    src_dir = "https://github.com/fruffy/"
+                    src_dir += "p4_tv/tree/master/"
+                    src_dir += "p4_16_samples/"
+                    match_file.write(f"{src_dir}{p4_test}\n")
+    else:
+        with open(f"{pass_dir}/no_passes.txt", 'a+') as match_file:
+            match_file.write(f"{p4_file}\n")
 
 
 def analyse_p4_file(p4_file, pass_dir):
     log.info(f"Analysing {p4_file}")
     p4_dmp_dir = f"dumps"
     check_dir(p4_dmp_dir)
+    p4_pass_cmd = "p4c-bm2-ss -v "
+    p4_pass_cmd += f"{p4_file} 2>&1 | "
+    p4_pass_cmd += "sed -e \'/FrontEndLast/,$!d\' | "
+    p4_pass_cmd += "sed -e \'/MidEndLast/q\' "
+    log.debug(f"Grabbing passes with command {p4_pass_cmd}")
+    output = subprocess.check_output(p4_pass_cmd, shell=True)
+    passes = output.decode('ascii').strip().split('\n')
+
     p4_cmd = "p4c-bm2-ss "
     p4_cmd += "--top4 FrontEndLast,MidEnd "
     p4_cmd += f"--dump {p4_dmp_dir} "
@@ -111,7 +122,7 @@ def analyse_p4_file(p4_file, pass_dir):
     log.debug(f"Running dumps with command {p4_cmd}")
     os.system(p4_cmd)
     prune_dir = prune_files(p4_dmp_dir)
-    err = diff_files(pass_dir, prune_dir, os.path.basename(p4_file))
+    err = diff_files(passes, pass_dir, prune_dir, os.path.basename(p4_file))
     shutil.rmtree(p4_dmp_dir)
 
 

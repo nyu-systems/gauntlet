@@ -6,13 +6,13 @@
  control c(out B32 x) {
 -    @name(".NoAction") action NoAction_0() {
 -    }
-     N32 k;
-     bit<32> b_1;
-     N32 n_1;
-     N32 n1;
-     S s;
+     N32 k_0;
+     bit<32> b_0;
+     N32 n_0;
+     N32 n1_0;
+     S s_0;
 +    @name(".NoAction") action NoAction_0() {
 +    }
-     @name("c.t") table t {
+     @name("c.t") table t_0 {
          actions = {
              NoAction_0();

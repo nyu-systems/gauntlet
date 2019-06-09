@@ -5,6 +5,10 @@ header hdr {
     bit<32> b;
     bit<32> c;
 }
+enum Choice {
+    First,
+    Second
+}
 struct Headers {
     hdr h;
 }
@@ -34,10 +38,10 @@ control deparser(packet_out b, in Headers h) {
     }
 }
 control ingress(inout Headers h, inout Meta m, inout standard_metadata_t sm) {
-    bit<32> c_c_0;
+    bit<32> c_c;
     apply {
-        c_c_0 = 32w0;
-        if (c_c_0 == 32w1) 
+        c_c = 32w0;
+        if (c_c == 32w1) 
             h.h.c = h.h.a;
         else 
             h.h.c = h.h.b;

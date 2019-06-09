@@ -43,7 +43,7 @@ parser ParserImpl(packet_in packet, out headers hdr, inout metadata meta, inout 
 control ingress(inout headers hdr, inout metadata meta, inout standard_metadata_t standard_metadata) {
     @name(".NoAction") action NoAction_0() {
     }
-    @name("ingress.debug_hdr") table debug_hdr {
+    @name("ingress.debug_hdr") table debug_hdr_0 {
         key = {
             hdr.base.t           : exact @name("hdr.base.t") ;
             hdr.u.short.isValid(): exact @name("hdr.u.short.$valid$") ;
@@ -55,7 +55,7 @@ control ingress(inout headers hdr, inout metadata meta, inout standard_metadata_
         const default_action = NoAction_0();
     }
     apply {
-        debug_hdr.apply();
+        debug_hdr_0.apply();
         if (hdr.u.short.isValid()) 
             hdr.u.short.setInvalid();
         else 

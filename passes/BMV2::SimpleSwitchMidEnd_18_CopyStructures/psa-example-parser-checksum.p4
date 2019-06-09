@@ -26,5 +26,5 @@
 +            ostd.egress_port = meta_1.egress_port;
 +        }
      }
-     @name("ingress.parser_error_counts") DirectCounter<PacketCounter_t>(32w0) parser_error_counts;
-     @name("ingress.set_error_idx") action set_error_idx_0(ErrorIndex_t idx) {
+     @name("ingress.parser_error_counts") DirectCounter<PacketCounter_t>(32w0) parser_error_counts_0;
+     @name("ingress.set_error_idx") action set_error_idx(ErrorIndex_t idx) {

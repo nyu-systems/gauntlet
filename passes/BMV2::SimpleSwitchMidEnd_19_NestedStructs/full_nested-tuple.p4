@@ -16,28 +16,28 @@ struct tuple_0 {
 }
 extern void f<T>(in T data);
 control c(inout bit<1> r) {
-    T s_f1_field;
-    T s_f1_field_0;
-    T s_f2;
-    bit<1> s_z;
+    T s_0_f1_field;
+    T s_0_f1_field_0;
+    T s_0_f2;
+    bit<1> s_0_z;
     apply {
         {
             {
                 {
-                    s_f1_field.f = 1w0;
+                    s_0_f1_field.f = 1w0;
                 }
                 {
-                    s_f1_field_0.f = 1w1;
+                    s_0_f1_field_0.f = 1w1;
                 }
             }
             {
-                s_f2.f = 1w0;
+                s_0_f2.f = 1w0;
             }
-            s_z = 1w1;
+            s_0_z = 1w1;
         }
-        f<tuple_1>({ s_f1_field, s_f1_field_0 });
-        f<tuple_0>({ { 1w0 }, { 1w1 } });
-        r = s_f2.f & s_z;
+        f<tuple_1>({ s_0_f1_field, s_0_f1_field_0 });
+        f<tuple_0>({{1w0},{1w1}});
+        r = s_0_f2.f & s_0_z;
     }
 }
 control simple(inout bit<1> r);

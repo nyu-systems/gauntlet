@@ -4,8 +4,8 @@
      }
      @name(".NoAction") action NoAction_3() {
      }
--    @name("MyIC.counter0") DirectCounter<bit<12>>(PSA_CounterType_t.PACKETS) counter0;
-+    @name("MyIC.counter0") DirectCounter<bit<12>>(32w0) counter0;
-     @name("MyIC.execute") action execute_0() {
-         counter0.count();
+-    @name("MyIC.counter0") DirectCounter<bit<12>>(PSA_CounterType_t.PACKETS) counter0_0;
++    @name("MyIC.counter0") DirectCounter<bit<12>>(32w0) counter0_0;
+     @name("MyIC.execute") action execute_1() {
+         counter0_0.count();
      }

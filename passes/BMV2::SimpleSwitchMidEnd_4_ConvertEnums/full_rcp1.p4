@@ -4,6 +4,11 @@ extern ConditionalAccumulator<T> {
     void read(out T value);
     void write(in T value, in bool condition);
 }
+enum CounterType {
+    packets,
+    bytes,
+    packets_and_bytes
+}
 extern Counter<T> {
     Counter(bit<32> type);
     void count();
@@ -17,14 +22,14 @@ struct Metadata {
     bit<32> pkt_len;
 }
 control ingress(inout H pkt_hdr, in Metadata metadata) {
-    @name("ingress.input_traffic_bytes") Counter<bit<32>>(32w2) input_traffic_bytes;
-    @name("ingress.sum_rtt_Tr") ConditionalAccumulator<bit<32>>(32w1) sum_rtt_Tr;
-    @name("ingress.num_pkts_with_rtt") ConditionalAccumulator<bit<32>>(32w1) num_pkts_with_rtt;
+    @name("ingress.input_traffic_bytes") Counter<bit<32>>(32w2) input_traffic_bytes_0;
+    @name("ingress.sum_rtt_Tr") ConditionalAccumulator<bit<32>>(32w1) sum_rtt_Tr_0;
+    @name("ingress.num_pkts_with_rtt") ConditionalAccumulator<bit<32>>(32w1) num_pkts_with_rtt_0;
     apply {
         @atomic {
-            input_traffic_bytes.count();
-            sum_rtt_Tr.write(pkt_hdr.rtt, pkt_hdr.rtt < 32w2500);
-            num_pkts_with_rtt.write(32w1, pkt_hdr.rtt < 32w2500);
+            input_traffic_bytes_0.count();
+            sum_rtt_Tr_0.write(pkt_hdr.rtt, pkt_hdr.rtt < 32w2500);
+            num_pkts_with_rtt_0.write(32w1, pkt_hdr.rtt < 32w2500);
         }
     }
 }

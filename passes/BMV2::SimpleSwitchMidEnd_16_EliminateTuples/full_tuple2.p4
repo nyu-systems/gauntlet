@@ -6,10 +6,10 @@ struct tuple_0 {
     bool    field_0;
 }
 control c() {
-    tuple_0 x_0;
+    tuple_0 x;
     apply {
-        x_0 = { 32w10, false };
-        f<tuple_0>(x_0);
+        x = { 32w10, false };
+        f<tuple_0>(x);
     }
 }
 top(c()) main;

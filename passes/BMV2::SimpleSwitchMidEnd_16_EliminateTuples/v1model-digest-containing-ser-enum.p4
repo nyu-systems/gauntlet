@@ -1,7 +1,7 @@
 --- before_pass
 +++ after_pass
-@@ -142,9 +142,22 @@ control MyEgress(inout headers hdr, inou
-         send_frame.apply();
+@@ -146,9 +146,22 @@ control MyEgress(inout headers hdr, inou
+         send_frame_0.apply();
      }
  }
 +struct tuple_0 {

@@ -9,13 +9,13 @@ struct tuple_0 {
     bit<32> field_0;
 }
 control test(out bool zout) {
-    tuple_0 p;
-    S q;
+    tuple_0 p_0;
+    S q_0;
     apply {
-        p = { 32w4, 32w5 };
-        q = { 32w2, 32w3 };
-        zout = p == { 32w4, 32w5 };
-        zout = zout && q == { 32w2, 32w3 };
+        p_0 = { 32w4, 32w5 };
+        q_0 = { 32w2, 32w3 };
+        zout = p_0 == { 32w4, 32w5 };
+        zout = zout && q_0 == {32w2,32w3};
     }
 }
 top(test()) main;

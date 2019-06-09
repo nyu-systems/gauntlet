@@ -19,12 +19,12 @@ struct headers {
     p4calc_t   p4calc;
 }
 parser Parser(packet_in packet, out headers hdr) {
-    p4calc_t tmp_3;
-    p4calc_t tmp_4;
-    p4calc_t tmp_5;
-    bit<128> tmp;
-    bit<128> tmp_0;
-    bit<128> tmp_1;
+    p4calc_t tmp;
+    p4calc_t tmp_0;
+    p4calc_t tmp_1;
+    bit<128> tmp_3;
+    bit<128> tmp_4;
+    bit<128> tmp_5;
     state start {
         packet.extract<ethernet_t>(hdr.ethernet);
         transition select(hdr.ethernet.etherType) {
@@ -34,45 +34,45 @@ parser Parser(packet_in packet, out headers hdr) {
     }
     state check_p4calc {
         {
-            tmp = packet.lookahead<bit<128>>();
-            tmp_3.setValid();
+            tmp_3 = packet.lookahead<bit<128>>();
+            tmp.setValid();
             {
-                tmp_3.p = tmp[127:120];
-                tmp_3.four = tmp[119:112];
-                tmp_3.ver = tmp[111:104];
-                tmp_3.op = tmp[103:96];
-                tmp_3.operand_a = tmp[95:64];
-                tmp_3.operand_b = tmp[63:32];
-                tmp_3.res = tmp[31:0];
+                tmp.p = tmp_3[127:120];
+                tmp.four = tmp_3[119:112];
+                tmp.ver = tmp_3[111:104];
+                tmp.op = tmp_3[103:96];
+                tmp.operand_a = tmp_3[95:64];
+                tmp.operand_b = tmp_3[63:32];
+                tmp.res = tmp_3[31:0];
             }
         }
         {
-            tmp_0 = packet.lookahead<bit<128>>();
-            tmp_4.setValid();
+            tmp_4 = packet.lookahead<bit<128>>();
+            tmp_0.setValid();
             {
-                tmp_4.p = tmp_0[127:120];
-                tmp_4.four = tmp_0[119:112];
-                tmp_4.ver = tmp_0[111:104];
-                tmp_4.op = tmp_0[103:96];
-                tmp_4.operand_a = tmp_0[95:64];
-                tmp_4.operand_b = tmp_0[63:32];
-                tmp_4.res = tmp_0[31:0];
+                tmp_0.p = tmp_4[127:120];
+                tmp_0.four = tmp_4[119:112];
+                tmp_0.ver = tmp_4[111:104];
+                tmp_0.op = tmp_4[103:96];
+                tmp_0.operand_a = tmp_4[95:64];
+                tmp_0.operand_b = tmp_4[63:32];
+                tmp_0.res = tmp_4[31:0];
             }
         }
         {
-            tmp_1 = packet.lookahead<bit<128>>();
-            tmp_5.setValid();
+            tmp_5 = packet.lookahead<bit<128>>();
+            tmp_1.setValid();
             {
-                tmp_5.p = tmp_1[127:120];
-                tmp_5.four = tmp_1[119:112];
-                tmp_5.ver = tmp_1[111:104];
-                tmp_5.op = tmp_1[103:96];
-                tmp_5.operand_a = tmp_1[95:64];
-                tmp_5.operand_b = tmp_1[63:32];
-                tmp_5.res = tmp_1[31:0];
+                tmp_1.p = tmp_5[127:120];
+                tmp_1.four = tmp_5[119:112];
+                tmp_1.ver = tmp_5[111:104];
+                tmp_1.op = tmp_5[103:96];
+                tmp_1.operand_a = tmp_5[95:64];
+                tmp_1.operand_b = tmp_5[63:32];
+                tmp_1.res = tmp_5[31:0];
             }
         }
-        transition select(tmp_3.p, tmp_4.four, tmp_5.ver) {
+        transition select(tmp.p, tmp_0.four, tmp_1.ver) {
             (8w0x50, 8w0x34, 8w0x1): parse_p4calc;
             default: accept;
         }
@@ -83,69 +83,69 @@ parser Parser(packet_in packet, out headers hdr) {
     }
 }
 control Ingress(inout headers hdr, out bool xout) {
-    bit<48> tmp_6;
-    @name("Ingress.operation_add") action operation_add_0() {
-        tmp_6 = hdr.ethernet.dstAddr;
+    bit<48> tmp_2;
+    @name("Ingress.operation_add") action operation_add() {
+        tmp_2 = hdr.ethernet.dstAddr;
         hdr.ethernet.dstAddr = hdr.ethernet.srcAddr;
-        hdr.ethernet.srcAddr = tmp_6;
+        hdr.ethernet.srcAddr = tmp_2;
         hdr.p4calc.res = hdr.p4calc.operand_a + hdr.p4calc.operand_b;
     }
-    @name("Ingress.operation_sub") action operation_sub_0() {
-        tmp_6 = hdr.ethernet.dstAddr;
+    @name("Ingress.operation_sub") action operation_sub() {
+        tmp_2 = hdr.ethernet.dstAddr;
         hdr.ethernet.dstAddr = hdr.ethernet.srcAddr;
-        hdr.ethernet.srcAddr = tmp_6;
+        hdr.ethernet.srcAddr = tmp_2;
         hdr.p4calc.res = hdr.p4calc.operand_a - hdr.p4calc.operand_b;
     }
-    @name("Ingress.operation_and") action operation_and_0() {
-        tmp_6 = hdr.ethernet.dstAddr;
+    @name("Ingress.operation_and") action operation_and() {
+        tmp_2 = hdr.ethernet.dstAddr;
         hdr.ethernet.dstAddr = hdr.ethernet.srcAddr;
-        hdr.ethernet.srcAddr = tmp_6;
+        hdr.ethernet.srcAddr = tmp_2;
         hdr.p4calc.res = hdr.p4calc.operand_a & hdr.p4calc.operand_b;
     }
-    @name("Ingress.operation_or") action operation_or_0() {
-        tmp_6 = hdr.ethernet.dstAddr;
+    @name("Ingress.operation_or") action operation_or() {
+        tmp_2 = hdr.ethernet.dstAddr;
         hdr.ethernet.dstAddr = hdr.ethernet.srcAddr;
-        hdr.ethernet.srcAddr = tmp_6;
+        hdr.ethernet.srcAddr = tmp_2;
         hdr.p4calc.res = hdr.p4calc.operand_a | hdr.p4calc.operand_b;
     }
-    @name("Ingress.operation_xor") action operation_xor_0() {
-        tmp_6 = hdr.ethernet.dstAddr;
+    @name("Ingress.operation_xor") action operation_xor() {
+        tmp_2 = hdr.ethernet.dstAddr;
         hdr.ethernet.dstAddr = hdr.ethernet.srcAddr;
-        hdr.ethernet.srcAddr = tmp_6;
+        hdr.ethernet.srcAddr = tmp_2;
         hdr.p4calc.res = hdr.p4calc.operand_a ^ hdr.p4calc.operand_b;
     }
-    @name("Ingress.operation_drop") action operation_drop_0() {
+    @name("Ingress.operation_drop") action operation_drop() {
         xout = false;
     }
     @name("Ingress.operation_drop") action operation_drop_2() {
         xout = false;
     }
-    @name("Ingress.calculate") table calculate {
+    @name("Ingress.calculate") table calculate_0 {
         key = {
             hdr.p4calc.op: exact @name("hdr.p4calc.op") ;
         }
         actions = {
-            operation_add_0();
-            operation_sub_0();
-            operation_and_0();
-            operation_or_0();
-            operation_xor_0();
-            operation_drop_0();
+            operation_add();
+            operation_sub();
+            operation_and();
+            operation_or();
+            operation_xor();
+            operation_drop();
         }
-        const default_action = operation_drop_0();
+        const default_action = operation_drop();
         const entries = {
-                        8w0x2b : operation_add_0();
-                        8w0x2d : operation_sub_0();
-                        8w0x26 : operation_and_0();
-                        8w0x7c : operation_or_0();
-                        8w0x5e : operation_xor_0();
+                        8w0x2b : operation_add();
+                        8w0x2d : operation_sub();
+                        8w0x26 : operation_and();
+                        8w0x7c : operation_or();
+                        8w0x5e : operation_xor();
         }
         implementation = hash_table(32w8);
     }
     apply {
         xout = true;
         if (hdr.p4calc.isValid()) 
-            calculate.apply();
+            calculate_0.apply();
         else 
             operation_drop_2();
     }

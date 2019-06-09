@@ -21,6 +21,12 @@ typedef bit<14> PacketLength_t;
 typedef bit<16> EgressInstance_t;
 typedef bit<48> Timestamp_t;
 typedef error ParserError_t;
+enum InstanceType_t {
+    NORMAL,
+    CLONE,
+    RESUBMIT,
+    RECIRCULATE
+}
 struct psa_ingress_parser_input_metadata_t {
     PortId_t ingress_port;
     bit<32>  instance_type;
@@ -90,6 +96,15 @@ extern resubmit {
 extern recirculate {
     void emit<T>(in T hdr);
 }
+enum HashAlgorithm_t {
+    IDENTITY,
+    CRC32,
+    CRC32_CUSTOM,
+    CRC16,
+    CRC16_CUSTOM,
+    ONES_COMPLEMENT16,
+    TARGET_DEFAULT
+}
 extern Hash<O> {
     Hash(bit<32> algo);
     O get_hash<D>(in D data);
@@ -108,6 +123,11 @@ extern InternetChecksum {
     void remove<T>(in T data);
     bit<16> get();
 }
+enum CounterType_t {
+    PACKETS,
+    BYTES,
+    PACKETS_AND_BYTES
+}
 extern Counter<W, S> {
     Counter(bit<32> n_counters, bit<32> type);
     void count(in S index);
@@ -115,6 +135,15 @@ extern Counter<W, S> {
 extern DirectCounter<W> {
     DirectCounter(bit<32> type);
     void count();
+}
+enum MeterType_t {
+    PACKETS,
+    BYTES
+}
+enum MeterColor_t {
+    RED,
+    GREEN,
+    YELLOW
 }
 extern Meter<S> {
     Meter(bit<32> n_meters, bit<32> type);
@@ -190,20 +219,6 @@ struct headers {
     ipv4_t     ipv4;
 }
 parser EgressParserImpl(packet_in buffer, out headers parsed_hdr, inout metadata user_meta, in psa_egress_parser_input_metadata_t istd, out psa_parser_output_metadata_t ostd) {
-    ethernet_t parsed_hdr_2_ethernet;
-    ipv4_t parsed_hdr_2_ipv4;
-    fwd_metadata_t user_meta_3_fwd_metadata;
-    bit<3> user_meta_3_custom_clone_id;
-    clone_0_t user_meta_3_clone;
-    clone_1_t user_meta_3_clone_0;
-    bit<10> istd_1_egress_port;
-    bit<32> istd_1_instance_type;
-    bit<3> istd_1_clone_metadata_type;
-    clone_union_t istd_1_clone_metadata_data;
-    fwd_metadata_t user_meta_4_fwd_metadata;
-    bit<3> user_meta_4_custom_clone_id;
-    clone_0_t user_meta_4_clone;
-    clone_1_t user_meta_4_clone_0;
     state start {
         transition select(istd.instance_type) {
             32w1: parse_clone_header;
@@ -211,193 +226,120 @@ parser EgressParserImpl(packet_in buffer, out headers parsed_hdr, inout metadata
         }
     }
     state parse_ethernet {
-        parsed_hdr_2_ethernet.setInvalid();
-        parsed_hdr_2_ipv4.setInvalid();
-        {
-            {
-                user_meta_3_fwd_metadata.outport = user_meta.fwd_metadata.outport;
-            }
-            user_meta_3_custom_clone_id = user_meta.custom_clone_id;
-            user_meta_3_clone = user_meta.clone_0;
-            user_meta_3_clone_0 = user_meta.clone_1;
-        }
-        buffer.extract<ethernet_t>(parsed_hdr_2_ethernet);
-        transition select(parsed_hdr_2_ethernet.etherType) {
+        parsed_hdr.ethernet.setInvalid();
+        parsed_hdr.ipv4.setInvalid();
+        buffer.extract<ethernet_t>(parsed_hdr.ethernet);
+        transition select(parsed_hdr.ethernet.etherType) {
             16w0x800: CommonParser_parse_ipv4;
             default: parse_ethernet_0;
         }
     }
     state CommonParser_parse_ipv4 {
-        buffer.extract<ipv4_t>(parsed_hdr_2_ipv4);
+        buffer.extract<ipv4_t>(parsed_hdr.ipv4);
         transition parse_ethernet_0;
     }
     state parse_ethernet_0 {
-        {
-            parsed_hdr.ethernet = parsed_hdr_2_ethernet;
-            parsed_hdr.ipv4 = parsed_hdr_2_ipv4;
-        }
-        {
-            {
-                user_meta.fwd_metadata.outport = user_meta_3_fwd_metadata.outport;
-            }
-            user_meta.custom_clone_id = user_meta_3_custom_clone_id;
-            user_meta.clone_0 = user_meta_3_clone;
-            user_meta.clone_1 = user_meta_3_clone_0;
-        }
         transition accept;
     }
     state parse_clone_header {
-        {
-            istd_1_egress_port = istd.egress_port;
-            istd_1_instance_type = istd.instance_type;
-            {
-                istd_1_clone_metadata_type = istd.clone_metadata.type;
-                {
-                    istd_1_clone_metadata_data.h0 = istd.clone_metadata.data.h0;
-                    istd_1_clone_metadata_data.h1 = istd.clone_metadata.data.h1;
-                }
-            }
-        }
-        {
-            {
-                user_meta_4_fwd_metadata.outport = user_meta.fwd_metadata.outport;
-            }
-            user_meta_4_custom_clone_id = user_meta.custom_clone_id;
-            user_meta_4_clone = user_meta.clone_0;
-            user_meta_4_clone_0 = user_meta.clone_1;
-        }
-        transition select(istd_1_clone_metadata_type) {
+        transition select(istd.clone_metadata.type) {
             3w0: CloneParser_parse_clone_header;
             3w1: CloneParser_parse_clone_header_0;
             default: reject;
         }
     }
     state CloneParser_parse_clone_header {
-        user_meta_4_custom_clone_id = istd_1_clone_metadata_type;
-        user_meta_4_clone = istd_1_clone_metadata_data.h0;
+        user_meta.custom_clone_id = istd.clone_metadata.type;
+        user_meta.clone_0 = istd.clone_metadata.data.h0;
         transition parse_clone_header_2;
     }
     state CloneParser_parse_clone_header_0 {
-        user_meta_4_custom_clone_id = istd_1_clone_metadata_type;
-        user_meta_4_clone_0 = istd_1_clone_metadata_data.h1;
+        user_meta.custom_clone_id = istd.clone_metadata.type;
+        user_meta.clone_1 = istd.clone_metadata.data.h1;
         transition parse_clone_header_2;
     }
     state parse_clone_header_2 {
-        {
-            {
-                user_meta.fwd_metadata.outport = user_meta_4_fwd_metadata.outport;
-            }
-            user_meta.custom_clone_id = user_meta_4_custom_clone_id;
-            user_meta.clone_0 = user_meta_4_clone;
-            user_meta.clone_1 = user_meta_4_clone_0;
-        }
         transition parse_ethernet;
     }
 }
 control egress(inout headers hdr, inout metadata user_meta, in psa_egress_input_metadata_t istd, inout psa_egress_output_metadata_t ostd) {
     @name(".NoAction") action NoAction_0() {
     }
-    @name("egress.process_clone_h0") action process_clone_h0_0() {
+    @name("egress.process_clone_h0") action process_clone_h0() {
         user_meta.fwd_metadata.outport = (bit<32>)user_meta.clone_0.data;
     }
-    @name("egress.process_clone_h1") action process_clone_h1_0() {
+    @name("egress.process_clone_h1") action process_clone_h1() {
         user_meta.fwd_metadata.outport = user_meta.clone_1.data;
     }
-    @name("egress.t") table t {
+    @name("egress.t") table t_0 {
         key = {
             user_meta.custom_clone_id: exact @name("user_meta.custom_clone_id") ;
         }
         actions = {
-            process_clone_h0_0();
-            process_clone_h1_0();
+            process_clone_h0();
+            process_clone_h1();
             NoAction_0();
         }
         default_action = NoAction_0();
     }
     apply {
-        t.apply();
+        t_0.apply();
     }
 }
 parser IngressParserImpl(packet_in buffer, out headers parsed_hdr, inout metadata user_meta, in psa_ingress_parser_input_metadata_t istd, out psa_parser_output_metadata_t ostd) {
-    ethernet_t parsed_hdr_3_ethernet;
-    ipv4_t parsed_hdr_3_ipv4;
-    fwd_metadata_t user_meta_5_fwd_metadata;
-    bit<3> user_meta_5_custom_clone_id;
-    clone_0_t user_meta_5_clone;
-    clone_1_t user_meta_5_clone_0;
     state start {
-        parsed_hdr_3_ethernet.setInvalid();
-        parsed_hdr_3_ipv4.setInvalid();
-        {
-            {
-                user_meta_5_fwd_metadata.outport = user_meta.fwd_metadata.outport;
-            }
-            user_meta_5_custom_clone_id = user_meta.custom_clone_id;
-            user_meta_5_clone = user_meta.clone_0;
-            user_meta_5_clone_0 = user_meta.clone_1;
-        }
-        buffer.extract<ethernet_t>(parsed_hdr_3_ethernet);
-        transition select(parsed_hdr_3_ethernet.etherType) {
+        parsed_hdr.ethernet.setInvalid();
+        parsed_hdr.ipv4.setInvalid();
+        buffer.extract<ethernet_t>(parsed_hdr.ethernet);
+        transition select(parsed_hdr.ethernet.etherType) {
             16w0x800: CommonParser_parse_ipv4_0;
             default: start_0;
         }
     }
     state CommonParser_parse_ipv4_0 {
-        buffer.extract<ipv4_t>(parsed_hdr_3_ipv4);
+        buffer.extract<ipv4_t>(parsed_hdr.ipv4);
         transition start_0;
     }
     state start_0 {
-        {
-            parsed_hdr.ethernet = parsed_hdr_3_ethernet;
-            parsed_hdr.ipv4 = parsed_hdr_3_ipv4;
-        }
-        {
-            {
-                user_meta.fwd_metadata.outport = user_meta_5_fwd_metadata.outport;
-            }
-            user_meta.custom_clone_id = user_meta_5_custom_clone_id;
-            user_meta.clone_0 = user_meta_5_clone;
-            user_meta.clone_1 = user_meta_5_clone_0;
-        }
         transition accept;
     }
 }
 control ingress(inout headers hdr, inout metadata user_meta, in psa_ingress_input_metadata_t istd, inout psa_ingress_output_metadata_t ostd) {
     @name(".NoAction") action NoAction_1() {
     }
-    @name("ingress.do_clone") action do_clone_0(PortId_t port) {
+    @name("ingress.do_clone") action do_clone(PortId_t port) {
         ostd.clone = true;
         ostd.clone_port = port;
         user_meta.custom_clone_id = 3w1;
     }
-    @name("ingress.t") table t_2 {
+    @name("ingress.t") table t_1 {
         key = {
             user_meta.fwd_metadata.outport: exact @name("user_meta.fwd_metadata.outport") ;
         }
         actions = {
-            do_clone_0();
+            do_clone();
             NoAction_1();
         }
         default_action = NoAction_1();
     }
     apply {
-        t_2.apply();
+        t_1.apply();
     }
 }
 control IngressDeparserImpl(packet_out packet, inout headers hdr, in metadata meta, in psa_ingress_output_metadata_t istd, out psa_ingress_deparser_output_metadata_t ostd) {
-    bit<3> clone_md_type;
-    clone_union_t clone_md_data;
+    bit<3> clone_md_0_type;
+    clone_union_t clone_md_0_data;
     apply {
-        clone_md_data.h1.setValid();
+        clone_md_0_data.h1.setValid();
         {
-            clone_md_data.h1.data = 32w0;
+            clone_md_0_data.h1.data = 32w0;
         }
-        clone_md_type = 3w0;
+        clone_md_0_type = 3w0;
         if (meta.custom_clone_id == 3w1) {
-            ostd.clone_metadata.type = clone_md_type;
+            ostd.clone_metadata.type = clone_md_0_type;
             {
-                ostd.clone_metadata.data.h0 = clone_md_data.h0;
-                ostd.clone_metadata.data.h1 = clone_md_data.h1;
+                ostd.clone_metadata.data.h0 = clone_md_0_data.h0;
+                ostd.clone_metadata.data.h1 = clone_md_0_data.h1;
             }
         }
         packet.emit<ethernet_t>(hdr.ethernet);

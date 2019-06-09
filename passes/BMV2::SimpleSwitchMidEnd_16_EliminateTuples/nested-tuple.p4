@@ -19,11 +19,11 @@
  struct tuple_0 {
      T field;
 @@ -15,7 +19,7 @@ control c(inout bit<1> r) {
-     S s;
+     S s_0;
      apply {
-         s = { { { 1w0 }, { 1w1 } }, { 1w0 }, 1w1 };
--        f<tuple<T, T>>(s.f1);
-+        f<tuple_1>(s.f1);
-         f<tuple_0>({ { 1w0 }, { 1w1 } });
-         r = s.f2.f & s.z;
+         s_0 = { { { 1w0 }, { 1w1 } }, { 1w0 }, 1w1 };
+-        f<tuple<T, T>>(s_0.f1);
++        f<tuple_1>(s_0.f1);
+         f<tuple_0>({{1w0},{1w1}});
+         r = s_0.f2.f & s_0.z;
      }

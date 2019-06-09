@@ -1,10 +1,10 @@
 --- before_pass
 +++ after_pass
 @@ -61,6 +61,7 @@ parser parserI(packet_in pkt, out header
-     bit<9> tmp_6;
-     bit<9> tmp_7;
-     bit<32> tmp_8;
-+    bit<8> tmp;
+     bit<9> tmp_1;
+     bit<9> tmp_2;
+     bit<32> tmp_3;
++    bit<8> tmp_4;
      state start {
          pkt.extract<ethernet_t>(hdr.ethernet);
          transition select(hdr.ethernet.etherType) {
@@ -12,12 +12,12 @@
          }
      }
      state parse_ipv4 {
--        tmp_4 = pkt.lookahead<IPv4_up_to_ihl_only_h>();
+-        tmp = pkt.lookahead<IPv4_up_to_ihl_only_h>();
 +        {
-+            tmp = pkt.lookahead<bit<8>>();
-+            tmp_4.setValid();
-+            tmp_4 = { tmp[7:4], tmp[3:0] };
++            tmp_4 = pkt.lookahead<bit<8>>();
++            tmp.setValid();
++            tmp = {tmp_4[7:4],tmp_4[3:0]};
 +        }
-         tmp_5 = (bit<9>)tmp_4.ihl << 2;
-         tmp_6 = tmp_5 + 9w492;
-         tmp_7 = tmp_6 << 3;
+         tmp_0 = (bit<9>)tmp.ihl << 2;
+         tmp_1 = tmp_0 + 9w492;
+         tmp_2 = tmp_1 << 3;

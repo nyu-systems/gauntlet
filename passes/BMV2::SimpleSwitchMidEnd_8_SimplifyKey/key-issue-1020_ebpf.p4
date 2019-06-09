@@ -1,12 +1,12 @@
 --- before_pass
 +++ after_pass
 @@ -48,12 +48,14 @@ control pipe(inout Headers_t headers, ou
-     @name("pipe.drop") action drop_0() {
+     @name("pipe.drop") action drop() {
          pass = false;
      }
 +    bit<32> key_0;
 +    bit<32> key_1;
-     @name("pipe.t") table t {
+     @name("pipe.t") table t_0 {
          key = {
 -            headers.ipv4.srcAddr + 32w1: exact @name(" headers.ipv4.srcAddr") ;
 -            headers.ipv4.dstAddr + 32w1: exact @name("headers.ipv4.dstAddr") ;
@@ -18,16 +18,16 @@
 +            headers.ethernet.srcAddr: exact @name("headers.ethernet.srcAddr") ;
          }
          actions = {
-             invalidate_0();
+             invalidate();
 @@ -63,7 +65,11 @@ control pipe(inout Headers_t headers, ou
-         default_action = drop_0();
+         default_action = drop();
      }
      apply {
--        tmp_0 = t.apply().hit;
+-        tmp = t_0.apply().hit;
 +        {
 +            key_0 = headers.ipv4.srcAddr + 32w1;
 +            key_1 = headers.ipv4.dstAddr + 32w1;
-+            tmp_0 = t.apply().hit;
++            tmp = t_0.apply().hit;
 +        }
      }
  }

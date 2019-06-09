@@ -1,4 +1,0 @@
-BMV2::SimpleSwitchMidEnd_14_SimplifyParsers###########
-https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_issue823.p4
-BMV2::SimpleSwitchMidEnd_19_NestedStructs###########
-https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_issue823.p4

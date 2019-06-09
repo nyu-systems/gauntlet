@@ -4,17 +4,17 @@
  }
  extern bit<16> get<T>(in T data);
  control cc() {
--    headers hdr_1;
--    headers tmp_0;
-+    ipv4_option_timestamp_t hdr_1_ipv4_option_timestamp;
-+    ipv4_option_timestamp_t tmp_0_ipv4_option_timestamp;
+-    headers hdr_0;
+-    headers tmp;
++    ipv4_option_timestamp_t hdr_0_ipv4_option_timestamp;
++    ipv4_option_timestamp_t tmp_ipv4_option_timestamp;
      apply {
          {
--            tmp_0.ipv4_option_timestamp = hdr_1.ipv4_option_timestamp;
-+            tmp_0_ipv4_option_timestamp = hdr_1_ipv4_option_timestamp;
+-            tmp.ipv4_option_timestamp = hdr_0.ipv4_option_timestamp;
++            tmp_ipv4_option_timestamp = hdr_0_ipv4_option_timestamp;
          }
--        get<headers>(tmp_0);
-+        get<headers>({ tmp_0_ipv4_option_timestamp });
+-        get<headers>(tmp);
++        get<headers>({ tmp_ipv4_option_timestamp });
      }
  }
  control C();

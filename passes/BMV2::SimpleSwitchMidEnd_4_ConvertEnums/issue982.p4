@@ -1,15 +1,8 @@
 --- before_pass
 +++ after_pass
-@@ -21,19 +21,13 @@ typedef bit<14> PacketLength_t;
- typedef bit<16> EgressInstance_t;
- typedef bit<48> Timestamp_t;
- typedef error ParserError_t;
--enum InstanceType_t {
--    NORMAL,
--    CLONE,
--    RESUBMIT,
--    RECIRCULATE
--}
+@@ -28,12 +28,12 @@ enum InstanceType_t {
+     RECIRCULATE
+ }
  struct psa_ingress_parser_input_metadata_t {
 -    PortId_t       ingress_port;
 -    InstanceType_t instance_type;
@@ -23,7 +16,7 @@
      CloneMetadata_t clone_metadata;
  }
  struct psa_parser_output_metadata_t {
-@@ -46,10 +40,10 @@ struct psa_egress_deparser_output_metada
+@@ -46,10 +46,10 @@ struct psa_egress_deparser_output_metada
      CloneMetadata_t clone_metadata;
  }
  struct psa_ingress_input_metadata_t {
@@ -38,7 +31,7 @@
  }
  struct psa_ingress_output_metadata_t {
      ClassOfService_t class_of_service;
-@@ -66,7 +60,7 @@ struct psa_ingress_output_metadata_t {
+@@ -66,7 +66,7 @@ struct psa_ingress_output_metadata_t {
  struct psa_egress_input_metadata_t {
      ClassOfService_t class_of_service;
      PortId_t         egress_port;
@@ -47,19 +40,9 @@
      EgressInstance_t instance;
      Timestamp_t      egress_timestamp;
      ParserError_t    parser_error;
-@@ -96,22 +90,13 @@ extern resubmit {
- extern recirculate {
-     void emit<T>(in T hdr);
+@@ -106,12 +106,12 @@ enum HashAlgorithm_t {
+     TARGET_DEFAULT
  }
--enum HashAlgorithm_t {
--    IDENTITY,
--    CRC32,
--    CRC32_CUSTOM,
--    CRC16,
--    CRC16_CUSTOM,
--    ONES_COMPLEMENT16,
--    TARGET_DEFAULT
--}
  extern Hash<O> {
 -    Hash(HashAlgorithm_t algo);
 +    Hash(bit<32> algo);
@@ -72,15 +55,9 @@
      void clear();
      void update<T>(in T data);
      W get();
-@@ -123,37 +108,23 @@ extern InternetChecksum {
-     void remove<T>(in T data);
-     bit<16> get();
+@@ -129,11 +129,11 @@ enum CounterType_t {
+     PACKETS_AND_BYTES
  }
--enum CounterType_t {
--    PACKETS,
--    BYTES,
--    PACKETS_AND_BYTES
--}
  extern Counter<W, S> {
 -    Counter(bit<32> n_counters, CounterType_t type);
 +    Counter(bit<32> n_counters, bit<32> type);
@@ -91,15 +68,10 @@
 +    DirectCounter(bit<32> type);
      void count();
  }
--enum MeterType_t {
--    PACKETS,
--    BYTES
--}
--enum MeterColor_t {
--    RED,
--    GREEN,
--    YELLOW
--}
+ enum MeterType_t {
+@@ -146,14 +146,14 @@ enum MeterColor_t {
+     YELLOW
+ }
  extern Meter<S> {
 -    Meter(bit<32> n_meters, MeterType_t type);
 -    MeterColor_t execute(in S index, in MeterColor_t color);
@@ -118,7 +90,7 @@
  }
  extern Register<T, S> {
      Register(bit<32> size);
-@@ -168,7 +139,7 @@ extern ActionProfile {
+@@ -168,7 +168,7 @@ extern ActionProfile {
      ActionProfile(bit<32> size);
  }
  extern ActionSelector {
@@ -127,8 +99,8 @@
  }
  extern Digest<T> {
      Digest(PortId_t receiver);
-@@ -225,8 +196,8 @@ parser EgressParserImpl(packet_in buffer
-     metadata user_meta_4;
+@@ -221,8 +221,8 @@ struct headers {
+ parser EgressParserImpl(packet_in buffer, out headers parsed_hdr, inout metadata user_meta, in psa_egress_parser_input_metadata_t istd, out psa_parser_output_metadata_t ostd) {
      state start {
          transition select(istd.instance_type) {
 -            InstanceType_t.CLONE: parse_clone_header;

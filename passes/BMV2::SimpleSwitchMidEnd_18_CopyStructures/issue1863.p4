@@ -1,19 +1,25 @@
 --- before_pass
 +++ after_pass
-@@ -5,8 +5,14 @@ struct S {
+@@ -4,9 +4,20 @@ struct S {
+ }
  control c(out bit<1> b) {
-     S s;
+     S s_0;
++    S tmp;
      apply {
--        s = { 1w0, 1w1 };
--        s = { s.b, s.a };
+-        s_0 = { 1w0, 1w1 };
+-        s_0 = {s_0.b,s_0.a};
 +        {
-+            s.a = 1w0;
-+            s.b = 1w1;
++            s_0.a = 1w0;
++            s_0.b = 1w1;
 +        }
 +        {
-+            s.a = s.b;
-+            s.b = s.a;
++            tmp.a = s_0.b;
++            tmp.b = s_0.a;
 +        }
-         b = s.a;
++        {
++            s_0.a = tmp.a;
++            s_0.b = tmp.b;
++        }
+         b = s_0.a;
      }
  }

@@ -11,12 +11,12 @@
          meta_1.drop = true;
 +        ostd = meta_1;
      }
-     @name("ingress.parser_error_counts") DirectCounter<PacketCounter_t>(PSA_CounterType_t.PACKETS) parser_error_counts;
-     @name("ingress.set_error_idx") action set_error_idx_0(ErrorIndex_t idx) {
+     @name("ingress.parser_error_counts") DirectCounter<PacketCounter_t>(PSA_CounterType_t.PACKETS) parser_error_counts_0;
+     @name("ingress.set_error_idx") action set_error_idx(ErrorIndex_t idx) {
 @@ -113,7 +116,7 @@ control ingress(inout headers hdr, inout
      apply {
          if (istd.parser_error != error.NoError) {
-             parser_error_count_and_convert.apply();
+             parser_error_count_and_convert_0.apply();
 -            ingress_drop(ostd);
 +            ingress_drop();
              exit;

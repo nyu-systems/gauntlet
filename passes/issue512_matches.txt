@@ -1,10 +1,10 @@
-BMV2::SimpleSwitchMidEnd_22_Predication###########
+BMV2::SimpleSwitchMidEnd_24_Predication ###########
 https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_issue512.p4
-BMV2::SimpleSwitchMidEnd_23_MoveDeclarations###########
+BMV2::SimpleSwitchMidEnd_32_SimplifyControlFlow ###########
 https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_issue512.p4
-BMV2::SimpleSwitchMidEnd_25_LocalCopyPropagation###########
+BMV2::SimpleSwitchMidEnd_25_MoveDeclarations ###########
 https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_issue512.p4
-BMV2::SimpleSwitchMidEnd_29_SimplifyControlFlow###########
+BMV2::SimpleSwitchMidEnd_27_LocalCopyPropagation ###########
 https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_issue512.p4
-BMV2::SimpleSwitchMidEnd_3_RemoveActionParameters###########
+BMV2::SimpleSwitchMidEnd_3_RemoveActionParameters ###########
 https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_issue512.p4

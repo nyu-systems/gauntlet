@@ -19,11 +19,11 @@
  extern void f<D>(in D data);
  control c(inout bit<1> r) {
 @@ -12,7 +16,7 @@ control c(inout bit<1> r) {
-     bit<1> tmp;
+     bit<1> tmp_0;
      apply {
-         s_0 = { { { 1w0 }, { 1w1 } }, { 1w0 }, 1w1 };
--        f<tuple<T, T>>(s_0.f1);
-+        f<tuple_0>(s_0.f1);
-         tmp = s_0.f2.f & s_0.z;
-         r = tmp;
+         s = {{ {1w0}, {1w1} },{1w0},1w1};
+-        f<tuple<T, T>>(s.f1);
++        f<tuple_0>(s.f1);
+         tmp_0 = s.f2.f & s.z;
+         r = tmp_0;
      }

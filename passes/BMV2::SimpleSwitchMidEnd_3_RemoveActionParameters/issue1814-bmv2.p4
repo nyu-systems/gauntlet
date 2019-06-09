@@ -4,10 +4,10 @@
      }
  }
  control IngressImpl(inout headers hdr, inout metadata meta, inout standard_metadata_t standard_metadata) {
-+    bit<1> registerData;
++    bit<1> registerData_0;
      @name(".NoAction") action NoAction_0() {
      }
--    bit<1> registerData;
-     @name("IngressImpl.testRegister") register<bit<1>>(32w1) testRegister;
-     @name("IngressImpl.debug_table") table debug_table {
+-    bit<1> registerData_0;
+     @name("IngressImpl.testRegister") register<bit<1>>(32w1) testRegister_0;
+     @name("IngressImpl.debug_table") table debug_table_0 {
          key = {

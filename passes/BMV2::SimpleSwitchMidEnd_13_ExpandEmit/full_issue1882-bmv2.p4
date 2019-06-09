@@ -34,9 +34,9 @@ extern ExternCounter {
     void increment();
 }
 control ingress(inout Headers h, inout Meta m, inout standard_metadata_t sm) {
-    @name("ingress.extr") ExternCounter() extr;
+    @name("ingress.extr") ExternCounter() extr_0;
     apply {
-        extr.increment();
+        extr_0.increment();
     }
 }
 V1Switch<Headers, Meta>(p(), vrfy(), ingress(), egress(), update(), deparser()) main;

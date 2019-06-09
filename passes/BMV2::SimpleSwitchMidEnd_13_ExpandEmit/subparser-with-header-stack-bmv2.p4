@@ -1,6 +1,6 @@
 --- before_pass
 +++ after_pass
-@@ -105,7 +105,13 @@ control uc(inout headers hdr, inout meta
+@@ -100,7 +100,13 @@ control uc(inout headers hdr, inout meta
  control DeparserI(packet_out packet, in headers hdr) {
      apply {
          packet.emit<h1_t>(hdr.h1);

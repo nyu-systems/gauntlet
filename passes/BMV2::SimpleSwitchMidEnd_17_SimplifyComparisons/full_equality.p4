@@ -7,25 +7,25 @@ struct S {
     H       h;
 }
 control c(out bit<1> x) {
-    varbit<32> a_1;
-    varbit<32> b_1;
-    H h1;
-    H h2;
-    S s1;
-    S s2;
-    H[2] a1;
-    H[2] a2;
+    varbit<32> a_0;
+    varbit<32> b_0;
+    H h1_0;
+    H h2_0;
+    S s1_0;
+    S s2_0;
+    H[2] a1_0;
+    H[2] a2_0;
     apply {
-        if (a_1 == b_1) 
+        if (a_0 == b_0) 
             x = 1w1;
         else 
-            if (!h1.isValid() && !h2.isValid() || h1.isValid() && h2.isValid() && h1.a == h2.a && h1.b == h2.b) 
+            if (!h1_0.isValid() && !h2_0.isValid() || h1_0.isValid() && h2_0.isValid() && h1_0.a == h2_0.a && h1_0.b == h2_0.b) 
                 x = 1w1;
             else 
-                if (true && s1.a == s2.a && (!s1.h.isValid() && !s2.h.isValid() || s1.h.isValid() && s2.h.isValid() && s1.h.a == s2.h.a && s1.h.b == s2.h.b)) 
+                if (true && s1_0.a == s2_0.a && (!s1_0.h.isValid() && !s2_0.h.isValid() || s1_0.h.isValid() && s2_0.h.isValid() && s1_0.h.a == s2_0.h.a && s1_0.h.b == s2_0.h.b)) 
                     x = 1w1;
                 else 
-                    if (true && (!a1[0].isValid() && !a2[0].isValid() || a1[0].isValid() && a2[0].isValid() && a1[0].a == a2[0].a && a1[0].b == a2[0].b) && (!a1[1].isValid() && !a2[1].isValid() || a1[1].isValid() && a2[1].isValid() && a1[1].a == a2[1].a && a1[1].b == a2[1].b)) 
+                    if (true && (!a1_0[0].isValid() && !a2_0[0].isValid() || a1_0[0].isValid() && a2_0[0].isValid() && a1_0[0].a == a2_0[0].a && a1_0[0].b == a2_0[0].b) && (!a1_0[1].isValid() && !a2_0[1].isValid() || a1_0[1].isValid() && a2_0[1].isValid() && a1_0[1].a == a2_0[1].a && a1_0[1].b == a2_0[1].b)) 
                         x = 1w1;
                     else 
                         x = 1w0;

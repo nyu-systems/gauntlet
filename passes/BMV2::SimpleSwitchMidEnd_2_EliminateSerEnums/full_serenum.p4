@@ -8,10 +8,10 @@ struct Headers {
     Ethernet eth;
 }
 parser prs(packet_in p, out Headers h) {
-    Ethernet e;
+    Ethernet e_0;
     state start {
-        p.extract<Ethernet>(e);
-        transition select(e.type) {
+        p.extract<Ethernet>(e_0);
+        transition select(e_0.type) {
             16w0x800: accept;
             16w0x806: accept;
             default: reject;
@@ -20,10 +20,10 @@ parser prs(packet_in p, out Headers h) {
 }
 control c(inout Headers h) {
     apply {
-        bool hasReturned_0 = false;
+        bool hasReturned = false;
         if (!h.eth.isValid()) 
-            hasReturned_0 = true;
-        if (!hasReturned_0) 
+            hasReturned = true;
+        if (!hasReturned) 
             if (h.eth.type == 16w0x800) 
                 h.eth.setInvalid();
             else 

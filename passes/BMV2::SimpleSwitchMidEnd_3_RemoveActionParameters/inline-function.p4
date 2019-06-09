@@ -2,38 +2,38 @@
 +++ after_pass
 @@ -1,19 +1,25 @@
  control c(inout bit<32> x) {
-     bit<32> tmp_3;
-+    bit<32> a;
-+    bit<32> b;
-+    bool hasReturned_1;
-+    bit<32> retval_1;
-+    bit<32> tmp_4;
-+    bit<32> tmp_5;
-+    bit<32> a_2;
-+    bit<32> b_2;
-+    bool hasReturned_2;
-+    bit<32> retval_2;
-+    bit<32> tmp_6;
+     bit<32> tmp;
++    bit<32> a_0;
++    bit<32> b_0;
++    bool hasReturned;
++    bit<32> retval;
++    bit<32> tmp_0;
++    bit<32> tmp_1;
++    bit<32> a_1;
++    bit<32> b_1;
++    bool hasReturned_0;
++    bit<32> retval_0;
++    bit<32> tmp_2;
      apply {
          {
--            bit<32> a = x;
--            bit<32> b = x;
--            bool hasReturned_1 = false;
--            bit<32> retval_1;
--            bit<32> tmp_4;
--            bit<32> tmp_5;
-+            a = x;
-+            b = x;
-+            hasReturned_1 = false;
+-            bit<32> a_0 = x;
+-            bit<32> b_0 = x;
+-            bool hasReturned = false;
+-            bit<32> retval;
+-            bit<32> tmp_0;
+-            bit<32> tmp_1;
++            a_0 = x;
++            b_0 = x;
++            hasReturned = false;
              {
--                bit<32> a_2 = a;
--                bit<32> b_2 = b;
--                bool hasReturned_2 = false;
--                bit<32> retval_2;
--                bit<32> tmp_6;
-+                a_2 = a;
-+                b_2 = b;
-+                hasReturned_2 = false;
-                 if (a_2 > b_2) 
-                     tmp_6 = b_2;
+-                bit<32> a_1 = a_0;
+-                bit<32> b_1 = b_0;
+-                bool hasReturned_0 = false;
+-                bit<32> retval_0;
+-                bit<32> tmp_2;
++                a_1 = a_0;
++                b_1 = b_0;
++                hasReturned_0 = false;
+                 if (a_1 > b_1) 
+                     tmp_2 = b_1;
                  else 

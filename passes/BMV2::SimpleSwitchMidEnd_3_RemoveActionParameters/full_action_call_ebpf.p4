@@ -8,15 +8,15 @@ parser prs(packet_in p, out Headers_t headers) {
     }
 }
 control pipe(inout Headers_t headers, out bool pass) {
-    bool x;
+    bool x_0;
     bool rej;
-    @name("pipe.Reject") action Reject_0() {
-        rej = x;
+    @name("pipe.Reject") action Reject() {
+        rej = x_0;
         pass = rej;
     }
     apply {
-        x = true;
-        Reject_0();
+        x_0 = true;
+        Reject();
     }
 }
 ebpfFilter<Headers_t>(prs(), pipe()) main;

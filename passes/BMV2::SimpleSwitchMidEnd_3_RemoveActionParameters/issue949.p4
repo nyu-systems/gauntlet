@@ -4,10 +4,10 @@
      }
  }
  control ingress(inout headers hdr, inout metadata meta, inout standard_metadata_t standard_metadata) {
-+    bool tmp_0;
++    bool tmp;
      @name(".NoAction") action NoAction_0() {
      }
--    bool tmp_0;
-     @name("ingress.setDest") action setDest_0() {
+-    bool tmp;
+     @name("ingress.setDest") action setDest() {
          hdr.ethernet.dstAddr = 48w0x6af3400426d3;
      }

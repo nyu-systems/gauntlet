@@ -14,26 +14,26 @@ control Ing(inout Headers headers, inout Metadata meta, inout standard_metadata_
     }
 }
 control Eg(inout Headers hdrs, inout Metadata meta, inout standard_metadata_t standard_meta) {
-    bit<32> _sub;
-    bit<64> res;
-    bit<32> tmp_0;
+    bit<32> _sub_0;
+    bit<64> res_0;
+    bit<32> tmp;
     bool p_1;
     bit<64> val;
-    @name("Eg.update") action update_0() {
+    @name("Eg.update") action update() {
         p_1 = true;
-        val = res;
-        _sub = val[31:0];
+        val = res_0;
+        _sub_0 = val[31:0];
         if (p_1) 
-            tmp_0 = _sub;
+            tmp = _sub_0;
         else 
-            tmp_0 = 32w1;
-        _sub = tmp_0;
-        val[31:0] = _sub;
-        res = val;
+            tmp = 32w1;
+        _sub_0 = tmp;
+        val[31:0] = _sub_0;
+        res_0 = val;
     }
     apply {
-        res = 64w0;
-        update_0();
+        res_0 = 64w0;
+        update();
     }
 }
 control DP(packet_out b, in Headers p) {

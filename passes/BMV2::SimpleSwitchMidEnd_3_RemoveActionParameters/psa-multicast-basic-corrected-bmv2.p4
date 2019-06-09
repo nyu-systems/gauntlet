@@ -9,13 +9,13 @@
 +    MulticastGroup_t multicast_group_1;
 +    @name(".multicast") action multicast() {
 +        meta_1 = ostd;
-+        multicast_group_1 = (MulticastGroup_t)hdr.ethernet.dstAddr[31:0];
++        multicast_group_1 = hdr.ethernet.dstAddr[31:0];
          meta_1.drop = false;
          meta_1.multicast_group = multicast_group_1;
 +        ostd = meta_1;
      }
      apply {
--        multicast(ostd, (MulticastGroup_t)hdr.ethernet.dstAddr[31:0]);
+-        multicast(ostd, hdr.ethernet.dstAddr[31:0]);
 +        multicast();
      }
  }
