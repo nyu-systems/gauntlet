@@ -99,7 +99,7 @@ def get_links_to_passes(pass_dir, p4_file):
                     src_dir += "p4_16_samples/"
                     match_file.write(f"{src_dir}{p4_test}\n")
     else:
-        with open(f"{pass_dir}/no_passes.txt", 'a+') as match_file:
+        with open(f"{pass_dir}/no_passes.txt", 'a') as match_file:
             match_file.write(f"{p4_file}\n")
 
 
@@ -132,10 +132,12 @@ def main():
     p4_input = args.p4_input
     if (os.path.isfile(p4_input)):
         pass_dir = "single_passes"
+        open(f"{pass_dir}/no_passes.txt", 'w+')
         analyse_p4_file(p4_input, pass_dir)
         get_links_to_passes(pass_dir, p4_input)
     else:
         pass_dir = "passes"
+        open(f"{pass_dir}/no_passes.txt", 'w+')
         for p4_file in glob.glob(f"{p4_input}/*.p4"):
             analyse_p4_file(p4_file, pass_dir)
             get_links_to_passes(pass_dir, p4_file)

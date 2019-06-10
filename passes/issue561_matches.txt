@@ -7,6 +7,7 @@ https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_issue561-3-bmv2.p
 https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_issue561-4-bmv2.p4
 https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_issue561-5-bmv2.p4
 https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_issue561-6-bmv2.p4
+https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_issue561-7-bmv2.p4
 https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_issue561-bmv2.p4
 BMV2::SimpleSwitchMidEnd_14_SimplifyParsers ###########
 https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_issue561-bmv2.p4
@@ -26,6 +27,7 @@ https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_issue561-3-bmv2.p
 https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_issue561-4-bmv2.p4
 https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_issue561-5-bmv2.p4
 https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_issue561-6-bmv2.p4
+https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_issue561-7-bmv2.p4
 https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_issue561-bmv2.p4
 BMV2::SimpleSwitchMidEnd_3_RemoveActionParameters ###########
 https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_issue561-bmv2.p4

@@ -1,0 +1,12 @@
+BMV2::SimpleSwitchMidEnd_10_StrengthReduction ###########
+https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_functors3.p4
+BMV2::SimpleSwitchMidEnd_14_SimplifyParsers ###########
+https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_functors2.p4
+https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_functors3.p4
+https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_functors4.p4
+https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_functors5.p4
+BMV2::SimpleSwitchMidEnd_27_LocalCopyPropagation ###########
+https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_functors2.p4
+https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_functors9.p4
+BMV2::SimpleSwitchMidEnd_28_ConstantFolding ###########
+https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_functors2.p4
