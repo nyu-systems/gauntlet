@@ -205,7 +205,7 @@ parser ParserImpl(packet_in packet, out headers hdr, inout metadata meta, inout 
     state Tcp_option_parser_parse_tcp_option_sack {
         {
             tmp = packet.lookahead<bit<16>>();
-            Tcp_option_parser_tmp_0 = {tmp[15:8],tmp[7:0]};
+            Tcp_option_parser_tmp_0 = Tcp_option_sack_top {kind = tmp[15:8],length = tmp[7:0]};
         }
         Tcp_option_parser_n_sack_bytes = Tcp_option_parser_tmp_0.length;
         verify(Tcp_option_parser_n_sack_bytes == 8w10 || Tcp_option_parser_n_sack_bytes == 8w18 || Tcp_option_parser_n_sack_bytes == 8w26 || Tcp_option_parser_n_sack_bytes == 8w34, error.TcpBadSackOptionLength);

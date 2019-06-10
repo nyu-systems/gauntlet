@@ -1,8 +1,8 @@
-BMV2::SimpleSwitchMidEnd_8_SimplifyKey ###########
-https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_key-issue-1020_ebpf.p4
-BMV2::SimpleSwitchMidEnd_32_SimplifyControlFlow ###########
-https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_key-issue-1020_ebpf.p4
 BMV2::SimpleSwitchMidEnd_25_MoveDeclarations ###########
 https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_key-issue-1020_ebpf.p4
 BMV2::SimpleSwitchMidEnd_27_LocalCopyPropagation ###########
+https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_key-issue-1020_ebpf.p4
+BMV2::SimpleSwitchMidEnd_32_SimplifyControlFlow ###########
+https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_key-issue-1020_ebpf.p4
+BMV2::SimpleSwitchMidEnd_8_SimplifyKey ###########
 https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_key-issue-1020_ebpf.p4

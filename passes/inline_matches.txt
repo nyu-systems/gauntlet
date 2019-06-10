@@ -1,8 +1,19 @@
-BMV2::SimpleSwitchMidEnd_32_SimplifyControlFlow ###########
-https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_inline-switch.p4
+BMV2::SimpleSwitchMidEnd_14_SimplifyParsers ###########
+https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_inline-parser.p4
 BMV2::SimpleSwitchMidEnd_27_LocalCopyPropagation ###########
+https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_inline-action.p4
+https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_inline-control1.p4
+https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_inline-function.p4
+https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_inline-switch.p4
 https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_inline.p4
+BMV2::SimpleSwitchMidEnd_32_SimplifyControlFlow ###########
+https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_inline-action.p4
+https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_inline-function.p4
 https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_inline-switch.p4
 BMV2::SimpleSwitchMidEnd_3_RemoveActionParameters ###########
-https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_inline.p4
+https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_inline-action.p4
+https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_inline-control.p4
+https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_inline-control1.p4
+https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_inline-function.p4
 https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_inline-switch.p4
+https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_inline.p4

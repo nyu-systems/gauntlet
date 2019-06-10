@@ -114,12 +114,12 @@ control MyIngress(inout headers hdr, inout metadata meta, inout standard_metadat
         meta._test_digest_in_mac_srcAddr0 = hdr.ethernet.srcAddr;
         meta._test_digest_my_parser_error1 = error.PacketTooShort;
         meta._test_digest_pkt_type2 = 32w0;
-        digest<test_digest_t>(32w1, {meta._test_digest_in_mac_srcAddr0,meta._test_digest_my_parser_error1,meta._test_digest_pkt_type2});
+        digest<test_digest_t>(32w1, test_digest_t {in_mac_srcAddr = meta._test_digest_in_mac_srcAddr0,my_parser_error = meta._test_digest_my_parser_error1,pkt_type = meta._test_digest_pkt_type2});
         meta._test_digest2_in_mac_dstAddr3 = hdr.ethernet.dstAddr;
         meta._test_digest2_my_thing4 = 8w42;
-        digest<test_digest2_t>(32w2, {meta._test_digest2_in_mac_dstAddr3,meta._test_digest2_my_thing4});
+        digest<test_digest2_t>(32w2, test_digest2_t {in_mac_dstAddr = meta._test_digest2_in_mac_dstAddr3,my_thing = meta._test_digest2_my_thing4});
         meta._test_digest3_in_mac_etherType5 = hdr.ethernet.etherType;
-        digest<test_digest3_t>(32w3, {meta._test_digest3_in_mac_etherType5});
+        digest<test_digest3_t>(32w3, test_digest3_t {in_mac_etherType = meta._test_digest3_in_mac_etherType5});
     }
     apply {
         ipv4_lpm_0.apply();

@@ -1,3 +1,2 @@
 BMV2::SimpleSwitchMidEnd_35_RemoveLeftSlices ###########
 https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_slice-def-use.p4
-https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_slice-def-use1.p4

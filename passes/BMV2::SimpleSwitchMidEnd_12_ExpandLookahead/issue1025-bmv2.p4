@@ -16,7 +16,7 @@
 +        {
 +            tmp_2 = pkt.lookahead<bit<8>>();
 +            tmp.setValid();
-+            tmp = {tmp_2[7:4],tmp_2[3:0]};
++            tmp = IPv4_up_to_ihl_only_h {version = tmp_2[7:4],ihl = tmp_2[3:0]};
 +        }
          tmp_0 = (bit<9>)tmp.ihl << 3;
          tmp_1 = (bit<32>)tmp_0;

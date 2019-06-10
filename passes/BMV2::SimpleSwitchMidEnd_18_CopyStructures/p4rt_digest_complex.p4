@@ -4,7 +4,7 @@
      digest_t tmp;
      @name("MyID.digest") Digest<digest_t>() digest_0;
      apply {
--        tmp = {hdr.h,f.egress_port};
+-        tmp = digest_t {h = hdr.h,port = f.egress_port};
 +        {
 +            tmp.h = hdr.h;
 +            tmp.port = f.egress_port;

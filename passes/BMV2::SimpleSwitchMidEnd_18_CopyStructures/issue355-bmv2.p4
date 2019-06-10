@@ -4,7 +4,7 @@
          {
              tmp_0 = pkt.lookahead<bit<112>>();
              tmp.setValid();
--            tmp = {tmp_0[111:64],tmp_0[63:16],tmp_0[15:0]};
+-            tmp = ethernet_t {dstAddr = tmp_0[111:64],srcAddr = tmp_0[63:16],etherType = tmp_0[15:0]};
 +            {
 +                tmp.dstAddr = tmp_0[111:64];
 +                tmp.srcAddr = tmp_0[63:16];

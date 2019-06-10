@@ -4,7 +4,7 @@
  }
  control MyDeparser(packet_out packet, in headers hdr) {
      apply {
--        packet.emit<headers>({});
+-        packet.emit<headers>(headers {});
 +        {
 +        }
      }

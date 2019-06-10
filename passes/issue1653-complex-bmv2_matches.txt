@@ -1,10 +1,10 @@
-BMV2::SimpleSwitchMidEnd_23_FlattenInterfaceStructs ###########
-https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_issue1653-complex-bmv2.p4
 BMV2::SimpleSwitchMidEnd_22_FlattenHeaders ###########
 https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_issue1653-complex-bmv2.p4
-BMV2::SimpleSwitchMidEnd_2_EliminateSerEnums ###########
+BMV2::SimpleSwitchMidEnd_23_FlattenInterfaceStructs ###########
 https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_issue1653-complex-bmv2.p4
 BMV2::SimpleSwitchMidEnd_27_LocalCopyPropagation ###########
+https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_issue1653-complex-bmv2.p4
+BMV2::SimpleSwitchMidEnd_2_EliminateSerEnums ###########
 https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_issue1653-complex-bmv2.p4
 BMV2::SimpleSwitchMidEnd_3_RemoveActionParameters ###########
 https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_issue1653-complex-bmv2.p4

@@ -4,7 +4,7 @@
      headers hdr_0;
      headers tmp;
      apply {
--        tmp = {hdr_0.ipv4_option_timestamp};
+-        tmp = headers {ipv4_option_timestamp = hdr_0.ipv4_option_timestamp};
 +        {
 +            tmp.ipv4_option_timestamp = hdr_0.ipv4_option_timestamp;
 +        }

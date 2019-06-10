@@ -185,7 +185,7 @@ control IngressDeparserImpl(packet_out packet, out empty_metadata_t clone_i2e_me
     @name("IngressDeparserImpl.mac_learn_digest") Digest<mac_learn_digest_t>() mac_learn_digest_0;
     apply {
         if (meta._send_mac_learn_msg0) 
-            mac_learn_digest_0.pack({meta._mac_learn_msg_srcAddr1,meta._mac_learn_msg_ingress_port2});
+            mac_learn_digest_0.pack(mac_learn_digest_t {srcAddr = meta._mac_learn_msg_srcAddr1,ingress_port = meta._mac_learn_msg_ingress_port2});
         packet.emit<ethernet_t>(hdr.ethernet);
         packet.emit<ipv4_t>(hdr.ipv4);
     }

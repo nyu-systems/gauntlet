@@ -15,7 +15,7 @@
 -        Tcp_option_parser_tmp_0 = packet.lookahead<Tcp_option_sack_top>();
 +        {
 +            tmp = packet.lookahead<bit<16>>();
-+            Tcp_option_parser_tmp_0 = {tmp[15:8],tmp[7:0]};
++            Tcp_option_parser_tmp_0 = Tcp_option_sack_top {kind = tmp[15:8],length = tmp[7:0]};
 +        }
          Tcp_option_parser_n_sack_bytes = Tcp_option_parser_tmp_0.length;
          verify(Tcp_option_parser_n_sack_bytes == 8w10 || Tcp_option_parser_n_sack_bytes == 8w18 || Tcp_option_parser_n_sack_bytes == 8w26 || Tcp_option_parser_n_sack_bytes == 8w34, error.TcpBadSackOptionLength);

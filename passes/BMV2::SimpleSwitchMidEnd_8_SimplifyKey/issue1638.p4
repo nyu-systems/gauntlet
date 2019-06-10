@@ -7,7 +7,7 @@
 +    bit<8> key_0;
      @name("MyC.c2.a") table c2_a {
          key = {
--            {8w0,8w0,8w0}.f0: exact @name("meta.f0") ;
+-            meta_t {f0 = 8w0,f1 = 8w0,f2 = 8w0}.f0: exact @name("meta.f0") ;
 +            key_0: exact @name("meta.f0") ;
          }
          actions = {
@@ -18,7 +18,7 @@
      apply {
 -        c2_a.apply();
 +        {
-+            key_0 = {8w0,8w0,8w0}.f0;
++            key_0 = meta_t {f0 = 8w0,f1 = 8w0,f2 = 8w0}.f0;
 +            c2_a.apply();
 +        }
      }

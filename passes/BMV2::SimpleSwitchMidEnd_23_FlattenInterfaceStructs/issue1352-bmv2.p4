@@ -16,7 +16,7 @@
 -        meta.test_digest.in_mac_srcAddr = hdr.ethernet.srcAddr;
 -        digest<test_digest_t>(32w1, meta.test_digest);
 +        meta._test_digest_in_mac_srcAddr0 = hdr.ethernet.srcAddr;
-+        digest<test_digest_t>(32w1, {meta._test_digest_in_mac_srcAddr0});
++        digest<test_digest_t>(32w1, test_digest_t {in_mac_srcAddr = meta._test_digest_in_mac_srcAddr0});
      }
      apply {
          ipv4_lpm_0.apply();
