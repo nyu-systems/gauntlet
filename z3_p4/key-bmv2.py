@@ -90,7 +90,7 @@ def control_ingress_1(h, c_match):
                       c_a_0(),
                       If(MA.action(c_match) == 2,
                          NoAction_0(),
-                         FailIf(0 < MA.action(c_match), 2 < MA.action(c_match))
+                         default()  # this should be an abort of some form
                          )
                       )
         # This is a table match where we look up the provided key
