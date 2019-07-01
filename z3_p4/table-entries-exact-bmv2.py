@@ -7,10 +7,10 @@ HDR.declare('mk_hdr',
             ('l', BitVecSort(8)), ('r', BitVecSort(8)),
             ('v', BitVecSort(8)))
 HDR = HDR.create()
-h = Const('h', HDR)
 
-# the table constant we are matching with
-table_match = BitVec('table_match', 32)
+MA = Datatype('match_action')
+MA.declare('mk_match', ('match', BitVecSort(8)), ('action', IntSort()))
+MA = MA.create()
 
 # TODO: Add some notion of egress spec
 
@@ -22,49 +22,110 @@ def a_with_control_params(x):
 # NoAction just emits the packet
 
 
-def a():
-    # NoAction just returns the current header as is
-    return h
-
-
-def default():
-    # The default action
-    # It is set to NoAction in this case
-    return a()
-
-
-def c_t(key):
-    match_0 = BitVecVal(1, 9)
-    match_1 = BitVecVal(2, 9)
-    # This is a table match where we look up the provided key
-    # Key probably has to be a datatype, too
-    return If(key == match_0,
-              a_with_control_params(match_0), default())
-
-
-def control_ingress_0():
-    # This is the initial version of the program
-    return c_t(HDR.e(h))
-
-
-def control_ingress_1():
+def control_ingress_0(h, c_match):
     # This is the emitted program after pass
-    return c_t(HDR.e(h))
+    egress_spec = BitVecVal(0, 9)
+
+    def a():
+        nonlocal egress_spec
+        egress_spec = BitVecVal(0, 9)
+        return h
+
+    def a_with_control_params(x):
+        nonlocal egress_spec
+        egress_spec = x
+        return h
+
+    def default():
+        # The default action
+        # It is set to NoAction in this case
+        return a()
+
+    def t_exact_0():
+        def select_action():
+            return If(MA.action(c_match) == 1,
+                      a_with_control_params(BitVecVal(1, 9)),
+                      If(MA.action(c_match) == 2,
+                         a_with_control_params(BitVecVal(2, 9)),
+                         default()  # this should be an abort of some form
+                         )
+                      )
+        # This is a table match where we look up the provided key
+        # Key probably has to be a datatype, too
+        # Right now, it is ill-defined
+        key = HDR.e(h)
+        return If(key == MA.match(c_match),
+                  select_action(), default())
+
+    # begin apply
+    h_ret = t_exact_0()
+    return h_ret, egress_spec
+
+
+def control_ingress_1(h, c_match):
+    # This is the emitted program after pass
+    egress_spec = BitVecVal(0, 9)
+
+    def a():
+        nonlocal egress_spec
+        egress_spec = BitVecVal(0, 9)
+        return h
+
+    def a_with_control_params(x):
+        nonlocal egress_spec
+        egress_spec = x
+        return h
+
+    def default():
+        # The default action
+        # It is set to NoAction in this case
+        return a()
+
+    def t_exact_0():
+        def select_action():
+            return If(MA.action(c_match) == 1,
+                      a_with_control_params(BitVecVal(1, 9)),
+                      If(MA.action(c_match) == 2,
+                         a_with_control_params(BitVecVal(2, 9)),
+                         default()  # this should be an abort of some form
+                         )
+                      )
+        # This is a table match where we look up the provided key
+        # Key probably has to be a datatype, too
+        # Right now, it is ill-defined
+        key = HDR.e(h)
+        return If(key == MA.match(c_match),
+                  select_action(), default())
+
+    # begin apply
+    h_ret = t_exact_0()
+    return h_ret, egress_spec
 
 
 def z3_check():
     # The equivalence check of the solver
-    # For all input packets and possible table matches the programs should be
-    # the same
+    # For all input packets and possible table matches the programs should
+    # be the same
+
     s = Solver()
-    s.add(ForAll([h, table_match],
-                 (control_ingress_0() != control_ingress_1())))
+    # define the header and match-action entries
+    h = Const('h', HDR)
+    c_match = Const('match_action', MA)
+    # reduce the range of action outputs to the total number of actions
+    s.add(0 < MA.action(c_match), MA.action(c_match) < 4)
+
+    # the equivalence equation
+    s.add(ForAll([h, c_match],
+                 (control_ingress_0(h, c_match) ==
+                  control_ingress_1(h, c_match))
+                 ))
+
     print (s.sexpr())
-    print (s.check())
-    try:
+    ret = s.check()
+    if ret == sat:
         print (s.model())
-    except Z3Exception as e:
-        print("Error while trying to emit model: %s" % e)
+    else:
+        print (ret)
 
 
 if __name__ == '__main__':

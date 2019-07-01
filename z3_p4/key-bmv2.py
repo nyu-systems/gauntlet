@@ -29,11 +29,13 @@ MA.declare('mk_match', ('match', BitVecSort(32)), ('action', IntSort()))
 MA = MA.create()
 
 
-# TODO: Add some notion of egress spec
+# TODO: Add some better notion of egress spec
 
 
 def control_ingress_0(h, c_match):
+    egress_spec = BitVecVal(0, 9)
     # This is the initial version of the program
+
     def c_a_0():
         # This action creates a new header type where b is set to a
         return HDR.mk_h(HDR.a(h), HDR.a(h))
@@ -63,13 +65,16 @@ def control_ingress_0(h, c_match):
                   select_action(), default())
     # begin apply
     h_ret = c_t()
-    return h_ret
+    egress_spec = BitVecVal(0, 9)
+    return h_ret, egress_spec
 
 
 def control_ingress_1(h, c_match):
     # This is the emitted program after pass
+    egress_spec = BitVecVal(0, 9)
 
     key_0 = BitVec('key_0', 32)
+    egress_spec = BitVec("egress_spec", 9)
 
     def c_a_0():
         # This action creates a new header type where b is set to a
@@ -103,7 +108,8 @@ def control_ingress_1(h, c_match):
     # begin apply
     key_0 = HDR.a(h) + HDR.a(h)
     h_ret = c_t()
-    return h_ret
+    egress_spec = BitVecVal(0, 9)
+    return h_ret, egress_spec
 
 
 def z3_check():
