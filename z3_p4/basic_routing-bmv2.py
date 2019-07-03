@@ -39,12 +39,12 @@ ingress_metadata_t.declare('mk_ingress_metadata_t',
 ingress_metadata_t = ingress_metadata_t.create()
 
 # the final output in a single datatype
-output = Datatype('p4_output')
-output.declare('mk_output',
-               ('ethernet_t', ethernet_t), ('ipv4_t', ipv4_t),
-               ('ingress_metadata_t', ingress_metadata_t),
-               ('egress_spec', BitVecSort(9)))
-output = output.create()
+p4_output = Datatype('p4_output')
+p4_output.declare('mk_output',
+                  ('ethernet_t', ethernet_t), ('ipv4_t', ipv4_t),
+                  ('ingress_metadata_t', ingress_metadata_t),
+                  ('egress_spec', BitVecSort(9)))
+p4_output = p4_output.create()
 
 # the table constant we are matching with
 ma_bd_0 = Datatype('ma_bd_0')
@@ -102,92 +102,69 @@ ingress_port = BitVec("ingress_port", 16)
 def control_ingress_0():
     # This is the initial version of the program
 
-    # initialize new variables
-    egress_spec = BitVecVal(0, 9)
-
-    # modifiable variables
-    ethernet_ret = ethernet
-    ipv4_ret = ipv4
-    ingress_metadata_ret = ingress_metadata
+    constraints = []
+    ret = Const('ret', p4_output)
 
     def NoAction_1():
-        return 1
+        return Var(True, BoolSort())
 
     def NoAction_8():
-        return 2
+        return Var(True, BoolSort())
 
     def NoAction_9():
-        return 3
+        return Var(True, BoolSort())
 
     def NoAction_10():
-        return 4
+        return Var(True, BoolSort())
 
     def NoAction_11():
-        return 5
+        return Var(True, BoolSort())
 
     def set_vrf(vrf_arg):
-        nonlocal ingress_metadata_ret
-        ingress_metadata_ret = ingress_metadata_t.mk_ingress_metadata_t(
-            vrf_arg,
-            ingress_metadata_t.bd(ingress_metadata_ret),
-            ingress_metadata_t.nexthop_index(ingress_metadata_ret))
-        return 6
+        updates = []
+        updates.append(ingress_metadata_t.vrf(
+            p4_output.ingress_metadata_t(ret)) == vrf_arg)
+        return And(updates)
 
     def on_miss_2():
-        return 7
+        return Var(True, BoolSort())
 
     def on_miss_5():
-        return 8
+        return Var(True, BoolSort())
 
     def on_miss_6():
-        return 9
+        return Var(True, BoolSort())
 
     def fib_hit_nexthop(nexthop_index_arg):
-        nonlocal ingress_metadata_ret
-        ingress_metadata_ret = ingress_metadata_t.mk_ingress_metadata_t(
-            ingress_metadata_t.vrf(ingress_metadata_ret),
-            ingress_metadata_t.bd(ingress_metadata_ret),
-            nexthop_index_arg)
-        nonlocal ipv4_ret
-        ipv4_ret = ipv4_t.mk_ipv4_t(
-            ipv4_t.version(ipv4_ret), ipv4_t.ihl(ipv4_ret),
-            ipv4_t.diffserv(ipv4_ret), ipv4_t.totalLen(ipv4_ret),
-            ipv4_t.identification(ipv4_ret), ipv4_t.flags(ipv4_ret),
-            ipv4_t.fragOffset(ipv4_ret), ipv4_t.ttl(
-                ipv4_ret) + BitVecVal(255, 8),
-            ipv4_t.protocol(ipv4_ret), ipv4_t.hdrChecksum(ipv4_ret),
-            ipv4_t.srcAddr(ipv4_ret), ipv4_t.dstAddr(ipv4_ret))
-        return 10
+        updates = []
+        updates.append(ingress_metadata_t.nexthop_index(
+            p4_output.ingress_metadata_t(ret)) == nexthop_index_arg)
+
+        updates.append(ipv4_t.ttl(p4_output.ipv4_t(ret)) ==
+                       (ipv4_t.ttl(p4_output.ipv4_t(ret)) +
+                        BitVecVal(255, 8)))
+        return And(updates)
 
     def fib_hit_nexthop_2(nexthop_index_arg):
-        nonlocal ingress_metadata_ret
-        ingress_metadata_ret = ingress_metadata_t.mk_ingress_metadata_t(
-            ingress_metadata_t.vrf(ingress_metadata_ret),
-            ingress_metadata_t.bd(ingress_metadata_ret),
-            nexthop_index_arg)
-        nonlocal ipv4_ret
-        ipv4_ret = ipv4_t.mk_ipv4_t(
-            ipv4_t.version(ipv4_ret), ipv4_t.ihl(ipv4_ret),
-            ipv4_t.diffserv(ipv4_ret), ipv4_t.totalLen(ipv4_ret),
-            ipv4_t.identification(ipv4_ret), ipv4_t.flags(ipv4_ret),
-            ipv4_t.fragOffset(ipv4_ret), ipv4_t.ttl(
-                ipv4_ret) + BitVecVal(255, 8),
-            ipv4_t.protocol(ipv4_ret), ipv4_t.hdrChecksum(ipv4_ret),
-            ipv4_t.srcAddr(ipv4_ret), ipv4_t.dstAddr(ipv4_ret))
-        return 11
+        updates = []
+        updates.append(ingress_metadata_t.nexthop_index(
+            p4_output.ingress_metadata_t(ret)) == nexthop_index_arg)
+
+        updates.append(ipv4_t.ttl(p4_output.ipv4_t(ret)) ==
+                       (ipv4_t.ttl(p4_output.ipv4_t(ret)) +
+                        BitVecVal(255, 8)))
+        return And(updates)
 
     def set_egress_details(egress_spec_arg):
-        nonlocal egress_spec
-        egress_spec = egress_spec_arg
-        return 12
+        updates = []
+        updates.append(p4_output.egress_spec(ret) == egress_spec_arg)
+        return And(updates)
 
     def set_bd(bd_arg):
-        nonlocal ingress_metadata_ret
-        ingress_metadata_ret = ingress_metadata_t.mk_ingress_metadata_t(
-            ingress_metadata_t.vrf(ingress_metadata_ret),
-            bd_arg,
-            ingress_metadata_t.nexthop_index(ingress_metadata_ret))
-        return 13
+        updates = []
+        updates.append(ingress_metadata_t.bd(
+            p4_output.ingress_metadata_t(ret)) == bd_arg)
+        return And(updates)
 
     def bd_0():
         # reduce the range of action outputs to the total number of actions
@@ -199,11 +176,10 @@ def control_ingress_0():
             return NoAction_1()
 
         def select_action():
-            return If(ma_bd_0.action(bd_0_m) == 1,
-                      set_vrf(BitVec("vrf_arg", 12)),
-                      # this should be an abort of some form
-                      0
-                      )
+            actions = []
+            actions.append(Implies(ma_bd_0.action(bd_0_m) == 1,
+                                   set_vrf(BitVec("vrf_arg", 12))))
+            return And(actions)
         # This is a table match where we look up the provided key
         # Key probably has to be a datatype, too
         key_0 = ingress_metadata_t.bd(ingress_metadata)
@@ -221,14 +197,14 @@ def control_ingress_0():
             return NoAction_8()
 
         def select_action():
-            return If(ma_ipv4_fib_0.action(ipv4_fib_0_m) == 1,
-                      on_miss_2(),
-                      (If(ma_ipv4_fib_0.action(ipv4_fib_0_m) == 2,
-                          fib_hit_nexthop(BitVec("nexthop_index_arg", 16)),
-                          # this should be an abort of some form
-                          0
-                          ))
-                      )
+            actions = []
+            actions.append(Implies(ma_ipv4_fib_0.action(ipv4_fib_0_m) == 1,
+                                   on_miss_2()))
+            actions.append(Implies(ma_ipv4_fib_0.action(ipv4_fib_0_m) == 2,
+                                   fib_hit_nexthop(BitVec("nexthop_index_arg",
+                                                          16))))
+            return And(actions)
+
         # This is a table match where we look up the provided key
         # Key probably has to be a datatype, too
         key_0 = ingress_metadata_t.vrf(ingress_metadata)
@@ -251,14 +227,15 @@ def control_ingress_0():
             return NoAction_9()
 
         def select_action():
-            return If(ma_ipv4_fib_lpm_0.action(ipv4_fib_lpm_0_m) == 1,
-                      on_miss_5(),
-                      (If(ma_ipv4_fib_lpm_0.action(ipv4_fib_lpm_0_m) == 2,
-                          fib_hit_nexthop_2(BitVec("nexthop_index_arg", 16)),
-                          # this should be an abort of some form
-                          0
-                          ))
-                      )
+            actions = []
+            actions.append(Implies(
+                ma_ipv4_fib_lpm_0.action(ipv4_fib_lpm_0_m) == 1,
+                on_miss_5()))
+            actions.append(Implies(
+                ma_ipv4_fib_lpm_0.action(ipv4_fib_lpm_0_m) == 2,
+                fib_hit_nexthop_2(BitVec("nexthop_index_arg",
+                                         16))))
+            return And(actions)
         # This is a table match where we look up the provided key
         # Key probably has to be a datatype, too
         key_0 = ingress_metadata_t.vrf(ingress_metadata)
@@ -280,14 +257,14 @@ def control_ingress_0():
             return NoAction_10()
 
         def select_action():
-            return If(ma_nexthop_0.action(nexthop_0_m) == 1,
-                      on_miss_6(),
-                      If(ma_nexthop_0.action(nexthop_0_m) == 2,
-                          set_egress_details(BitVec("egress_spec_arg", 9)),
-                          # this should be an abort of some form
-                          0
-                         )
-                      )
+            actions = []
+            actions.append(Implies(ma_nexthop_0.action(nexthop_0_m) == 1,
+                                   on_miss_6()))
+            actions.append(Implies(ma_nexthop_0.action(nexthop_0_m) == 2,
+                                   set_egress_details(BitVec("egress_spec_arg",
+                                                             9))))
+            return And(actions)
+
         # This is a table match where we look up the provided key
         # Key probably has to be a datatype, too
         key_0 = ingress_metadata_t.nexthop_index(ingress_metadata)
@@ -305,8 +282,10 @@ def control_ingress_0():
             return NoAction_11()
 
         def select_action():
-            return If(ma_port_mapping_0.action(port_mapping_0_m) == 1,
-                      set_bd(BitVec("bd_arg", 16)), 0)
+            actions = []
+            actions.append(Implies(ma_port_mapping_0.action(
+                port_mapping_0_m) == 1, set_bd(BitVec("bd_arg", 16))))
+            return And(actions)
 
         # This is a table match where we look up the provided key
         # Key probably has to be a datatype, too
@@ -314,108 +293,85 @@ def control_ingress_0():
         return If(key_0 == ma_port_mapping_0.key_0(port_mapping_0_m),
                   select_action(), default())
 
-    port_mapping_0()
-    bd_0()
-    ipv4_fib_0()
-    ipv4_fib_lpm_0()
-    nexthop_0()
+    constraints.append(port_mapping_0())
+    constraints.append(bd_0())
+    constraints.append(ipv4_fib_0())
+    constraints.append(ipv4_fib_lpm_0())
+    constraints.append(nexthop_0())
     # begin apply
     # skip valid for now
     # this is intended to express the switch case statement
     # If(ipv4_fib_0() == 7, ipv4_fib_lpm_0(), 0)
     # If(ipv4_valid, p4_apply(), Var(False, BoolSort()))
-    return output.mk_output(ethernet_ret, ipv4_ret, ingress_metadata_ret, egress_spec)
+    return And(constraints)
 
 
 def control_ingress_1():
     # This is the initial version of the program
 
-    # initialize new variables
-    egress_spec = BitVecVal(0, 9)
-
-    # modifiable variables
-    ethernet_ret = ethernet
-    ipv4_ret = ipv4
-    ingress_metadata_ret = ingress_metadata
+    constraints = []
+    ret = Const('ret', p4_output)
 
     def NoAction_1():
-        return 1
+        return Var(True, BoolSort())
 
     def NoAction_8():
-        return 2
+        return Var(True, BoolSort())
 
     def NoAction_9():
-        return 3
+        return Var(True, BoolSort())
 
     def NoAction_10():
-        return 4
+        return Var(True, BoolSort())
 
     def NoAction_11():
-        return 5
+        return Var(True, BoolSort())
 
     def set_vrf(vrf_arg):
-        nonlocal ingress_metadata_ret
-        ingress_metadata_ret = ingress_metadata_t.mk_ingress_metadata_t(
-            vrf_arg,
-            ingress_metadata_t.bd(ingress_metadata_ret),
-            ingress_metadata_t.nexthop_index(ingress_metadata_ret))
-        return 6
+        updates = []
+        updates.append(ingress_metadata_t.vrf(
+            p4_output.ingress_metadata_t(ret)) == vrf_arg)
+        return And(updates)
 
     def on_miss_2():
-        return 7
+        return Var(True, BoolSort())
 
     def on_miss_5():
-        return 8
+        return Var(True, BoolSort())
 
     def on_miss_6():
-        return 9
+        return Var(True, BoolSort())
 
     def fib_hit_nexthop(nexthop_index_arg):
-        nonlocal ingress_metadata_ret
-        ingress_metadata_ret = ingress_metadata_t.mk_ingress_metadata_t(
-            ingress_metadata_t.vrf(ingress_metadata_ret),
-            ingress_metadata_t.bd(ingress_metadata_ret),
-            nexthop_index_arg)
-        nonlocal ipv4_ret
-        ipv4_ret = ipv4_t.mk_ipv4_t(
-            ipv4_t.version(ipv4_ret), ipv4_t.ihl(ipv4_ret),
-            ipv4_t.diffserv(ipv4_ret), ipv4_t.totalLen(ipv4_ret),
-            ipv4_t.identification(ipv4_ret), ipv4_t.flags(ipv4_ret),
-            ipv4_t.fragOffset(ipv4_ret), ipv4_t.ttl(
-                ipv4_ret) + BitVecVal(255, 8),
-            ipv4_t.protocol(ipv4_ret), ipv4_t.hdrChecksum(ipv4_ret),
-            ipv4_t.srcAddr(ipv4_ret), ipv4_t.dstAddr(ipv4_ret))
-        return 10
+        updates = []
+        updates.append(ingress_metadata_t.nexthop_index(
+            p4_output.ingress_metadata_t(ret)) == nexthop_index_arg)
+
+        updates.append(ipv4_t.ttl(p4_output.ipv4_t(ret)) ==
+                       (ipv4_t.ttl(p4_output.ipv4_t(ret)) +
+                        BitVecVal(255, 8)))
+        return And(updates)
 
     def fib_hit_nexthop_2(nexthop_index_arg):
-        nonlocal ingress_metadata_ret
-        ingress_metadata_ret = ingress_metadata_t.mk_ingress_metadata_t(
-            ingress_metadata_t.vrf(ingress_metadata_ret),
-            ingress_metadata_t.bd(ingress_metadata_ret),
-            nexthop_index_arg)
-        nonlocal ipv4_ret
-        ipv4_ret = ipv4_t.mk_ipv4_t(
-            ipv4_t.version(ipv4_ret), ipv4_t.ihl(ipv4_ret),
-            ipv4_t.diffserv(ipv4_ret), ipv4_t.totalLen(ipv4_ret),
-            ipv4_t.identification(ipv4_ret), ipv4_t.flags(ipv4_ret),
-            ipv4_t.fragOffset(ipv4_ret), ipv4_t.ttl(
-                ipv4_ret) + BitVecVal(255, 8),
-            ipv4_t.protocol(ipv4_ret), ipv4_t.hdrChecksum(ipv4_ret),
-            ipv4_t.srcAddr(ipv4_ret), ipv4_t.dstAddr(ipv4_ret))
-        return 11
+        updates = []
+        updates.append(ingress_metadata_t.nexthop_index(
+            p4_output.ingress_metadata_t(ret)) == nexthop_index_arg)
+
+        updates.append(ipv4_t.ttl(p4_output.ipv4_t(ret)) ==
+                       (ipv4_t.ttl(p4_output.ipv4_t(ret)) +
+                        BitVecVal(255, 8)))
+        return And(updates)
 
     def set_egress_details(egress_spec_arg):
-        nonlocal egress_spec
-        egress_spec = egress_spec_arg
-        return 12
+        updates = []
+        updates.append(p4_output.egress_spec(ret) == egress_spec_arg)
+        return And(updates)
 
     def set_bd(bd_arg):
-        nonlocal ingress_metadata_ret
-        ingress_metadata_ret = ingress_metadata_t.mk_ingress_metadata_t(
-            ingress_metadata_t.vrf(ingress_metadata_ret),
-            bd_arg,
-            ingress_metadata_t.nexthop_index(ingress_metadata_ret))
-        return 13
+        updates = []
+        updates.append(ingress_metadata_t.bd(
+            p4_output.ingress_metadata_t(ret)) == bd_arg)
+        return And(updates)
 
     def bd_0():
         # reduce the range of action outputs to the total number of actions
@@ -427,11 +383,10 @@ def control_ingress_1():
             return NoAction_1()
 
         def select_action():
-            return If(ma_bd_0.action(bd_0_m) == 1,
-                      set_vrf(BitVec("vrf_arg", 12)),
-                      # this should be an abort of some form
-                      0
-                      )
+            actions = []
+            actions.append(Implies(ma_bd_0.action(bd_0_m) == 1,
+                                   set_vrf(BitVec("vrf_arg", 12))))
+            return And(actions)
         # This is a table match where we look up the provided key
         # Key probably has to be a datatype, too
         key_0 = ingress_metadata_t.bd(ingress_metadata)
@@ -449,14 +404,14 @@ def control_ingress_1():
             return NoAction_8()
 
         def select_action():
-            return If(ma_ipv4_fib_0.action(ipv4_fib_0_m) == 1,
-                      on_miss_2(),
-                      (If(ma_ipv4_fib_0.action(ipv4_fib_0_m) == 2,
-                          fib_hit_nexthop(BitVec("nexthop_index_arg", 16)),
-                          # this should be an abort of some form
-                          0
-                          ))
-                      )
+            actions = []
+            actions.append(Implies(ma_ipv4_fib_0.action(ipv4_fib_0_m) == 1,
+                                   on_miss_2()))
+            actions.append(Implies(ma_ipv4_fib_0.action(ipv4_fib_0_m) == 2,
+                                   fib_hit_nexthop(BitVec("nexthop_index_arg",
+                                                          16))))
+            return And(actions)
+
         # This is a table match where we look up the provided key
         # Key probably has to be a datatype, too
         key_0 = ingress_metadata_t.vrf(ingress_metadata)
@@ -479,14 +434,15 @@ def control_ingress_1():
             return NoAction_9()
 
         def select_action():
-            return If(ma_ipv4_fib_lpm_0.action(ipv4_fib_lpm_0_m) == 1,
-                      on_miss_5(),
-                      (If(ma_ipv4_fib_lpm_0.action(ipv4_fib_lpm_0_m) == 2,
-                          fib_hit_nexthop_2(BitVec("nexthop_index_arg", 16)),
-                          # this should be an abort of some form
-                          0
-                          ))
-                      )
+            actions = []
+            actions.append(Implies(
+                ma_ipv4_fib_lpm_0.action(ipv4_fib_lpm_0_m) == 1,
+                on_miss_5()))
+            actions.append(Implies(
+                ma_ipv4_fib_lpm_0.action(ipv4_fib_lpm_0_m) == 2,
+                fib_hit_nexthop_2(BitVec("nexthop_index_arg",
+                                         16))))
+            return And(actions)
         # This is a table match where we look up the provided key
         # Key probably has to be a datatype, too
         key_0 = ingress_metadata_t.vrf(ingress_metadata)
@@ -508,14 +464,14 @@ def control_ingress_1():
             return NoAction_10()
 
         def select_action():
-            return If(ma_nexthop_0.action(nexthop_0_m) == 1,
-                      on_miss_6(),
-                      If(ma_nexthop_0.action(nexthop_0_m) == 2,
-                          set_egress_details(BitVec("egress_spec_arg", 9)),
-                          # this should be an abort of some form
-                          0
-                         )
-                      )
+            actions = []
+            actions.append(Implies(ma_nexthop_0.action(nexthop_0_m) == 1,
+                                   on_miss_6()))
+            actions.append(Implies(ma_nexthop_0.action(nexthop_0_m) == 2,
+                                   set_egress_details(BitVec("egress_spec_arg",
+                                                             9))))
+            return And(actions)
+
         # This is a table match where we look up the provided key
         # Key probably has to be a datatype, too
         key_0 = ingress_metadata_t.nexthop_index(ingress_metadata)
@@ -533,8 +489,10 @@ def control_ingress_1():
             return NoAction_11()
 
         def select_action():
-            return If(ma_port_mapping_0.action(port_mapping_0_m) == 1,
-                      set_bd(BitVec("bd_arg", 16)), 0)
+            actions = []
+            actions.append(Implies(ma_port_mapping_0.action(
+                port_mapping_0_m) == 1, set_bd(BitVec("bd_arg", 16))))
+            return And(actions)
 
         # This is a table match where we look up the provided key
         # Key probably has to be a datatype, too
@@ -542,17 +500,18 @@ def control_ingress_1():
         return If(key_0 == ma_port_mapping_0.key_0(port_mapping_0_m),
                   select_action(), default())
 
-    port_mapping_0()
-    bd_0()
-    ipv4_fib_0()
-    ipv4_fib_lpm_0()
-    nexthop_0()
+    constraints.append(port_mapping_0())
+    constraints.append(bd_0())
+    constraints.append(ipv4_fib_0())
+    constraints.append(ipv4_fib_lpm_0())
+    constraints.append(nexthop_0())
     # begin apply
     # skip valid for now
     # this is intended to express the switch case statement
     # If(ipv4_fib_0() == 7, ipv4_fib_lpm_0(), 0)
     # If(ipv4_valid, p4_apply(), Var(False, BoolSort()))
-    return output.mk_output(ethernet_ret, ipv4_ret, ingress_metadata_ret, egress_spec)
+    print(constraints)
+    return And(constraints)
 
 
 def z3_check():
@@ -564,8 +523,7 @@ def z3_check():
               ipv4_fib_lpm_0_m, nexthop_0_m, port_mapping_0_m]
     # the equivalence equation
     tv_equiv = ForAll(bounds, (
-        control_ingress_0() == control_ingress_1()))
-
+        eq(simplify(control_ingress_0()), simplify(control_ingress_1()))))
     s.add(tv_equiv)
 
     print (s.sexpr())
