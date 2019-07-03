@@ -139,20 +139,18 @@ def control_ingress_0():
         updates = []
         updates.append(ingress_metadata_t.nexthop_index(
             p4_output.ingress_metadata_t(ret)) == nexthop_index_arg)
-
-        updates.append(ipv4_t.ttl(p4_output.ipv4_t(ret)) ==
-                       (ipv4_t.ttl(p4_output.ipv4_t(ret)) +
-                        BitVecVal(255, 8)))
+        ttl = ipv4_t.ttl(p4_output.ipv4_t(ret))
+        new_ttl = ipv4_t.ttl(ipv4) + BitVecVal(255, 8)
+        updates.append(ttl == new_ttl)
         return And(updates)
 
     def fib_hit_nexthop_2(nexthop_index_arg):
         updates = []
         updates.append(ingress_metadata_t.nexthop_index(
             p4_output.ingress_metadata_t(ret)) == nexthop_index_arg)
-
-        updates.append(ipv4_t.ttl(p4_output.ipv4_t(ret)) ==
-                       (ipv4_t.ttl(p4_output.ipv4_t(ret)) +
-                        BitVecVal(255, 8)))
+        ttl = ipv4_t.ttl(p4_output.ipv4_t(ret))
+        new_ttl = ipv4_t.ttl(ipv4) + BitVecVal(255, 8)
+        updates.append(ttl == new_ttl)
         return And(updates)
 
     def set_egress_details(egress_spec_arg):
@@ -346,20 +344,18 @@ def control_ingress_1():
         updates = []
         updates.append(ingress_metadata_t.nexthop_index(
             p4_output.ingress_metadata_t(ret)) == nexthop_index_arg)
-
-        updates.append(ipv4_t.ttl(p4_output.ipv4_t(ret)) ==
-                       (ipv4_t.ttl(p4_output.ipv4_t(ret)) +
-                        BitVecVal(255, 8)))
+        ttl = ipv4_t.ttl(p4_output.ipv4_t(ret))
+        new_ttl = ipv4_t.ttl(ipv4) + BitVecVal(255, 8)
+        updates.append(ttl == new_ttl)
         return And(updates)
 
     def fib_hit_nexthop_2(nexthop_index_arg):
         updates = []
         updates.append(ingress_metadata_t.nexthop_index(
             p4_output.ingress_metadata_t(ret)) == nexthop_index_arg)
-
-        updates.append(ipv4_t.ttl(p4_output.ipv4_t(ret)) ==
-                       (ipv4_t.ttl(p4_output.ipv4_t(ret)) +
-                        BitVecVal(255, 8)))
+        ttl = ipv4_t.ttl(p4_output.ipv4_t(ret))
+        new_ttl = ipv4_t.ttl(ipv4) + BitVecVal(255, 8)
+        updates.append(ttl == new_ttl)
         return And(updates)
 
     def set_egress_details(egress_spec_arg):
@@ -510,7 +506,6 @@ def control_ingress_1():
     # this is intended to express the switch case statement
     # If(ipv4_fib_0() == 7, ipv4_fib_lpm_0(), 0)
     # If(ipv4_valid, p4_apply(), Var(False, BoolSort()))
-    print(constraints)
     return And(constraints)
 
 
@@ -522,8 +517,8 @@ def z3_check():
     bounds = [ethernet, ipv4, ingress_metadata, bd_0_m, ipv4_fib_0_m,
               ipv4_fib_lpm_0_m, nexthop_0_m, port_mapping_0_m]
     # the equivalence equation
-    tv_equiv = ForAll(bounds, (
-        eq(simplify(control_ingress_0()), simplify(control_ingress_1()))))
+    tv_equiv = ForAll(bounds, simplify(control_ingress_0()) ==
+                      simplify(control_ingress_1()))
     s.add(tv_equiv)
 
     print (s.sexpr())
