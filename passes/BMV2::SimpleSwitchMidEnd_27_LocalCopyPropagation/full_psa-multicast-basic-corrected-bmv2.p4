@@ -23,7 +23,7 @@ control cIngress(inout headers_t hdr, inout metadata_t user_meta, in psa_ingress
     @name(".multicast") action multicast() {
         {
             ostd.drop = false;
-            ostd.multicast_group = hdr.ethernet.dstAddr[31:0];
+            ostd.multicast_group = (MulticastGroupUint_t)hdr.ethernet.dstAddr;
         }
     }
     apply {

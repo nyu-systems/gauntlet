@@ -12,8 +12,8 @@
          meta_3.drop = true;
      }
      apply {
--        send_to_port(ostd, (PortId_t)(PortIdUint_t)hdr.ethernet.dstAddr[1:0]);
-+        send_to_port(ostd, (PortIdUint_t)hdr.ethernet.dstAddr[1:0]);
-         if (hdr.ethernet.dstAddr[1:0] == 2w0) 
+-        send_to_port(ostd, (PortId_t)(PortIdUint_t)hdr.ethernet.dstAddr);
++        send_to_port(ostd, (PortIdUint_t)hdr.ethernet.dstAddr);
+         if (hdr.ethernet.dstAddr == 48w0) 
              ingress_drop(ostd);
      }

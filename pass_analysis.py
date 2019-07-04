@@ -11,11 +11,13 @@ logging.basicConfig(format="%(levelname)s:%(message)s",
 log = logging.getLogger(__name__)
 PARSER = argparse.ArgumentParser()
 PARSER.add_argument("-i", "--p4_input", dest="p4_input",
-                    default="p4_16_samples", help="A P4 file or path to a "
+                    default="p4c/testdata/p4_16_samples", help="A P4 file or path to a "
                     "directory which contains P4 files.")
 
 FAILURE = 1
 SUCCESS = 0
+
+P4_BIN = "p4c/build/p4c-bm2-ss"
 
 
 def check_path(path):
@@ -107,7 +109,7 @@ def analyse_p4_file(p4_file, pass_dir):
     log.info(f"Analysing {p4_file}")
     p4_dmp_dir = f"dumps"
     check_dir(p4_dmp_dir)
-    p4_pass_cmd = "p4c-bm2-ss -v "
+    p4_pass_cmd = f"{P4_BIN} -v "
     p4_pass_cmd += f"{p4_file} 2>&1 | "
     p4_pass_cmd += "sed -e \'/FrontEndLast/,$!d\' | "
     p4_pass_cmd += "sed -e \'/MidEndLast/q\' "
@@ -115,7 +117,7 @@ def analyse_p4_file(p4_file, pass_dir):
     output = subprocess.check_output(p4_pass_cmd, shell=True)
     passes = output.decode('ascii').strip().split('\n')
 
-    p4_cmd = "p4c-bm2-ss "
+    p4_cmd = f"{P4_BIN} "
     p4_cmd += "--top4 FrontEndLast,MidEnd "
     p4_cmd += f"--dump {p4_dmp_dir} "
     p4_cmd += p4_file

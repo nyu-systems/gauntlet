@@ -7,11 +7,11 @@
 -        {
 -            ostd.drop = false;
 -            ostd.multicast_group = 32w0;
--            ostd.egress_port = (PortIdUint_t)hdr.ethernet.dstAddr[1:0];
+-            ostd.egress_port = (PortIdUint_t)hdr.ethernet.dstAddr;
 -        }
 +        ostd.drop = false;
 +        ostd.multicast_group = 32w0;
-+        ostd.egress_port = (PortIdUint_t)hdr.ethernet.dstAddr[1:0];
++        ostd.egress_port = (PortIdUint_t)hdr.ethernet.dstAddr;
      }
      @name("cIngress.counter") Counter<bit<10>, bit<12>>(32w1024, 32w0) counter_0;
      @name("cIngress.execute") action execute_1() {

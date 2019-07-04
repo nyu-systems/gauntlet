@@ -82,7 +82,7 @@ control deparser(packet_out b, in parsed_packet_t h) {
         b.emit<bitvec_hdr>(h.bvh1);
     }
 }
-control verify_checksum(inout parsed_packet_t hdr, inout local_metadata_t local_metadata) {
+control verifyChecksum(inout parsed_packet_t hdr, inout local_metadata_t local_metadata) {
     apply {
     }
 }
@@ -90,4 +90,4 @@ control compute_checksum(inout parsed_packet_t hdr, inout local_metadata_t local
     apply {
     }
 }
-V1Switch<parsed_packet_t, local_metadata_t>(parse(), verify_checksum(), ingress(), egress(), compute_checksum(), deparser()) main;
+V1Switch<parsed_packet_t, local_metadata_t>(parse(), verifyChecksum(), ingress(), egress(), compute_checksum(), deparser()) main;

@@ -14,7 +14,7 @@
 +            meta_1.multicast_group = ostd.multicast_group;
 +            meta_1.egress_port = ostd.egress_port;
 +        }
-         egress_port_1 = (PortIdUint_t)hdr.ethernet.dstAddr[1:0];
+         egress_port_1 = (PortIdUint_t)hdr.ethernet.dstAddr;
          meta_1.drop = false;
          meta_1.multicast_group = 32w0;
          meta_1.egress_port = egress_port_1;

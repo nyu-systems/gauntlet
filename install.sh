@@ -4,7 +4,7 @@
 set -e
 
 # fetch submodules
-git submodule update --init --recursive
+git submodule update --init --recursive --remote --merge
 
 # Install pip locally
 export PATH+=$PATH:~/.local/bin
@@ -33,7 +33,6 @@ mkdir -p build
 cd build
 cmake ..
 make -j `getconf _NPROCESSORS_ONLN`
-sudo make install
 cd ../..
 
 # Install z3 locally

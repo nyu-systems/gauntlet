@@ -16,7 +16,7 @@
 -            meta_1.multicast_group = ostd.multicast_group;
 -            meta_1.egress_port = ostd.egress_port;
 -        }
--        multicast_group_1 = hdr.ethernet.dstAddr[31:0];
+-        multicast_group_1 = (MulticastGroupUint_t)hdr.ethernet.dstAddr;
 -        meta_1.drop = false;
 -        meta_1.multicast_group = multicast_group_1;
 -        {
@@ -28,7 +28,7 @@
 -            ostd.multicast_group = meta_1.multicast_group;
 -            ostd.egress_port = meta_1.egress_port;
 +            ostd.drop = false;
-+            ostd.multicast_group = hdr.ethernet.dstAddr[31:0];
++            ostd.multicast_group = (MulticastGroupUint_t)hdr.ethernet.dstAddr;
          }
      }
      apply {

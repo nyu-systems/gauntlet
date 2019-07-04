@@ -32,7 +32,7 @@ control cIngress(inout headers_t hdr, inout metadata_t user_meta, in psa_ingress
     }
     apply {
         if (hdr.ethernet.dstAddr[3:0] >= 4w4) 
-            send_to_port(ostd, (PortIdUint_t)hdr.ethernet.dstAddr[3:0]);
+            send_to_port(ostd, (PortIdUint_t)hdr.ethernet.dstAddr);
         else 
             send_to_port_0(ostd, 32w0xfffffffa);
     }

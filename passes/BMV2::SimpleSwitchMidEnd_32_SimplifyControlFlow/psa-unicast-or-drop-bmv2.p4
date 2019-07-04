@@ -7,11 +7,11 @@
 -        {
 -            ostd.drop = false;
 -            ostd.multicast_group = 32w0;
--            ostd.egress_port = (PortIdUint_t)hdr.ethernet.dstAddr[1:0];
+-            ostd.egress_port = (PortIdUint_t)hdr.ethernet.dstAddr;
 -        }
 +        ostd.drop = false;
 +        ostd.multicast_group = 32w0;
-+        ostd.egress_port = (PortIdUint_t)hdr.ethernet.dstAddr[1:0];
++        ostd.egress_port = (PortIdUint_t)hdr.ethernet.dstAddr;
      }
      @name(".ingress_drop") action ingress_drop() {
 -        {

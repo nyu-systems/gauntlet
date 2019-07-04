@@ -13,8 +13,8 @@
          default_action = execute_1();
      }
      apply {
--        send_to_port(ostd, (PortId_t)(PortIdUint_t)hdr.ethernet.dstAddr[1:0]);
-+        send_to_port(ostd, (PortIdUint_t)hdr.ethernet.dstAddr[1:0]);
+-        send_to_port(ostd, (PortId_t)(PortIdUint_t)hdr.ethernet.dstAddr);
++        send_to_port(ostd, (PortIdUint_t)hdr.ethernet.dstAddr);
          tbl_0.apply();
      }
  }

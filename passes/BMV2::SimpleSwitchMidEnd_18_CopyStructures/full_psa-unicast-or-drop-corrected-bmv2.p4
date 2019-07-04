@@ -32,7 +32,7 @@ control cIngress(inout headers_t hdr, inout metadata_t user_meta, in psa_ingress
             meta_2.multicast_group = ostd.multicast_group;
             meta_2.egress_port = ostd.egress_port;
         }
-        egress_port_1 = (PortIdUint_t)hdr.ethernet.dstAddr[1:0];
+        egress_port_1 = (PortIdUint_t)hdr.ethernet.dstAddr;
         meta_2.drop = false;
         meta_2.multicast_group = 32w0;
         meta_2.egress_port = egress_port_1;
@@ -70,7 +70,7 @@ control cIngress(inout headers_t hdr, inout metadata_t user_meta, in psa_ingress
     }
     apply {
         send_to_port();
-        if (hdr.ethernet.dstAddr[1:0] == 2w0) 
+        if (hdr.ethernet.dstAddr == 48w0) 
             ingress_drop();
     }
 }

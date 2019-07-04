@@ -6,10 +6,10 @@
      @name(".multicast") action multicast() {
 -        {
 -            ostd.drop = false;
--            ostd.multicast_group = hdr.ethernet.dstAddr[31:0];
+-            ostd.multicast_group = (MulticastGroupUint_t)hdr.ethernet.dstAddr;
 -        }
 +        ostd.drop = false;
-+        ostd.multicast_group = hdr.ethernet.dstAddr[31:0];
++        ostd.multicast_group = (MulticastGroupUint_t)hdr.ethernet.dstAddr;
      }
      apply {
          multicast();

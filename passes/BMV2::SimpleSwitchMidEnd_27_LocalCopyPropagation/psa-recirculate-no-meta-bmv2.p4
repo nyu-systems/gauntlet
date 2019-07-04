@@ -18,7 +18,7 @@
 -            meta_1.multicast_group = ostd.multicast_group;
 -            meta_1.egress_port = ostd.egress_port;
 -        }
--        egress_port_1 = (PortIdUint_t)hdr.ethernet.dstAddr[3:0];
+-        egress_port_1 = (PortIdUint_t)hdr.ethernet.dstAddr;
 -        meta_1.drop = false;
 -        meta_1.multicast_group = 32w0;
 -        meta_1.egress_port = egress_port_1;
@@ -32,7 +32,7 @@
 -            ostd.egress_port = meta_1.egress_port;
 +            ostd.drop = false;
 +            ostd.multicast_group = 32w0;
-+            ostd.egress_port = (PortIdUint_t)hdr.ethernet.dstAddr[3:0];
++            ostd.egress_port = (PortIdUint_t)hdr.ethernet.dstAddr;
          }
      }
      @name(".send_to_port") action send_to_port_0() {
