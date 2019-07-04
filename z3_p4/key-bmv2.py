@@ -59,7 +59,7 @@ def control_ingress_0(s):
         ''' This is a table '''
         # reduce the range of action outputs to the total number of actions
         # in this case we only have 2 actions
-        s.add(0 < ma_c_t.action(c_t_m), ma_c_t.action(c_t_m) < 2)
+        s.add(0 < ma_c_t.action(c_t_m), ma_c_t.action(c_t_m) < 3)
 
         def default():
             ''' The default action '''
@@ -117,7 +117,7 @@ def control_ingress_1(s):
         ''' This is a table '''
         # reduce the range of action outputs to the total number of actions
         # in this case we only have 2 actions
-        s.add(0 < ma_c_t.action(c_t_m), ma_c_t.action(c_t_m) < 2)
+        s.add(0 < ma_c_t.action(c_t_m), ma_c_t.action(c_t_m) < 3)
 
         def default():
             ''' The default action '''
