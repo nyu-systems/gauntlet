@@ -45,7 +45,7 @@ def control_ingress_0(s):
     ''' This is the initial version of the program. '''
 
     # The output header, one variable per modification
-    ret_0 = p4_output.mk_output(h, BitVec('egress_spec', 9))
+    ret_0 = Const("ret_0", p4_output)
 
     def c_a_0():
         # This action creates a new header type where b is set to a
@@ -101,7 +101,7 @@ def control_ingress_1(s):
     ''' This is the initial version of the program. '''
 
     # The output header, one variable per modification
-    ret_0 = p4_output.mk_output(h, BitVec('egress_spec', 9))
+    ret_0 = Const("ret_0", p4_output)
 
     # the key is defined in the control function
     key_0 = BitVec('key_0', 32)

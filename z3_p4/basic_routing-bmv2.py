@@ -104,19 +104,19 @@ def control_ingress_0():
     ret = Const('ret', p4_output)
 
     def NoAction_1():
-        return Var(True, BoolSort())
+        return True
 
     def NoAction_8():
-        return Var(True, BoolSort())
+        return True
 
     def NoAction_9():
-        return Var(True, BoolSort())
+        return True
 
     def NoAction_10():
-        return Var(True, BoolSort())
+        return True
 
     def NoAction_11():
-        return Var(True, BoolSort())
+        return True
 
     def set_vrf(vrf_arg):
         updates = []
@@ -125,13 +125,13 @@ def control_ingress_0():
         return And(updates)
 
     def on_miss_2():
-        return Var(True, BoolSort())
+        return True
 
     def on_miss_5():
-        return Var(True, BoolSort())
+        return True
 
     def on_miss_6():
-        return Var(True, BoolSort())
+        return True
 
     def fib_hit_nexthop(nexthop_index_arg):
         updates = []
@@ -199,7 +199,7 @@ def control_ingress_0():
             actions.append(Implies(ma_ipv4_fib_0.action(ipv4_fib_0_m) == 2,
                                    fib_hit_nexthop(BitVec("nexthop_index_arg",
                                                           16))))
-            return And(actions)
+            return Xor(*actions)
 
         # This is a table match where we look up the provided key
         # Key probably has to be a datatype, too
@@ -231,7 +231,7 @@ def control_ingress_0():
                 ma_ipv4_fib_lpm_0.action(ipv4_fib_lpm_0_m) == 2,
                 fib_hit_nexthop_2(BitVec("nexthop_index_arg",
                                          16))))
-            return And(actions)
+            return Xor(*actions)
         # This is a table match where we look up the provided key
         # Key probably has to be a datatype, too
         key_0 = ingress_metadata_t.vrf(ingress_metadata)
@@ -259,7 +259,7 @@ def control_ingress_0():
             actions.append(Implies(ma_nexthop_0.action(nexthop_0_m) == 2,
                                    set_egress_details(BitVec("egress_spec_arg",
                                                              9))))
-            return And(actions)
+            return Xor(*actions)
 
         # This is a table match where we look up the provided key
         # Key probably has to be a datatype, too
@@ -310,19 +310,19 @@ def control_ingress_1():
     ret = Const('ret', p4_output)
 
     def NoAction_1():
-        return Var(True, BoolSort())
+        return True
 
     def NoAction_8():
-        return Var(True, BoolSort())
+        return True
 
     def NoAction_9():
-        return Var(True, BoolSort())
+        return True
 
     def NoAction_10():
-        return Var(True, BoolSort())
+        return True
 
     def NoAction_11():
-        return Var(True, BoolSort())
+        return True
 
     def set_vrf(vrf_arg):
         updates = []
@@ -331,13 +331,13 @@ def control_ingress_1():
         return And(updates)
 
     def on_miss_2():
-        return Var(True, BoolSort())
+        return True
 
     def on_miss_5():
-        return Var(True, BoolSort())
+        return True
 
     def on_miss_6():
-        return Var(True, BoolSort())
+        return True
 
     def fib_hit_nexthop(nexthop_index_arg):
         updates = []
@@ -405,7 +405,7 @@ def control_ingress_1():
             actions.append(Implies(ma_ipv4_fib_0.action(ipv4_fib_0_m) == 2,
                                    fib_hit_nexthop(BitVec("nexthop_index_arg",
                                                           16))))
-            return And(actions)
+            return Xor(*actions)
 
         # This is a table match where we look up the provided key
         # Key probably has to be a datatype, too
@@ -437,7 +437,7 @@ def control_ingress_1():
                 ma_ipv4_fib_lpm_0.action(ipv4_fib_lpm_0_m) == 2,
                 fib_hit_nexthop_2(BitVec("nexthop_index_arg",
                                          16))))
-            return And(actions)
+            return Xor(*actions)
         # This is a table match where we look up the provided key
         # Key probably has to be a datatype, too
         key_0 = ingress_metadata_t.vrf(ingress_metadata)
@@ -465,7 +465,7 @@ def control_ingress_1():
             actions.append(Implies(ma_nexthop_0.action(nexthop_0_m) == 2,
                                    set_egress_details(BitVec("egress_spec_arg",
                                                              9))))
-            return And(actions)
+            return Xor(*actions)
 
         # This is a table match where we look up the provided key
         # Key probably has to be a datatype, too
