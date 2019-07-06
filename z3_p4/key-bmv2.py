@@ -36,6 +36,7 @@ p4_output = p4_output.create()
 # These are our inputs
 # Think of it as the header inputs after they have been parsed
 h = Const('h', hdr)
+h_valid = Const('ethernet_valid', BoolSort())
 # The possible table entries
 c_t_m = Const('c_t_m', ma_c_t)
 
@@ -44,16 +45,16 @@ def control_ingress_0(s):
     ''' This is the initial version of the program. '''
 
     # The output header, one variable per modification
-    ret_0 = p4_output.mk_output(h, BitVecVal(0, 9))
+    ret_0 = p4_output.mk_output(h, BitVec('egress_spec', 9))
 
     def c_a_0():
         # This action creates a new header type where b is set to a
-        return hdr.b(p4_output.hdr(ret_0)) == hdr.a(h)
+        return (hdr.b(p4_output.hdr(ret_0)) == hdr.a(h))
 
     def NoAction_0():
         ''' This is an action '''
         # NoAction just returns the current header as is
-        return Var(True, BoolSort())
+        return True
 
     def c_t():
         ''' This is a table '''
@@ -71,11 +72,12 @@ def control_ingress_0(s):
             selection as a chain of implications. If we match, then the clause
             returned by the action must be valid.
             This might become really ugly with many actions.'''
-            return And(Implies(ma_c_t.action(c_t_m) == 1,
-                               c_a_0()),
-                       Implies(ma_c_t.action(c_t_m) == 2,
-                               NoAction_0()),
-                       )
+            actions = []
+            actions.append(Implies(ma_c_t.action(c_t_m) == 1,
+                                   c_a_0()))
+            actions.append(Implies(ma_c_t.action(c_t_m) == 2,
+                                   NoAction_0()))
+            return Xor(*actions)
         # The key of the table. In this case it is a single value
         c_t_key_0 = hdr.a(h) + hdr.a(h)
         # This is a table match where we look up the provided key
@@ -92,26 +94,26 @@ def control_ingress_0(s):
         constraints.append(p4_output.egress_spec(ret_0) == BitVecVal(0, 9))
         return constraints
     # return the apply function as sequence of logic clauses
-    return And(apply())
+    return And(*apply())
 
 
 def control_ingress_1(s):
     ''' This is the initial version of the program. '''
 
     # The output header, one variable per modification
-    ret_0 = p4_output.mk_output(h, BitVecVal(0, 9))
+    ret_0 = p4_output.mk_output(h, BitVec('egress_spec', 9))
 
     # the key is defined in the control function
     key_0 = BitVec('key_0', 32)
 
     def c_a_0():
         # This action creates a new header type where b is set to a
-        return hdr.b(p4_output.hdr(ret_0)) == hdr.a(h)
+        return (hdr.b(p4_output.hdr(ret_0)) == hdr.a(h))
 
     def NoAction_0():
         ''' This is an action '''
         # NoAction just returns the current header as is
-        return Var(True, BoolSort())
+        return True
 
     def c_t():
         ''' This is a table '''
@@ -129,11 +131,12 @@ def control_ingress_1(s):
             selection as a chain of implications. If we match, then the clause
             returned by the action must be valid.
             This might become really ugly with many actions.'''
-            return And(Implies(ma_c_t.action(c_t_m) == 1,
-                               c_a_0()),
-                       Implies(ma_c_t.action(c_t_m) == 2,
-                               NoAction_0()),
-                       )
+            actions = []
+            actions.append(Implies(ma_c_t.action(c_t_m) == 1,
+                                   c_a_0()))
+            actions.append(Implies(ma_c_t.action(c_t_m) == 2,
+                                   NoAction_0()))
+            return Xor(*actions)
         # The key of the table. In this case it is a single value
         nonlocal key_0  # we refer to a variable in the outer scope
         c_t_key_0 = key_0
@@ -153,7 +156,7 @@ def control_ingress_1(s):
         constraints.append(p4_output.egress_spec(ret_0) == BitVecVal(0, 9))
         return constraints
     # return the apply function as sequence of logic clauses
-    return And(apply())
+    return And(*apply())
 
 
 def z3_check():
@@ -164,8 +167,11 @@ def z3_check():
     s = Solver()
     bounds = [h, c_t_m]
     # the equivalence equation
-    tv_equiv = ForAll(bounds, (
-        eq(simplify(control_ingress_0(s)), simplify(control_ingress_1(s)))))
+    tv_equiv = Exists(bounds, simplify(control_ingress_0(s)) !=
+                      simplify(control_ingress_1(s)))
+    s.add(tv_equiv)
+
+    print(tv_equiv)
     s.add(tv_equiv)
 
     print (s.sexpr())

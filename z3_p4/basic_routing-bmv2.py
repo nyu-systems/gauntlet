@@ -1,20 +1,7 @@
-# (declare-const key (_ BitVec 32))
-# (declare-datatypes () ((H (mk-h (a (_ BitVec 32)) (b (_ BitVec 32)) ))))
-# (declare-const h H)
-# (define-fun pass_0 ((h H)) (H)
-#     (ite (= (bvadd (a h) (a h)) key) (mk-h (a h) (a h)) (mk-h (a h) (b h)) )
-# )
-# (define-const key_0 (_ BitVec 32) (bvadd (a h) (a h)))
-# (define-fun pass_1 ((h H)) (H)
-#     (ite (= key_0 key)  (mk-h (a h) (a h)) (mk-h (a h) (b h)) )
-# )
-# (assert (not ( = (pass_0 h) (pass_1 h))))
-# (check-sat)
-
-
 from z3 import *
 
-# declaration of the global header type that is to be parsed
+''' HEADERS '''
+# The input headers of the control pipeline
 ethernet_t = Datatype('ethernet_t')
 ethernet_t.declare('mk_ethernet_t',
                    ('dstAddr', BitVecSort(48)),
@@ -38,15 +25,13 @@ ingress_metadata_t.declare('mk_ingress_metadata_t',
                            ('nexthop_index', BitVecSort(16)))
 ingress_metadata_t = ingress_metadata_t.create()
 
-# the final output in a single datatype
-p4_output = Datatype('p4_output')
-p4_output.declare('mk_output',
-                  ('ethernet_t', ethernet_t), ('ipv4_t', ipv4_t),
-                  ('ingress_metadata_t', ingress_metadata_t),
-                  ('egress_spec', BitVecSort(9)))
-p4_output = p4_output.create()
-
-# the table constant we are matching with
+''' TABLES '''
+''' The table constant we are matching with.
+ Actually this should be a match action tuple that picks the next action
+ How to implement that? Some form of array?
+ Right now, we have a hacky version of integer values which mimic an enum.
+ Each integer value corresponds to a specific action PER table. The number of
+ available integer values is constrained. '''
 ma_bd_0 = Datatype('ma_bd_0')
 ma_bd_0.declare('mk_ma_bd_0', ('key_0', BitVecSort(16)), ('action', IntSort()))
 ma_bd_0 = ma_bd_0.create()
@@ -76,16 +61,29 @@ ma_port_mapping_0.declare('mk_ma_port_mapping_0',
 ma_port_mapping_0 = ma_port_mapping_0.create()
 
 
-# TODO: Add some better notion of egress spec
+''' OUTPUT '''
 
-# define the headers...
+# the final output of the control pipeline in a single datatype
+p4_output = Datatype('p4_output')
+p4_output.declare('mk_output',
+                  ('ethernet_t', ethernet_t), ('ipv4_t', ipv4_t),
+                  ('ingress_metadata_t', ingress_metadata_t),
+                  ('egress_spec', BitVecSort(9)))
+p4_output = p4_output.create()
+
+
+''' INPUT VARIABLES AND MATCH-ACTION ENTRIES'''
+
+# Initialize the header and match-action constraints
+# These are our inputs
+# Think of it as the header inputs after they have been parsed
 ethernet = Const('ethernet', ethernet_t)
 ethernet_valid = Const('ethernet_valid', BoolSort())
 ipv4 = Const('ipv4', ipv4_t)
 ipv4_valid = Const('ipv4_valid', BoolSort())
 ingress_metadata = Const('ingress_metadata', ingress_metadata_t)
 
-# and match-action entries
+# The possible table entries
 bd_0_m = Const('bd_0_m', ma_bd_0)
 ipv4_fib_0_m = Const('ipv4_fib_0_m', ma_ipv4_fib_0)
 ipv4_fib_lpm_0_m = Const('ipv4_fib_lpm_0_m', ma_ipv4_fib_lpm_0)
@@ -291,16 +289,17 @@ def control_ingress_0():
         return If(key_0 == ma_port_mapping_0.key_0(port_mapping_0_m),
                   select_action(), default())
 
-    constraints.append(port_mapping_0())
-    constraints.append(bd_0())
-    constraints.append(ipv4_fib_0())
-    constraints.append(ipv4_fib_lpm_0())
-    constraints.append(nexthop_0())
     # begin apply
-    # skip valid for now
+    # this is a valid case
+    ip4_valid_constraints = []
+    ip4_valid_constraints.append(port_mapping_0())
+    ip4_valid_constraints.append(bd_0())
+    ip4_valid_constraints.append(ipv4_fib_0())
     # this is intended to express the switch case statement
-    # If(ipv4_fib_0() == 7, ipv4_fib_lpm_0(), 0)
-    # If(ipv4_valid, p4_apply(), Var(False, BoolSort()))
+    ip4_valid_constraints.append(
+        Implies(ma_ipv4_fib_0.action(ipv4_fib_0_m) == 1, ipv4_fib_lpm_0()))
+    ip4_valid_constraints.append(nexthop_0())
+    constraints.append(Implies(ipv4_valid, And(ip4_valid_constraints)))
     return And(constraints)
 
 
@@ -496,16 +495,18 @@ def control_ingress_1():
         return If(key_0 == ma_port_mapping_0.key_0(port_mapping_0_m),
                   select_action(), default())
 
-    constraints.append(port_mapping_0())
-    constraints.append(bd_0())
-    constraints.append(ipv4_fib_0())
-    constraints.append(ipv4_fib_lpm_0())
-    constraints.append(nexthop_0())
     # begin apply
-    # skip valid for now
+    # this is a valid case
+    ip4_valid_constraints = []
+    ip4_valid_constraints.append(port_mapping_0())
+    ip4_valid_constraints.append(bd_0())
+    ip4_valid_constraints.append(ipv4_fib_0())
     # this is intended to express the switch case statement
-    # If(ipv4_fib_0() == 7, ipv4_fib_lpm_0(), 0)
-    # If(ipv4_valid, p4_apply(), Var(False, BoolSort()))
+    ip4_valid_constraints.append(
+        Implies(ma_ipv4_fib_0.action(ipv4_fib_0_m) == 1, ipv4_fib_lpm_0()))
+    ip4_valid_constraints.append(nexthop_0())
+    # end of the block, append the condition
+    constraints.append(Implies(ipv4_valid, And(ip4_valid_constraints)))
     return And(constraints)
 
 
@@ -517,7 +518,7 @@ def z3_check():
     bounds = [ethernet, ipv4, ingress_metadata, bd_0_m, ipv4_fib_0_m,
               ipv4_fib_lpm_0_m, nexthop_0_m, port_mapping_0_m]
     # the equivalence equation
-    tv_equiv = ForAll(bounds, simplify(control_ingress_0()) ==
+    tv_equiv = Exists(bounds, simplify(control_ingress_0()) !=
                       simplify(control_ingress_1()))
     s.add(tv_equiv)
 
