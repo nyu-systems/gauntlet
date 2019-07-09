@@ -1,5 +1,9 @@
 from z3 import *
 
+
+''' SOLVER '''
+s = Solver()
+
 ''' HEADERS '''
 # The input headers of the control pipeline
 ethernet_t = Datatype('ethernet_t')
@@ -85,16 +89,42 @@ ingress_metadata = Const('ingress_metadata', ingress_metadata_t)
 
 # The possible table entries
 bd_0_m = Const('bd_0_m', ma_bd_0)
+# reduce the range of action outputs to the total number of actions
+s.add(0 < ma_bd_0.action(bd_0_m), ma_bd_0.action(bd_0_m) < 2)
+
 ipv4_fib_0_m = Const('ipv4_fib_0_m', ma_ipv4_fib_0)
+# reduce the range of action outputs to the total number of actions
+s.add(0 < ma_ipv4_fib_0.action(ipv4_fib_0_m),
+      ma_ipv4_fib_0.action(ipv4_fib_0_m) < 3)
+
 ipv4_fib_lpm_0_m = Const('ipv4_fib_lpm_0_m', ma_ipv4_fib_lpm_0)
+# reduce the range of action outputs to the total number of actions
+s.add(0 < ma_ipv4_fib_lpm_0.action(ipv4_fib_lpm_0_m),
+      ma_ipv4_fib_lpm_0.action(ipv4_fib_lpm_0_m) < 3)
+
 nexthop_0_m = Const('nexthop_0_m', ma_nexthop_0)
+# reduce the range of action outputs to the total number of actions
+s.add(0 < ma_nexthop_0.action(nexthop_0_m),
+      ma_nexthop_0.action(nexthop_0_m) < 3)
+
 port_mapping_0_m = Const('port_mapping_0_m', ma_port_mapping_0)
+# reduce the range of action outputs to the total number of actions
+s.add(0 < ma_port_mapping_0.action(port_mapping_0_m),
+      ma_port_mapping_0.action(port_mapping_0_m) < 2)
 
-
-s = Solver()
 
 # non-modifiable input variable
 ingress_port = BitVec("ingress_port", 16)
+
+
+def step(func_list, assignments):
+    if func_list:
+        next_fun = func_list[0]
+        func_list = func_list[1:]
+        assignments.append(next_fun(func_list))
+    else:
+        assignments.append(True)
+    return And(assignments)
 
 
 def control_ingress_0():
@@ -102,102 +132,118 @@ def control_ingress_0():
     # The output header, one variable per modification
     ret_0 = p4_output.mk_output(ethernet, ipv4, ingress_metadata, 0)
 
-    def NoAction_1():
-        return True
+    def NoAction_1(func_list):
+        ''' This is an action '''
+        assignments = []
+        return step(func_list, assignments)
 
-    def NoAction_8():
-        return True
+    def NoAction_8(func_list):
+        ''' This is an action '''
+        assignments = []
+        return step(func_list, assignments)
 
-    def NoAction_9():
-        return True
+    def NoAction_9(func_list):
+        ''' This is an action '''
+        assignments = []
+        return step(func_list, assignments)
 
-    def NoAction_10():
-        return True
+    def NoAction_10(func_list):
+        ''' This is an action '''
+        assignments = []
+        assignments.append(True)
+        return step(func_list, assignments)
 
-    def NoAction_11():
-        return True
+    def NoAction_11(func_list):
+        ''' This is an action '''
+        assignments = []
+        return step(func_list, assignments)
 
-    def set_vrf(vrf_arg):
-        updates = []
-        updates.append(ingress_metadata_t.vrf(
+    def set_vrf(func_list, vrf_arg):
+        assignments = []
+        assignments.append(ingress_metadata_t.vrf(
             p4_output.ingress_metadata_t(ret_0)) == vrf_arg)
-        return And(updates)
+        return step(func_list, assignments)
 
-    def on_miss_2():
-        return True
+    def on_miss_2(func_list):
+        ''' This is an action '''
+        assignments = []
+        return step(func_list, assignments)
 
-    def on_miss_5():
-        return True
+    def on_miss_5(func_list):
+        ''' This is an action '''
+        # NoAction just returns the current header as is
+        assignments = []
+        return step(func_list, assignments)
 
-    def on_miss_6():
-        return True
+    def on_miss_6(func_list):
+        ''' This is an action '''
+        # NoAction just returns the current header as is
+        # This action creates a new header type where b is set to a
+        assignments = []
+        return step(func_list, assignments)
 
-    def fib_hit_nexthop(nexthop_index_arg):
-        updates = []
-        updates.append(ingress_metadata_t.nexthop_index(
+    def fib_hit_nexthop(func_list, nexthop_index_arg):
+        assignments = []
+        assignments.append(ingress_metadata_t.nexthop_index(
             p4_output.ingress_metadata_t(ret_0)) == nexthop_index_arg)
         ttl = ipv4_t.ttl(p4_output.ipv4_t(ret_0))
         new_ttl = ipv4_t.ttl(ipv4) + BitVecVal(255, 8)
-        updates.append(ttl == new_ttl)
-        return And(updates)
+        assignments.append(ttl == new_ttl)
+        return step(func_list, assignments)
 
-    def fib_hit_nexthop_2(nexthop_index_arg):
-        updates = []
-        updates.append(ingress_metadata_t.nexthop_index(
+    def fib_hit_nexthop_2(func_list, nexthop_index_arg):
+        assignments = []
+        assignments.append(ingress_metadata_t.nexthop_index(
             p4_output.ingress_metadata_t(ret_0)) == nexthop_index_arg)
         ttl = ipv4_t.ttl(p4_output.ipv4_t(ret_0))
         new_ttl = ipv4_t.ttl(ipv4) + BitVecVal(255, 8)
-        updates.append(ttl == new_ttl)
-        return And(updates)
+        assignments.append(ttl == new_ttl)
+        return step(func_list, assignments)
 
-    def set_egress_details(egress_spec_arg):
-        updates = []
-        updates.append(p4_output.egress_spec(ret_0) == egress_spec_arg)
-        return And(updates)
+    def set_egress_details(func_list, egress_spec_arg):
+        assignments = []
+        assignments.append(p4_output.egress_spec(ret_0) == egress_spec_arg)
+        return step(func_list, assignments)
 
-    def set_bd(bd_arg):
-        updates = []
-        updates.append(ingress_metadata_t.bd(
+    def set_bd(func_list, bd_arg):
+        assignments = []
+        assignments.append(ingress_metadata_t.bd(
             p4_output.ingress_metadata_t(ret_0)) == bd_arg)
-        return And(updates)
+        return step(func_list, assignments)
 
-    def bd_0():
-        # reduce the range of action outputs to the total number of actions
-        s.add(0 < ma_bd_0.action(bd_0_m), ma_bd_0.action(bd_0_m) < 2)
+    def bd_0(func_list):
 
         def default():
             # The default action
             # It is set to NoAction in this case
-            return NoAction_1()
+            return NoAction_1(func_list)
 
         def select_action():
             actions = []
             actions.append(Implies(ma_bd_0.action(bd_0_m) == 1,
-                                   set_vrf(BitVec("vrf_arg", 12))))
-            return And(actions)
+                                   set_vrf(func_list, BitVec("vrf_arg", 12))))
+            actions.append(False)
+            return Xor(*actions)
         # This is a table match where we look up the provided key
         # Key probably has to be a datatype, too
         key_0 = ingress_metadata_t.bd(ingress_metadata)
         return If(key_0 == ma_bd_0.key_0(bd_0_m),
                   select_action(), default())
 
-    def ipv4_fib_0():
-        # reduce the range of action outputs to the total number of actions
-        s.add(0 < ma_ipv4_fib_0.action(ipv4_fib_0_m),
-              ma_ipv4_fib_0.action(ipv4_fib_0_m) < 3)
+    def ipv4_fib_0(func_list):
 
         def default():
             # The default action
             # It is set to NoAction in this case
-            return NoAction_8()
+            return NoAction_8(func_list)
 
         def select_action():
             actions = []
             actions.append(Implies(ma_ipv4_fib_0.action(ipv4_fib_0_m) == 1,
-                                   on_miss_2()))
+                                   on_miss_2(func_list)))
             actions.append(Implies(ma_ipv4_fib_0.action(ipv4_fib_0_m) == 2,
-                                   fib_hit_nexthop(BitVec("nexthop_index_arg",
-                                                          16))))
+                                   fib_hit_nexthop(func_list, BitVec("nexthop_index_arg",
+                                                                     16))))
             return Xor(*actions)
 
         # This is a table match where we look up the provided key
@@ -208,10 +254,7 @@ def control_ingress_0():
                       key_1 == ma_ipv4_fib_0.key_1(ipv4_fib_0_m)),
                   select_action(), default())
 
-    def ipv4_fib_lpm_0():
-        # reduce the range of action outputs to the total number of actions
-        s.add(0 < ma_ipv4_fib_lpm_0.action(ipv4_fib_lpm_0_m),
-              ma_ipv4_fib_lpm_0.action(ipv4_fib_lpm_0_m) < 3)
+    def ipv4_fib_lpm_0(func_list):
         # This should be a mask for lpm matches
         # TODO: Make it a proper mask and fix
         masks = [(2**i) - 1 for i in range(32)]
@@ -219,17 +262,18 @@ def control_ingress_0():
         def default():
             # The default action
             # It is set to NoAction in this case
-            return NoAction_9()
+            return NoAction_9(func_list)
 
         def select_action():
             actions = []
             actions.append(Implies(
                 ma_ipv4_fib_lpm_0.action(ipv4_fib_lpm_0_m) == 1,
-                on_miss_5()))
+                on_miss_5(func_list)))
             actions.append(Implies(
                 ma_ipv4_fib_lpm_0.action(ipv4_fib_lpm_0_m) == 2,
-                fib_hit_nexthop_2(BitVec("nexthop_index_arg",
-                                         16))))
+                fib_hit_nexthop_2(func_list, BitVec("nexthop_index_arg",
+                                                    16))))
+            print(*actions)
             return Xor(*actions)
         # This is a table match where we look up the provided key
         # Key probably has to be a datatype, too
@@ -241,22 +285,20 @@ def control_ingress_0():
                           for m in masks])),
                   select_action(), default())
 
-    def nexthop_0():
-        # reduce the range of action outputs to the total number of actions
-        s.add(0 < ma_nexthop_0.action(nexthop_0_m),
-              ma_nexthop_0.action(nexthop_0_m) < 3)
+    def nexthop_0(func_list):
 
         def default():
             # The default action
             # It is set to NoAction in this case
-            return NoAction_10()
+            return NoAction_10(func_list)
 
         def select_action():
             actions = []
             actions.append(Implies(ma_nexthop_0.action(nexthop_0_m) == 1,
-                                   on_miss_6()))
+                                   on_miss_6(func_list)))
             actions.append(Implies(ma_nexthop_0.action(nexthop_0_m) == 2,
-                                   set_egress_details(BitVec("egress_spec_arg",
+                                   set_egress_details(func_list,
+                                                      BitVec("egress_spec_arg",
                                                              9))))
             return Xor(*actions)
 
@@ -266,21 +308,20 @@ def control_ingress_0():
         return If(key_0 == ma_nexthop_0.key_0(nexthop_0_m),
                   select_action(), default())
 
-    def port_mapping_0():
-        # reduce the range of action outputs to the total number of actions
-        s.add(0 < ma_port_mapping_0.action(port_mapping_0_m),
-              ma_port_mapping_0.action(port_mapping_0_m) < 2)
+    def port_mapping_0(func_list):
 
         def default():
             # The default action
             # It is set to NoAction in this case
-            return NoAction_11()
+            return NoAction_11(func_list)
 
         def select_action():
             actions = []
             actions.append(Implies(ma_port_mapping_0.action(
-                port_mapping_0_m) == 1, set_bd(BitVec("bd_arg", 16))))
-            return And(actions)
+                port_mapping_0_m) == 1, set_bd(func_list,
+                                               BitVec("bd_arg", 16))))
+            actions.append(False)
+            return Xor(*actions)
 
         # This is a table match where we look up the provided key
         # Key probably has to be a datatype, too
@@ -290,25 +331,32 @@ def control_ingress_0():
 
     def apply():
         # This is the initial version of the program
-        constraints = []
-        # The list of assignments during the execution of the pipeline
-        constraints = []
-        # begin apply
-        # this is a valid case
-        ip4_valid_constraints = []
-        ip4_valid_constraints.append(port_mapping_0())
-        ip4_valid_constraints.append(bd_0())
-        ip4_valid_constraints.append(ipv4_fib_0())
-        # this is intended to express the switch case statement
-        ip4_valid_constraints.append(
-            Implies(ma_ipv4_fib_0.action(ipv4_fib_0_m) == 1, ipv4_fib_lpm_0()))
-        ip4_valid_constraints.append(nexthop_0())
-        constraints.append(Implies(ipv4_valid, And(ip4_valid_constraints)))
+        func_list = []
 
-        return constraints
+        def is_valid_block(func_list):
+            sub_list = []
+            assignments = []
+            # sub_list.append(port_mapping_0)
+            # sub_list.append(bd_0)
+            #sub_list.append(ipv4_fib_0)
+
+            def switch_block(func_list):
+                cases = []
+                cases.append(
+                    Implies(ma_ipv4_fib_0.action(ipv4_fib_0_m) == 1,
+                            ipv4_fib_lpm_0(func_list)))
+                cases.append(False)
+                return Xor(*cases)
+            sub_list.append(switch_block)
+            # sub_list.append(nexthop_0)
+            return Implies(ipv4_valid, step(sub_list, assignments))
+        func_list.append(is_valid_block)
+
+        return func_list
 
     # return the apply function as sequence of logic clauses
-    return And(*apply())
+    func_chain = apply()
+    return step(func_chain, [])
 
 
 def z3_check():
@@ -319,11 +367,11 @@ def z3_check():
     bounds = [ethernet, ipv4, ingress_metadata, bd_0_m, ipv4_fib_0_m,
               ipv4_fib_lpm_0_m, nexthop_0_m, port_mapping_0_m]
     # the equivalence equation
-    tv_equiv = Exists(bounds, simplify(control_ingress_0()) !=
-                      simplify(control_ingress_0()))
+    tv_equiv = simplify(control_ingress_0()) != simplify(control_ingress_0())
     s.add(tv_equiv)
 
-    print (s.sexpr())
+    print(tv_equiv)
+    # print (s.sexpr())
     ret = s.check()
     if ret == sat:
         print (ret)
