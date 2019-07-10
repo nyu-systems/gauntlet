@@ -227,8 +227,8 @@ def z3_check():
 
     bounds = [h, c_t_m]
     # the equivalence equation
-    tv_equiv = Not(simplify(control_ingress_0()) ==
-                   simplify(control_ingress_1()))
+    tv_equiv = (simplify(control_ingress_0()) !=
+                simplify(control_ingress_1()))
     s.add(tv_equiv)
 
     print(tv_equiv)
