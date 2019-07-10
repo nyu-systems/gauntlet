@@ -48,11 +48,12 @@ c_t_m = Const('c_t_m', ma_c_t)
 s.add(0 < ma_c_t.action(c_t_m), ma_c_t.action(c_t_m) < 3)
 
 
-def step(func_list, assignments):
+def step(func_list, rets, assignments):
+    rets = list(rets)  # do not propagate the list per step
     if func_list:
         next_fun = func_list[0]
         func_list = func_list[1:]
-        assignments.append(next_fun(func_list))
+        assignments.append(next_fun(func_list, rets))
     else:
         assignments.append(True)
     return And(assignments)
@@ -62,29 +63,36 @@ def control_ingress_0():
     ''' This is the initial version of the program. '''
 
     # The output header, one variable per modification
-    ret_0 = p4_output.mk_output(h, BitVec("egress_spec", 9))
+    ret_0 = Const("ret_0", p4_output)
 
-    def c_a_0(func_list):
+    def c_a_0(func_list, rets):
         # This action creates a new header type where b is set to a
         assignments = []
-        assignments.append(hdr.b(p4_output.hdr(ret_0)) == hdr.a(h))
-        return step(func_list, assignments)
+        new_ret = len(rets)
+        prev_ret = len(rets) - 1
+        rets.append(Const("ret_%d" % new_ret, p4_output))
+        assign = p4_output.mk_output(hdr.mk_hdr(
+            hdr.a(p4_output.hdr(rets[prev_ret])),
+            hdr.a(p4_output.hdr(rets[prev_ret]))),
+            p4_output.egress_spec(rets[prev_ret]))
+        assignments.append(rets[new_ret] == assign)
+        return step(func_list, rets, assignments)
 
-    def NoAction_0(func_list):
+    def NoAction_0(func_list, rets):
         ''' This is an action '''
         # NoAction just returns the current header as is
         # This action creates a new header type where b is set to a
         assignments = []
         assignments.append(True)
-        return step(func_list, assignments)
+        return step(func_list, rets, assignments)
 
-    def c_t(func_list):
+    def c_t(func_list, rets):
         ''' This is a table '''
 
         def default():
             ''' The default action '''
             # It is set to NoAction in this case
-            return NoAction_0(func_list)
+            return NoAction_0(func_list, rets)
 
         def select_action():
             ''' This is a special macro to define action selection. We treat
@@ -93,9 +101,9 @@ def control_ingress_0():
             This might become really ugly with many actions.'''
             actions = []
             actions.append(Implies(ma_c_t.action(c_t_m) == 1,
-                                   c_a_0(func_list)))
+                                   c_a_0(func_list, rets)))
             actions.append(Implies(ma_c_t.action(c_t_m) == 2,
-                                   NoAction_0(func_list)))
+                                   NoAction_0(func_list, rets)))
             return Xor(*actions)
         # The key of the table. In this case it is a single value
         c_t_key_0 = hdr.a(h) + hdr.a(h)
@@ -109,50 +117,59 @@ def control_ingress_0():
 
         func_list.append(c_t)
 
-        def assign(func_list):
+        def assign(func_list, rets):
             assignments = []
-            assignments.append(p4_output.egress_spec(ret_0) == BitVecVal(0, 9))
-            return step(func_list, assignments)
+            new_ret = len(rets)
+            prev_ret = new_ret - 1
+            rets.append(Const("ret_%d" % new_ret, p4_output))
+            assign = p4_output.mk_output(
+                p4_output.hdr(rets[prev_ret]), BitVecVal(0, 9))
+            assignments.append(rets[new_ret] == assign)
+            return step(func_list, rets, assignments)
         # The list of assignments during the execution of the pipeline
         func_list.append(assign)
         return func_list
     # return the apply function as sequence of logic clauses
     func_chain = apply()
-    return step(func_chain, [])
+    return step(func_chain, assignments=[], rets=[ret_0])
 
 
 def control_ingress_1():
     ''' This is the initial version of the program. '''
-
+    ret_0 = Const("ret_0", p4_output)
     # The output header, one variable per modification
-    ret_0 = p4_output.mk_output(h, BitVec("egress_spec", 9))
 
-    def c_a_0(func_list):
+    def c_a_0(func_list, rets):
         # This action creates a new header type where b is set to a
         assignments = []
-        nonlocal ret_0
-        ret_0 = substitute(ret_0, (hdr.b(p4_output.hdr(ret_0)), hdr.a(h)))
-        assignments.append(hdr.b(p4_output.hdr(ret_0)) == hdr.a(h))
-        return step(func_list, assignments)
+        new_ret = len(rets)
+        prev_ret = new_ret - 1
+        rets.append(Const("ret_%d" % new_ret, p4_output))
+        assign = p4_output.mk_output(hdr.mk_hdr(
+            hdr.a(p4_output.hdr(rets[prev_ret])),
+            hdr.a(p4_output.hdr(rets[prev_ret]))),
+            p4_output.egress_spec(rets[prev_ret]))
+        assignments.append(rets[new_ret] == assign)
+        return step(func_list, rets, assignments)
 
-    def NoAction_0(func_list):
+    def NoAction_0(func_list, rets):
         ''' This is an action '''
         # NoAction just returns the current header as is
         # This action creates a new header type where b is set to a
         assignments = []
         assignments.append(True)
-        return step(func_list, assignments)
+        return step(func_list, rets, assignments)
 
     # the key is defined in the control function
     key_0 = BitVecVal(0, 32)
 
-    def c_t(func_list):
+    def c_t(func_list, rets):
         ''' This is a table '''
 
         def default():
             ''' The default action '''
             # It is set to NoAction in this case
-            return NoAction_0(func_list)
+            return NoAction_0(func_list, rets)
 
         def select_action():
             ''' This is a special macro to define action selection. We treat
@@ -161,9 +178,9 @@ def control_ingress_1():
             This might become really ugly with many actions.'''
             actions = []
             actions.append(Implies(ma_c_t.action(c_t_m) == 1,
-                                   c_a_0(func_list)))
+                                   c_a_0(func_list, rets)))
             actions.append(Implies(ma_c_t.action(c_t_m) == 2,
-                                   NoAction_0(func_list)))
+                                   NoAction_0(func_list, rets)))
             return Xor(*actions)
         # The key of the table. In this case it is a single value
         nonlocal key_0  # we refer to a variable in the outer scope
@@ -176,30 +193,31 @@ def control_ingress_1():
     def apply():
         func_list = []
 
-        def assign(func_list):
+        def assign(func_list, rets):
             assignments = []
             nonlocal key_0  # we refer to a variable in the outer scope
-            key_0 = substitute(key_0, (key_0, hdr.a(h) + hdr.a(h)))
+            key_0 = hdr.a(h) + hdr.a(h)
             assignments.append(True)
-            if func_list:
-                next_fun = func_list[0]
-                func_list = func_list[1:]
-                assignments.append(next_fun(func_list))
-            return And(assignments)
+            return step(func_list, rets, assignments)
         func_list.append(assign)
 
         func_list.append(c_t)
 
-        def assign(func_list):
+        def assign(func_list, rets):
             assignments = []
-            assignments.append(p4_output.egress_spec(ret_0) == BitVecVal(0, 9))
-            return step(func_list, assignments)
-        # The list of assignments during the execution of the pipeline
+            new_ret = len(rets)
+            prev_ret = new_ret - 1
+            rets.append(Const("ret_%d" % new_ret, p4_output))
+            assign = p4_output.mk_output(
+                p4_output.hdr(rets[prev_ret]), BitVecVal(0, 9))
+            assignments.append(rets[new_ret] == assign)
+            return step(func_list, rets, assignments)
         func_list.append(assign)
+
         return func_list
     # return the apply function as sequence of logic clauses
     func_chain = apply()
-    return step(func_chain, [])
+    return step(func_chain, assignments=[], rets=[ret_0])
 
 
 def z3_check():
