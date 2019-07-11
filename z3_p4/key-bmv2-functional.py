@@ -2,7 +2,7 @@ from z3 import *
 
 
 ''' SOLVER '''
-s = Solver()
+s = SolverFor("LIA")
 
 ''' HEADERS '''
 # The input headers of the control pipeline
@@ -38,8 +38,10 @@ p4_output = p4_output.create()
 # Initialize the header and match-action constraints
 # These are our inputs
 # Think of it as the header inputs after they have been parsed
-h = Const('h', hdr)
 h_valid = Const('ethernet_valid', BoolSort())
+
+# The output header, one variable per modification
+ret_0 = Const("ret_0", p4_output)
 
 # The possible table entries
 c_t_m = Const('c_t_m', ma_c_t)
@@ -49,8 +51,8 @@ s.add(0 < ma_c_t.action(c_t_m), ma_c_t.action(c_t_m) < 3)
 
 
 def step(func_list, rets, assignments):
-    rets = list(rets)  # do not propagate the list per step
     if func_list:
+        rets = list(rets)  # do not propagate the list per step
         next_fun = func_list[0]
         func_list = func_list[1:]
         assignments.append(next_fun(func_list, rets))
@@ -61,9 +63,6 @@ def step(func_list, rets, assignments):
 
 def control_ingress_0():
     ''' This is the initial version of the program. '''
-
-    # The output header, one variable per modification
-    ret_0 = Const("ret_0", p4_output)
 
     def c_a_0(func_list, rets):
         # This action creates a new header type where b is set to a
@@ -106,10 +105,13 @@ def control_ingress_0():
                                    NoAction_0(func_list, rets)))
             return Xor(*actions)
         # The key of the table. In this case it is a single value
-        c_t_key_0 = hdr.a(h) + hdr.a(h)
+        new_ret = len(rets)
+        prev_ret = new_ret - 1
+        c_t_key_0 = hdr.a(p4_output.hdr(
+            rets[prev_ret])) + hdr.a(p4_output.hdr(rets[prev_ret]))
         # This is a table match where we look up the provided key
         # If we match select the associated action, else use the default action
-        return If(hdr.a(h) + hdr.a(h) == ma_c_t.key_0(c_t_m),
+        return If(c_t_key_0 == ma_c_t.key_0(c_t_m),
                   select_action(), default())
 
     def apply():
@@ -136,8 +138,6 @@ def control_ingress_0():
 
 def control_ingress_1():
     ''' This is the initial version of the program. '''
-    ret_0 = Const("ret_0", p4_output)
-    # The output header, one variable per modification
 
     def c_a_0(func_list, rets):
         # This action creates a new header type where b is set to a
@@ -161,7 +161,7 @@ def control_ingress_1():
         return step(func_list, rets, assignments)
 
     # the key is defined in the control function
-    key_0 = BitVecVal(0, 32)
+    key_0 = BitVec("key_0", 32)
 
     def c_t(func_list, rets):
         ''' This is a table '''
@@ -183,7 +183,6 @@ def control_ingress_1():
                                    NoAction_0(func_list, rets)))
             return Xor(*actions)
         # The key of the table. In this case it is a single value
-        nonlocal key_0  # we refer to a variable in the outer scope
         c_t_key_0 = key_0
         # This is a table match where we look up the provided key
         # If we match select the associated action, else use the default action
@@ -195,9 +194,10 @@ def control_ingress_1():
 
         def assign(func_list, rets):
             assignments = []
-            nonlocal key_0  # we refer to a variable in the outer scope
-            key_0 = hdr.a(h) + hdr.a(h)
-            assignments.append(True)
+            new_ret = len(rets)
+            prev_ret = new_ret - 1
+            nonlocal key_0
+            key_0 = hdr.a(p4_output.hdr(rets[prev_ret])) + hdr.a(p4_output.hdr(rets[prev_ret]))
             return step(func_list, rets, assignments)
         func_list.append(assign)
 
@@ -225,11 +225,11 @@ def z3_check():
     # For all input packets and possible table matches the programs should
     # be the same
 
-    bounds = [h, c_t_m]
+    bounds = [ret_0, c_t_m]
     # the equivalence equation
-    tv_equiv = (simplify(control_ingress_0()) !=
-                simplify(control_ingress_1()))
-    s.add(tv_equiv)
+    tv_equiv = Not(simplify(control_ingress_0()) ==
+                   simplify(control_ingress_1()))
+    s.add(Exists(bounds, tv_equiv))
 
     print(tv_equiv)
     s.add(tv_equiv)

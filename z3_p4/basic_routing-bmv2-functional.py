@@ -81,11 +81,8 @@ p4_output = p4_output.create()
 # Initialize the header and match-action constraints
 # These are our inputs
 # Think of it as the header inputs after they have been parsed
-ethernet = Const('ethernet', ethernet_t)
 ethernet_valid = Const('ethernet_valid', BoolSort())
-ipv4 = Const('ipv4', ipv4_t)
 ipv4_valid = Const('ipv4_valid', BoolSort())
-ingress_metadata = Const('ingress_metadata', ingress_metadata_t)
 
 # The possible table entries
 bd_0_m = Const('bd_0_m', ma_bd_0)
@@ -128,10 +125,11 @@ def step(func_list, rets, assignments):
     return And(assignments)
 
 
-def control_ingress_0():
+# The output header, one variable per modification
+ret_0 = Const("ret_0", p4_output)
 
-    # The output header, one variable per modification
-    ret_0 = Const("ret_0", p4_output)
+
+def control_ingress_0():
 
     def NoAction_1(func_list, rets):
         ''' This is an action '''
@@ -324,8 +322,8 @@ def control_ingress_0():
             return Xor(*actions)
         # This is a table match where we look up the provided key
         # Key probably has to be a datatype, too
-        key_0 = ingress_metadata_t.bd(ingress_metadata)
-        return If(key_0 == ma_bd_0.key_0(bd_0_m),
+        bd_0_key_0 = ingress_metadata_t.bd(p4_output.ingress_metadata_t(ret_0))
+        return If(bd_0_key_0 == ma_bd_0.key_0(bd_0_m),
                   select_action(), default())
 
     def ipv4_fib_0(func_list, rets):
@@ -346,10 +344,11 @@ def control_ingress_0():
 
         # This is a table match where we look up the provided key
         # Key probably has to be a datatype, too
-        key_0 = ingress_metadata_t.vrf(ingress_metadata)
-        key_1 = ipv4_t.dstAddr(ipv4)
-        return If(And(key_0 == ma_ipv4_fib_0.key_0(ipv4_fib_0_m),
-                      key_1 == ma_ipv4_fib_0.key_1(ipv4_fib_0_m)),
+        ipv4_fib_0_key_0 = ingress_metadata_t.vrf(
+            p4_output.ingress_metadata_t(ret_0))
+        ipv4_fib_0_key_1 = ipv4_t.dstAddr(p4_output.ipv4_t(ret_0))
+        return If(And(ipv4_fib_0_key_0 == ma_ipv4_fib_0.key_0(ipv4_fib_0_m),
+                      ipv4_fib_0_key_1 == ma_ipv4_fib_0.key_1(ipv4_fib_0_m)),
                   select_action(), default())
 
     def ipv4_fib_lpm_0(func_list, rets):
@@ -374,10 +373,11 @@ def control_ingress_0():
             return Xor(*actions)
         # This is a table match where we look up the provided key
         # Key probably has to be a datatype, too
-        key_0 = ingress_metadata_t.vrf(ingress_metadata)
-        key_1 = ipv4_t.dstAddr(ipv4)
-        return If(And(key_0 == ma_ipv4_fib_lpm_0.key_0(ipv4_fib_lpm_0_m),
-                      Or([key_1 & m ==
+        ipv4_fib_lpm_0_key_0 = ingress_metadata_t.vrf(
+            p4_output.ingress_metadata_t(ret_0))
+        ipv4_fib_lpm_0_key_1 = ipv4_t.dstAddr(p4_output.ipv4_t(ret_0))
+        return If(And(ipv4_fib_lpm_0_key_0 == ma_ipv4_fib_lpm_0.key_0(ipv4_fib_lpm_0_m),
+                      Or([ipv4_fib_lpm_0_key_1 & m ==
                           ma_ipv4_fib_lpm_0.key_1(ipv4_fib_lpm_0_m) & m
                           for m in masks])),
                   select_action(), default())
@@ -401,8 +401,9 @@ def control_ingress_0():
 
         # This is a table match where we look up the provided key
         # Key probably has to be a datatype, too
-        key_0 = ingress_metadata_t.nexthop_index(ingress_metadata)
-        return If(key_0 == ma_nexthop_0.key_0(nexthop_0_m),
+        nexthop_0_key_0 = ingress_metadata_t.nexthop_index(
+            p4_output.ingress_metadata_t(ret_0))
+        return If(nexthop_0_key_0 == ma_nexthop_0.key_0(nexthop_0_m),
                   select_action(), default())
 
     def port_mapping_0(func_list, rets):
@@ -422,8 +423,9 @@ def control_ingress_0():
 
         # This is a table match where we look up the provided key
         # Key probably has to be a datatype, too
-        key_0 = ingress_port
-        return If(key_0 == ma_port_mapping_0.key_0(port_mapping_0_m),
+        port_mapping_0_key_0 = ingress_port
+        return If(port_mapping_0_key_0 ==
+                  ma_port_mapping_0.key_0(port_mapping_0_m),
                   select_action(), default())
 
     def apply():
@@ -458,9 +460,6 @@ def control_ingress_0():
 
 def control_ingress_1():
 
-    # The output header, one variable per modification
-    ret_0 = Const("ret_0", p4_output)
-
     def NoAction_1(func_list, rets):
         ''' This is an action '''
         assignments = []
@@ -652,8 +651,8 @@ def control_ingress_1():
             return Xor(*actions)
         # This is a table match where we look up the provided key
         # Key probably has to be a datatype, too
-        key_0 = ingress_metadata_t.bd(ingress_metadata)
-        return If(key_0 == ma_bd_0.key_0(bd_0_m),
+        bd_0_key_0 = ingress_metadata_t.bd(p4_output.ingress_metadata_t(ret_0))
+        return If(bd_0_key_0 == ma_bd_0.key_0(bd_0_m),
                   select_action(), default())
 
     def ipv4_fib_0(func_list, rets):
@@ -674,10 +673,11 @@ def control_ingress_1():
 
         # This is a table match where we look up the provided key
         # Key probably has to be a datatype, too
-        key_0 = ingress_metadata_t.vrf(ingress_metadata)
-        key_1 = ipv4_t.dstAddr(ipv4)
-        return If(And(key_0 == ma_ipv4_fib_0.key_0(ipv4_fib_0_m),
-                      key_1 == ma_ipv4_fib_0.key_1(ipv4_fib_0_m)),
+        ipv4_fib_0_key_0 = ingress_metadata_t.vrf(
+            p4_output.ingress_metadata_t(ret_0))
+        ipv4_fib_0_key_1 = ipv4_t.dstAddr(p4_output.ipv4_t(ret_0))
+        return If(And(ipv4_fib_0_key_0 == ma_ipv4_fib_0.key_0(ipv4_fib_0_m),
+                      ipv4_fib_0_key_1 == ma_ipv4_fib_0.key_1(ipv4_fib_0_m)),
                   select_action(), default())
 
     def ipv4_fib_lpm_0(func_list, rets):
@@ -702,10 +702,11 @@ def control_ingress_1():
             return Xor(*actions)
         # This is a table match where we look up the provided key
         # Key probably has to be a datatype, too
-        key_0 = ingress_metadata_t.vrf(ingress_metadata)
-        key_1 = ipv4_t.dstAddr(ipv4)
-        return If(And(key_0 == ma_ipv4_fib_lpm_0.key_0(ipv4_fib_lpm_0_m),
-                      Or([key_1 & m ==
+        ipv4_fib_lpm_0_key_0 = ingress_metadata_t.vrf(
+            p4_output.ingress_metadata_t(ret_0))
+        ipv4_fib_lpm_0_key_1 = ipv4_t.dstAddr(p4_output.ipv4_t(ret_0))
+        return If(And(ipv4_fib_lpm_0_key_0 == ma_ipv4_fib_lpm_0.key_0(ipv4_fib_lpm_0_m),
+                      Or([ipv4_fib_lpm_0_key_1 & m ==
                           ma_ipv4_fib_lpm_0.key_1(ipv4_fib_lpm_0_m) & m
                           for m in masks])),
                   select_action(), default())
@@ -729,8 +730,9 @@ def control_ingress_1():
 
         # This is a table match where we look up the provided key
         # Key probably has to be a datatype, too
-        key_0 = ingress_metadata_t.nexthop_index(ingress_metadata)
-        return If(key_0 == ma_nexthop_0.key_0(nexthop_0_m),
+        nexthop_0_key_0 = ingress_metadata_t.nexthop_index(
+            p4_output.ingress_metadata_t(ret_0))
+        return If(nexthop_0_key_0 == ma_nexthop_0.key_0(nexthop_0_m),
                   select_action(), default())
 
     def port_mapping_0(func_list, rets):
@@ -750,8 +752,9 @@ def control_ingress_1():
 
         # This is a table match where we look up the provided key
         # Key probably has to be a datatype, too
-        key_0 = ingress_port
-        return If(key_0 == ma_port_mapping_0.key_0(port_mapping_0_m),
+        port_mapping_0_key_0 = ingress_port
+        return If(port_mapping_0_key_0 ==
+                  ma_port_mapping_0.key_0(port_mapping_0_m),
                   select_action(), default())
 
     def apply():
@@ -789,7 +792,7 @@ def z3_check():
     # For all input packets and possible table matches the programs should
     # be the same
     set_option(verbose=10)
-    bounds = [ethernet, ipv4, ingress_metadata, bd_0_m, ipv4_fib_0_m,
+    bounds = [ret_0, bd_0_m, ipv4_fib_0_m,
               ipv4_fib_lpm_0_m, nexthop_0_m, port_mapping_0_m]
     # the equivalence equation
     tv_equiv = simplify(control_ingress_0()) != simplify(control_ingress_1())
