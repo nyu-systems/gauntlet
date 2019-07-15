@@ -134,11 +134,13 @@ def main():
     p4_input = args.p4_input
     if (os.path.isfile(p4_input)):
         pass_dir = "single_passes"
+        check_dir(pass_dir)
         open(f"{pass_dir}/no_passes.txt", 'w+')
         analyse_p4_file(p4_input, pass_dir)
         get_links_to_passes(pass_dir, p4_input)
     else:
         pass_dir = "passes"
+        check_dir(pass_dir)
         open(f"{pass_dir}/no_passes.txt", 'w+')
         for p4_file in glob.glob(f"{p4_input}/*.p4"):
             analyse_p4_file(p4_file, pass_dir)

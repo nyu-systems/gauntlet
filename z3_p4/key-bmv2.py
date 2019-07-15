@@ -1,5 +1,8 @@
 from z3 import *
+import os
 
+''' SOLVER '''
+s = SolverFor("LIA")
 
 ''' HEADERS '''
 # The input headers of the control pipeline
@@ -35,140 +38,197 @@ p4_output = p4_output.create()
 # Initialize the header and match-action constraints
 # These are our inputs
 # Think of it as the header inputs after they have been parsed
-h = Const('h', hdr)
-h_valid = Const('ethernet_valid', BoolSort())
+h_valid = Const('h_valid', BoolSort())
+
+# The output header, one variable per modification
+p4_return = Const("p4_return", p4_output)
+
 # The possible table entries
 c_t_m = Const('c_t_m', ma_c_t)
+# reduce the range of action outputs to the total number of actions
+# in this case we only have 2 actions
+s.add(0 < ma_c_t.action(c_t_m), ma_c_t.action(c_t_m) < 3)
 
 
-def control_ingress_0(s):
+def step(func_chain, rets, assigns):
+    if func_chain:
+        rets = list(rets)  # do not propagate the list per step
+        next_fun = func_chain[0]
+        func_chain = func_chain[1:]
+        assigns.append(next_fun(func_chain, rets))
+    else:
+        assigns.append(True)
+    return And(assigns)
+
+
+def control_ingress_0():
     ''' This is the initial version of the program. '''
 
-    # The output header, one variable per modification
-    ret_0 = Const("ret_0", p4_output)
+    def NoAction_0(func_chain, rets):
+        ''' This is an action
+            NoAction just returns the current header as is '''
+        assigns = []
+        assigns.append(True)
+        return step(func_chain, rets, assigns)
 
-    def c_a_0():
-        # This action creates a new header type where b is set to a
-        assignments = []
-        assignments.append(hdr.b(p4_output.hdr(ret_0)) == hdr.a(h))
+    def c_a_0(func_chain, rets):
+        ''' This is an action
+            This action creates a new header type where b is set to a '''
+        assigns = []
+        new_ret = len(rets)
+        prev_ret = new_ret - 1
+        rets.append(Const("ret_%d" % new_ret, p4_output))
+        assign = p4_output.mk_output(hdr.mk_hdr(
+            hdr.a(p4_output.hdr(rets[prev_ret])),
+            hdr.a(p4_output.hdr(rets[prev_ret]))),
+            p4_output.egress_spec(rets[prev_ret]))
+        assigns.append(rets[new_ret] == assign)
+        return step(func_chain, rets, assigns)
 
-        return And(assignments)
-
-    def NoAction_0():
-        ''' This is an action '''
-        # NoAction just returns the current header as is
-        # This action creates a new header type where b is set to a
-        assignments = []
-        assignments.append(True)
-        return And(assignments)
-
-    def c_t():
+    def c_t(func_chain, rets):
         ''' This is a table '''
-        # reduce the range of action outputs to the total number of actions
-        # in this case we only have 2 actions
-        s.add(0 < ma_c_t.action(c_t_m), ma_c_t.action(c_t_m) < 3)
 
         def default():
             ''' The default action '''
             # It is set to NoAction in this case
-            return NoAction_0()
+            return NoAction_0(func_chain, rets)
 
         def select_action():
             ''' This is a special macro to define action selection. We treat
             selection as a chain of implications. If we match, then the clause
             returned by the action must be valid.
-            This might become really ugly with many actions.'''
+            This is an exclusive operation, so only Xoring is valid.
+            TODO: This might become really ugly with many actions.'''
             actions = []
             actions.append(Implies(ma_c_t.action(c_t_m) == 1,
-                                   c_a_0()))
+                                   c_a_0(func_chain, rets)))
             actions.append(Implies(ma_c_t.action(c_t_m) == 2,
-                                   NoAction_0()))
+                                   NoAction_0(func_chain, rets)))
             return Xor(*actions)
-        # The key of the table. In this case it is a single value
-        c_t_key_0 = hdr.a(h) + hdr.a(h)
+
+        # The keys of the table are compared with the input keys.
+        # In this case we are matching a single value
+        new_ret = len(rets)
+        prev_ret = new_ret - 1
+        key_matches = []
+        c_t_key_0 = hdr.a(p4_output.hdr(
+            rets[prev_ret])) + hdr.a(p4_output.hdr(rets[prev_ret]))
+        key_matches.append(c_t_key_0 == ma_c_t.key_0(c_t_m))
         # This is a table match where we look up the provided key
         # If we match select the associated action, else use the default action
-        return If(c_t_key_0 == ma_c_t.key_0(c_t_m),
-                  select_action(), default())
+        return If(And(key_matches), select_action(), default())
 
     def apply():
-        # The list of assignments during the execution of the pipeline
-        constraints = []
+        func_chain = []
+        func_chain.append(c_t)  # c_t.apply();
 
-        # begin the apply pipeline
-        constraints.append(c_t())
-        constraints.append(p4_output.egress_spec(ret_0) == BitVecVal(0, 9))
-        return constraints
+        def output_update(func_chain, rets):
+            assigns = []
+            new_ret = len(rets)
+            prev_ret = new_ret - 1
+            rets.append(Const("ret_%d" % new_ret, p4_output))
+            update = p4_output.mk_output(
+                p4_output.hdr(rets[prev_ret]), BitVecVal(0, 9))
+            assigns.append(rets[new_ret] == update)
+            return step(func_chain, rets, assigns)
+        # The list of assigns during the execution of the pipeline
+        func_chain.append(output_update)  # sm.egress_spec = 9w0;
+        return func_chain
     # return the apply function as sequence of logic clauses
-    return And(*apply())
+    func_chain = apply()
+    return step(func_chain, assigns=[], rets=[p4_return])
 
 
-def control_ingress_1(s):
+def control_ingress_1():
     ''' This is the initial version of the program. '''
 
-    # The output header, one variable per modification
-    ret_0 = Const("ret_0", p4_output)
+    def NoAction_0(func_chain, rets):
+        ''' This is an action
+            NoAction just returns the current header as is '''
+        assigns = []
+        assigns.append(True)
+        return step(func_chain, rets, assigns)
+
+    def c_a_0(func_chain, rets):
+        ''' This is an action
+            This action creates a new header type where b is set to a '''
+
+        assigns = []
+        new_ret = len(rets)
+        prev_ret = new_ret - 1
+        rets.append(Const("ret_%d" % new_ret, p4_output))
+        update = p4_output.mk_output(hdr.mk_hdr(
+            hdr.a(p4_output.hdr(rets[prev_ret])),
+            hdr.a(p4_output.hdr(rets[prev_ret]))),
+            p4_output.egress_spec(rets[prev_ret]))
+        assigns.append(rets[new_ret] == update)
+        return step(func_chain, rets, assigns)
 
     # the key is defined in the control function
-    key_0 = BitVec('key_0', 32)
+    key_0 = BitVec("key_0", 32)  # bit<32> key_0;
 
-    def c_a_0():
-        # This action creates a new header type where b is set to a
-        assignments = []
-        assignments.append(hdr.b(p4_output.hdr(ret_0)) == hdr.a(h))
-
-        return And(assignments)
-
-    def NoAction_0():
-        ''' This is an action '''
-        # NoAction just returns the current header as is
-        # This action creates a new header type where b is set to a
-        assignments = []
-        assignments.append(True)
-        return And(assignments)
-
-    def c_t():
+    def c_t(func_chain, rets):
         ''' This is a table '''
-        # reduce the range of action outputs to the total number of actions
-        # in this case we only have 2 actions
-        s.add(0 < ma_c_t.action(c_t_m), ma_c_t.action(c_t_m) < 3)
 
         def default():
             ''' The default action '''
             # It is set to NoAction in this case
-            return NoAction_0()
+            return NoAction_0(func_chain, rets)
 
         def select_action():
             ''' This is a special macro to define action selection. We treat
             selection as a chain of implications. If we match, then the clause
             returned by the action must be valid.
-            This might become really ugly with many actions.'''
+            This is an exclusive operation, so only XORing is valid.
+            TODO: This might become really ugly with many actions.'''
             actions = []
             actions.append(Implies(ma_c_t.action(c_t_m) == 1,
-                                   c_a_0()))
+                                   c_a_0(func_chain, rets)))
             actions.append(Implies(ma_c_t.action(c_t_m) == 2,
-                                   NoAction_0()))
+                                   NoAction_0(func_chain, rets)))
             return Xor(*actions)
-        # The key of the table. In this case it is a single value
-        nonlocal key_0  # we refer to a variable in the outer scope
+
+        # The keys of the table are compared with the input keys.
+        # In this case we are matching a single value
+        key_matches = []
         c_t_key_0 = key_0
+        key_matches.append(c_t_key_0 == ma_c_t.key_0(c_t_m))
         # This is a table match where we look up the provided key
         # If we match select the associated action, else use the default action
-        return If(c_t_key_0 == ma_c_t.key_0(c_t_m),
-                  select_action(), default())
+        return If(And(key_matches), select_action(), default())
 
     def apply():
-        # The list of assignments during the execution of the pipeline
-        constraints = []
+        ''' The main function of the control plane. Each statement in this pipe
+        is part of a list of functions. '''
+        func_chain = []
 
-        nonlocal key_0  # we refer to a variable in the outer scope
-        key_0 = hdr.a(h) + hdr.a(h)
-        # begin the apply pipeline
-        constraints.append(c_t())
-        constraints.append(p4_output.egress_spec(ret_0) == BitVecVal(0, 9))
-        return constraints
+        def local_assign(func_chain, rets):
+            assigns = []
+            new_ret = len(rets)
+            prev_ret = new_ret - 1
+            nonlocal key_0
+            key_0 = hdr.a(p4_output.hdr(
+                rets[prev_ret])) + hdr.a(p4_output.hdr(rets[prev_ret]))
+            return step(func_chain, rets, assigns)
+
+        func_chain.append(local_assign)  # key_0 = h.h.a + h.h.a;
+        func_chain.append(c_t)  # c_t.apply();
+
+        def output_update(func_chain, rets):
+            assigns = []
+            new_ret = len(rets)
+            prev_ret = new_ret - 1
+            rets.append(Const("ret_%d" % new_ret, p4_output))
+            update = p4_output.mk_output(
+                p4_output.hdr(rets[prev_ret]), BitVecVal(0, 9))
+            assigns.append(rets[new_ret] == update)
+            return step(func_chain, rets, assigns)
+        func_chain.append(output_update)  # sm.egress_spec = 9w0;
+
+        return func_chain
     # return the apply function as sequence of logic clauses
-    return And(*apply())
+    func_chain = apply()
+    return step(func_chain, assigns=[], rets=[p4_return])
 
 
 def z3_check():
@@ -176,23 +236,23 @@ def z3_check():
     # For all input packets and possible table matches the programs should
     # be the same
 
-    s = Solver()
-    bounds = [h, c_t_m]
+    bounds = [p4_return, c_t_m]
     # the equivalence equation
-    tv_equiv = Exists(bounds, simplify(control_ingress_0(s)) !=
-                      simplify(control_ingress_1(s)))
-    s.add(tv_equiv)
+    tv_equiv = simplify(control_ingress_0()) != simplify(control_ingress_1())
+    s.add(Exists(bounds, tv_equiv))
 
     print(tv_equiv)
     s.add(tv_equiv)
 
-    print (s.sexpr())
+    # print (s.sexpr())
     ret = s.check()
     if ret == sat:
         print (ret)
         print (s.model())
+        return os.EX_ERR
     else:
         print (ret)
+        return os.EX_OK
 
 
 if __name__ == '__main__':
