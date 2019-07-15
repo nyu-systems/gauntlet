@@ -318,6 +318,7 @@ def control_ingress_0():
             actions = []
             actions.append(Implies(ma_bd_0.action(bd_0_m) == 1,
                                    set_vrf(func_list, rets, BitVec("vrf_arg", 12))))
+            # If there is only one table action append false
             actions.append(False)
             return Xor(*actions)
         # This is a table match where we look up the provided key
@@ -377,8 +378,8 @@ def control_ingress_0():
             p4_output.ingress_metadata_t(ret_0))
         ipv4_fib_lpm_0_key_1 = ipv4_t.dstAddr(p4_output.ipv4_t(ret_0))
         return If(And(ipv4_fib_lpm_0_key_0 == ma_ipv4_fib_lpm_0.key_0(ipv4_fib_lpm_0_m),
-                      Or([ipv4_fib_lpm_0_key_1 & m ==
-                          ma_ipv4_fib_lpm_0.key_1(ipv4_fib_lpm_0_m) & m
+                      Or([ipv4_fib_lpm_0_key_1 ^ m ==
+                          ma_ipv4_fib_lpm_0.key_1(ipv4_fib_lpm_0_m) ^ m
                           for m in masks])),
                   select_action(), default())
 
@@ -432,24 +433,31 @@ def control_ingress_0():
         # This is the initial version of the program
         func_list = []
 
-        def is_valid_block(func_list, rets):
-            sub_list = []
+        def if_block(func_list, rets):
+            # If blocks track two expression lists for the if and the else case
+            if_list = []
+            else_list = []
             assignments = []
-            sub_list.append(port_mapping_0)
-            sub_list.append(bd_0)
-            sub_list.append(ipv4_fib_0)
+            if_list.append(port_mapping_0)
+            if_list.append(bd_0)
+            if_list.append(ipv4_fib_0)
 
             def switch_block(func_list, rets):
+                # A switch block operates like a table lookup
+                # Each select expression generates a new implication clause
                 cases = []
-                cases.append(
-                    Implies(ma_ipv4_fib_0.action(ipv4_fib_0_m) == 1,
-                            ipv4_fib_lpm_0(func_list, rets)))
+                select_case = ma_ipv4_fib_0.action(ipv4_fib_0_m) == 1
+                select_expression = ipv4_fib_lpm_0(func_list, rets)
+                cases.append(Implies(select_case, select_expression))
+                # Append false if there is only one case
                 cases.append(False)
                 return Xor(*cases)
-            sub_list.append(switch_block)
-            sub_list.append(nexthop_0)
-            return Implies(ipv4_valid, step(sub_list, rets, assignments))
-        func_list.append(is_valid_block)
+            if_list.append(switch_block)
+            if_list.append(nexthop_0)
+            else_list = []
+            return If(ipv4_valid, step(if_list, rets, assignments),
+                      step(else_list, rets, assignments))
+        func_list.append(if_block)
 
         return func_list
 
@@ -647,6 +655,7 @@ def control_ingress_1():
             actions = []
             actions.append(Implies(ma_bd_0.action(bd_0_m) == 1,
                                    set_vrf(func_list, rets, BitVec("vrf_arg", 12))))
+            # If there is only one table action append false
             actions.append(False)
             return Xor(*actions)
         # This is a table match where we look up the provided key
@@ -706,8 +715,8 @@ def control_ingress_1():
             p4_output.ingress_metadata_t(ret_0))
         ipv4_fib_lpm_0_key_1 = ipv4_t.dstAddr(p4_output.ipv4_t(ret_0))
         return If(And(ipv4_fib_lpm_0_key_0 == ma_ipv4_fib_lpm_0.key_0(ipv4_fib_lpm_0_m),
-                      Or([ipv4_fib_lpm_0_key_1 & m ==
-                          ma_ipv4_fib_lpm_0.key_1(ipv4_fib_lpm_0_m) & m
+                      Or([(ipv4_fib_lpm_0_key_1 ^ m) ==
+                          (ma_ipv4_fib_lpm_0.key_1(ipv4_fib_lpm_0_m) ^ m)
                           for m in masks])),
                   select_action(), default())
 
@@ -761,24 +770,31 @@ def control_ingress_1():
         # This is the initial version of the program
         func_list = []
 
-        def is_valid_block(func_list, rets):
-            sub_list = []
+        def if_block(func_list, rets):
+            # If blocks track two expression lists for the if and the else case
+            if_list = []
+            else_list = []
             assignments = []
-            sub_list.append(port_mapping_0)
-            sub_list.append(bd_0)
-            sub_list.append(ipv4_fib_0)
+            if_list.append(port_mapping_0)
+            if_list.append(bd_0)
+            if_list.append(ipv4_fib_0)
 
             def switch_block(func_list, rets):
+                # A switch block operates like a table lookup
+                # Each select expression generates a new implication clause
                 cases = []
-                cases.append(
-                    Implies(ma_ipv4_fib_0.action(ipv4_fib_0_m) == 1,
-                            ipv4_fib_lpm_0(func_list, rets)))
+                select_case = ma_ipv4_fib_0.action(ipv4_fib_0_m) == 1
+                select_expression = ipv4_fib_lpm_0(func_list, rets)
+                cases.append(Implies(select_case, select_expression))
+                # Append false if there is only one case
                 cases.append(False)
                 return Xor(*cases)
-            sub_list.append(switch_block)
-            sub_list.append(nexthop_0)
-            return Implies(ipv4_valid, step(sub_list, rets, assignments))
-        func_list.append(is_valid_block)
+            if_list.append(switch_block)
+            if_list.append(nexthop_0)
+            else_list = []
+            return If(ipv4_valid, step(if_list, rets, assignments),
+                      step(else_list, rets, assignments))
+        func_list.append(if_block)
 
         return func_list
 
