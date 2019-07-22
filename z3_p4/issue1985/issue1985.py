@@ -2,7 +2,7 @@ from z3 import *
 import os
 
 ''' SOLVER '''
-s = SolverFor("LIA")
+s = Solver()
 
 ''' HEADERS '''
 # The input headers of the control pipeline

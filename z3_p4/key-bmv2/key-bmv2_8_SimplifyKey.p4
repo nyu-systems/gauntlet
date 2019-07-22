@@ -35,11 +35,11 @@ control deparser(packet_out b, in Headers h) {
 control ingress(inout Headers h, inout Meta m, inout standard_metadata_t sm) {
     @name(".NoAction") action NoAction_0() {
     }
-    @name("ingress.c.a") action c_a_0() {
+    @name("ingress.ingress.c.a") action c_a_0() {
         h.h.b = h.h.a;
     }
     bit<32> key_0;
-    @name("ingress.c.t") table c_t {
+    @name("ingress.ingress.c.t") table c_t_0 {
         key = {
             key_0: exact @name("e") ;
         }
@@ -52,7 +52,7 @@ control ingress(inout Headers h, inout Meta m, inout standard_metadata_t sm) {
     apply {
         {
             key_0 = h.h.a + h.h.a;
-            c_t.apply();
+            c_t_0.apply();
         }
         sm.egress_spec = 9w0;
     }
