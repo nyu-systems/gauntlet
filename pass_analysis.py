@@ -3,6 +3,7 @@ import glob
 import shutil
 import argparse
 import subprocess
+from pathlib import Path
 
 # configure logging
 import logging
@@ -55,6 +56,7 @@ def prune_files(p4_dmp_dir):
 
 def diff_files(passes, pass_dir, p4_prune_dir, p4_file):
 
+    p4_name = Path(p4_file).stem
     for index, p4_pass in enumerate(passes[1:]):
         pass_before = glob.glob(f"{p4_prune_dir}/*{passes[index]}*.p4")
         pass_after = glob.glob(f"{p4_prune_dir}/*{passes[index+1]}*.p4")
@@ -66,9 +68,7 @@ def diff_files(passes, pass_dir, p4_prune_dir, p4_file):
         # pass_after = f"{p4_prune_dir}/{p4_base}-{passes[index+1]}.p4"
         pass_before = pass_before[0]
         pass_after = pass_after[0]
-        diff_dir = f"{pass_dir}/{p4_pass}"
-        diff_file = f"{diff_dir}/{p4_file}"
-        check_dir(diff_dir)
+        diff_file = f"{pass_dir}/{p4_name}_{p4_pass}_diff.p4"
         diff_cmd = "diff -rupP "
         diff_cmd += "--label=\"before_pass\" --label=\"after_pass\" "
         diff_cmd += f"{pass_before} {pass_after}"
@@ -79,7 +79,8 @@ def diff_files(passes, pass_dir, p4_prune_dir, p4_file):
         if os.stat(diff_file).st_size == 0:
             os.remove(diff_file)
         else:
-            shutil.copyfile(pass_after, f"{diff_dir}/full_{p4_file}")
+            shutil.copyfile(pass_after,
+             f"{pass_dir}/{p4_name}_{p4_pass}_full.p4")
     return SUCCESS
 
 
