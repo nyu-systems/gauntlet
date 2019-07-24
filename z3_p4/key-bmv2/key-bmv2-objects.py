@@ -76,6 +76,11 @@ class HEADERS():
         return update
 
 
+meta = Datatype("meta")
+meta.declare(f"mk_meta")
+meta = meta.create()
+
+
 class META():
     name = "meta"
 
@@ -267,10 +272,6 @@ class STANDARD_METADATA_T():
         self.update()
         return update
 
-
-meta = Datatype("meta")
-meta.declare(f"mk_meta")
-meta = meta.create()
 
 ''' OUTPUT '''
 # the final output of the control pipeline in a single data type
