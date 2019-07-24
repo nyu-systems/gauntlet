@@ -22,6 +22,7 @@ class HDR():
         self.revisions = [self.const]
         self.a = self.a_z3()
         self.b = self.b_z3()
+        self.hdr_valid = Const('hdr_valid', BoolSort())
 
     def a_z3(self):
         return hdr.a(self.const)
@@ -42,6 +43,9 @@ class HDR():
         update = substitute(z3_copy, (lvalue, rvalue))
         self.update()
         return update
+
+    def valid():
+        return self.hdr_valid
 
 
 headers = Datatype("headers")
@@ -72,31 +76,20 @@ class HEADERS():
         return update
 
 
-standard_metadata_t = Datatype("standard_metadata_t")
-standard_metadata_t.declare(f"mk_standard_metadata_t",
-                            ('egress_spec', BitVecSort(9)))
-standard_metadata_t = standard_metadata_t.create()
-
-
-class STANDARD_METADATA_T():
-    name = "standard_metadata_t"
+class META():
+    name = "meta"
 
     def __init__(self):
-        self.const = Const(f"{self.name}_0", standard_metadata_t)
+        self.const = Const(f"{self.name}_0", meta)
         self.revisions = [self.const]
-        self.egress_spec = self.egress_spec_z3()
-
-    def egress_spec_z3(self):
-        return standard_metadata_t.egress_spec(self.const)
 
     def update(self):
         index = len(self.revisions)
-        self.const = Const(f"{self.name}_{index}", standard_metadata_t)
+        self.const = Const(f"{self.name}_{index}", meta)
         self.revisions.append(self.const)
 
     def make(self):
-        return standard_metadata_t.mk_standard_metadata_t(
-            self.egress_spec)
+        return meta.mk_meta
 
     def set(self, lvalue, rvalue):
         copy = self.make()
@@ -105,16 +98,8 @@ class STANDARD_METADATA_T():
         return update
 
 
-class METADATA():
-
-    def __init__(self):
-        pass
-
-
 ''' TABLES '''
 ''' The table constant we are matching with.
- Actually this should be a match action tuple that picks the next action
- How to implement that? Some form of array?
  Right now, we have a hacky version of integer values which mimic an enum.
  Each integer value corresponds to a specific action PER table. The number of
  available integer values is constrained. '''
@@ -123,9 +108,202 @@ ma_c_t.declare('mk_ma_c_t', ('key_0', BitVecSort(32)), ('action', IntSort()))
 ma_c_t = ma_c_t.create()
 
 
-''' OUTPUT '''
+standard_metadata_t = Datatype("standard_metadata_t")
+standard_metadata_t.declare(f"mk_standard_metadata_t",
+                            ('ingress_port', BitVecSort(9)),
+                            ('egress_spec', BitVecSort(9)),
+                            ('egress_port', BitVecSort(9)),
+                            ('clone_spec', BitVecSort(32)),
+                            ('instance_type', BitVecSort(32)),
+                            ('drop', BitVecSort(1)),
+                            ('recirculate_port', BitVecSort(16)),
+                            ('packet_length', BitVecSort(32)),
+                            ('enq_timestamp', BitVecSort(32)),
+                            ('enq_qdepth', BitVecSort(19)),
+                            ('deq_timedelta', BitVecSort(32)),
+                            ('deq_qdepth', BitVecSort(19)),
+                            ('ingress_global_timestamp', BitVecSort(48)),
+                            ('egress_global_timestamp', BitVecSort(48)),
+                            ('lf_field_list', BitVecSort(32)),
+                            ('mcast_grp', BitVecSort(16)),
+                            ('resubmit_flag', BitVecSort(32)),
+                            ('egress_rid', BitVecSort(16)),
+                            ('recirculate_flag', BitVecSort(32)),
+                            ('checksum_error', BitVecSort(1)),
+                            ('priority', BitVecSort(3)),
+                            )
+standard_metadata_t = standard_metadata_t.create()
 
+
+''' TABLES '''
+''' Standard metadata definitions. These are typically defined by the model
+    imported on top of the file.'''
+
+
+class STANDARD_METADATA_T():
+    name = "standard_metadata_t"
+
+    def __init__(self):
+        self.const = Const(f"{self.name}_0", standard_metadata_t)
+        self.revisions = [self.const]
+        self.ingress_port = self.ingress_port_z3()
+        self.egress_spec = self.egress_spec_z3()
+        self.egress_port = self.egress_port_z3()
+        self.clone_spec = self.clone_spec_z3()
+        self.instance_type = self.instance_type_z3()
+        self.drop = self.drop_z3()
+        self.recirculate_port = self.recirculate_port_z3()
+        self.packet_length = self.packet_length_z3()
+        self.enq_timestamp = self.enq_timestamp_z3()
+        self.enq_qdepth = self.enq_qdepth_z3()
+        self.deq_timedelta = self.deq_timedelta_z3()
+        self.deq_qdepth = self.deq_qdepth_z3()
+        self.ingress_global_timestamp = self.ingress_global_timestamp_z3()
+        self.egress_global_timestamp = self.egress_global_timestamp_z3()
+        self.lf_field_list = self.lf_field_list_z3()
+        self.mcast_grp = self.mcast_grp_z3()
+        self.resubmit_flag = self.resubmit_flag_z3()
+        self.egress_rid = self.egress_rid_z3()
+        self.recirculate_flag = self.recirculate_flag_z3()
+        self.checksum_error = self.checksum_error_z3()
+        self.priority = self.priority_z3()
+
+    def ingress_port_z3(self):
+        return standard_metadata_t.ingress_port(self.const)
+
+    def egress_spec_z3(self):
+        return standard_metadata_t.egress_spec(self.const)
+
+    def egress_port_z3(self):
+        return standard_metadata_t.egress_port(self.const)
+
+    def clone_spec_z3(self):
+        return standard_metadata_t.clone_spec(self.const)
+
+    def instance_type_z3(self):
+        return standard_metadata_t.instance_type(self.const)
+
+    def drop_z3(self):
+        return standard_metadata_t.drop(self.const)
+
+    def recirculate_port_z3(self):
+        return standard_metadata_t.recirculate_port(self.const)
+
+    def packet_length_z3(self):
+        return standard_metadata_t.packet_length(self.const)
+
+    def enq_timestamp_z3(self):
+        return standard_metadata_t.enq_timestamp(self.const)
+
+    def enq_qdepth_z3(self):
+        return standard_metadata_t.enq_qdepth(self.const)
+
+    def deq_timedelta_z3(self):
+        return standard_metadata_t.deq_timedelta(self.const)
+
+    def deq_qdepth_z3(self):
+        return standard_metadata_t.deq_qdepth(self.const)
+
+    def ingress_global_timestamp_z3(self):
+        return standard_metadata_t.ingress_global_timestamp(self.const)
+
+    def egress_global_timestamp_z3(self):
+        return standard_metadata_t.egress_global_timestamp(self.const)
+
+    def lf_field_list_z3(self):
+        return standard_metadata_t.lf_field_list(self.const)
+
+    def mcast_grp_z3(self):
+        return standard_metadata_t.mcast_grp(self.const)
+
+    def resubmit_flag_z3(self):
+        return standard_metadata_t.resubmit_flag(self.const)
+
+    def egress_rid_z3(self):
+        return standard_metadata_t.egress_rid(self.const)
+
+    def recirculate_flag_z3(self):
+        return standard_metadata_t.recirculate_flag(self.const)
+
+    def checksum_error_z3(self):
+        return standard_metadata_t.checksum_error(self.const)
+
+    def priority_z3(self):
+        return standard_metadata_t.priority(self.const)
+
+    def update(self):
+        index = len(self.revisions)
+        self.const = Const(f"{self.name}_{index}", standard_metadata_t)
+        self.revisions.append(self.const)
+
+    def make(self):
+        return standard_metadata_t.mk_standard_metadata_t(
+            self.ingress_port,
+            self.egress_spec,
+            self.egress_port,
+            self.clone_spec,
+            self.instance_type,
+            self.drop,
+            self.recirculate_port,
+            self.packet_length,
+            self.enq_timestamp,
+            self.enq_qdepth,
+            self.deq_timedelta,
+            self.deq_qdepth,
+            self.ingress_global_timestamp,
+            self.egress_global_timestamp,
+            self.lf_field_list,
+            self.mcast_grp,
+            self.resubmit_flag,
+            self.egress_rid,
+            self.recirculate_flag,
+            self.checksum_error,
+            self.priority,
+        )
+
+    def set(self, lvalue, rvalue):
+        copy = self.make()
+        update = substitute(copy, (lvalue, rvalue))
+        self.update()
+        return update
+
+
+meta = Datatype("meta")
+meta.declare(f"mk_meta")
+meta = meta.create()
+
+''' OUTPUT '''
 # the final output of the control pipeline in a single data type
+# this corresponds to the arguments of the control function
+inouts = Datatype("inouts")
+inouts.declare(f"mk_inouts", ('h', headers), ('m', meta),
+               ('sm', standard_metadata_t))
+inouts = inouts.create()
+
+
+class INOUTS():
+    name = "inouts"
+
+    def __init__(self):
+        self.h = HEADERS()
+        self.m = META()
+        self.sm = STANDARD_METADATA_T()
+        self.const = Const(f"{self.name}_0", inouts)
+        self.revisions = [self.const]
+
+    def update(self):
+        index = len(self.revisions)
+        self.const = Const(f"{self.name}_{index}", inouts)
+        self.revisions.append(self.const)
+
+    def make(self):
+        return inouts.mk_inouts(self.h.make(), self.m.make(), self.sm.make())
+
+    def set(self, lvalue, rvalue):
+        copy = self.make()
+        update = substitute(copy, (lvalue, rvalue))
+        self.update()
+        return update
 
 
 ''' INPUT VARIABLES AND MATCH-ACTION ENTRIES'''
@@ -133,7 +311,6 @@ ma_c_t = ma_c_t.create()
 # Initialize the header and match-action constraints
 # These are our inputs
 # Think of it as the header inputs after they have been parsed
-h_valid = Const('h_valid', BoolSort())
 
 # The output header, one variable per modification
 
@@ -160,13 +337,8 @@ def z3_check():
     # For all input packets and possible table matches the programs should
     # be the same
 
-    class INOUTS():
-        def __init__(self):
-            self.h = HEADERS()
-            self.sm = STANDARD_METADATA_T()
-
     inouts = INOUTS()
-    bounds = [inouts.h.const, inouts.sm.const, c_t_m]
+    bounds = [inouts.const, c_t_m]
     # the equivalence equation
     tv_equiv = simplify(control_ingress_0(inouts) != control_ingress_1(inouts))
     s.add(Exists(bounds, tv_equiv))
@@ -209,9 +381,8 @@ def control_ingress_0(inouts):
         # Now we create the new version by using a data type constructor
         # The data type constructor uses the values from the previous variable
         # version, except for the update target.
-        # TODO: Make this more usable and understandable
-        update = inouts.h.set(inouts.h.h.b, inouts.h.h.a)
-        assigns.append(inouts.h.const == update)
+        update = inouts.set(inouts.h.h.b, inouts.h.h.a)
+        assigns.append(inouts.const == update)
         return step(func_chain, inouts, assigns)
 
     # @name("ingress.c.t") table c_t {
@@ -264,8 +435,8 @@ def control_ingress_0(inouts):
 
         def output_update(func_chain, inouts):
             assigns = []
-            update = inouts.sm.set(inouts.sm.egress_spec, BitVecVal(0, 9))
-            assigns.append(inouts.sm.const == update)
+            update = inouts.set(inouts.sm.egress_spec, BitVecVal(0, 9))
+            assigns.append(inouts.const == update)
             return step(func_chain, inouts, assigns)
         # sm.egress_spec = 9w0
         func_chain.append(output_update)
@@ -299,12 +470,12 @@ def control_ingress_1(inouts):
         # The data type constructor uses the values from the previous variable
         # version, except for the update target.
         # TODO: Make this more usable and understandable
-        update = inouts.h.set(inouts.h.h.b, inouts.h.h.a)
-        assigns.append(inouts.h.const == update)
+        update = inouts.set(inouts.h.h.b, inouts.h.h.a)
+        assigns.append(inouts.const == update)
         return step(func_chain, inouts, assigns)
 
     # The key is defined in the control function
-    # Practically, this is just a placeholder variable
+    # Practically, this is a placeholder variable
     key_0 = BitVec("key_0", 32)  # bit<32> key_0;
 
     # @name("ingress.c.t") table c_t {
@@ -377,8 +548,8 @@ def control_ingress_1(inouts):
 
         def output_update(func_chain, inouts):
             assigns = []
-            update = inouts.sm.set(inouts.sm.egress_spec, BitVecVal(0, 9))
-            assigns.append(inouts.sm.const == update)
+            update = inouts.set(inouts.sm.egress_spec, BitVecVal(0, 9))
+            assigns.append(inouts.const == update)
             return step(func_chain, inouts, assigns)
         # sm.egress_spec = 9w0;
         func_chain.append(output_update)
