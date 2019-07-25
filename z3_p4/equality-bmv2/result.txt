@@ -1,0 +1,352 @@
+And(And(inouts1320_1 ==
+        mk_inouts(mk_headers(mk_h(s(h6632_0), v(h6632_0)),
+                             mk_h(s(h3720_0), v(h3720_0)),
+                             mk_h(s(h8760_0), v(h8760_0)),
+                             mk_Same(0)),
+                  mk_meta,
+                  mk_standard_metadata_t(egress_spec(standard_metadata_t9600_0))),
+        And(inouts1320_2 ==
+            mk_inouts(mk_headers(mk_h(s(h6632_0),
+                                      v(h6632_0)),
+                                 mk_h(s(h3720_0),
+                                      v(h3720_0)),
+                                 mk_h(s(h8760_0),
+                                      v(h8760_0)),
+                                 mk_Same(0)),
+                      mk_meta,
+                      mk_standard_metadata_t(0)),
+            If(s(h6632_0) == s(h3720_0),
+               And(If(v(h6632_0) == v(h3720_0),
+                      And(If(And(And(And(Or(And(Not(h_valid),
+                                        Not(h_valid)),
+                                        h_valid),
+                                        h_valid),
+                                     s(h6632_0) ==
+                                     s(h3720_0)),
+                                 v(h6632_0) == v(h3720_0)),
+                             And(And(And(And(inouts1320_3 ==
+                                        mk_inouts(mk_headers(mk_h(s(h6632_0),
+                                        v(h6632_0)),
+                                        mk_h(s(h3720_0),
+                                        v(h3720_0)),
+                                        mk_h(s(h8760_0),
+                                        v(h8760_0)),
+                                        mk_Same(0 | 1 | 1)),
+                                        mk_meta,
+                                        mk_standard_metadata_t(0)),
+                                        And(inouts1320_4 ==
+                                        mk_inouts(mk_headers(mk_h(s(h6632_0),
+                                        v(h6632_0)),
+                                        mk_h(s(h3720_0),
+                                        v(h3720_0)),
+                                        mk_h(s(h8760_0),
+                                        v(h8760_0)),
+                                        mk_Same(0 |
+                                        1 |
+                                        2 |
+                                        2)),
+                                        mk_meta,
+                                        mk_standard_metadata_t(0)),
+                                        And(inouts1320_5 ==
+                                        mk_inouts(mk_headers(mk_h(s(h6632_0),
+                                        v(h6632_0)),
+                                        mk_h(s(h3720_0),
+                                        v(h3720_0)),
+                                        mk_h(s(h8760_0),
+                                        v(h8760_0)),
+                                        mk_Same(0 |
+                                        1 |
+                                        2 |
+                                        4 |
+                                        4)),
+                                        mk_meta,
+                                        mk_standard_metadata_t(0)),
+                                        True)))))),
+                             And(And(And(And(inouts1320_3 ==
+                                        mk_inouts(mk_headers(mk_h(s(h6632_0),
+                                        v(h6632_0)),
+                                        mk_h(s(h3720_0),
+                                        v(h3720_0)),
+                                        mk_h(s(h8760_0),
+                                        v(h8760_0)),
+                                        mk_Same(0 | 1 | 1)),
+                                        mk_meta,
+                                        mk_standard_metadata_t(0)),
+                                        And(inouts1320_4 ==
+                                        mk_inouts(mk_headers(mk_h(s(h6632_0),
+                                        v(h6632_0)),
+                                        mk_h(s(h3720_0),
+                                        v(h3720_0)),
+                                        mk_h(s(h8760_0),
+                                        v(h8760_0)),
+                                        mk_Same(0 |
+                                        1 |
+                                        2 |
+                                        2)),
+                                        mk_meta,
+                                        mk_standard_metadata_t(0)),
+                                        And(inouts1320_5 ==
+                                        mk_inouts(mk_headers(mk_h(s(h6632_0),
+                                        v(h6632_0)),
+                                        mk_h(s(h3720_0),
+                                        v(h3720_0)),
+                                        mk_h(s(h8760_0),
+                                        v(h8760_0)),
+                                        mk_Same(0 |
+                                        1 |
+                                        2 |
+                                        4 |
+                                        4)),
+                                        mk_meta,
+                                        mk_standard_metadata_t(0)),
+                                        True))))),
+                                 And(And(And(inouts1320_3 ==
+                                        mk_inouts(mk_headers(mk_h(s(h6632_0),
+                                        v(h6632_0)),
+                                        mk_h(s(h3720_0),
+                                        v(h3720_0)),
+                                        mk_h(s(h8760_0),
+                                        v(h8760_0)),
+                                        mk_Same(0 | 1 | 1)),
+                                        mk_meta,
+                                        mk_standard_metadata_t(0)),
+                                        And(inouts1320_4 ==
+                                        mk_inouts(mk_headers(mk_h(s(h6632_0),
+                                        v(h6632_0)),
+                                        mk_h(s(h3720_0),
+                                        v(h3720_0)),
+                                        mk_h(s(h8760_0),
+                                        v(h8760_0)),
+                                        mk_Same(0 |
+                                        1 |
+                                        2 |
+                                        2)),
+                                        mk_meta,
+                                        mk_standard_metadata_t(0)),
+                                        True))))))),
+                      And(If(And(And(And(Or(And(Not(h_valid),
+                                        Not(h_valid)),
+                                        h_valid),
+                                        h_valid),
+                                     s(h6632_0) ==
+                                     s(h3720_0)),
+                                 v(h6632_0) == v(h3720_0)),
+                             And(And(And(And(inouts1320_3 ==
+                                        mk_inouts(mk_headers(mk_h(s(h6632_0),
+                                        v(h6632_0)),
+                                        mk_h(s(h3720_0),
+                                        v(h3720_0)),
+                                        mk_h(s(h8760_0),
+                                        v(h8760_0)),
+                                        mk_Same(0 | 1 | 1)),
+                                        mk_meta,
+                                        mk_standard_metadata_t(0)),
+                                        And(inouts1320_4 ==
+                                        mk_inouts(mk_headers(mk_h(s(h6632_0),
+                                        v(h6632_0)),
+                                        mk_h(s(h3720_0),
+                                        v(h3720_0)),
+                                        mk_h(s(h8760_0),
+                                        v(h8760_0)),
+                                        mk_Same(0 |
+                                        1 |
+                                        2 |
+                                        2)),
+                                        mk_meta,
+                                        mk_standard_metadata_t(0)),
+                                        And(inouts1320_5 ==
+                                        mk_inouts(mk_headers(mk_h(s(h6632_0),
+                                        v(h6632_0)),
+                                        mk_h(s(h3720_0),
+                                        v(h3720_0)),
+                                        mk_h(s(h8760_0),
+                                        v(h8760_0)),
+                                        mk_Same(0 |
+                                        1 |
+                                        2 |
+                                        4 |
+                                        4)),
+                                        mk_meta,
+                                        mk_standard_metadata_t(0)),
+                                        True)))))),
+                             And(And(And(And(inouts1320_3 ==
+                                        mk_inouts(mk_headers(mk_h(s(h6632_0),
+                                        v(h6632_0)),
+                                        mk_h(s(h3720_0),
+                                        v(h3720_0)),
+                                        mk_h(s(h8760_0),
+                                        v(h8760_0)),
+                                        mk_Same(0 | 1 | 1)),
+                                        mk_meta,
+                                        mk_standard_metadata_t(0)),
+                                        And(inouts1320_4 ==
+                                        mk_inouts(mk_headers(mk_h(s(h6632_0),
+                                        v(h6632_0)),
+                                        mk_h(s(h3720_0),
+                                        v(h3720_0)),
+                                        mk_h(s(h8760_0),
+                                        v(h8760_0)),
+                                        mk_Same(0 |
+                                        1 |
+                                        2 |
+                                        2)),
+                                        mk_meta,
+                                        mk_standard_metadata_t(0)),
+                                        And(inouts1320_5 ==
+                                        mk_inouts(mk_headers(mk_h(s(h6632_0),
+                                        v(h6632_0)),
+                                        mk_h(s(h3720_0),
+                                        v(h3720_0)),
+                                        mk_h(s(h8760_0),
+...
+(declare-datatypes ((meta 0)) (((mk_meta))))
+(declare-datatypes ((standard_metadata_t 0)) (((mk_standard_metadata_t (egress_spec (_ BitVec 9))))))
+(declare-datatypes ((Same 0)) (((mk_Same (same (_ BitVec 8))))))
+(declare-datatypes ((h 0)) (((mk_h (s (_ BitVec 8)) (v (_ BitVec 32))))))
+(declare-datatypes ((headers 0)) (((mk_headers (h h) (a_0 h) (a_1 h) (same Same)))))
+(declare-datatypes ((inouts 0)) (((mk_inouts (hdr headers) (meta meta) (stdmeta standard_metadata_t)))))
+(declare-fun h8760_0 () h)
+(declare-fun h3720_0 () h)
+(declare-fun h6632_0 () h)
+(declare-fun inouts1320_3 () inouts)
+(declare-fun h_valid () Bool)
+(declare-fun inouts1320_4 () inouts)
+(declare-fun inouts1320_5 () inouts)
+(declare-fun inouts1320_2 () inouts)
+(declare-fun standard_metadata_t9600_0 () standard_metadata_t)
+(declare-fun inouts1320_1 () inouts)
+(assert (exists ((inouts1320_0 inouts))
+  (let ((a!1 (mk_headers (mk_h (s h6632_0) (v h6632_0))
+                         (mk_h (s h3720_0) (v h3720_0))
+                         (mk_h (s h8760_0) (v h8760_0))
+                         (mk_Same #x00)))
+        (a!3 (and (or (and (not h_valid) (not h_valid)) h_valid)
+                  h_valid
+                  (= (s h6632_0) (s h3720_0))
+                  (= (v h6632_0) (v h3720_0))))
+        (a!4 (mk_headers (mk_h (s h6632_0) (v h6632_0))
+                         (mk_h (s h3720_0) (v h3720_0))
+                         (mk_h (s h8760_0) (v h8760_0))
+                         (mk_Same (bvor (bvor #x00 #x01) #x01))))
+        (a!5 (mk_Same (bvor (bvor (bvor #x00 #x01) #x02) #x02)))
+        (a!7 (mk_Same (bvor (bvor (bvor #x00 #x01) #x02) #x04 #x04)))
+        (a!11 (mk_headers (mk_h (s h6632_0) (v h6632_0))
+                          (mk_h (s h3720_0) (v h3720_0))
+                          (mk_h (s h8760_0) (v h8760_0))
+                          (mk_Same (bvor (bvor #x00 #x01) #x04 #x04))))
+        (a!16 (mk_headers (mk_h (s h6632_0) (v h6632_0))
+                          (mk_h (s h3720_0) (v h3720_0))
+                          (mk_h (s h8760_0) (v h8760_0))
+                          (mk_Same (bvor (bvor #x00 #x02) #x02))))
+        (a!17 (mk_headers (mk_h (s h6632_0) (v h6632_0))
+                          (mk_h (s h3720_0) (v h3720_0))
+                          (mk_h (s h8760_0) (v h8760_0))
+                          (mk_Same (bvor (bvor #x00 #x02) #x04 #x04))))
+        (a!20 (mk_inouts (mk_headers (mk_h (s h6632_0) (v h6632_0))
+                                     (mk_h (s h3720_0) (v h3720_0))
+                                     (mk_h (s h8760_0) (v h8760_0))
+                                     (mk_Same (bvor #x00 #x04 #x04)))
+                         mk_meta
+                         (mk_standard_metadata_t #b000000000)))
+        (a!24 (mk_inouts (mk_headers (mk_h (s h6632_0) (v h6632_0))
+                                     (mk_h (s h3720_0) (v h3720_0))
+                                     (mk_h (s h8760_0) (v h8760_0))
+                                     (mk_Same (bvor #x00 #x01)))
+                         mk_meta
+                         (mk_standard_metadata_t #b000000000))))
+  (let ((a!2 (= inouts1320_1
+                (mk_inouts a!1
+                           mk_meta
+                           (mk_standard_metadata_t
+                             (egress_spec standard_metadata_t9600_0)))))
+        (a!6 (mk_inouts (mk_headers (mk_h (s h6632_0) (v h6632_0))
+                                    (mk_h (s h3720_0) (v h3720_0))
+                                    (mk_h (s h8760_0) (v h8760_0))
+                                    a!5)
+                        mk_meta
+                        (mk_standard_metadata_t #b000000000)))
+        (a!8 (mk_inouts (mk_headers (mk_h (s h6632_0) (v h6632_0))
+                                    (mk_h (s h3720_0) (v h3720_0))
+                                    (mk_h (s h8760_0) (v h8760_0))
+                                    a!7)
+                        mk_meta
+                        (mk_standard_metadata_t #b000000000)))
+        (a!12 (and (= inouts1320_4
+                      (mk_inouts a!11
+                                 mk_meta
+                                 (mk_standard_metadata_t #b000000000)))
+                   true))
+        (a!18 (and (= inouts1320_3
+                      (mk_inouts a!16
+                                 mk_meta
+                                 (mk_standard_metadata_t #b000000000)))
+                   (= inouts1320_4
+                      (mk_inouts a!17
+                                 mk_meta
+                                 (mk_standard_metadata_t #b000000000)))
+                   true))
+        (a!21 (ite a!3
+                   (and (and (= inouts1320_3 a!20) true))
+                   (and (and (= inouts1320_3 a!20) true) true))))
+  (let ((a!9 (and (= inouts1320_3
+                     (mk_inouts a!4
+                                mk_meta
+                                (mk_standard_metadata_t #b000000000)))
+                  (and (= inouts1320_4 a!6) (= inouts1320_5 a!8) true)))
+        (a!13 (and (= inouts1320_3
+                      (mk_inouts a!4
+                                 mk_meta
+                                 (mk_standard_metadata_t #b000000000)))
+                   a!12))
+        (a!19 (and a!18
+                   (= inouts1320_3
+                      (mk_inouts a!16
+                                 mk_meta
+                                 (mk_standard_metadata_t #b000000000)))
+                   true))
+        (a!25 (and (= inouts1320_3 a!24)
+                   (and (= inouts1320_4 a!6) (= inouts1320_5 a!8) true)))
+        (a!27 (ite a!3
+                   (and (and (= inouts1320_3 a!24) a!12))
+                   (and (and (= inouts1320_3 a!24) a!12)
+                        (= inouts1320_3 a!24)
+                        true))))
+  (let ((a!10 (and a!9
+                   (= inouts1320_3
+                      (mk_inouts a!4
+                                 mk_meta
+                                 (mk_standard_metadata_t #b000000000)))
+                   (and (= inouts1320_4 a!6) true)))
+        (a!14 (and a!13
+                   (= inouts1320_3
+                      (mk_inouts a!4
+                                 mk_meta
+                                 (mk_standard_metadata_t #b000000000)))
+                   true))
+        (a!22 (ite (= (v h6632_0) (v h3720_0))
+                   (and (ite a!3 (and a!18) a!19))
+                   (and (ite a!3 (and a!18) a!19) a!21)))
+        (a!26 (ite a!3
+                   (and a!25)
+                   (and a!25
+                        (= inouts1320_3 a!24)
+                        (and (= inouts1320_4 a!6) true)))))
+  (let ((a!15 (ite (= (v h6632_0) (v h3720_0))
+                   (and (ite a!3 (and a!9) a!10))
+                   (and (ite a!3 (and a!9) a!10) (ite a!3 (and a!13) a!14))))
+        (a!28 (ite (= (v h6632_0) (v h3720_0)) (and a!26) (and a!26 a!27))))
+  (let ((a!23 (and a!2
+                   (= inouts1320_2
+                      (mk_inouts a!1
+                                 mk_meta
+                                 (mk_standard_metadata_t #b000000000)))
+                   (ite (= (s h6632_0) (s h3720_0)) (and a!15) (and a!15 a!22))))
+        (a!29 (and a!2
+                   (= inouts1320_2
+                      (mk_inouts a!1
+                                 mk_meta
+                                 (mk_standard_metadata_t #b000000000)))
+                   (ite (= (s h6632_0) (s h3720_0)) (and a!28) (and a!28 a!22)))))
+    (distinct a!23 a!29)))))))))
+
+unsat

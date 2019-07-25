@@ -9,8 +9,8 @@ s = Solver()
 
 
 hdr = Datatype("hdr")
-hdr.declare("mk_hdr", ('a', BitVecSort(32)),
-            ('b', BitVecSort(32)))
+hdr.declare("mk_hdr", ('a', BitVecSort(16)),
+            ('b', BitVecSort(16)), ('c', BitVecSort(8)))
 hdr = hdr.create()
 
 
@@ -23,6 +23,7 @@ class HDR():
         self.revisions = [self.const]
         self.a = self.a_z3()
         self.b = self.b_z3()
+        self.c = self.c_z3()
         self.valid = Const('hdr_valid', BoolSort())
 
     def a_z3(self):
@@ -31,13 +32,16 @@ class HDR():
     def b_z3(self):
         return hdr.b(self.const)
 
+    def c_z3(self):
+        return hdr.c(self.const)
+
     def update(self):
         index = len(self.revisions)
         self.const = Const(f"{self.name}_{index}", hdr)
         self.revisions.append(self.const)
 
     def make(self):
-        return hdr.mk_hdr(self.a, self.b)
+        return hdr.mk_hdr(self.a, self.b, self.c)
 
     def set(self, lvalue, rvalue):
         z3_copy = self.make()
@@ -81,7 +85,7 @@ class HEADERS():
 
 
 meta = Datatype("meta")
-meta.declare(f"mk_meta")
+meta.declare(f"mk_meta", ('x', BitVecSort(8)), ('y', BitVecSort(8)))
 meta = meta.create()
 
 
@@ -91,6 +95,14 @@ class META():
         self.name = "meta%s" % str(id(self))[-4:]
         self.const = Const(f"{self.name}_0", meta)
         self.revisions = [self.const]
+        self.x = self.x_z3()
+        self.y = self.y_z3()
+
+    def x_z3(self):
+        return meta.x(self.const)
+
+    def y_z3(self):
+        return meta.y(self.const)
 
     def update(self):
         index = len(self.revisions)
@@ -98,7 +110,7 @@ class META():
         self.revisions.append(self.const)
 
     def make(self):
-        return meta.mk_meta
+        return meta.mk_meta(self.x, self.y)
 
     def set(self, lvalue, rvalue):
         copy = self.make()
@@ -112,9 +124,9 @@ class META():
  Right now, we have a hacky version of integer values which mimic an enum.
  Each integer value corresponds to a specific action PER table. The number of
  available integer values is constrained. '''
-ma_c_t = Datatype('ma_c_t')
-ma_c_t.declare('mk_ma_c_t', ('key_0', BitVecSort(32)), ('action', IntSort()))
-ma_c_t = ma_c_t.create()
+ma_t_0 = Datatype('ma_t_0')
+ma_t_0.declare('mk_ma_t_0', ('action', IntSort()))
+ma_t_0 = ma_t_0.create()
 
 
 standard_metadata_t = Datatype("standard_metadata_t")
@@ -320,10 +332,10 @@ class INOUTS():
 
 ''' INPUT CONTROL '''
 # The possible table entries
-c_t_m = Const('c_t_m', ma_c_t)
+t_0_m = Const('t_0_m', ma_t_0)
 # Reduce the range of action outputs to the total number of actions
 # In this case we only have 2 actions
-s.add(0 < ma_c_t.action(c_t_m), ma_c_t.action(c_t_m) < 3)
+s.add(0 < ma_t_0.action(t_0_m), ma_t_0.action(t_0_m) < 9)
 
 
 def step(func_chain, inouts, assigns):
@@ -343,7 +355,7 @@ def z3_check():
     # be the same
 
     inouts = INOUTS()
-    bounds = [inouts.const, c_t_m]
+    bounds = [inouts.const, t_0_m]
     # the equivalence equation
     tv_equiv = simplify(control_ingress_0(inouts) != control_ingress_1(inouts))
     s.add(Exists(bounds, tv_equiv))
@@ -368,31 +380,17 @@ def control_ingress_0(inouts):
 
     # @name(".NoAction") action NoAction_0() {
     # }
-    def NoAction_0(func_chain, inouts):
-        ''' This is an action
-            NoAction just returns the current header as is '''
+    def case0(func_chain, inouts):
+        ''' This is an action '''
         assigns = []
+        rval = Int2BV(Concat(Extract(15, 0, Concat(
+            BitVecVal(0, 16), inouts.h.h.a)), BitVecVal(0, 16)), 8)
+        inouts.h.h.c = rval
+        inouts.set(inouts.h.h.c, rval)
         return step(func_chain, inouts, assigns)
 
-    # @name("ingress.c.a") action c_a_0() {
-    #     h.h.b = h.h.a;
-    # }
-    def c_a_0(func_chain, inouts):
-        ''' This is an action
-            This action creates a new header type where b is set to a '''
-        assigns = []
-        # This updates an existing output variable so  we need a new version
-        # The new constant is appended to the existing list of constants
-        # Now we create the new version by using a data type constructor
-        # The data type constructor uses the values from the previous variable
-        # version, except for the update target.
-        inouts.h.h.b = inouts.h.h.a
-        update = inouts.set(inouts.h.h.b, inouts.h.h.a)
-        assigns.append(inouts.const == update)
-        return step(func_chain, inouts, assigns)
-
-    # @name("ingress.c.t") table c_t {
-    def c_t(func_chain, inouts):
+    # @name("ingress.c.t") table t_0 {
+    def t_0(func_chain, inouts):
         ''' This is a table '''
 
         # actions = {
@@ -406,10 +404,9 @@ def control_ingress_0(inouts):
             This is an exclusive operation, so only Xoring is valid.
             '''
             actions = []
-            actions.append(Implies(ma_c_t.action(c_t_m) == 1,
-                                   c_a_0(func_chain, inouts)))
-            actions.append(Implies(ma_c_t.action(c_t_m) == 2,
-                                   NoAction_0(func_chain, inouts)))
+            actions.append(Implies(ma_t_0.action(t_0_m) == 1,
+                                   case0(func_chain, inouts)))
+            actions.append(False)
             return Xor(*actions)
 
         # The keys of the table are compared with the input keys.
@@ -418,15 +415,14 @@ def control_ingress_0(inouts):
         #     h.h.a + h.h.a: exact @name("e") ;
         # }
         key_matches = []
-        c_t_key_0 = inouts.h.h.a + inouts.h.h.a
         # It is an exact match, so we use direct comparison
-        key_matches.append(c_t_key_0 == ma_c_t.key_0(c_t_m))
+        key_matches.append(False)
 
         # default_action = NoAction_0();
         def default():
             ''' The default action '''
             # It is set to NoAction in this case
-            return NoAction_0(func_chain, inouts)
+            return case0(func_chain, inouts)
 
         # This is a table match where we look up the provided key
         # If we match select the associated action, else use the default action
@@ -436,17 +432,8 @@ def control_ingress_0(inouts):
         ''' The main function of the control plane. Each statement in this pipe
         is part of a list of functions. '''
         func_chain = []
-        # c_t.apply();
-        func_chain.append(c_t)
-
-        def output_update(func_chain, inouts):
-            assigns = []
-            inouts.sm.egress_spec = BitVecVal(0, 9)
-            update = inouts.set(inouts.sm.egress_spec, BitVecVal(0, 9))
-            assigns.append(inouts.const == update)
-            return step(func_chain, inouts, assigns)
-        # sm.egress_spec = 9w0
-        func_chain.append(output_update)
+        # t_0.apply();
+        func_chain.append(t_0)
         return func_chain
     # return the apply function as sequence of logic clauses
     func_chain = apply()
@@ -458,35 +445,17 @@ def control_ingress_1(inouts):
 
     # @name(".NoAction") action NoAction_0() {
     # }
-    def NoAction_0(func_chain, inouts):
-        ''' This is an action
-            NoAction just returns the current header as is '''
+    def case0(func_chain, inouts):
+        ''' This is an action '''
         assigns = []
+        rval = Int2BV(
+            Concat(Extract(15, 0, inouts.h.h.a), BitVecVal(0, 16)), 8)
+        inouts.h.h.c = rval
+        inouts.set(inouts.h.h.c, rval)
         return step(func_chain, inouts, assigns)
 
-    # @name("ingress.c.a") action c_a_0() {
-    #     h.h.b = h.h.a;
-    # }
-    def c_a_0(func_chain, inouts):
-        ''' This is an action
-            This action creates a new header type where b is set to a '''
-        assigns = []
-        # This updates an existing output variable so  we need a new version
-        # The new constant is appended to the existing list of constants
-        # Now we create the new version by using a data type constructor
-        # The data type constructor uses the values from the previous variable
-        # version, except for the update target.
-        inouts.h.h.b = inouts.h.h.a
-        update = inouts.set(inouts.h.h.b, inouts.h.h.a)
-        assigns.append(inouts.const == update)
-        return step(func_chain, inouts, assigns)
-
-    # The key is defined in the control function
-    # Practically, this is a placeholder variable
-    key_0 = BitVec("key_0", 32)  # bit<32> key_0;
-
-    # @name("ingress.c.t") table c_t {
-    def c_t(func_chain, inouts):
+    # @name("ingress.c.t") table t_0 {
+    def t_0(func_chain, inouts):
         ''' This is a table '''
 
         # actions = {
@@ -500,10 +469,9 @@ def control_ingress_1(inouts):
             This is an exclusive operation, so only Xoring is valid.
             '''
             actions = []
-            actions.append(Implies(ma_c_t.action(c_t_m) == 1,
-                                   c_a_0(func_chain, inouts)))
-            actions.append(Implies(ma_c_t.action(c_t_m) == 2,
-                                   NoAction_0(func_chain, inouts)))
+            actions.append(Implies(ma_t_0.action(t_0_m) == 1,
+                                   case0(func_chain, inouts)))
+            actions.append(False)
             return Xor(*actions)
 
         # The keys of the table are compared with the input keys.
@@ -512,16 +480,14 @@ def control_ingress_1(inouts):
         #     h.h.a + h.h.a: exact @name("e") ;
         # }
         key_matches = []
-        # We access the global variable key_0, which has been updated before
-        c_t_key_0 = key_0
         # It is an exact match, so we use direct comparison
-        key_matches.append(c_t_key_0 == ma_c_t.key_0(c_t_m))
-        # default_action = NoAction_0();
+        key_matches.append(False)
 
+        # default_action = NoAction_0();
         def default():
             ''' The default action '''
             # It is set to NoAction in this case
-            return NoAction_0(func_chain, inouts)
+            return case0(func_chain, inouts)
 
         # This is a table match where we look up the provided key
         # If we match select the associated action, else use the default action
@@ -531,38 +497,10 @@ def control_ingress_1(inouts):
         ''' The main function of the control plane. Each statement in this pipe
         is part of a list of functions. '''
         func_chain = []
-
-        # {
-        def block(func_chain):
-
-            def local_update(func_chain, inouts):
-                ''' Updates to local variables will not play a role in the
-                final output. We do not need to add new constraints. Instead,
-                we update the python variable directly for later use. The
-                variable is accessed using the nonlocal keyword. '''
-                assigns = []
-                # key_0 is updated to have the value h.h.a + h.h.a
-                nonlocal key_0
-                key_0 = inouts.h.h.a + inouts.h.h.a
-                return step(func_chain, inouts, assigns)
-            # key_0 = h.h.a + h.h.a;
-            func_chain.append(local_update)
-            # c_t.apply();
-            func_chain.append(c_t)
-            return func_chain
-        # }
-        func_chain = block(func_chain)
-
-        def output_update(func_chain, inouts):
-            assigns = []
-            inouts.sm.egress_spec = BitVecVal(0, 9)
-            update = inouts.set(inouts.sm.egress_spec, BitVecVal(0, 9))
-            assigns.append(inouts.const == update)
-            return step(func_chain, inouts, assigns)
-        # sm.egress_spec = 9w0;
-        func_chain.append(output_update)
-
+        # t_0.apply();
+        func_chain.append(t_0)
         return func_chain
+    # return the apply function as sequence of logic clauses
     func_chain = apply()
     return step(func_chain, assigns=[], inouts=inouts)
 
