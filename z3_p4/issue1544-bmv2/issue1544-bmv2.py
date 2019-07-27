@@ -123,27 +123,27 @@ ma_mac_da_0 = ma_mac_da_0.create()
 
 standard_metadata_t = Datatype("standard_metadata_t")
 standard_metadata_t.declare(f"mk_standard_metadata_t",
-                            ('ingress_port', BitVecSort(9)),
+                            # ('ingress_port', BitVecSort(9)),
                             ('egress_spec', BitVecSort(9)),
-                            ('egress_port', BitVecSort(9)),
-                            ('clone_spec', BitVecSort(32)),
-                            ('instance_type', BitVecSort(32)),
-                            ('drop', BitVecSort(1)),
-                            ('recirculate_port', BitVecSort(16)),
-                            ('packet_length', BitVecSort(32)),
-                            ('enq_timestamp', BitVecSort(32)),
-                            ('enq_qdepth', BitVecSort(19)),
-                            ('deq_timedelta', BitVecSort(32)),
-                            ('deq_qdepth', BitVecSort(19)),
-                            ('ingress_global_timestamp', BitVecSort(48)),
-                            ('egress_global_timestamp', BitVecSort(48)),
-                            ('lf_field_list', BitVecSort(32)),
-                            ('mcast_grp', BitVecSort(16)),
-                            ('resubmit_flag', BitVecSort(32)),
-                            ('egress_rid', BitVecSort(16)),
-                            ('recirculate_flag', BitVecSort(32)),
-                            ('checksum_error', BitVecSort(1)),
-                            ('priority', BitVecSort(3)),
+                            # ('egress_port', BitVecSort(9)),
+                            # ('clone_spec', BitVecSort(32)),
+                            # ('instance_type', BitVecSort(32)),
+                            # ('drop', BitVecSort(1)),
+                            # ('recirculate_port', BitVecSort(16)),
+                            # ('packet_length', BitVecSort(32)),
+                            # ('enq_timestamp', BitVecSort(32)),
+                            # ('enq_qdepth', BitVecSort(19)),
+                            # ('deq_timedelta', BitVecSort(32)),
+                            # ('deq_qdepth', BitVecSort(19)),
+                            # ('ingress_global_timestamp', BitVecSort(48)),
+                            # ('egress_global_timestamp', BitVecSort(48)),
+                            # ('lf_field_list', BitVecSort(32)),
+                            # ('mcast_grp', BitVecSort(16)),
+                            # ('resubmit_flag', BitVecSort(32)),
+                            # ('egress_rid', BitVecSort(16)),
+                            # ('recirculate_flag', BitVecSort(32)),
+                            # ('checksum_error', BitVecSort(1)),
+                            # ('priority', BitVecSort(3)),
                             )
 standard_metadata_t = standard_metadata_t.create()
 
@@ -159,27 +159,27 @@ class STANDARD_METADATA_T():
         self.name = "standard_metadata_t%s" % str(id(self))[-4:]
         self.const = Const(f"{self.name}_0", standard_metadata_t)
         self.revisions = [self.const]
-        self.ingress_port = self.ingress_port_z3()
+        # self.ingress_port = self.ingress_port_z3()
         self.egress_spec = self.egress_spec_z3()
-        self.egress_port = self.egress_port_z3()
-        self.clone_spec = self.clone_spec_z3()
-        self.instance_type = self.instance_type_z3()
-        self.drop = self.drop_z3()
-        self.recirculate_port = self.recirculate_port_z3()
-        self.packet_length = self.packet_length_z3()
-        self.enq_timestamp = self.enq_timestamp_z3()
-        self.enq_qdepth = self.enq_qdepth_z3()
-        self.deq_timedelta = self.deq_timedelta_z3()
-        self.deq_qdepth = self.deq_qdepth_z3()
-        self.ingress_global_timestamp = self.ingress_global_timestamp_z3()
-        self.egress_global_timestamp = self.egress_global_timestamp_z3()
-        self.lf_field_list = self.lf_field_list_z3()
-        self.mcast_grp = self.mcast_grp_z3()
-        self.resubmit_flag = self.resubmit_flag_z3()
-        self.egress_rid = self.egress_rid_z3()
-        self.recirculate_flag = self.recirculate_flag_z3()
-        self.checksum_error = self.checksum_error_z3()
-        self.priority = self.priority_z3()
+        # self.egress_port = self.egress_port_z3()
+        # self.clone_spec = self.clone_spec_z3()
+        # self.instance_type = self.instance_type_z3()
+        # self.drop = self.drop_z3()
+        # self.recirculate_port = self.recirculate_port_z3()
+        # self.packet_length = self.packet_length_z3()
+        # self.enq_timestamp = self.enq_timestamp_z3()
+        # self.enq_qdepth = self.enq_qdepth_z3()
+        # self.deq_timedelta = self.deq_timedelta_z3()
+        # self.deq_qdepth = self.deq_qdepth_z3()
+        # self.ingress_global_timestamp = self.ingress_global_timestamp_z3()
+        # self.egress_global_timestamp = self.egress_global_timestamp_z3()
+        # self.lf_field_list = self.lf_field_list_z3()
+        # self.mcast_grp = self.mcast_grp_z3()
+        # self.resubmit_flag = self.resubmit_flag_z3()
+        # self.egress_rid = self.egress_rid_z3()
+        # self.recirculate_flag = self.recirculate_flag_z3()
+        # self.checksum_error = self.checksum_error_z3()
+        # self.priority = self.priority_z3()
 
     def ingress_port_z3(self):
         return standard_metadata_t.ingress_port(self.const)
@@ -251,27 +251,27 @@ class STANDARD_METADATA_T():
 
     def make(self):
         return standard_metadata_t.mk_standard_metadata_t(
-            self.ingress_port,
+            # self.ingress_port,
             self.egress_spec,
-            self.egress_port,
-            self.clone_spec,
-            self.instance_type,
-            self.drop,
-            self.recirculate_port,
-            self.packet_length,
-            self.enq_timestamp,
-            self.enq_qdepth,
-            self.deq_timedelta,
-            self.deq_qdepth,
-            self.ingress_global_timestamp,
-            self.egress_global_timestamp,
-            self.lf_field_list,
-            self.mcast_grp,
-            self.resubmit_flag,
-            self.egress_rid,
-            self.recirculate_flag,
-            self.checksum_error,
-            self.priority,
+            # self.egress_port,
+            # self.clone_spec,
+            # self.instance_type,
+            # self.drop,
+            # self.recirculate_port,
+            # self.packet_length,
+            # self.enq_timestamp,
+            # self.enq_qdepth,
+            # self.deq_timedelta,
+            # self.deq_qdepth,
+            # self.ingress_global_timestamp,
+            # self.egress_global_timestamp,
+            # self.lf_field_list,
+            # self.mcast_grp,
+            # self.resubmit_flag,
+            # self.egress_rid,
+            # self.recirculate_flag,
+            # self.checksum_error,
+            # self.priority,
         )
 
     def set(self, lvalue, rvalue):
@@ -331,31 +331,14 @@ mac_da_0_m = Const('ma_mac_da_0_m', ma_mac_da_0)
 s.add(0 < ma_mac_da_0.action(mac_da_0_m), ma_mac_da_0.action(mac_da_0_m) < 3)
 
 
-def step(func_chain, inouts, assigns):
-    if func_chain:
-        next_fun = func_chain[0]
-        func_chain = func_chain[1:]
-        inouts = copy.deepcopy(inouts)  # emulate pass-by-value behavior
-        assigns.append(next_fun(func_chain, inouts))
-    else:
-        assigns.append(True)
-    return And(assigns)
-
-
 def z3_check():
-    # The equivalence check of the solver
-    # For all input packets and possible table matches the programs should
-    # be the same
 
     inouts = INOUTS()
     bounds = [inouts.const, mac_da_0_m]
-    # the equivalence equation
-    tv_equiv = simplify(control_ingress_0(inouts) != control_ingress_0(inouts))
+    print(control_ingress_1(inouts))
+    exit(0)
+    tv_equiv = simplify(control_ingress_2(inouts) != control_ingress_3(inouts))
     s.add(Exists(bounds, tv_equiv))
-    # tv_equiv = simplify(control_ingress_1()) != simplify(control_ingress_2())
-    # s.add(Exists(bounds, tv_equiv))
-    # tv_equiv = simplify(control_ingress_2()) != simplify(control_ingress_3())
-    # s.add(Exists(bounds, tv_equiv))
     print(tv_equiv)
     print (s.sexpr())
     ret = s.check()
@@ -368,152 +351,284 @@ def z3_check():
         return os.EX_OK
 
 
-def control_ingress_0(inouts):
-    ''' This is the initial version of the program. '''
+def step(func_chain, inouts, expr=True):
 
-    # @name(".NoAction") action NoAction_0() {
-    # }
+    if func_chain:
+        next_fun = func_chain[0]
+        func_chain = func_chain[1:]
+        # emulate pass-by-value behavior
+        inouts = copy.deepcopy(inouts)
+        expr = next_fun(func_chain, inouts)
+    return expr
+
+
+def z3_call(fun, inouts, *args):
+    inouts = copy.deepcopy(inouts)
+    return fun(func_chain, inouts, *args)
+
+
+def mark_to_drop(assigns, standard_metadata):
+    assigns = []
+
+    rval = BitVecVal(0, 1)
+    standard_metadata.drop = rval
+    update = standard_metadata.set(inouts.standard_metadata.drop, rval)
+    assigns.append(inouts.const == update)
+
+    rval = BitVecVal(0, 16)
+    inouts.standard_metadata.mcast_grp = rval
+    update = standard_metadata.set(inouts.standard_metadata.mcast_grp, rval)
+    assigns.append(inouts.const == update)
+
+    return assigns
+
+
+def control_ingress_0(inouts):
+
     def my_drop(func_chain, inouts, smeta):
-        ''' This is an action '''
         assigns = []
-        return step(func_chain, inouts, assigns)
+        expr = And(assigns)
+
+        return step(func_chain, inouts)
 
     tmp = BitVec("tmp", 16)
 
     def set_port(func_chain, inouts, output_port):
-        ''' This is an action '''
         assigns = []
 
         rval = output_port
-        inouts.standard_metadata.egress_spec = output_port
-        inouts.set(inouts.standard_metadata.egress_spec, rval)
-        return step(func_chain, inouts, assigns)
+        inouts.standard_metadata.egress_spec = rval
+        update = inouts.set(inouts.standard_metadata.egress_spec, rval)
+        assigns.append(inouts.const == update)
 
-    # @name("ingress.c.t") table mac_da_0 {
+        expr = And(assigns)
+        return step(func_chain, inouts)
+
     def mac_da_0(func_chain, inouts):
-        ''' This is a table '''
 
-        # actions = {
-        #     c_a_0();
-        #     NoAction_0();
-        # }
         def actions():
-            ''' This is a special macro to define action selection. We treat
-            selection as a chain of implications. If we match, then the clause
-            returned by the action must be valid.
-            This is an exclusive operation, so only Xoring is valid.
-            '''
             actions = []
             output_port = BitVec("output_port", 9)
             actions.append(
                 Implies(ma_mac_da_0.action(mac_da_0_m) == 1,
                         set_port(func_chain, inouts, output_port)))
-            actions.append(
-                Implies(ma_mac_da_0.action(mac_da_0_m) == 2,
-                        my_drop(func_chain, inouts, inouts.standard_metadata)))
+            actions.append(False)
             return Xor(*actions)
 
-        # The keys of the table are compared with the input keys.
-        # In this case we are matching a single value
-        # key = {
-        #     h.h.a + h.h.a: exact @name("e") ;
-        # }
         key_matches = []
         mac_da_0_key_0 = inouts.hdr.ethernet.dstAddr
-        # It is an exact match, so we use direct comparison
         key_matches.append(mac_da_0_key_0 == ma_mac_da_0.key_0(mac_da_0_m))
 
-        # default_action = NoAction_0();
         def default():
-            ''' The default action '''
-            # It is set to NoAction in this case
             return my_drop(func_chain, inouts, inouts.standard_metadata)
 
-        # This is a table match where we look up the provided key
-        # If we match select the associated action, else use the default action
-        return If(And(key_matches), actions(), default())
+        expr = If(And(key_matches), actions(), default())
+        return step(func_chain, inouts)
 
-    def apply():
-        ''' The main function of the control plane. Each statement in this pipe
-        is part of a list of functions. '''
-        func_chain = []
-        # mac_da_0.apply();
-        func_chain.append(mac_da_0)
+    def apply(func_chain, inouts):
+        assigns = []
+        assigns.append(mac_da_0)
 
-        def block(func_chain):
+        def block(func_chain, inouts):
+            assigns = []
+
             x_0 = Extract(15, 0, inouts.hdr.ethernet.srcAddr)
             hasReturned = Var(False, BoolSort())
             retval = BitVec("retval", 16)
 
             def if_block(func_chain, inouts):
 
-                # If blocks track two expression lists for the if and the else case
-                # if (hdr.h.s == hdr.a[0].s)
                 condition = (x_0 > BitVecVal(5, 16))
-                if_list = list(func_chain)
-                else_list = list(func_chain)
-                assignments = []
 
-                def local_update(func_chain, inouts):
+                def is_true():
                     assigns = []
-                    # key_0 is updated to have the value h.h.a + h.h.a
-                    nonlocal hasReturned
-                    hasReturned = Var(True, BoolSort())
-                    return step(func_chain, inouts, assigns)
-                if_list.append(local_update)
 
-                def local_update(func_chain, inouts):
+                    def local_update(func_chain, inouts):
+                        assigns = []
+
+                        nonlocal hasReturned
+                        hasReturned = Var(True, BoolSort())
+                        expr = And(assigns)
+                        return step(func_chain, inouts)
+                    assigns.append(local_update)
+
+                    def local_update(func_chain, inouts):
+                        assigns = []
+
+                        nonlocal retval
+                        retval = x_0 + BitVecVal(65535, 16)
+                        expr = And(assigns)
+                        return step(func_chain, inouts)
+                    assigns.append(local_update)
+                    expr = And(assigns)
+                    return step(func_chain, inouts)
+
+                def is_false():
                     assigns = []
-                    # key_0 is updated to have the value h.h.a + h.h.a
-                    nonlocal retval
-                    retval = x_0 + BitVecVal(65535, 16)
-                    return step(func_chain, inouts, assigns)
-                if_list.append(local_update)
 
-                def local_update(func_chain, inouts):
-                    assigns = []
-                    # key_0 is updated to have the value h.h.a + h.h.a
-                    nonlocal hasReturned
-                    hasReturned = Var(True, BoolSort())
-                    return step(func_chain, inouts, assigns)
-                else_list.append(local_update)
+                    def local_update(func_chain, inouts):
+                        assigns = []
 
-                def local_update(func_chain, inouts):
-                    assigns = []
-                    # key_0 is updated to have the value h.h.a + h.h.a
-                    nonlocal retval
-                    retval = x_0
-                    return step(func_chain, inouts, assigns)
-                else_list.append(local_update)
+                        nonlocal hasReturned
+                        hasReturned = Var(True, BoolSort())
+                        expr = And(assigns)
+                        return step(func_chain, inouts)
+                    assigns.append(local_update)
 
-                return If(condition, step(if_list, inouts, assignments),
-                          step(else_list, inouts, assignments))
-            func_chain.append(if_block)
+                    def local_update(func_chain, inouts):
+                        assigns = []
+
+                        nonlocal retval
+                        retval = x_0
+                        expr = And(assigns)
+                        return step(func_chain, inouts)
+                    assigns.append(local_update)
+                    expr = And(assigns)
+                    return step(func_chain, inouts)
+
+                return If(condition, is_true(),
+                          is_false())
+            assigns.append(if_block(func_chain, inouts))
 
             def local_update(func_chain, inouts):
                 assigns = []
+
                 nonlocal tmp
                 tmp = retval
-                return step(func_chain, inouts, assigns)
-            func_chain.append(local_update)
-            return func_chain
-        # }
-        func_chain = block(func_chain)
+                expr = And(assigns)
+                return step(func_chain, inouts)
+            assigns.append(local_update)
+            expr = And(assigns)
+            return step(func_chain, inouts)
+        assigns.append(z3_call(block, inouts))
 
         def output_update(func_chain, inouts):
             assigns = []
+
             rval = Concat(Extract(47, 16, inouts.hdr.ethernet.srcAddr), tmp)
             inouts.hdr.ethernet.srcAddr = rval
-            inouts.set(inouts.hdr.ethernet.srcAddr, rval)
-            return step(func_chain, inouts, assigns)
+            update = inouts.set(inouts.hdr.ethernet.srcAddr, rval)
+            assigns.append(inouts.const == update)
+            expr = And(assigns)
+            return step(func_chain, inouts)
+        assigns.append(output_update)
 
-            return step(func_chain, inouts, assigns)
-        func_chain.append(output_update)
+        expr = And(assigns)
+        return step(func_chain, inouts)
+    return apply(func_chain, inouts)
 
-        return func_chain
-    # return the apply function as sequence of logic clauses
-    func_chain = apply()
-    return step(func_chain, assigns=[], inouts=inouts)
+
+def control_ingress_1(inouts):
+
+    retval = BitVec("retval", 16)
+
+    def my_drop(func_chain, inouts, smeta):
+        assigns = []
+
+        expr = And(assigns)
+        return step(func_chain, inouts)
+
+    tmp = BitVec("tmp", 16)
+
+    def set_port(func_chain, inouts, output_port):
+        assigns = []
+
+        rval = output_port
+        inouts.standard_metadata.egress_spec = rval
+        update = inouts.set(inouts.standard_metadata.egress_spec, rval)
+        assigns.append(inouts.const == update)
+
+        expr = And(assigns)
+        return step(func_chain, inouts)
+
+    def mac_da_0(func_chain, inouts):
+
+        def actions():
+            actions = []
+            output_port = BitVec("output_port", 9)
+            actions.append(
+                Implies(ma_mac_da_0.action(mac_da_0_m) == 1,
+                        set_port(func_chain, inouts, output_port)))
+            actions.append(False)
+            return Xor(*actions)
+
+        key_matches = []
+        mac_da_0_key_0 = inouts.hdr.ethernet.dstAddr
+        key_matches.append(mac_da_0_key_0 == ma_mac_da_0.key_0(mac_da_0_m))
+
+        def default():
+            return my_drop(func_chain, inouts, inouts.standard_metadata)
+
+        return If(And(key_matches), actions(), default())
+
+    def apply(func_chain, inouts):
+        sub_chain = []
+
+        sub_chain.append(mac_da_0)
+
+        def block(func_chain, inouts):
+            sub_chain = []
+
+            def if_block(func_chain, inouts):
+
+                condition = (
+                    Extract(15, 0, inouts.hdr.ethernet.srcAddr) > BitVecVal(5, 16))
+
+                def is_true():
+                    sub_chain = []
+
+                    def local_update(func_chain, inouts):
+
+                        nonlocal retval
+                        retval = (Extract(15, 0, inouts.hdr.ethernet.srcAddr) +
+                                  BitVecVal(65535, 16))
+                        return step(func_chain, inouts)
+                    sub_chain.append(local_update)
+
+                    sub_chain.extend(func_chain)
+                    return step(sub_chain, inouts)
+
+                def is_false():
+                    sub_chain = []
+
+                    def local_update(func_chain, inouts):
+
+                        nonlocal retval
+                        retval = Extract(15, 0, inouts.hdr.ethernet.srcAddr)
+                        return step(func_chain, inouts)
+                    sub_chain.append(local_update)
+
+                    sub_chain.extend(func_chain)
+                    return step(sub_chain, inouts)
+                return If(condition, is_true(), is_false())
+            sub_chain.append(if_block)
+
+            sub_chain.extend(func_chain)
+            return step(sub_chain, inouts)
+        sub_chain.append(block)
+
+        def output_update(func_chain, inouts):
+
+            rval = Concat(Extract(47, 16, inouts.hdr.ethernet.srcAddr), retval)
+            inouts.hdr.ethernet.srcAddr = rval
+            update = inouts.set(inouts.hdr.ethernet.srcAddr, rval)
+            expr = (inouts.const == update)
+            return step(func_chain, inouts, expr)
+        sub_chain.append(output_update)
+
+        def output_update(func_chain, inouts):
+
+            rval = Concat(Extract(45, 14, inouts.hdr.ethernet.dstAddr), retval)
+            inouts.hdr.ethernet.dstAddr = rval
+            update = inouts.set(inouts.hdr.ethernet.dstAddr, rval)
+            expr = (inouts.const == update)
+            return step(func_chain, inouts, expr)
+        sub_chain.append(output_update)
+
+        sub_chain.extend(func_chain)
+        return step(sub_chain, inouts)
+
+    return step(func_chain=[apply], inouts=inouts)
 
 
 if __name__ == '__main__':
