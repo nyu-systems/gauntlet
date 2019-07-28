@@ -335,8 +335,6 @@ def z3_check():
 
     inouts = INOUTS()
     bounds = [inouts.const, mac_da_0_m]
-    print(control_ingress_1(inouts))
-    exit(0)
     tv_equiv = simplify(control_ingress_2(inouts) != control_ingress_3(inouts))
     s.add(Exists(bounds, tv_equiv))
     print(tv_equiv)
@@ -362,10 +360,6 @@ def step(func_chain, inouts, expr=True):
     return expr
 
 
-def z3_call(fun, inouts, *args):
-    inouts = copy.deepcopy(inouts)
-    return fun(func_chain, inouts, *args)
-
 
 def mark_to_drop(assigns, standard_metadata):
     assigns = []
@@ -387,8 +381,8 @@ def control_ingress_0(inouts):
 
     def my_drop(func_chain, inouts, smeta):
         assigns = []
-        expr = And(assigns)
 
+        expr = And(assigns)
         return step(func_chain, inouts)
 
     tmp = BitVec("tmp", 16)
@@ -422,104 +416,97 @@ def control_ingress_0(inouts):
         def default():
             return my_drop(func_chain, inouts, inouts.standard_metadata)
 
-        expr = If(And(key_matches), actions(), default())
-        return step(func_chain, inouts)
+        return If(And(key_matches), actions(), default())
 
     def apply(func_chain, inouts):
-        assigns = []
-        assigns.append(mac_da_0)
+        sub_chain = []
+
+        sub_chain.append(mac_da_0)
 
         def block(func_chain, inouts):
-            assigns = []
+            sub_chain = []
 
             x_0 = Extract(15, 0, inouts.hdr.ethernet.srcAddr)
-            hasReturned = Var(False, BoolSort())
+            hasReturned = False
             retval = BitVec("retval", 16)
 
             def if_block(func_chain, inouts):
 
-                condition = (x_0 > BitVecVal(5, 16))
+                condition = (
+                    Extract(15, 0, inouts.hdr.ethernet.srcAddr) > BitVecVal(5, 16))
 
                 def is_true():
-                    assigns = []
+                    sub_chain = []
 
                     def local_update(func_chain, inouts):
-                        assigns = []
 
                         nonlocal hasReturned
-                        hasReturned = Var(True, BoolSort())
-                        expr = And(assigns)
+                        hasReturned = True
                         return step(func_chain, inouts)
-                    assigns.append(local_update)
+                    sub_chain.append(local_update)
 
                     def local_update(func_chain, inouts):
-                        assigns = []
 
                         nonlocal retval
                         retval = x_0 + BitVecVal(65535, 16)
-                        expr = And(assigns)
                         return step(func_chain, inouts)
-                    assigns.append(local_update)
-                    expr = And(assigns)
-                    return step(func_chain, inouts)
+                    sub_chain.append(local_update)
+
+                    sub_chain.extend(func_chain)
+                    return step(sub_chain, inouts)
 
                 def is_false():
-                    assigns = []
+                    sub_chain = []
 
                     def local_update(func_chain, inouts):
-                        assigns = []
 
                         nonlocal hasReturned
-                        hasReturned = Var(True, BoolSort())
-                        expr = And(assigns)
+                        hasReturned = True
                         return step(func_chain, inouts)
-                    assigns.append(local_update)
+                    sub_chain.append(local_update)
 
                     def local_update(func_chain, inouts):
-                        assigns = []
 
                         nonlocal retval
                         retval = x_0
-                        expr = And(assigns)
                         return step(func_chain, inouts)
-                    assigns.append(local_update)
-                    expr = And(assigns)
-                    return step(func_chain, inouts)
+                    sub_chain.append(local_update)
 
-                return If(condition, is_true(),
-                          is_false())
-            assigns.append(if_block(func_chain, inouts))
+                    sub_chain.extend(func_chain)
+                    return step(sub_chain, inouts)
+
+                return If(condition, is_true(), is_false())
+            sub_chain.append(if_block)
 
             def local_update(func_chain, inouts):
-                assigns = []
 
                 nonlocal tmp
                 tmp = retval
-                expr = And(assigns)
                 return step(func_chain, inouts)
-            assigns.append(local_update)
-            expr = And(assigns)
-            return step(func_chain, inouts)
-        assigns.append(z3_call(block, inouts))
+            sub_chain.append(local_update)
+
+            sub_chain.extend(func_chain)
+            return step(sub_chain, inouts)
+        sub_chain.append(block)
 
         def output_update(func_chain, inouts):
-            assigns = []
 
             rval = Concat(Extract(47, 16, inouts.hdr.ethernet.srcAddr), tmp)
             inouts.hdr.ethernet.srcAddr = rval
             update = inouts.set(inouts.hdr.ethernet.srcAddr, rval)
-            assigns.append(inouts.const == update)
-            expr = And(assigns)
-            return step(func_chain, inouts)
-        assigns.append(output_update)
+            expr = (inouts.const == update)
+            return step(func_chain, inouts, expr)
+        sub_chain.append(output_update)
 
-        expr = And(assigns)
-        return step(func_chain, inouts)
-    return apply(func_chain, inouts)
+        sub_chain.extend(func_chain)
+        return step(sub_chain, inouts)
+
+    return step(func_chain=[apply], inouts=inouts)
 
 
 def control_ingress_1(inouts):
 
+    tmp = BitVec("tmp", 16)
     retval = BitVec("retval", 16)
 
     def my_drop(func_chain, inouts, smeta):
@@ -527,8 +514,6 @@ def control_ingress_1(inouts):
 
         expr = And(assigns)
         return step(func_chain, inouts)
-
-    tmp = BitVec("tmp", 16)
 
     def set_port(func_chain, inouts, output_port):
         assigns = []
@@ -600,6 +585,7 @@ def control_ingress_1(inouts):
 
                     sub_chain.extend(func_chain)
                     return step(sub_chain, inouts)
+
                 return If(condition, is_true(), is_false())
             sub_chain.append(if_block)
 
@@ -616,11 +602,198 @@ def control_ingress_1(inouts):
             return step(func_chain, inouts, expr)
         sub_chain.append(output_update)
 
+        sub_chain.extend(func_chain)
+        return step(sub_chain, inouts)
+
+    return step(func_chain=[apply], inouts=inouts)
+
+
+def control_ingress_2(inouts):
+
+    tmp = BitVec("tmp", 16)
+    retval = BitVec("retval", 16)
+
+    def my_drop(func_chain, inouts, smeta):
+        assigns = []
+
+        expr = And(assigns)
+        return step(func_chain, inouts)
+
+    def set_port(func_chain, inouts, output_port):
+        assigns = []
+
+        rval = output_port
+        inouts.standard_metadata.egress_spec = rval
+        update = inouts.set(inouts.standard_metadata.egress_spec, rval)
+        assigns.append(inouts.const == update)
+
+        expr = And(assigns)
+        return step(func_chain, inouts)
+
+    def mac_da_0(func_chain, inouts):
+
+        def actions():
+            actions = []
+            output_port = BitVec("output_port", 9)
+            actions.append(
+                Implies(ma_mac_da_0.action(mac_da_0_m) == 1,
+                        set_port(func_chain, inouts, output_port)))
+            actions.append(False)
+            return Xor(*actions)
+
+        key_matches = []
+        mac_da_0_key_0 = inouts.hdr.ethernet.dstAddr
+        key_matches.append(mac_da_0_key_0 == ma_mac_da_0.key_0(mac_da_0_m))
+
+        def default():
+            return my_drop(func_chain, inouts, inouts.standard_metadata)
+
+        return If(And(key_matches), actions(), default())
+
+    def apply(func_chain, inouts):
+        sub_chain = []
+
+        sub_chain.append(mac_da_0)
+
+        def if_block(func_chain, inouts):
+
+            condition = (
+                Extract(15, 0, inouts.hdr.ethernet.srcAddr) > BitVecVal(5, 16))
+
+            def is_true():
+                sub_chain = []
+
+                def local_update(func_chain, inouts):
+
+                    nonlocal retval
+                    retval = (Extract(15, 0, inouts.hdr.ethernet.srcAddr) +
+                              BitVecVal(65535, 16))
+                    return step(func_chain, inouts)
+                sub_chain.append(local_update)
+
+                sub_chain.extend(func_chain)
+                return step(sub_chain, inouts)
+
+            def is_false():
+                sub_chain = []
+
+                def local_update(func_chain, inouts):
+
+                    nonlocal retval
+                    retval = Extract(15, 0, inouts.hdr.ethernet.srcAddr)
+                    return step(func_chain, inouts)
+                sub_chain.append(local_update)
+
+                sub_chain.extend(func_chain)
+                return step(sub_chain, inouts)
+
+            return If(condition, is_true(), is_false())
+        sub_chain.append(if_block)
+
         def output_update(func_chain, inouts):
 
-            rval = Concat(Extract(45, 14, inouts.hdr.ethernet.dstAddr), retval)
-            inouts.hdr.ethernet.dstAddr = rval
-            update = inouts.set(inouts.hdr.ethernet.dstAddr, rval)
+            rval = Concat(Extract(47, 16, inouts.hdr.ethernet.srcAddr), retval)
+            inouts.hdr.ethernet.srcAddr = rval
+            update = inouts.set(inouts.hdr.ethernet.srcAddr, rval)
+            expr = (inouts.const == update)
+            return step(func_chain, inouts, expr)
+        sub_chain.append(output_update)
+
+        sub_chain.extend(func_chain)
+        return step(sub_chain, inouts)
+
+    return step(func_chain=[apply], inouts=inouts)
+
+
+def control_ingress_3(inouts):
+
+    tmp = BitVec("tmp", 16)
+    retval = BitVec("retval", 16)
+
+    def my_drop(func_chain, inouts, smeta):
+        assigns = []
+
+        expr = And(assigns)
+        return step(func_chain, inouts)
+
+    def set_port(func_chain, inouts, output_port):
+        assigns = []
+
+        rval = output_port
+        inouts.standard_metadata.egress_spec = rval
+        update = inouts.set(inouts.standard_metadata.egress_spec, rval)
+        assigns.append(inouts.const == update)
+
+        expr = And(assigns)
+        return step(func_chain, inouts)
+
+    def mac_da_0(func_chain, inouts):
+
+        def actions():
+            actions = []
+            output_port = BitVec("output_port", 9)
+            actions.append(
+                Implies(ma_mac_da_0.action(mac_da_0_m) == 1,
+                        set_port(func_chain, inouts, output_port)))
+            actions.append(False)
+            return Xor(*actions)
+
+        key_matches = []
+        mac_da_0_key_0 = inouts.hdr.ethernet.dstAddr
+        key_matches.append(mac_da_0_key_0 == ma_mac_da_0.key_0(mac_da_0_m))
+
+        def default():
+            return my_drop(func_chain, inouts, inouts.standard_metadata)
+
+        return If(And(key_matches), actions(), default())
+
+    def apply(func_chain, inouts):
+        sub_chain = []
+
+        sub_chain.append(mac_da_0)
+
+        def if_block(func_chain, inouts):
+
+            condition = (
+                Extract(15, 0, inouts.hdr.ethernet.srcAddr) > BitVecVal(5, 16))
+
+            def is_true():
+                sub_chain = []
+
+                def local_update(func_chain, inouts):
+
+                    nonlocal retval
+                    retval = (Extract(15, 0, inouts.hdr.ethernet.srcAddr) +
+                              BitVecVal(65535, 16))
+                    return step(func_chain, inouts)
+                sub_chain.append(local_update)
+
+                sub_chain.extend(func_chain)
+                return step(sub_chain, inouts)
+
+            def is_false():
+                sub_chain = []
+
+                def local_update(func_chain, inouts):
+
+                    nonlocal retval
+                    retval = Extract(15, 0, inouts.hdr.ethernet.srcAddr)
+                    return step(func_chain, inouts)
+                sub_chain.append(local_update)
+
+                sub_chain.extend(func_chain)
+                return step(sub_chain, inouts)
+
+            return If(condition, is_true(), is_false())
+        sub_chain.append(if_block)
+
+        def output_update(func_chain, inouts):
+
+            rval = (inouts.hdr.ethernet.srcAddr &
+                    ~BitVecVal(0xffff, 48) | ZeroExt(48 - 16, retval) << 0 &
+                    BitVecVal(0xffff, 48))
+            inouts.hdr.ethernet.srcAddr = rval
+            update = inouts.set(inouts.hdr.ethernet.srcAddr, rval)
             expr = (inouts.const == update)
             return step(func_chain, inouts, expr)
         sub_chain.append(output_update)
