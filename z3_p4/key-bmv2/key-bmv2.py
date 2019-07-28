@@ -161,15 +161,15 @@ class STANDARD_METADATA_T():
 
 ''' HEADERS '''
 # The input headers of the control pipeline
+# Datatypes have to be declared outside the type object because of issues with
+# deepcopy()
 
 hdr = Datatype("hdr")
-hdr.declare("mk_hdr", ('a', BitVecSort(32)),
-            ('b', BitVecSort(32)))
+hdr.declare("mk_hdr", ('a', BitVecSort(32)), ('b', BitVecSort(32)))
 hdr = hdr.create()
 
 
 class HDR():
-    name = "hdr"
 
     def __init__(self):
         self.name = "hdr%s" % str(id(self))[-4:]
@@ -203,7 +203,10 @@ class HDR():
         return self.valid
 
     def setValid(self):
-        self.valid == Var(True, BoolSort())
+        self.valid = True
+
+    def setInvalid(self):
+        self.valid = False
 
 
 ''' STRUCTS '''
@@ -264,13 +267,10 @@ class META():
         return update
 
 
-''' INPUT VARIABLES '''
-
-''' Initialize the header  These are our inputs and outputs
- Think of it as the header inputs after they have been parsed'''
-
 ''' OUTPUT '''
-''' The final output of the control pipeline in a single data type.
+''' Initialize the header  These are our inputs and outputs
+ Think of it as the header inputs after they have been parsed.
+ The final output of the control pipeline in a single data type.
  This corresponds to the arguments of the control function'''
 inouts = Datatype("inouts")
 inouts.declare(f"mk_inouts", ('h', headers), ('m', meta),
@@ -279,7 +279,6 @@ inouts = inouts.create()
 
 
 class INOUTS():
-    name = "inouts"
 
     def __init__(self):
         self.name = "inouts%s" % str(id(self))[-4:]
