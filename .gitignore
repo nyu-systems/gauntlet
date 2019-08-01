@@ -2,3 +2,4 @@ single_passes
 dumps
 *.p4i
 *.json
+z3_p4/__pycache__/

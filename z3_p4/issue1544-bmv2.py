@@ -1,5 +1,9 @@
-from z3 import *
+from p4z3_base import *
 import os
+
+''' Model imports at the top of the p4 file '''
+from v1model import *
+
 
 ''' SOLVER '''
 s = Solver()
@@ -40,7 +44,8 @@ class ETHERNET_T():
         self.revisions.append(self.const)
 
     def make(self):
-        return ethernet_t.mk_ethernet_t(self.dstAddr, self.srcAddr, self.etherType)
+        return ethernet_t.mk_ethernet_t(
+            self.dstAddr, self.srcAddr, self.etherType)
 
     def set(self, lvalue, rvalue):
         z3_copy = self.make()
@@ -148,139 +153,6 @@ standard_metadata_t.declare(f"mk_standard_metadata_t",
 standard_metadata_t = standard_metadata_t.create()
 
 
-''' TABLES '''
-''' Standard metadata definitions. These are typically defined by the model
-    imported on top of the file.'''
-
-
-class STANDARD_METADATA_T():
-
-    def __init__(self):
-        self.name = "standard_metadata_t%s" % str(id(self))[-4:]
-        self.const = Const(f"{self.name}_0", standard_metadata_t)
-        self.revisions = [self.const]
-        # self.ingress_port = self.ingress_port_z3()
-        self.egress_spec = self.egress_spec_z3()
-        # self.egress_port = self.egress_port_z3()
-        # self.clone_spec = self.clone_spec_z3()
-        # self.instance_type = self.instance_type_z3()
-        # self.drop = self.drop_z3()
-        # self.recirculate_port = self.recirculate_port_z3()
-        # self.packet_length = self.packet_length_z3()
-        # self.enq_timestamp = self.enq_timestamp_z3()
-        # self.enq_qdepth = self.enq_qdepth_z3()
-        # self.deq_timedelta = self.deq_timedelta_z3()
-        # self.deq_qdepth = self.deq_qdepth_z3()
-        # self.ingress_global_timestamp = self.ingress_global_timestamp_z3()
-        # self.egress_global_timestamp = self.egress_global_timestamp_z3()
-        # self.lf_field_list = self.lf_field_list_z3()
-        # self.mcast_grp = self.mcast_grp_z3()
-        # self.resubmit_flag = self.resubmit_flag_z3()
-        # self.egress_rid = self.egress_rid_z3()
-        # self.recirculate_flag = self.recirculate_flag_z3()
-        # self.checksum_error = self.checksum_error_z3()
-        # self.priority = self.priority_z3()
-
-    def ingress_port_z3(self):
-        return standard_metadata_t.ingress_port(self.const)
-
-    def egress_spec_z3(self):
-        return standard_metadata_t.egress_spec(self.const)
-
-    def egress_port_z3(self):
-        return standard_metadata_t.egress_port(self.const)
-
-    def clone_spec_z3(self):
-        return standard_metadata_t.clone_spec(self.const)
-
-    def instance_type_z3(self):
-        return standard_metadata_t.instance_type(self.const)
-
-    def drop_z3(self):
-        return standard_metadata_t.drop(self.const)
-
-    def recirculate_port_z3(self):
-        return standard_metadata_t.recirculate_port(self.const)
-
-    def packet_length_z3(self):
-        return standard_metadata_t.packet_length(self.const)
-
-    def enq_timestamp_z3(self):
-        return standard_metadata_t.enq_timestamp(self.const)
-
-    def enq_qdepth_z3(self):
-        return standard_metadata_t.enq_qdepth(self.const)
-
-    def deq_timedelta_z3(self):
-        return standard_metadata_t.deq_timedelta(self.const)
-
-    def deq_qdepth_z3(self):
-        return standard_metadata_t.deq_qdepth(self.const)
-
-    def ingress_global_timestamp_z3(self):
-        return standard_metadata_t.ingress_global_timestamp(self.const)
-
-    def egress_global_timestamp_z3(self):
-        return standard_metadata_t.egress_global_timestamp(self.const)
-
-    def lf_field_list_z3(self):
-        return standard_metadata_t.lf_field_list(self.const)
-
-    def mcast_grp_z3(self):
-        return standard_metadata_t.mcast_grp(self.const)
-
-    def resubmit_flag_z3(self):
-        return standard_metadata_t.resubmit_flag(self.const)
-
-    def egress_rid_z3(self):
-        return standard_metadata_t.egress_rid(self.const)
-
-    def recirculate_flag_z3(self):
-        return standard_metadata_t.recirculate_flag(self.const)
-
-    def checksum_error_z3(self):
-        return standard_metadata_t.checksum_error(self.const)
-
-    def priority_z3(self):
-        return standard_metadata_t.priority(self.const)
-
-    def update(self):
-        index = len(self.revisions)
-        self.const = Const(f"{self.name}_{index}", standard_metadata_t)
-        self.revisions.append(self.const)
-
-    def make(self):
-        return standard_metadata_t.mk_standard_metadata_t(
-            # self.ingress_port,
-            self.egress_spec,
-            # self.egress_port,
-            # self.clone_spec,
-            # self.instance_type,
-            # self.drop,
-            # self.recirculate_port,
-            # self.packet_length,
-            # self.enq_timestamp,
-            # self.enq_qdepth,
-            # self.deq_timedelta,
-            # self.deq_qdepth,
-            # self.ingress_global_timestamp,
-            # self.egress_global_timestamp,
-            # self.lf_field_list,
-            # self.mcast_grp,
-            # self.resubmit_flag,
-            # self.egress_rid,
-            # self.recirculate_flag,
-            # self.checksum_error,
-            # self.priority,
-        )
-
-    def set(self, lvalue, rvalue):
-        copy = self.make()
-        update = substitute(copy, (lvalue, rvalue))
-        self.update()
-        return update
-
-
 ''' INPUT VARIABLES AND MATCH-ACTION ENTRIES'''
 
 ''' Initialize the header and match-action constraints
@@ -331,26 +203,10 @@ mac_da_0_m = Const('ma_mac_da_0_m', ma_mac_da_0)
 s.add(0 < ma_mac_da_0.action(mac_da_0_m), ma_mac_da_0.action(mac_da_0_m) < 3)
 
 
-def z3_check():
-
-    inouts = INOUTS()
-    bounds = [inouts.const, mac_da_0_m]
-    tv_equiv = simplify(control_ingress_2(inouts) != control_ingress_3(inouts))
-    s.add(Exists(bounds, tv_equiv))
-    print(tv_equiv)
-    print (s.sexpr())
-    ret = s.check()
-    if ret == sat:
-        print (ret)
-        print (s.model())
-        return os.EX_PROTOCOL
-    else:
-        print (ret)
-        return os.EX_OK
-
-
 def step(func_chain, inouts, expr=True):
-
+    ''' The step function ensures that modifications are propagated to
+    all subsequent operations. This is important to guarantee correctness with
+    branching or local modification. '''
     if func_chain:
         next_fun = func_chain[0]
         func_chain = func_chain[1:]
@@ -358,23 +214,6 @@ def step(func_chain, inouts, expr=True):
         inouts = copy.deepcopy(inouts)
         expr = next_fun(func_chain, inouts)
     return expr
-
-
-
-def mark_to_drop(assigns, standard_metadata):
-    assigns = []
-
-    rval = BitVecVal(0, 1)
-    standard_metadata.drop = rval
-    update = standard_metadata.set(inouts.standard_metadata.drop, rval)
-    assigns.append(inouts.const == update)
-
-    rval = BitVecVal(0, 16)
-    inouts.standard_metadata.mcast_grp = rval
-    update = standard_metadata.set(inouts.standard_metadata.mcast_grp, rval)
-    assigns.append(inouts.const == update)
-
-    return assigns
 
 
 def control_ingress_0(inouts):
@@ -802,6 +641,31 @@ def control_ingress_3(inouts):
         return step(sub_chain, inouts)
 
     return step(func_chain=[apply], inouts=inouts)
+
+
+def z3_check():
+    # The equivalence check of the solver
+    # For all input packets and possible table matches the programs should
+    # be the same
+    ''' SOLVER '''
+    s = Solver()
+
+    inouts = INOUTS()
+    bounds = [inouts.const]
+    # the equivalence equation
+    tv_equiv = simplify(control_ingress_0(s, inouts) !=
+                        control_ingress_1(s, inouts))
+    s.add(Exists(bounds, tv_equiv))
+    print(tv_equiv)
+    print (s.sexpr())
+    ret = s.check()
+    if ret == sat:
+        print (ret)
+        print (s.model())
+        return os.EX_PROTOCOL
+    else:
+        print (ret)
+        return os.EX_OK
 
 
 if __name__ == '__main__':
