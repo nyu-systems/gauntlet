@@ -157,7 +157,7 @@ class INOUTS():
         copy = self.make()
         update = substitute(copy, (lvalue, rvalue))
         self.update()
-        return update
+        return (self.const == update)
 
 
 def control_ingress_0(s, inouts):
@@ -184,9 +184,9 @@ def control_ingress_0(s, inouts):
         # The data type constructor uses the values from the previous
         # variable version, except for the update target.
         assigns = []
-        inouts.h.h.b = inouts.h.h.a
         update = inouts.set(inouts.h.h.b, inouts.h.h.a)
-        assigns.append(inouts.const == update)
+        assigns.append(update)
+        inouts.h.h.b = inouts.h.h.a
         expr = And(assigns)
         return step(func_chain, inouts, expr)
 
@@ -205,10 +205,6 @@ def control_ingress_0(s, inouts):
         ma_c_t = ma_c_t.create()
         # The possible table entries as constant
         c_t_m = Const('c_t_m', ma_c_t)
-
-        # Reduce the range of action outputs to the total number of actions
-        # In this case we only have 2 actions
-        s.add(0 < ma_c_t.action(c_t_m), ma_c_t.action(c_t_m) < 3)
 
         # actions = {
         #     c_a_0();
@@ -256,9 +252,9 @@ def control_ingress_0(s, inouts):
 
         def output_update(func_chain, inouts):
             rval = BitVecVal(0, 9)
-            inouts.sm.egress_spec = rval
             update = inouts.set(inouts.sm.egress_spec, rval)
-            expr = (inouts.const == update)
+            inouts.sm.egress_spec = rval
+            expr = (update)
             return step(func_chain, inouts, expr)
         # sm.egress_spec = 9w0
         sub_chain.append(output_update)
@@ -293,9 +289,9 @@ def control_ingress_1(s, inouts):
         # The data type constructor uses the values from the previous
         # variable version, except for the update target.
         assigns = []
-        inouts.h.h.b = inouts.h.h.a
         update = inouts.set(inouts.h.h.b, inouts.h.h.a)
-        assigns.append(inouts.const == update)
+        assigns.append(update)
+        inouts.h.h.b = inouts.h.h.a
         expr = And(assigns)
         return step(func_chain, inouts, expr)
 
@@ -318,10 +314,6 @@ def control_ingress_1(s, inouts):
         ma_c_t = ma_c_t.create()
         # The possible table entries as constant
         c_t_m = Const('c_t_m', ma_c_t)
-
-        # Reduce the range of action outputs to the total number of actions
-        # In this case we only have 2 actions
-        s.add(0 < ma_c_t.action(c_t_m), ma_c_t.action(c_t_m) < 3)
 
         # actions = {
         #     c_a_0();
@@ -391,9 +383,9 @@ def control_ingress_1(s, inouts):
 
         def output_update(func_chain, inouts):
             rval = BitVecVal(0, 9)
-            inouts.sm.egress_spec = rval
             update = inouts.set(inouts.sm.egress_spec, rval)
-            expr = (inouts.const == update)
+            inouts.sm.egress_spec = rval
+            expr = update
             return step(func_chain, inouts, expr)
         # sm.egress_spec = 9w0
         sub_chain.append(output_update)
@@ -413,6 +405,7 @@ def z3_check():
 
     inouts = INOUTS()
     bounds = [inouts.const]
+    print(control_ingress_0(s, inouts))
     # the equivalence equation
     tv_equiv = simplify(control_ingress_0(s, inouts) !=
                         control_ingress_1(s, inouts))
@@ -431,3 +424,22 @@ def z3_check():
 
 if __name__ == '__main__':
     z3_check()
+
+
+# If(And(a(hdr6192_0) + a(hdr6192_0) == key_0(c_t_m)),
+#    Xor(Implies(action(c_t_m) == 1,
+#                inouts5688_2 ==
+#                mk_inouts(mk_headers(mk_hdr(a(hdr6192_0),
+#                                         a(hdr6192_0))),
+#                          mk_meta,
+#                          mk_standard_metadata_t(0))),
+#        Implies(action(c_t_m) == 2,
+#                inouts5688_2 ==
+#                mk_inouts(mk_headers(mk_hdr(a(hdr6192_0),
+#                                         a(hdr6192_0))),
+#                          mk_meta,
+#                          mk_standard_metadata_t(0)))),
+#    inouts5688_2 ==
+#    mk_inouts(mk_headers(mk_hdr(a(hdr6192_0), a(hdr6192_0))),
+#              mk_meta,
+#              mk_standard_metadata_t(0)))
