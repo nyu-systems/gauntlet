@@ -1,5 +1,6 @@
 from p4z3_base import *
 import os
+import operator
 
 ''' Model imports at the top of the p4 file '''
 from v1model import *
@@ -43,11 +44,18 @@ class HDR():
     def make(self):
         return hdr.mk_hdr(self.a, self.b)
 
-    def set(self, lvalue, rvalue):
-        z3_copy = self.make()
-        update = substitute(z3_copy, (lvalue, rvalue))
+    def set(self, lstring, rvalue):
+        # update the internal representation of the attribute
+        lvalue = operator.attrgetter(lstring)(self)
+        prefix, suffix = lstring.rsplit(".", 1)
+        target_class = operator.attrgetter(prefix)(self)
+        setattr(target_class, suffix, rvalue)
+        # generate a new version of the z3 datatype
+        copy = self.make()
+        # update the SSA version
         self.update()
-        return update
+        # return the update expression
+        return (self.const == copy)
 
     def isValid(self):
         return self.valid
@@ -86,11 +94,18 @@ class HEADERS():
     def make(self):
         return headers.mk_headers(self.h.make())
 
-    def set(self, lvalue, rvalue):
+    def set(self, lstring, rvalue):
+        # update the internal representation of the attribute
+        lvalue = operator.attrgetter(lstring)(self)
+        prefix, suffix = lstring.rsplit(".", 1)
+        target_class = operator.attrgetter(prefix)(self)
+        setattr(target_class, suffix, rvalue)
+        # generate a new version of the z3 datatype
         copy = self.make()
-        update = substitute(copy, (lvalue, rvalue))
+        # update the SSA version
         self.update()
-        return update
+        # return the update expression
+        return (self.const == copy)
 
 
 # struct Meta {
@@ -115,11 +130,18 @@ class META():
     def make(self):
         return meta.mk_meta
 
-    def set(self, lvalue, rvalue):
+    def set(self, lstring, rvalue):
+        # update the internal representation of the attribute
+        lvalue = operator.attrgetter(lstring)(self)
+        prefix, suffix = lstring.rsplit(".", 1)
+        target_class = operator.attrgetter(prefix)(self)
+        setattr(target_class, suffix, rvalue)
+        # generate a new version of the z3 datatype
         copy = self.make()
-        update = substitute(copy, (lvalue, rvalue))
+        # update the SSA version
         self.update()
-        return update
+        # return the update expression
+        return (self.const == copy)
 
 
 ''' OUTPUT '''
@@ -153,11 +175,18 @@ class INOUTS():
     def make(self):
         return inouts.mk_inouts(self.h.make(), self.m.make(), self.sm.make())
 
-    def set(self, lvalue, rvalue):
+    def set(self, lstring, rvalue):
+        # update the internal representation of the attribute
+        lvalue = operator.attrgetter(lstring)(self)
+        prefix, suffix = lstring.rsplit(".", 1)
+        target_class = operator.attrgetter(prefix)(self)
+        setattr(target_class, suffix, rvalue)
+        # generate a new version of the z3 datatype
         copy = self.make()
-        update = substitute(copy, (lvalue, rvalue))
+        # update the SSA version
         self.update()
-        return (self.const == update)
+        # return the update expression
+        return (self.const == copy)
 
 
 def control_ingress_0(s, inouts):
@@ -184,9 +213,9 @@ def control_ingress_0(s, inouts):
         # The data type constructor uses the values from the previous
         # variable version, except for the update target.
         assigns = []
-        update = inouts.set(inouts.h.h.b, inouts.h.h.a)
+        rval = inouts.h.h.a
+        update = inouts.set("h.h.b", rval)
         assigns.append(update)
-        inouts.h.h.b = inouts.h.h.a
         expr = And(assigns)
         return step(func_chain, inouts, expr)
 
@@ -252,8 +281,7 @@ def control_ingress_0(s, inouts):
 
         def output_update(func_chain, inouts):
             rval = BitVecVal(0, 9)
-            update = inouts.set(inouts.sm.egress_spec, rval)
-            inouts.sm.egress_spec = rval
+            update = inouts.set("sm.egress_spec", rval)
             expr = (update)
             return step(func_chain, inouts, expr)
         # sm.egress_spec = 9w0
@@ -289,9 +317,9 @@ def control_ingress_1(s, inouts):
         # The data type constructor uses the values from the previous
         # variable version, except for the update target.
         assigns = []
-        update = inouts.set(inouts.h.h.b, inouts.h.h.a)
+        rval = inouts.h.h.a
+        update = inouts.set("h.h.b", rval)
         assigns.append(update)
-        inouts.h.h.b = inouts.h.h.a
         expr = And(assigns)
         return step(func_chain, inouts, expr)
 
@@ -383,8 +411,7 @@ def control_ingress_1(s, inouts):
 
         def output_update(func_chain, inouts):
             rval = BitVecVal(0, 9)
-            update = inouts.set(inouts.sm.egress_spec, rval)
-            inouts.sm.egress_spec = rval
+            update = inouts.set("sm.egress_spec", rval)
             expr = update
             return step(func_chain, inouts, expr)
         # sm.egress_spec = 9w0

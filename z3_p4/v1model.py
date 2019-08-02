@@ -151,11 +151,18 @@ class STANDARD_METADATA_T():
             # self.priority,
         )
 
-    def set(self, lvalue, rvalue):
+    def set(self, lstring, rvalue):
+        # update the internal representation of the attribute
+        lvalue = operator.attrgetter(lstring)(self)
+        prefix, suffix = lstring.rsplit(".", 1)
+        target_class = operator.attrgetter(prefix)(self)
+        setattr(target_class, suffix, rvalue)
+        # generate a new version of the z3 datatype
         copy = self.make()
-        update = substitute(copy, (lvalue, rvalue))
+        # update the SSA version
         self.update()
-        return update
+        # return the update expression
+        return (self.const == copy)
 
 
 def mark_to_drop(func_chain, inouts, assigns, standard_metadata):
