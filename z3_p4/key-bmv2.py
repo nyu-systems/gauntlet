@@ -220,64 +220,77 @@ def control_ingress_0(s, inouts):
         return step(func_chain, inouts, expr)
 
     # @name("ingress.c.t") table c_t {
-    def c_t(func_chain, inouts):
+    class c_t():
         ''' This is a table '''
 
-        ''' The table constant we are matching with.
-         Right now, we have a hacky version of integer values which
-         mimic an enum. Each integer value corresponds to a specific
-         action PER table. The number of available integer values is
-         constrained. '''
-        ma_c_t = Datatype('ma_c_t')
-        ma_c_t.declare('mk_ma_c_t', ('key_0', BitVecSort(32)),
-                       ('action', IntSort()))
-        ma_c_t = ma_c_t.create()
-        # The possible table entries as constant
-        c_t_m = Const('c_t_m', ma_c_t)
+        def __init__(self):
+            ''' The table constant we are matching with.
+             Right now, we have a hacky version of integer values which
+             mimic an enum. Each integer value corresponds to a specific
+             action PER table. The number of available integer values is
+             constrained. '''
+            self.ma_c_t = Datatype('ma_c_t')
+            self.ma_c_t.declare('mk_ma_c_t', ('key_0', BitVecSort(32)),
+                                ('action', IntSort()))
+            self.ma = self.ma_c_t.create()
+            # The possible table entries as constant
+            self.m = Const('c_t_m', self.ma)
+            # actions = {
+            #     c_a_0();
+            #     NoAction_0();
+            # }
+            self.actions = {
+                c_a_0: 1,
+                NoAction_0: 2,
+            }
+            # default_action = NoAction_0();
+            self.default = NoAction_0
 
-        # actions = {
-        #     c_a_0();
-        #     NoAction_0();
-        # }
-        def actions():
+        def table_action(self, func_chain, inouts):
             ''' This is a special macro to define action selection. We treat
             selection as a chain of implications. If we match, then the clause
             returned by the action must be valid.
-            This is an exclusive operation, so only Xoring is valid.
             '''
             actions = []
-            actions.append(Implies(ma_c_t.action(c_t_m) == 1,
-                                   c_a_0(func_chain, inouts)))
-            actions.append(Implies(ma_c_t.action(c_t_m) == 2,
-                                   NoAction_0(func_chain, inouts)))
-            return Xor(*actions)
+            for f_a, f_id in self.actions.items():
+                expr = Implies(self.ma.action(self.m) == f_id,
+                               f_a(func_chain, inouts))
+                actions.append(expr)
+            return And(*actions)
 
-        # The keys of the table are compared with the input keys.
-        # In this case we are matching a single value
-        # key = {
-        #     h.h.a + h.h.a: exact @name("e") ;
-        # }
-        key_matches = []
-        c_t_key_0 = inouts.h.h.a + inouts.h.h.a
-        # It is an exact match, so we use direct comparison
-        key_matches.append(c_t_key_0 == ma_c_t.key_0(c_t_m))
+        def table_match(self, inouts):
+            # The keys of the table are compared with the input keys.
+            # In this case we are matching a single value
+            # key = {
+            #     h.h.a + h.h.a: exact @name("e") ;
+            # }
+            key_matches = []
+            # Access the global variable key_0, which has been updated before
+            c_t_key_0 = inouts.h.h.a + inouts.h.h.a
+            # It is an exact match, so we use direct comparison
+            key_matches.append(c_t_key_0 == self.ma.key_0(self.m))
+            return And(key_matches)
 
-        # default_action = NoAction_0();
-        def default():
-            ''' The default action '''
-            # It is set to NoAction in this case
-            return NoAction_0(func_chain, inouts)
+        def action_run(self, inouts):
+            return If(self.table_match(inouts),
+                      self.ma.action(self.m),
+                      self.actions[self.default])
 
-        # This is a table match where we look up the provided key
-        # If we match select the associated action, else use the default action
-        return If(And(key_matches), actions(), default())
+        def apply(self, func_chain, inouts):
+            # This is a table match where we look up the provided key
+            # If we match select the associated action,
+            # else use the default action
+            return If(self.table_match(inouts),
+                      self.table_action(func_chain, inouts),
+                      self.default(func_chain, inouts))
+    c_t = c_t()
 
     def apply(func_chain, inouts):
         ''' The main function of the control plane. Each statement in this pipe
         is part of a list of functions. '''
         sub_chain = []
         # c_t.apply();
-        sub_chain.append(c_t)
+        sub_chain.append(c_t.apply)
 
         def output_update(func_chain, inouts):
             rval = BitVecVal(0, 9)
@@ -328,58 +341,70 @@ def control_ingress_1(s, inouts):
     key_0 = BitVec("key_0", 32)  # bit<32> key_0;
 
     # @name("ingress.c.t") table c_t {
-    def c_t(func_chain, inouts):
+    class c_t():
         ''' This is a table '''
 
-        ''' The table constant we are matching with.
-         Right now, we have a hacky version of integer values which
-         mimic an enum. Each integer value corresponds to a specific
-         action PER table. The number of available integer values is
-         constrained. '''
-        ma_c_t = Datatype('ma_c_t')
-        ma_c_t.declare('mk_ma_c_t', ('key_0', BitVecSort(32)),
-                       ('action', IntSort()))
-        ma_c_t = ma_c_t.create()
-        # The possible table entries as constant
-        c_t_m = Const('c_t_m', ma_c_t)
+        def __init__(self):
+            ''' The table constant we are matching with.
+             Right now, we have a hacky version of integer values which
+             mimic an enum. Each integer value corresponds to a specific
+             action PER table. The number of available integer values is
+             constrained. '''
+            self.ma_c_t = Datatype('ma_c_t')
+            self.ma_c_t.declare('mk_ma_c_t', ('key_0', BitVecSort(32)),
+                                ('action', IntSort()))
+            self.ma = self.ma_c_t.create()
+            # The possible table entries as constant
+            self.m = Const('c_t_m', self.ma)
+            # actions = {
+            #     c_a_0();
+            #     NoAction_0();
+            # }
+            self.actions = {
+                c_a_0: 1,
+                NoAction_0: 2,
+            }
+            # default_action = NoAction_0();
+            self.default = NoAction_0
 
-        # actions = {
-        #     c_a_0();
-        #     NoAction_0();
-        # }
-        def actions():
+        def table_action(self, func_chain, inouts):
             ''' This is a special macro to define action selection. We treat
             selection as a chain of implications. If we match, then the clause
             returned by the action must be valid.
-            This is an exclusive operation, so only Xoring is valid.
             '''
             actions = []
-            actions.append(Implies(ma_c_t.action(c_t_m) == 1,
-                                   c_a_0(func_chain, inouts)))
-            actions.append(Implies(ma_c_t.action(c_t_m) == 2,
-                                   NoAction_0(func_chain, inouts)))
-            return Xor(*actions)
+            for f_a, f_id in self.actions.items():
+                expr = Implies(self.ma.action(self.m) == f_id,
+                               f_a(func_chain, inouts))
+                actions.append(expr)
+            return And(*actions)
 
-        # The keys of the table are compared with the input keys.
-        # In this case we are matching a single value
-        # key = {
-        #     h.h.a + h.h.a: exact @name("e") ;
-        # }
-        key_matches = []
-        # We access the global variable key_0, which has been updated before
-        c_t_key_0 = key_0
-        # It is an exact match, so we use direct comparison
-        key_matches.append(c_t_key_0 == ma_c_t.key_0(c_t_m))
+        def table_match(self, inouts):
+            # The keys of the table are compared with the input keys.
+            # In this case we are matching a single value
+            # key = {
+            #     h.h.a + h.h.a: exact @name("e") ;
+            # }
+            key_matches = []
+            # Access the global variable key_0, which has been updated before
+            c_t_key_0 = key_0
+            # It is an exact match, so we use direct comparison
+            key_matches.append(c_t_key_0 == self.ma.key_0(self.m))
+            return And(key_matches)
 
-        # default_action = NoAction_0();
-        def default():
-            ''' The default action '''
-            # It is set to NoAction in this case
-            return NoAction_0(func_chain, inouts)
+        def action_run(self, inouts):
+            return If(self.table_match(inouts),
+                      self.ma.action(self.m),
+                      self.actions[self.default])
 
-        # This is a table match where we look up the provided key
-        # If we match select the associated action, else use the default action
-        return If(And(key_matches), actions(), default())
+        def apply(self, func_chain, inouts):
+            # This is a table match where we look up the provided key
+            # If we match select the associated action,
+            # else use the default action
+            return If(self.table_match(inouts),
+                      self.table_action(func_chain, inouts),
+                      self.default(func_chain, inouts))
+    c_t = c_t()
 
     def apply(func_chain, inouts):
         ''' The main function of the control plane. Each statement in this pipe
@@ -402,7 +427,7 @@ def control_ingress_1(s, inouts):
             # key_0 = h.h.a + h.h.a;
             sub_chain.append(local_update)
             # c_t.apply();
-            sub_chain.append(c_t)
+            sub_chain.append(c_t.apply)
 
             sub_chain.extend(func_chain)
             return step(sub_chain, inouts)
@@ -412,8 +437,7 @@ def control_ingress_1(s, inouts):
         def output_update(func_chain, inouts):
             rval = BitVecVal(0, 9)
             update = inouts.set("sm.egress_spec", rval)
-            expr = update
-            return step(func_chain, inouts, expr)
+            return step(func_chain, inouts, update)
         # sm.egress_spec = 9w0
         sub_chain.append(output_update)
 
