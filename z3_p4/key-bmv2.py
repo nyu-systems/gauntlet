@@ -1,6 +1,4 @@
 from p4z3_base import *
-import os
-import operator
 
 ''' Model imports at the top of the p4 file '''
 from v1model import *
@@ -15,56 +13,8 @@ from v1model import *
 #     bit<32> a;
 #     bit<32> b;
 # }
-hdr = Datatype("hdr")
-hdr.declare("mk_hdr", ('a', BitVecSort(32)), ('b', BitVecSort(32)))
-hdr = hdr.create()
-
-
-class HDR():
-
-    def __init__(self):
-        self.name = "hdr%s" % str(id(self))[-4:]
-        self.const = Const(f"{self.name}_0", hdr)
-        self.revisions = [self.const]
-        self.a = self.a_z3()
-        self.b = self.b_z3()
-        self.valid = Const('hdr_valid', BoolSort())
-
-    def a_z3(self):
-        return hdr.a(self.const)
-
-    def b_z3(self):
-        return hdr.b(self.const)
-
-    def update(self):
-        index = len(self.revisions)
-        self.const = Const(f"{self.name}_{index}", hdr)
-        self.revisions.append(self.const)
-
-    def make(self):
-        return hdr.mk_hdr(self.a, self.b)
-
-    def set(self, lstring, rvalue):
-        # update the internal representation of the attribute
-        lvalue = operator.attrgetter(lstring)(self)
-        prefix, suffix = lstring.rsplit(".", 1)
-        target_class = operator.attrgetter(prefix)(self)
-        setattr(target_class, suffix, rvalue)
-        # generate a new version of the z3 datatype
-        copy = self.make()
-        # update the SSA version
-        self.update()
-        # return the update expression
-        return (self.const == copy)
-
-    def isValid(self):
-        return self.valid
-
-    def setValid(self):
-        self.valid = True
-
-    def setInvalid(self):
-        self.valid = False
+z3_args = [('a', BitVecSort(32)), ('b', BitVecSort(32))]
+hdr, HDR = z3_reg.register_z3_type("hdr", Header, z3_args)
 
 
 ''' STRUCTS '''
@@ -73,75 +23,14 @@ class HDR():
 # struct Headers {
 #     hdr h;
 # }
-headers = Datatype("headers")
-headers.declare(f"mk_headers", ('h', hdr))
-headers = headers.create()
-
-
-class HEADERS():
-
-    def __init__(self):
-        self.name = "headers%s" % str(id(self))[-4:]
-        self.h = HDR()
-        self.const = Const(f"{self.name}_0", headers)
-        self.revisions = [self.const]
-
-    def update(self):
-        index = len(self.revisions)
-        self.const = Const(f"{self.name}_{index}", headers)
-        self.revisions.append(self.const)
-
-    def make(self):
-        return headers.mk_headers(self.h.make())
-
-    def set(self, lstring, rvalue):
-        # update the internal representation of the attribute
-        lvalue = operator.attrgetter(lstring)(self)
-        prefix, suffix = lstring.rsplit(".", 1)
-        target_class = operator.attrgetter(prefix)(self)
-        setattr(target_class, suffix, rvalue)
-        # generate a new version of the z3 datatype
-        copy = self.make()
-        # update the SSA version
-        self.update()
-        # return the update expression
-        return (self.const == copy)
+z3_args = [('h', hdr)]
+headers, HEADERS = z3_reg.register_z3_type("headers", Struct, z3_args)
 
 
 # struct Meta {
 # }
-meta = Datatype("meta")
-meta.declare(f"mk_meta")
-meta = meta.create()
-
-
-class META():
-
-    def __init__(self):
-        self.name = "meta%s" % str(id(self))[-4:]
-        self.const = Const(f"{self.name}_0", meta)
-        self.revisions = [self.const]
-
-    def update(self):
-        index = len(self.revisions)
-        self.const = Const(f"{self.name}_{index}", meta)
-        self.revisions.append(self.const)
-
-    def make(self):
-        return meta.mk_meta
-
-    def set(self, lstring, rvalue):
-        # update the internal representation of the attribute
-        lvalue = operator.attrgetter(lstring)(self)
-        prefix, suffix = lstring.rsplit(".", 1)
-        target_class = operator.attrgetter(prefix)(self)
-        setattr(target_class, suffix, rvalue)
-        # generate a new version of the z3 datatype
-        copy = self.make()
-        # update the SSA version
-        self.update()
-        # return the update expression
-        return (self.const == copy)
+z3_args = []
+meta, META = z3_reg.register_z3_type("meta", Struct, z3_args)
 
 
 ''' OUTPUT '''
@@ -151,42 +40,8 @@ class META():
  This corresponds to the arguments of the control function'''
 
 # control ingress(inout Headers h, inout Meta m, inout standard_metadata_t sm)
-inouts = Datatype("inouts")
-inouts.declare(f"mk_inouts", ('h', headers), ('m', meta),
-               ('sm', standard_metadata_t))
-inouts = inouts.create()
-
-
-class INOUTS():
-
-    def __init__(self):
-        self.name = "inouts%s" % str(id(self))[-4:]
-        self.h = HEADERS()
-        self.m = META()
-        self.sm = STANDARD_METADATA_T()
-        self.const = Const(f"{self.name}_0", inouts)
-        self.revisions = [self.const]
-
-    def update(self):
-        index = len(self.revisions)
-        self.const = Const(f"{self.name}_{index}", inouts)
-        self.revisions.append(self.const)
-
-    def make(self):
-        return inouts.mk_inouts(self.h.make(), self.m.make(), self.sm.make())
-
-    def set(self, lstring, rvalue):
-        # update the internal representation of the attribute
-        lvalue = operator.attrgetter(lstring)(self)
-        prefix, suffix = lstring.rsplit(".", 1)
-        target_class = operator.attrgetter(prefix)(self)
-        setattr(target_class, suffix, rvalue)
-        # generate a new version of the z3 datatype
-        copy = self.make()
-        # update the SSA version
-        self.update()
-        # return the update expression
-        return (self.const == copy)
+z3_args = [('h', headers), ('m', meta), ('sm', standard_metadata_t)]
+inouts, INOUTS = z3_reg.register_z3_type("inouts", Struct, z3_args)
 
 
 def control_ingress_0(s, inouts):
@@ -197,9 +52,10 @@ def control_ingress_0(s, inouts):
     def NoAction_0(func_chain, inouts):
         ''' This is an action
             NoAction just returns the current header as is '''
-        assigns = []
-        expr = And(assigns)
-        return step(func_chain, inouts, expr)
+        sub_chain = []
+
+        sub_chain.extend(func_chain)
+        return step(sub_chain, inouts)
 
     # @name("ingress.c.a") action c_a_0() {
     #     h.h.b = h.h.a;
@@ -212,78 +68,56 @@ def control_ingress_0(s, inouts):
         # Now we create the new version by using a data type constructor
         # The data type constructor uses the values from the previous
         # variable version, except for the update target.
-        assigns = []
-        rval = inouts.h.h.a
-        update = inouts.set("h.h.b", rval)
-        assigns.append(update)
-        expr = And(assigns)
-        return step(func_chain, inouts, expr)
+        sub_chain = []
+
+        def output_update(func_chain, inouts):
+            rval = inouts.h.h.a
+            expr = inouts.set("h.h.b", rval)
+            return step(func_chain, inouts, expr)
+        sub_chain.append(output_update)
+
+        sub_chain.extend(func_chain)
+        return step(sub_chain, inouts)
+    # @name("ingress.c.t") table c_t {
 
     # @name("ingress.c.t") table c_t {
-    class c_t():
+    class c_t(Table):
         ''' This is a table '''
+        ''' The table constant we are matching with.
+         Right now, we have a hacky version of integer values which
+         mimic an enum. Each integer value corresponds to a specific
+         action PER table. The number of available integer values is
+         constrained. '''
+        ma_c_t = Datatype('ma_c_t')
+        ma_c_t.declare('mk_ma_c_t', ('key_0', BitVecSort(32)),
+                       ('action', IntSort()))
+        ma = ma_c_t.create()
 
-        def __init__(self):
-            ''' The table constant we are matching with.
-             Right now, we have a hacky version of integer values which
-             mimic an enum. Each integer value corresponds to a specific
-             action PER table. The number of available integer values is
-             constrained. '''
-            self.ma_c_t = Datatype('ma_c_t')
-            self.ma_c_t.declare('mk_ma_c_t', ('key_0', BitVecSort(32)),
-                                ('action', IntSort()))
-            self.ma = self.ma_c_t.create()
-            # The possible table entries as constant
-            self.m = Const('c_t_m', self.ma)
-            # actions = {
-            #     c_a_0();
-            #     NoAction_0();
-            # }
-            self.actions = {
-                c_a_0: 1,
-                NoAction_0: 2,
-            }
-            # default_action = NoAction_0();
-            self.default = NoAction_0
-
-        def table_action(self, func_chain, inouts):
-            ''' This is a special macro to define action selection. We treat
-            selection as a chain of implications. If we match, then the clause
-            returned by the action must be valid.
-            '''
-            actions = []
-            for f_a, f_id in self.actions.items():
-                expr = Implies(self.ma.action(self.m) == f_id,
-                               f_a(func_chain, inouts))
-                actions.append(expr)
-            return And(*actions)
-
-        def table_match(self, inouts):
+        @classmethod
+        def table_match(cls, inouts):
             # The keys of the table are compared with the input keys.
             # In this case we are matching a single value
             # key = {
             #     h.h.a + h.h.a: exact @name("e") ;
             # }
             key_matches = []
-            # Access the global variable key_0, which has been updated before
+            # The key is an addition of two variables
             c_t_key_0 = inouts.h.h.a + inouts.h.h.a
             # It is an exact match, so we use direct comparison
-            key_matches.append(c_t_key_0 == self.ma.key_0(self.m))
+            key_matches.append(c_t_key_0 == cls.ma.key_0(cls.m))
             return And(key_matches)
 
-        def action_run(self, inouts):
-            return If(self.table_match(inouts),
-                      self.ma.action(self.m),
-                      self.actions[self.default])
-
-        def apply(self, func_chain, inouts):
-            # This is a table match where we look up the provided key
-            # If we match select the associated action,
-            # else use the default action
-            return If(self.table_match(inouts),
-                      self.table_action(func_chain, inouts),
-                      self.default(func_chain, inouts))
-    c_t = c_t()
+        # The possible table entries as constant
+        m = Const('c_t_m', ma)
+        # actions = {
+        #     c_a_0();
+        #     NoAction_0();
+        # }
+        actions = {
+            "c_a_0": (1, (c_a_0, ())),
+            "NoAction_0": (2, (NoAction_0, ())),
+        }
+        actions["default"] = (0, (NoAction_0, ()))
 
     def apply(func_chain, inouts):
         ''' The main function of the control plane. Each statement in this pipe
@@ -314,9 +148,10 @@ def control_ingress_1(s, inouts):
     def NoAction_0(func_chain, inouts):
         ''' This is an action
             NoAction just returns the current header as is '''
-        assigns = []
-        expr = And(assigns)
-        return step(func_chain, inouts, expr)
+        sub_chain = []
+
+        sub_chain.extend(func_chain)
+        return step(sub_chain, inouts)
 
     # @name("ingress.c.a") action c_a_0() {
     #     h.h.b = h.h.a;
@@ -329,82 +164,59 @@ def control_ingress_1(s, inouts):
         # Now we create the new version by using a data type constructor
         # The data type constructor uses the values from the previous
         # variable version, except for the update target.
-        assigns = []
-        rval = inouts.h.h.a
-        update = inouts.set("h.h.b", rval)
-        assigns.append(update)
-        expr = And(assigns)
-        return step(func_chain, inouts, expr)
+        sub_chain = []
+
+        def output_update(func_chain, inouts):
+            rval = inouts.h.h.a
+            expr = inouts.set("h.h.b", rval)
+            return step(func_chain, inouts, expr)
+        sub_chain.append(output_update)
+
+        sub_chain.extend(func_chain)
+        return step(sub_chain, inouts)
 
     # The key is defined in the control function
     # Practically, this is a placeholder variable
     key_0 = BitVec("key_0", 32)  # bit<32> key_0;
 
     # @name("ingress.c.t") table c_t {
-    class c_t():
+    class c_t(Table):
         ''' This is a table '''
+        ''' The table constant we are matching with.
+         Right now, we have a hacky version of integer values which
+         mimic an enum. Each integer value corresponds to a specific
+         action PER table. The number of available integer values is
+         constrained. '''
+        ma_c_t = Datatype('ma_c_t')
+        ma_c_t.declare('mk_ma_c_t', ('key_0', BitVecSort(32)),
+                       ('action', IntSort()))
+        ma = ma_c_t.create()
 
-        def __init__(self):
-            ''' The table constant we are matching with.
-             Right now, we have a hacky version of integer values which
-             mimic an enum. Each integer value corresponds to a specific
-             action PER table. The number of available integer values is
-             constrained. '''
-            self.ma_c_t = Datatype('ma_c_t')
-            self.ma_c_t.declare('mk_ma_c_t', ('key_0', BitVecSort(32)),
-                                ('action', IntSort()))
-            self.ma = self.ma_c_t.create()
-            # The possible table entries as constant
-            self.m = Const('c_t_m', self.ma)
-            # actions = {
-            #     c_a_0();
-            #     NoAction_0();
-            # }
-            self.actions = {
-                c_a_0: 1,
-                NoAction_0: 2,
-            }
-            # default_action = NoAction_0();
-            self.default = NoAction_0
-
-        def table_action(self, func_chain, inouts):
-            ''' This is a special macro to define action selection. We treat
-            selection as a chain of implications. If we match, then the clause
-            returned by the action must be valid.
-            '''
-            actions = []
-            for f_a, f_id in self.actions.items():
-                expr = Implies(self.ma.action(self.m) == f_id,
-                               f_a(func_chain, inouts))
-                actions.append(expr)
-            return And(*actions)
-
-        def table_match(self, inouts):
+        @classmethod
+        def table_match(cls, inouts):
             # The keys of the table are compared with the input keys.
             # In this case we are matching a single value
             # key = {
-            #     h.h.a + h.h.a: exact @name("e") ;
+            #     key_0: exact @name("e") ;
             # }
             key_matches = []
             # Access the global variable key_0, which has been updated before
             c_t_key_0 = key_0
             # It is an exact match, so we use direct comparison
-            key_matches.append(c_t_key_0 == self.ma.key_0(self.m))
+            key_matches.append(c_t_key_0 == cls.ma.key_0(cls.m))
             return And(key_matches)
 
-        def action_run(self, inouts):
-            return If(self.table_match(inouts),
-                      self.ma.action(self.m),
-                      self.actions[self.default])
-
-        def apply(self, func_chain, inouts):
-            # This is a table match where we look up the provided key
-            # If we match select the associated action,
-            # else use the default action
-            return If(self.table_match(inouts),
-                      self.table_action(func_chain, inouts),
-                      self.default(func_chain, inouts))
-    c_t = c_t()
+        # The possible table entries as constant
+        m = Const('c_t_m', ma)
+        # actions = {
+        #     c_a_0();
+        #     NoAction_0();
+        # }
+        actions = {
+            "c_a_0": (1, (c_a_0, ())),
+            "NoAction_0": (2, (NoAction_0, ())),
+        }
+        actions["default"] = (0, (NoAction_0, ()))
 
     def apply(func_chain, inouts):
         ''' The main function of the control plane. Each statement in this pipe
