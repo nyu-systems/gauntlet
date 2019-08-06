@@ -24,8 +24,7 @@ z3_args = [('ingress_port', BitVecSort(9)),
            # ('checksum_error', BitVecSort(1)),
            # ('priority', BitVecSort(3)),
            ]
-standard_metadata_t, STANDARD_METADATA_T = z3_reg.register_z3_type(
-    "standard_metadata_t", Struct, z3_args)
+z3_reg.register_z3_type("standard_metadata_t", Struct, z3_args)
 
 
 def mark_to_drop(func_chain, inouts, assigns, standard_metadata):

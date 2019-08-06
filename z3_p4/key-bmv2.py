@@ -14,7 +14,7 @@ from v1model import *
 #     bit<32> b;
 # }
 z3_args = [('a', BitVecSort(32)), ('b', BitVecSort(32))]
-hdr, HDR = z3_reg.register_z3_type("hdr", Header, z3_args)
+z3_reg.register_z3_type("hdr", Header, z3_args)
 
 
 ''' STRUCTS '''
@@ -23,14 +23,14 @@ hdr, HDR = z3_reg.register_z3_type("hdr", Header, z3_args)
 # struct Headers {
 #     hdr h;
 # }
-z3_args = [('h', hdr)]
-headers, HEADERS = z3_reg.register_z3_type("headers", Struct, z3_args)
+z3_args = [('h', z3_reg.reg["hdr"])]
+z3_reg.register_z3_type("headers", Struct, z3_args)
 
 
 # struct Meta {
 # }
 z3_args = []
-meta, META = z3_reg.register_z3_type("meta", Struct, z3_args)
+z3_reg.register_z3_type("meta", Struct, z3_args)
 
 
 ''' OUTPUT '''
@@ -40,8 +40,9 @@ meta, META = z3_reg.register_z3_type("meta", Struct, z3_args)
  This corresponds to the arguments of the control function'''
 
 # control ingress(inout Headers h, inout Meta m, inout standard_metadata_t sm)
-z3_args = [('h', headers), ('m', meta), ('sm', standard_metadata_t)]
-inouts, INOUTS = z3_reg.register_z3_type("inouts", Struct, z3_args)
+z3_args = [('h', z3_reg.reg["headers"]), ('m', z3_reg.reg["meta"]),
+           ('sm', z3_reg.reg["standard_metadata_t"])]
+z3_reg.register_z3_type("inouts", Struct, z3_args)
 
 
 def control_ingress_0(s, inouts):
@@ -266,7 +267,7 @@ def z3_check():
     ''' SOLVER '''
     s = Solver()
 
-    inouts = INOUTS()
+    inouts = z3_reg.reg["INOUTS"]()
     bounds = [inouts.const]
     print(control_ingress_0(s, inouts))
     # the equivalence equation

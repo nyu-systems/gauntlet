@@ -46,8 +46,6 @@ class Z3Registry():
 
         self.reg[z3_class] = type(name.upper(), (p4_class,), {})
 
-        return self.reg[z3_type], self.reg[z3_class]
-
 
 z3_reg = Z3Registry()
 
