@@ -269,10 +269,13 @@ def z3_check():
 
     inouts = z3_reg.reg["INOUTS"]()
     bounds = [inouts.const]
-    print(control_ingress_0(s, inouts))
+    out = control_ingress_0(s, inouts)
+    print("FINAL OUTPUT")
+    print(out)
+    exit(0)
     # the equivalence equation
     tv_equiv = simplify(control_ingress_0(s, inouts) !=
-                        control_ingress_1(s, inouts))
+                        control_ingress_0(s, inouts))
     s.add(Exists(bounds, tv_equiv))
     print(tv_equiv)
     print (s.sexpr())

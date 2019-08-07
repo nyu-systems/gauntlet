@@ -1,827 +1,813 @@
-from z3 import *
-
-
-''' SOLVER '''
-s = Solver()
-
-''' HEADERS '''
-# The input headers of the control pipeline
-ethernet_t = Datatype('ethernet_t')
-ethernet_t.declare('mk_ethernet_t',
-                   ('dstAddr', BitVecSort(48)),
-                   ('srcAddr', BitVecSort(48)),
-                   ('etherType', BitVecSort(16)))
-ethernet_t = ethernet_t.create()
-
-ipv4_t = Datatype('ipv4_t')
-ipv4_t.declare('mk_ipv4_t',
-               ('version', BitVecSort(4)), ('ihl', BitVecSort(4)),
-               ('diffserv', BitVecSort(8)), ('totalLen', BitVecSort(16)),
-               ('identification', BitVecSort(16)), ('flags', BitVecSort(3)),
-               ('fragOffset', BitVecSort(13)), ('ttl', BitVecSort(8)),
-               ('protocol', BitVecSort(8)), ('hdrChecksum', BitVecSort(16)),
-               ('srcAddr', BitVecSort(32)), ('dstAddr', BitVecSort(32)))
-ipv4_t = ipv4_t.create()
-
-ingress_metadata_t = Datatype('ingress_metadata_t')
-ingress_metadata_t.declare('mk_ingress_metadata_t',
-                           ('vrf', BitVecSort(12)), ('bd', BitVecSort(16)),
-                           ('nexthop_index', BitVecSort(16)))
-ingress_metadata_t = ingress_metadata_t.create()
-
-''' TABLES '''
-''' The table constant we are matching with.
- Actually this should be a match action tuple that picks the next action
- How to implement that? Some form of array?
- Right now, we have a hacky version of integer values which mimic an enum.
- Each integer value corresponds to a specific action PER table. The number of
- available integer values is constrained. '''
-ma_bd_0 = Datatype('ma_bd_0')
-ma_bd_0.declare('mk_ma_bd_0', ('key_0', BitVecSort(16)), ('action', IntSort()))
-ma_bd_0 = ma_bd_0.create()
-
-ma_ipv4_fib_0 = Datatype('ma_ipv4_fib_0')
-ma_ipv4_fib_0.declare('mk_ma_ipv4_fib_0',
-                      ('key_0', BitVecSort(12)),
-                      ('key_1', BitVecSort(32)),
-                      ('action', IntSort()))
-ma_ipv4_fib_0 = ma_ipv4_fib_0.create()
-
-ma_ipv4_fib_lpm_0 = Datatype('ma_ipv4_fib_lpm_0')
-ma_ipv4_fib_lpm_0.declare('mk_ma_ipv4_fib_lpm_0',
-                          ('key_0', BitVecSort(12)),
-                          ('key_1', BitVecSort(32)),
-                          ('action', IntSort()))
-ma_ipv4_fib_lpm_0 = ma_ipv4_fib_lpm_0.create()
-
-ma_nexthop_0 = Datatype('ma_nexthop_0')
-ma_nexthop_0.declare(
-    'mk_ma_nexthop_0', ('key_0', BitVecSort(16)), ('action', IntSort()))
-ma_nexthop_0 = ma_nexthop_0.create()
-
-ma_port_mapping_0 = Datatype('ma_port_mapping_0')
-ma_port_mapping_0.declare('mk_ma_port_mapping_0',
-                          ('key_0', BitVecSort(16)), ('action', IntSort()))
-ma_port_mapping_0 = ma_port_mapping_0.create()
-
-
-''' OUTPUT '''
-
-# the final output of the control pipeline in a single datatype
-p4_output = Datatype('p4_output')
-p4_output.declare('mk_output',
-                  ('ethernet_t', ethernet_t), ('ipv4_t', ipv4_t),
-                  ('ingress_metadata_t', ingress_metadata_t),
-                  ('egress_spec', BitVecSort(9)))
-p4_output = p4_output.create()
-
-
-''' INPUT VARIABLES AND MATCH-ACTION ENTRIES'''
-
-# Initialize the header and match-action constraints
-# These are our inputs
-# Think of it as the header inputs after they have been parsed
-ethernet_valid = Const('ethernet_valid', BoolSort())
-ipv4_valid = Const('ipv4_valid', BoolSort())
-
-# The possible table entries
-bd_0_m = Const('bd_0_m', ma_bd_0)
-# reduce the range of action outputs to the total number of actions
-s.add(0 < ma_bd_0.action(bd_0_m), ma_bd_0.action(bd_0_m) < 2)
-
-ipv4_fib_0_m = Const('ipv4_fib_0_m', ma_ipv4_fib_0)
-# reduce the range of action outputs to the total number of actions
-s.add(0 < ma_ipv4_fib_0.action(ipv4_fib_0_m),
-      ma_ipv4_fib_0.action(ipv4_fib_0_m) < 3)
-
-ipv4_fib_lpm_0_m = Const('ipv4_fib_lpm_0_m', ma_ipv4_fib_lpm_0)
-# reduce the range of action outputs to the total number of actions
-s.add(0 < ma_ipv4_fib_lpm_0.action(ipv4_fib_lpm_0_m),
-      ma_ipv4_fib_lpm_0.action(ipv4_fib_lpm_0_m) < 3)
-
-nexthop_0_m = Const('nexthop_0_m', ma_nexthop_0)
-# reduce the range of action outputs to the total number of actions
-s.add(0 < ma_nexthop_0.action(nexthop_0_m),
-      ma_nexthop_0.action(nexthop_0_m) < 3)
-
-port_mapping_0_m = Const('port_mapping_0_m', ma_port_mapping_0)
-# reduce the range of action outputs to the total number of actions
-s.add(0 < ma_port_mapping_0.action(port_mapping_0_m),
-      ma_port_mapping_0.action(port_mapping_0_m) < 2)
-
-
-# non-modifiable input variable
-ingress_port = BitVec("ingress_port", 16)
-
-
-def step(func_list, rets, assignments):
-    rets = list(rets)  # do not propagate the list per step
-    if func_list:
-        next_fun = func_list[0]
-        func_list = func_list[1:]
-        assignments.append(next_fun(func_list, rets))
-    else:
-        assignments.append(True)
-    return And(assignments)
-
-
-# The output header, one variable per modification
-ret_0 = Const("ret_0", p4_output)
-
-
-def control_ingress_0():
-
-    def NoAction_1(func_list, rets):
-        ''' This is an action '''
-        assignments = []
-        return step(func_list, rets, assignments)
-
-    def NoAction_8(func_list, rets):
-        ''' This is an action '''
-        assignments = []
-        return step(func_list, rets, assignments)
-
-    def NoAction_9(func_list, rets):
-        ''' This is an action '''
-        assignments = []
-        return step(func_list, rets, assignments)
-
-    def NoAction_10(func_list, rets):
-        ''' This is an action '''
-        assignments = []
-        assignments.append(True)
-        return step(func_list, rets, assignments)
-
-    def NoAction_11(func_list, rets):
-        ''' This is an action '''
-        assignments = []
-        return step(func_list, rets, assignments)
-
-    def set_vrf(func_list, rets, vrf_arg):
-        assignments = []
-
-        new_ret = len(rets)
-        prev_ret = new_ret - 1
-        rets.append(Const("ret_%d" % new_ret, p4_output))
-        assign = p4_output.mk_output(
-            p4_output.ethernet_t(rets[prev_ret]),
-            p4_output.ipv4_t(rets[prev_ret]),
-            ingress_metadata_t.mk_ingress_metadata_t(
-                vrf_arg,
-                ingress_metadata_t.bd(p4_output.ingress_metadata_t(ret_0)),
-                ingress_metadata_t.nexthop_index(
-                    p4_output.ingress_metadata_t(ret_0))),
-            p4_output.egress_spec(rets[prev_ret]))
-        assignments.append(rets[new_ret] == assign)
-
-        return step(func_list, rets, assignments)
-
-    def on_miss_2(func_list, rets):
-        ''' This is an action '''
-        assignments = []
-        return step(func_list, rets, assignments)
-
-    def on_miss_5(func_list, rets):
-        ''' This is an action '''
-        # NoAction just returns the current header as is
-        assignments = []
-        return step(func_list, rets, assignments)
-
-    def on_miss_6(func_list, rets):
-        ''' This is an action '''
-        # NoAction just returns the current header as is
-        # This action creates a new header type where b is set to a
-        assignments = []
-        return step(func_list, rets, assignments)
-
-    def fib_hit_nexthop(func_list, rets, nexthop_index_arg):
-        assignments = []
-
-        new_ret = len(rets)
-        prev_ret = new_ret - 1
-        rets.append(Const("ret_%d" % new_ret, p4_output))
-        assign = p4_output.mk_output(
-            p4_output.ethernet_t(rets[prev_ret]),
-            p4_output.ipv4_t(rets[prev_ret]),
-            ingress_metadata_t.mk_ingress_metadata_t(
-                ingress_metadata_t.vrf(p4_output.ingress_metadata_t(ret_0)),
-                ingress_metadata_t.bd(p4_output.ingress_metadata_t(ret_0)),
-                nexthop_index_arg),
-            p4_output.egress_spec(rets[prev_ret]))
-        assignments.append(rets[new_ret] == assign)
-
-        new_ret = len(rets)
-        prev_ret = new_ret - 1
-        rets.append(Const("ret_%d" % new_ret, p4_output))
-        assign = p4_output.mk_output(
-            p4_output.ethernet_t(rets[prev_ret]),
-            ipv4_t.mk_ipv4_t(
-                ipv4_t.version(p4_output.ipv4_t(rets[prev_ret])),
-                ipv4_t.ihl(p4_output.ipv4_t(rets[prev_ret])),
-                ipv4_t.diffserv(p4_output.ipv4_t(rets[prev_ret])),
-                ipv4_t.totalLen(p4_output.ipv4_t(rets[prev_ret])),
-                ipv4_t.identification(p4_output.ipv4_t(rets[prev_ret])),
-                ipv4_t.flags(p4_output.ipv4_t(rets[prev_ret])),
-                ipv4_t.fragOffset(p4_output.ipv4_t(rets[prev_ret])),
-                ipv4_t.ttl(p4_output.ipv4_t(
-                    rets[prev_ret])) + BitVecVal(255, 8),
-                ipv4_t.protocol(p4_output.ipv4_t(rets[prev_ret])),
-                ipv4_t.hdrChecksum(p4_output.ipv4_t(rets[prev_ret])),
-                ipv4_t.srcAddr(p4_output.ipv4_t(rets[prev_ret])),
-                ipv4_t.dstAddr(p4_output.ipv4_t(rets[prev_ret])),
-            ),
-            p4_output.ingress_metadata_t(rets[prev_ret]),
-            p4_output.egress_spec(rets[prev_ret]))
-        assignments.append(rets[new_ret] == assign)
-        return step(func_list, rets, assignments)
-
-    def fib_hit_nexthop_2(func_list, rets, nexthop_index_arg):
-        assignments = []
-
-        new_ret = len(rets)
-        prev_ret = new_ret - 1
-        rets.append(Const("ret_%d" % new_ret, p4_output))
-        assign = p4_output.mk_output(
-            p4_output.ethernet_t(rets[prev_ret]),
-            p4_output.ipv4_t(rets[prev_ret]),
-            ingress_metadata_t.mk_ingress_metadata_t(
-                ingress_metadata_t.vrf(p4_output.ingress_metadata_t(ret_0)),
-                ingress_metadata_t.bd(p4_output.ingress_metadata_t(ret_0)),
-                nexthop_index_arg),
-            p4_output.egress_spec(rets[prev_ret]))
-        assignments.append(rets[new_ret] == assign)
-
-        new_ret = len(rets)
-        prev_ret = new_ret - 1
-        rets.append(Const("ret_%d" % new_ret, p4_output))
-        assign = p4_output.mk_output(
-            p4_output.ethernet_t(rets[prev_ret]),
-            ipv4_t.mk_ipv4_t(
-                ipv4_t.version(p4_output.ipv4_t(rets[prev_ret])),
-                ipv4_t.ihl(p4_output.ipv4_t(rets[prev_ret])),
-                ipv4_t.diffserv(p4_output.ipv4_t(rets[prev_ret])),
-                ipv4_t.totalLen(p4_output.ipv4_t(rets[prev_ret])),
-                ipv4_t.identification(p4_output.ipv4_t(rets[prev_ret])),
-                ipv4_t.flags(p4_output.ipv4_t(rets[prev_ret])),
-                ipv4_t.fragOffset(p4_output.ipv4_t(rets[prev_ret])),
-                ipv4_t.ttl(p4_output.ipv4_t(
-                    rets[prev_ret])) + BitVecVal(255, 8),
-                ipv4_t.protocol(p4_output.ipv4_t(rets[prev_ret])),
-                ipv4_t.hdrChecksum(p4_output.ipv4_t(rets[prev_ret])),
-                ipv4_t.srcAddr(p4_output.ipv4_t(rets[prev_ret])),
-                ipv4_t.dstAddr(p4_output.ipv4_t(rets[prev_ret])),
-            ),
-            p4_output.ingress_metadata_t(rets[prev_ret]),
-            p4_output.egress_spec(rets[prev_ret]))
-        assignments.append(rets[new_ret] == assign)
-        return step(func_list, rets, assignments)
-
-    def set_egress_details(func_list, rets, egress_spec_arg):
-        assignments = []
-        new_ret = len(rets)
-        prev_ret = new_ret - 1
-        rets.append(Const("ret_%d" % new_ret, p4_output))
-        assign = p4_output.mk_output(
-            p4_output.ethernet_t(rets[prev_ret]),
-            p4_output.ipv4_t(rets[prev_ret]),
-            p4_output.ingress_metadata_t(rets[prev_ret]),
-            egress_spec_arg)
-        assignments.append(rets[new_ret] == assign)
-        return step(func_list, rets, assignments)
-
-    def set_bd(func_list, rets, bd_arg):
-        assignments = []
-        new_ret = len(rets)
-        prev_ret = new_ret - 1
-        rets.append(Const("ret_%d" % new_ret, p4_output))
-        assign = p4_output.mk_output(
-            p4_output.ethernet_t(rets[prev_ret]),
-            p4_output.ipv4_t(rets[prev_ret]),
-            ingress_metadata_t.mk_ingress_metadata_t(
-                ingress_metadata_t.vrf(p4_output.ingress_metadata_t(ret_0)),
-                bd_arg,
-                ingress_metadata_t.nexthop_index(
-                    p4_output.ingress_metadata_t(ret_0))),
-            p4_output.egress_spec(rets[prev_ret]))
-        assignments.append(rets[new_ret] == assign)
-
-        return step(func_list, rets, assignments)
-
-    def bd_0(func_list, rets):
-
-        def default():
-            # The default action
-            # It is set to NoAction in this case
-            return NoAction_1(func_list, rets)
-
-        def select_action():
-            actions = []
-            actions.append(Implies(ma_bd_0.action(bd_0_m) == 1,
-                                   set_vrf(func_list, rets, BitVec("vrf_arg", 12))))
-            # If there is only one table action append false
-            actions.append(False)
-            return Xor(*actions)
-        # This is a table match where we look up the provided key
-        # Key probably has to be a datatype, too
-        bd_0_key_0 = ingress_metadata_t.bd(p4_output.ingress_metadata_t(ret_0))
-        return If(bd_0_key_0 == ma_bd_0.key_0(bd_0_m),
-                  select_action(), default())
-
-    def ipv4_fib_0(func_list, rets):
-
-        def default():
-            # The default action
-            # It is set to NoAction in this case
-            return NoAction_8(func_list, rets)
-
-        def select_action():
-            actions = []
-            actions.append(Implies(ma_ipv4_fib_0.action(ipv4_fib_0_m) == 1,
-                                   on_miss_2(func_list, rets)))
-            actions.append(Implies(ma_ipv4_fib_0.action(ipv4_fib_0_m) == 2,
-                                   fib_hit_nexthop(func_list,
-                                                   rets, BitVec("nexthop_index_arg", 16))))
-            return Xor(*actions)
-
-        # This is a table match where we look up the provided key
-        # Key probably has to be a datatype, too
-        ipv4_fib_0_key_0 = ingress_metadata_t.vrf(
-            p4_output.ingress_metadata_t(ret_0))
-        ipv4_fib_0_key_1 = ipv4_t.dstAddr(p4_output.ipv4_t(ret_0))
-        return If(And(ipv4_fib_0_key_0 == ma_ipv4_fib_0.key_0(ipv4_fib_0_m),
-                      ipv4_fib_0_key_1 == ma_ipv4_fib_0.key_1(ipv4_fib_0_m)),
-                  select_action(), default())
-
-    def ipv4_fib_lpm_0(func_list, rets):
-        # This should be a mask for lpm matches
-        # TODO: Make it a proper mask and fix
-        masks = [(2**i) - 1 for i in range(32)]
-
-        def default():
-            # The default action
-            # It is set to NoAction in this case
-            return NoAction_9(func_list, rets)
-
-        def select_action():
-            actions = []
-            actions.append(Implies(
-                ma_ipv4_fib_lpm_0.action(ipv4_fib_lpm_0_m) == 1,
-                on_miss_5(func_list, rets)))
-            actions.append(Implies(
-                ma_ipv4_fib_lpm_0.action(ipv4_fib_lpm_0_m) == 2,
-                fib_hit_nexthop_2(func_list, rets, BitVec("nexthop_index_arg",
-                                                          16))))
-            return Xor(*actions)
-        # This is a table match where we look up the provided key
-        # Key probably has to be a datatype, too
-        ipv4_fib_lpm_0_key_0 = ingress_metadata_t.vrf(
-            p4_output.ingress_metadata_t(ret_0))
-        ipv4_fib_lpm_0_key_1 = ipv4_t.dstAddr(p4_output.ipv4_t(ret_0))
-        return If(And(ipv4_fib_lpm_0_key_0 == ma_ipv4_fib_lpm_0.key_0(ipv4_fib_lpm_0_m),
-                      Or([ipv4_fib_lpm_0_key_1 ^ m ==
-                          ma_ipv4_fib_lpm_0.key_1(ipv4_fib_lpm_0_m) ^ m
-                          for m in masks])),
-                  select_action(), default())
-
-    def nexthop_0(func_list, rets):
-
-        def default():
-            # The default action
-            # It is set to NoAction in this case
-            return NoAction_10(func_list, rets)
-
-        def select_action():
-            actions = []
-            actions.append(Implies(ma_nexthop_0.action(nexthop_0_m) == 1,
-                                   on_miss_6(func_list, rets)))
-            actions.append(Implies(ma_nexthop_0.action(nexthop_0_m) == 2,
-                                   set_egress_details(func_list, rets,
-                                                      BitVec("egress_spec_arg",
-                                                             9))))
-            return Xor(*actions)
-
-        # This is a table match where we look up the provided key
-        # Key probably has to be a datatype, too
-        nexthop_0_key_0 = ingress_metadata_t.nexthop_index(
-            p4_output.ingress_metadata_t(ret_0))
-        return If(nexthop_0_key_0 == ma_nexthop_0.key_0(nexthop_0_m),
-                  select_action(), default())
-
-    def port_mapping_0(func_list, rets):
-
-        def default():
-            # The default action
-            # It is set to NoAction in this case
-            return NoAction_11(func_list, rets)
-
-        def select_action():
-            actions = []
-            actions.append(Implies(ma_port_mapping_0.action(
-                port_mapping_0_m) == 1, set_bd(func_list, rets,
-                                               BitVec("bd_arg", 16))))
-            actions.append(False)
-            return Xor(*actions)
-
-        # This is a table match where we look up the provided key
-        # Key probably has to be a datatype, too
-        port_mapping_0_key_0 = ingress_port
-        return If(port_mapping_0_key_0 ==
-                  ma_port_mapping_0.key_0(port_mapping_0_m),
-                  select_action(), default())
-
-    def apply():
-        # This is the initial version of the program
-        func_list = []
-
-        def if_block(func_list, rets):
-            # If blocks track two expression lists for the if and the else case
-            if_list = []
-            else_list = []
-            assignments = []
-            if_list.append(port_mapping_0)
-            if_list.append(bd_0)
-            if_list.append(ipv4_fib_0)
-
-            def switch_block(func_list, rets):
-                # A switch block operates like a table lookup
-                # Each select expression generates a new implication clause
-                cases = []
-                select_case = ma_ipv4_fib_0.action(ipv4_fib_0_m) == 1
-                select_expression = ipv4_fib_lpm_0(func_list, rets)
-                cases.append(Implies(select_case, select_expression))
-                # Append false if there is only one case
-                cases.append(False)
-                return Xor(*cases)
-            if_list.append(switch_block)
-            if_list.append(nexthop_0)
-            else_list = []
-            return If(ipv4_valid, step(if_list, rets, assignments),
-                      step(else_list, rets, assignments))
-        func_list.append(if_block)
-
-        return func_list
+from p4z3_base import *
 
+''' Model imports at the top of the p4 file '''
+from v1model import *
+
+
+z3_args = [
+    ('vrf', BitVecSort(12)),
+    ('bd', BitVecSort(16)),
+    ('nexthop_index', BitVecSort(16))
+]
+
+z3_reg.register_z3_type("ingress_metadata_t", Struct, z3_args)
+
+
+z3_args = [
+    ('dstAddr', BitVecSort(48)),
+    ('srcAddr', BitVecSort(48)),
+    ('etherType', BitVecSort(16))]
+
+z3_reg.register_z3_type("ethernet_t", Header, z3_args)
+
+
+z3_args = [('version', BitVecSort(4)), ('ihl', BitVecSort(4)),
+           ('diffserv', BitVecSort(8)), ('totalLen', BitVecSort(16)),
+           ('identification', BitVecSort(16)), ('flags', BitVecSort(3)),
+           ('fragOffset', BitVecSort(13)), ('ttl', BitVecSort(8)),
+           ('protocol', BitVecSort(8)), ('hdrChecksum', BitVecSort(16)),
+           ('srcAddr', BitVecSort(32)), ('dstAddr', BitVecSort(32))
+           ]
+z3_reg.register_z3_type("ipv4_t", Header, z3_args)
+
+
+z3_args = [('ingress_metadata', z3_reg.reg["ingress_metadata_t"])]
+z3_reg.register_z3_type("metadata", Struct, z3_args)
+
+
+z3_args = [('ethernet', z3_reg.reg["ethernet_t"]),
+           ('ipv4', z3_reg.reg["ipv4_t"])]
+z3_reg.register_z3_type("headers", Struct, z3_args)
+
+
+z3_args = [('hdr', z3_reg.reg["headers"]), ('meta', z3_reg.reg["metadata"]),
+           ('standard_metadata', z3_reg.reg["standard_metadata_t"])]
+z3_reg.register_z3_type("inouts", Struct, z3_args)
+
+
+def control_ingress_0(s, inouts):
+    ''' This is the initial version of the program. '''
+
+    # @name(".NoAction") action NoAction_0() {
+    # }
+    def NoAction_1(func_chain, inouts):
+        ''' This is an action
+            NoAction just returns the current header as is '''
+        sub_chain = []
+
+        sub_chain.extend(func_chain)
+        return step(sub_chain, inouts)
+
+    # @name(".NoAction") action NoAction_0() {
+    # }
+    def NoAction_8(func_chain, inouts):
+        ''' This is an action
+            NoAction just returns the current header as is '''
+        sub_chain = []
+
+        sub_chain.extend(func_chain)
+        return step(sub_chain, inouts)
+
+    # @name(".NoAction") action NoAction_0() {
+    # }
+    def NoAction_9(func_chain, inouts):
+        ''' This is an action
+            NoAction just returns the current header as is '''
+        sub_chain = []
+
+        sub_chain.extend(func_chain)
+        return step(sub_chain, inouts)
+
+    # @name(".NoAction") action NoAction_0() {
+    # }
+    def NoAction_10(func_chain, inouts):
+        ''' This is an action
+            NoAction just returns the current header as is '''
+        sub_chain = []
+
+        sub_chain.extend(func_chain)
+        return step(sub_chain, inouts)
+
+    # @name(".NoAction") action NoAction_0() {
+    # }
+    def NoAction_11(func_chain, inouts):
+        ''' This is an action
+            NoAction just returns the current header as is '''
+        sub_chain = []
+
+        sub_chain.extend(func_chain)
+        return step(sub_chain, inouts)
+
+    # @name("ingress.c.a") action c_a_0() {
+    #     h.h.b = h.h.a;
+    # }
+    def set_vrf(func_chain, inouts, vrf):
+        ''' This is an action
+            This action creates a new header type where b is set to a '''
+        # This updates an existing output variable so  we need a new version
+        # The new constant is appended to the existing list of constants
+        # Now we create the new version by using a data type constructor
+        # The data type constructor uses the values from the previous
+        # variable version, except for the update target.
+        sub_chain = []
+
+        def output_update(func_chain, inouts):
+            rval = vrf
+            expr = inouts.set("meta.ingress_metadata.vrf", rval)
+            return step(func_chain, inouts, expr)
+        sub_chain.append(output_update)
+
+        sub_chain.extend(func_chain)
+        return step(sub_chain, inouts)
+
+    # @name(".NoAction") action NoAction_0() {
+    # }
+    def on_miss_2(func_chain, inouts):
+        ''' This is an action
+            NoAction just returns the current header as is '''
+        sub_chain = []
+
+        sub_chain.extend(func_chain)
+        return step(sub_chain, inouts)
+
+    # @name(".NoAction") action NoAction_0() {
+    # }
+    def on_miss_5(func_chain, inouts):
+        ''' This is an action
+            NoAction just returns the current header as is '''
+        sub_chain = []
+
+        sub_chain.extend(func_chain)
+        return step(sub_chain, inouts)
+
+    # @name(".NoAction") action NoAction_0() {
+    # }
+    def on_miss_6(func_chain, inouts):
+        ''' This is an action
+            NoAction just returns the current header as is '''
+        sub_chain = []
+
+        sub_chain.extend(func_chain)
+        return step(sub_chain, inouts)
+
+    def fib_hit_nexthop(func_chain, inouts, nexthop_index):
+        ''' This is an action
+            This action creates a new header type where b is set to a '''
+        # This updates an existing output variable so  we need a new version
+        # The new constant is appended to the existing list of constants
+        # Now we create the new version by using a data type constructor
+        # The data type constructor uses the values from the previous
+        # variable version, except for the update target.
+        sub_chain = []
+
+        def output_update(func_chain, inouts):
+            rval = nexthop_index
+            expr = inouts.set("meta.ingress_metadata.nexthop_index", rval)
+            return step(func_chain, inouts, expr)
+        sub_chain.append(output_update)
+
+        def output_update(func_chain, inouts):
+            rval = BitVec(255, 8)
+            expr = inouts.set("hdr.ipv4.ttl", rval)
+            return step(func_chain, inouts, expr)
+        sub_chain.append(output_update)
+
+        sub_chain.extend(func_chain)
+        return step(sub_chain, inouts)
+
+    def fib_hit_nexthop_2(func_chain, inouts, nexthop_index):
+        ''' This is an action
+            This action creates a new header type where b is set to a '''
+        # This updates an existing output variable so  we need a new version
+        # The new constant is appended to the existing list of constants
+        # Now we create the new version by using a data type constructor
+        # The data type constructor uses the values from the previous
+        # variable version, except for the update target.
+        sub_chain = []
+
+        def output_update(func_chain, inouts):
+            rval = nexthop_index
+            expr = inouts.set("meta.ingress_metadata.nexthop_index", rval)
+            return step(func_chain, inouts, expr)
+        sub_chain.append(output_update)
+
+        def output_update(func_chain, inouts):
+            rval = BitVec(255, 8)
+            expr = inouts.set("hdr.ipv4.ttl", rval)
+            return step(func_chain, inouts, expr)
+        sub_chain.append(output_update)
+
+        sub_chain.extend(func_chain)
+        return step(sub_chain, inouts)
+
+    def set_egress_details(func_chain, inouts, egress_spec):
+        ''' This is an action
+            This action creates a new header type where b is set to a '''
+        # This updates an existing output variable so  we need a new version
+        # The new constant is appended to the existing list of constants
+        # Now we create the new version by using a data type constructor
+        # The data type constructor uses the values from the previous
+        # variable version, except for the update target.
+        sub_chain = []
+
+        def output_update(func_chain, inouts):
+            rval = egress_spec
+            expr = inouts.set("standard_metadata.egress_spec", rval)
+            return step(func_chain, inouts, expr)
+        sub_chain.append(output_update)
+
+        sub_chain.extend(func_chain)
+        return step(sub_chain, inouts)
+
+    def set_bd(func_chain, inouts, bd):
+        ''' This is an action
+            This action creates a new header type where b is set to a '''
+        # This updates an existing output variable so  we need a new version
+        # The new constant is appended to the existing list of constants
+        # Now we create the new version by using a data type constructor
+        # The data type constructor uses the values from the previous
+        # variable version, except for the update target.
+        sub_chain = []
+
+        def output_update(func_chain, inouts):
+            rval = bd
+            expr = inouts.set("meta.ingress_metadata.bd", rval)
+            return step(func_chain, inouts, expr)
+        sub_chain.append(output_update)
+
+        sub_chain.extend(func_chain)
+        return step(sub_chain, inouts)
+
+    class bd_0(Table):
+
+        ma_bd_0 = Datatype('ma_bd_0')
+        ma_bd_0.declare('mk_ma_bd_0', ('key_0', BitVecSort(16)),
+                        ('action', IntSort()))
+        ma = ma_bd_0.create()
+        m = Const('bd_0_m', ma)
+
+        actions = {
+            "set_vrf": (1, (set_vrf, [BitVec("bd_0_vrf", 12)])),
+        }
+        actions["default"] = (0, (NoAction_1, ()))
+
+        @classmethod
+        def table_match(cls, inouts):
+
+            key_matches = []
+            bd_0_key_0 = inouts.meta.ingress_metadata.bd
+            key_matches.append(bd_0_key_0 == cls.ma.key_0(cls.m))
+            return And(key_matches)
+
+    class ipv4_fib_0(Table):
+
+        ma_ipv4_fib_0 = Datatype('ma_ipv4_fib_0')
+        ma_ipv4_fib_0.declare('mk_ma_ipv4_fib_0', ('key_0', BitVecSort(12)), ('key_1', BitVecSort(32)),
+                              ('action', IntSort()))
+        ma = ma_ipv4_fib_0.create()
+        m = Const('ipv4_fib_0_m', ma)
+
+        actions = {
+            "on_miss_2": (1, (on_miss_2, ())),
+            "fib_hit_nexthop": (2, (fib_hit_nexthop, [BitVec("ipv4_fib_0_nexthop_index", 16)])),
+        }
+        actions["default"] = (0, (NoAction_8, ()))
+
+        @classmethod
+        def table_match(cls, inouts):
+
+            key_matches = []
+            ipv4_fib_0_key_0 = inouts.meta.ingress_metadata.vrf
+            key_matches.append(ipv4_fib_0_key_0 == cls.ma.key_0(cls.m))
+            ipv4_fib_0_key_1 = inouts.hdr.ipv4.dstAddr
+            key_matches.append(ipv4_fib_0_key_1 == cls.ma.key_1(cls.m))
+            return And(key_matches)
+
+    class ipv4_fib_lpm_0(Table):
+
+        ma_ipv4_fib_lpm_0 = Datatype('ma_ipv4_fib_lpm_0')
+        ma_ipv4_fib_lpm_0.declare('mk_ma_ipv4_fib_lpm_0', ('key_0', BitVecSort(12)), ('key_1', BitVecSort(32)),
+                                  ('action', IntSort()))
+        ma = ma_ipv4_fib_lpm_0.create()
+        m = Const('ipv4_fib_lpm_0_m', ma)
+
+        actions = {
+            "on_miss_5": (1, (on_miss_5, ())),
+            "fib_hit_nexthop_2": (2, (fib_hit_nexthop_2, [BitVec("ipv4_fib_lpm_0_nexthop_index", 16)]))
+        }
+        actions["default"] = (0, (NoAction_9, ()))
+
+        @classmethod
+        def table_match(cls, inouts):
+
+            key_matches = []
+            ipv4_fib_lpm_0_key_0 = inouts.meta.ingress_metadata.vrf
+            key_matches.append(ipv4_fib_lpm_0_key_0 == cls.ma.key_0(cls.m))
+
+            # This should be a mask for lpm matches
+            # TODO: Make it a proper mask and fix
+            masks = [(2**i) - 1 for i in range(32)]
+            ipv4_fib_lpm_0_key_1 = inouts.hdr.ipv4.dstAddr
+            key_matches.append(Or([ipv4_fib_lpm_0_key_1 & m ==
+                                   cls.ma.key_1(cls.m) & m
+                                   for m in masks]))
+            return And(key_matches)
+
+    class nexthop_0(Table):
+
+        ma_nexthop_0 = Datatype('ma_nexthop_0')
+        ma_nexthop_0.declare('mk_ma_nexthop_0', ('key_0', BitVecSort(16)),
+                             ('action', IntSort()))
+        ma = ma_nexthop_0.create()
+        m = Const('nexthop_0_m', ma)
+
+        actions = {
+            "on_miss_6": (1, (on_miss_6, ())),
+            "set_egress_details": (2, (set_egress_details, [BitVec("nexthop_0_egress_spec", 9)])),
+        }
+        actions["default"] = (0, (NoAction_10, ()))
+
+        @classmethod
+        def table_match(cls, inouts):
+
+            key_matches = []
+            nexthop_0_key_0 = inouts.meta.ingress_metadata.nexthop_index
+            key_matches.append(nexthop_0_key_0 == cls.ma.key_0(cls.m))
+            return And(key_matches)
+
+    class port_mapping_0(Table):
+
+        ma_port_mapping_0 = Datatype('ma_port_mapping_0')
+        ma_port_mapping_0.declare('mk_ma_port_mapping_0', ('key_0', BitVecSort(9)),
+                                  ('action', IntSort()))
+        ma = ma_port_mapping_0.create()
+        m = Const('port_mapping_0_m', ma)
+
+        actions = {
+            "set_bd": (1, (set_bd, [BitVec("port_mapping_0_bd", 16)])),
+        }
+        actions["default"] = (0, (NoAction_11, ()))
+
+        @classmethod
+        def table_match(cls, inouts):
+
+            key_matches = []
+            port_mapping_0_key_0 = inouts.standard_metadata.ingress_port
+            key_matches.append(port_mapping_0_key_0 == cls.ma.key_0(cls.m))
+            return And(key_matches)
+
+    def apply(func_chain, inouts):
+        ''' The main function of the control plane. Each statement in this pipe
+        is part of a list of functions. '''
+        sub_chain = []
+
+        def if_block(func_chain, inouts):
+
+            condition = inouts.hdr.ipv4.isValid()
+
+            def is_true():
+                sub_chain = []
+
+                # sub_chain.append(port_mapping_0.apply)
+                # sub_chain.append(bd_0.apply)
+
+                sub_chain.append(ipv4_fib_0.apply)
+
+                def switch_block(sub_chain, inouts):
+                    cases = []
+                    switch = ipv4_fib_0.action_run(inouts)
+                    a = ipv4_fib_0.actions
+
+                    def case_block(sub_chain, inouts):
+                        sub_chain = []
+
+                        sub_chain.append(ipv4_fib_lpm_0.apply)
+
+                        sub_chain.extend(func_chain)
+                        return step(sub_chain, inouts)
+                    case = Implies(
+                        switch == a["on_miss_2"][0],
+                        case_block(func_chain, inouts))
+                    cases.append(case)
+
+                    return And(*cases, step(func_chain, inouts))
+                sub_chain.append(switch_block)
+
+                sub_chain.extend(func_chain)
+                return step(sub_chain, inouts)
+
+            def is_false():
+                sub_chain = []
+
+                sub_chain.extend(func_chain)
+                return step(sub_chain, inouts)
+
+            return If(condition, is_true(), is_false())
+        sub_chain.append(if_block)
+
+        # sub_chain.append(nexthop_0.apply)
+
+        sub_chain.extend(func_chain)
+        return step(sub_chain, inouts)
     # return the apply function as sequence of logic clauses
-    func_chain = apply()
-    return step(func_chain, assignments=[], rets=[ret_0])
+    return step(func_chain=[apply], inouts=inouts)
 
 
-def control_ingress_1():
+def control_ingress_1(s, inouts):
+    ''' This is the initial version of the program. '''
 
-    def NoAction_1(func_list, rets):
-        ''' This is an action '''
-        assignments = []
-        return step(func_list, rets, assignments)
+    # @name(".NoAction") action NoAction_0() {
+    # }
+    def NoAction_1(func_chain, inouts):
+        ''' This is an action
+            NoAction just returns the current header as is '''
+        sub_chain = []
 
-    def NoAction_8(func_list, rets):
-        ''' This is an action '''
-        assignments = []
-        return step(func_list, rets, assignments)
+        sub_chain.extend(func_chain)
+        return step(sub_chain, inouts)
 
-    def NoAction_9(func_list, rets):
-        ''' This is an action '''
-        assignments = []
-        return step(func_list, rets, assignments)
+    # @name(".NoAction") action NoAction_0() {
+    # }
+    def NoAction_8(func_chain, inouts):
+        ''' This is an action
+            NoAction just returns the current header as is '''
+        sub_chain = []
 
-    def NoAction_10(func_list, rets):
-        ''' This is an action '''
-        assignments = []
-        assignments.append(True)
-        return step(func_list, rets, assignments)
+        sub_chain.extend(func_chain)
+        return step(sub_chain, inouts)
 
-    def NoAction_11(func_list, rets):
-        ''' This is an action '''
-        assignments = []
-        return step(func_list, rets, assignments)
+    # @name(".NoAction") action NoAction_0() {
+    # }
+    def NoAction_9(func_chain, inouts):
+        ''' This is an action
+            NoAction just returns the current header as is '''
+        sub_chain = []
 
-    def set_vrf(func_list, rets, vrf_arg):
-        assignments = []
+        sub_chain.extend(func_chain)
+        return step(sub_chain, inouts)
 
-        new_ret = len(rets)
-        prev_ret = new_ret - 1
-        rets.append(Const("ret_%d" % new_ret, p4_output))
-        assign = p4_output.mk_output(
-            p4_output.ethernet_t(rets[prev_ret]),
-            p4_output.ipv4_t(rets[prev_ret]),
-            ingress_metadata_t.mk_ingress_metadata_t(
-                vrf_arg,
-                ingress_metadata_t.bd(p4_output.ingress_metadata_t(ret_0)),
-                ingress_metadata_t.nexthop_index(
-                    p4_output.ingress_metadata_t(ret_0))),
-            p4_output.egress_spec(rets[prev_ret]))
-        assignments.append(rets[new_ret] == assign)
+    # @name(".NoAction") action NoAction_0() {
+    # }
+    def NoAction_10(func_chain, inouts):
+        ''' This is an action
+            NoAction just returns the current header as is '''
+        sub_chain = []
 
-        return step(func_list, rets, assignments)
+        sub_chain.extend(func_chain)
+        return step(sub_chain, inouts)
 
-    def on_miss_2(func_list, rets):
-        ''' This is an action '''
-        assignments = []
-        return step(func_list, rets, assignments)
+    # @name(".NoAction") action NoAction_0() {
+    # }
+    def NoAction_11(func_chain, inouts):
+        ''' This is an action
+            NoAction just returns the current header as is '''
+        sub_chain = []
 
-    def on_miss_5(func_list, rets):
-        ''' This is an action '''
-        # NoAction just returns the current header as is
-        assignments = []
-        return step(func_list, rets, assignments)
+        sub_chain.extend(func_chain)
+        return step(sub_chain, inouts)
 
-    def on_miss_6(func_list, rets):
-        ''' This is an action '''
-        # NoAction just returns the current header as is
-        # This action creates a new header type where b is set to a
-        assignments = []
-        return step(func_list, rets, assignments)
+    # @name("ingress.c.a") action c_a_0() {
+    #     h.h.b = h.h.a;
+    # }
+    def set_vrf(func_chain, inouts, vrf):
+        ''' This is an action
+            This action creates a new header type where b is set to a '''
+        # This updates an existing output variable so  we need a new version
+        # The new constant is appended to the existing list of constants
+        # Now we create the new version by using a data type constructor
+        # The data type constructor uses the values from the previous
+        # variable version, except for the update target.
+        sub_chain = []
 
-    def fib_hit_nexthop(func_list, rets, nexthop_index_arg):
-        assignments = []
+        def output_update(func_chain, inouts):
+            rval = vrf
+            expr = inouts.set("meta.ingress_metadata.vrf", rval)
+            return step(func_chain, inouts, expr)
+        sub_chain.append(output_update)
 
-        new_ret = len(rets)
-        prev_ret = new_ret - 1
-        rets.append(Const("ret_%d" % new_ret, p4_output))
-        assign = p4_output.mk_output(
-            p4_output.ethernet_t(rets[prev_ret]),
-            p4_output.ipv4_t(rets[prev_ret]),
-            ingress_metadata_t.mk_ingress_metadata_t(
-                ingress_metadata_t.vrf(p4_output.ingress_metadata_t(ret_0)),
-                ingress_metadata_t.bd(p4_output.ingress_metadata_t(ret_0)),
-                nexthop_index_arg),
-            p4_output.egress_spec(rets[prev_ret]))
-        assignments.append(rets[new_ret] == assign)
+        sub_chain.extend(func_chain)
+        return step(sub_chain, inouts)
 
-        new_ret = len(rets)
-        prev_ret = new_ret - 1
-        rets.append(Const("ret_%d" % new_ret, p4_output))
-        assign = p4_output.mk_output(
-            p4_output.ethernet_t(rets[prev_ret]),
-            ipv4_t.mk_ipv4_t(
-                ipv4_t.version(p4_output.ipv4_t(rets[prev_ret])),
-                ipv4_t.ihl(p4_output.ipv4_t(rets[prev_ret])),
-                ipv4_t.diffserv(p4_output.ipv4_t(rets[prev_ret])),
-                ipv4_t.totalLen(p4_output.ipv4_t(rets[prev_ret])),
-                ipv4_t.identification(p4_output.ipv4_t(rets[prev_ret])),
-                ipv4_t.flags(p4_output.ipv4_t(rets[prev_ret])),
-                ipv4_t.fragOffset(p4_output.ipv4_t(rets[prev_ret])),
-                ipv4_t.ttl(p4_output.ipv4_t(
-                    rets[prev_ret])) + BitVecVal(255, 8),
-                ipv4_t.protocol(p4_output.ipv4_t(rets[prev_ret])),
-                ipv4_t.hdrChecksum(p4_output.ipv4_t(rets[prev_ret])),
-                ipv4_t.srcAddr(p4_output.ipv4_t(rets[prev_ret])),
-                ipv4_t.dstAddr(p4_output.ipv4_t(rets[prev_ret])),
-            ),
-            p4_output.ingress_metadata_t(rets[prev_ret]),
-            p4_output.egress_spec(rets[prev_ret]))
-        assignments.append(rets[new_ret] == assign)
-        return step(func_list, rets, assignments)
+    # @name(".NoAction") action NoAction_0() {
+    # }
+    def on_miss_2(func_chain, inouts):
+        ''' This is an action
+            NoAction just returns the current header as is '''
+        sub_chain = []
 
-    def fib_hit_nexthop_2(func_list, rets, nexthop_index_arg):
-        assignments = []
+        sub_chain.extend(func_chain)
+        return step(sub_chain, inouts)
 
-        new_ret = len(rets)
-        prev_ret = new_ret - 1
-        rets.append(Const("ret_%d" % new_ret, p4_output))
-        assign = p4_output.mk_output(
-            p4_output.ethernet_t(rets[prev_ret]),
-            p4_output.ipv4_t(rets[prev_ret]),
-            ingress_metadata_t.mk_ingress_metadata_t(
-                ingress_metadata_t.vrf(p4_output.ingress_metadata_t(ret_0)),
-                ingress_metadata_t.bd(p4_output.ingress_metadata_t(ret_0)),
-                nexthop_index_arg),
-            p4_output.egress_spec(rets[prev_ret]))
-        assignments.append(rets[new_ret] == assign)
+    # @name(".NoAction") action NoAction_0() {
+    # }
+    def on_miss_5(func_chain, inouts):
+        ''' This is an action
+            NoAction just returns the current header as is '''
+        sub_chain = []
 
-        new_ret = len(rets)
-        prev_ret = new_ret - 1
-        rets.append(Const("ret_%d" % new_ret, p4_output))
-        assign = p4_output.mk_output(
-            p4_output.ethernet_t(rets[prev_ret]),
-            ipv4_t.mk_ipv4_t(
-                ipv4_t.version(p4_output.ipv4_t(rets[prev_ret])),
-                ipv4_t.ihl(p4_output.ipv4_t(rets[prev_ret])),
-                ipv4_t.diffserv(p4_output.ipv4_t(rets[prev_ret])),
-                ipv4_t.totalLen(p4_output.ipv4_t(rets[prev_ret])),
-                ipv4_t.identification(p4_output.ipv4_t(rets[prev_ret])),
-                ipv4_t.flags(p4_output.ipv4_t(rets[prev_ret])),
-                ipv4_t.fragOffset(p4_output.ipv4_t(rets[prev_ret])),
-                ipv4_t.ttl(p4_output.ipv4_t(
-                    rets[prev_ret])) + BitVecVal(255, 8),
-                ipv4_t.protocol(p4_output.ipv4_t(rets[prev_ret])),
-                ipv4_t.hdrChecksum(p4_output.ipv4_t(rets[prev_ret])),
-                ipv4_t.srcAddr(p4_output.ipv4_t(rets[prev_ret])),
-                ipv4_t.dstAddr(p4_output.ipv4_t(rets[prev_ret])),
-            ),
-            p4_output.ingress_metadata_t(rets[prev_ret]),
-            p4_output.egress_spec(rets[prev_ret]))
-        assignments.append(rets[new_ret] == assign)
-        return step(func_list, rets, assignments)
+        sub_chain.extend(func_chain)
+        return step(sub_chain, inouts)
 
-    def set_egress_details(func_list, rets, egress_spec_arg):
-        assignments = []
-        new_ret = len(rets)
-        prev_ret = new_ret - 1
-        rets.append(Const("ret_%d" % new_ret, p4_output))
-        assign = p4_output.mk_output(
-            p4_output.ethernet_t(rets[prev_ret]),
-            p4_output.ipv4_t(rets[prev_ret]),
-            p4_output.ingress_metadata_t(rets[prev_ret]),
-            egress_spec_arg)
-        assignments.append(rets[new_ret] == assign)
-        return step(func_list, rets, assignments)
+    # @name(".NoAction") action NoAction_0() {
+    # }
+    def on_miss_6(func_chain, inouts):
+        ''' This is an action
+            NoAction just returns the current header as is '''
+        sub_chain = []
 
-    def set_bd(func_list, rets, bd_arg):
-        assignments = []
-        new_ret = len(rets)
-        prev_ret = new_ret - 1
-        rets.append(Const("ret_%d" % new_ret, p4_output))
-        assign = p4_output.mk_output(
-            p4_output.ethernet_t(rets[prev_ret]),
-            p4_output.ipv4_t(rets[prev_ret]),
-            ingress_metadata_t.mk_ingress_metadata_t(
-                ingress_metadata_t.vrf(p4_output.ingress_metadata_t(ret_0)),
-                bd_arg,
-                ingress_metadata_t.nexthop_index(
-                    p4_output.ingress_metadata_t(ret_0))),
-            p4_output.egress_spec(rets[prev_ret]))
-        assignments.append(rets[new_ret] == assign)
+        sub_chain.extend(func_chain)
+        return step(sub_chain, inouts)
 
-        return step(func_list, rets, assignments)
+    def fib_hit_nexthop(func_chain, inouts, nexthop_index):
+        ''' This is an action
+            This action creates a new header type where b is set to a '''
+        # This updates an existing output variable so  we need a new version
+        # The new constant is appended to the existing list of constants
+        # Now we create the new version by using a data type constructor
+        # The data type constructor uses the values from the previous
+        # variable version, except for the update target.
+        sub_chain = []
 
-    def bd_0(func_list, rets):
+        def output_update(func_chain, inouts):
+            rval = nexthop_index
+            expr = inouts.set("meta.ingress_metadata.nexthop_index", rval)
+            return step(func_chain, inouts, expr)
+        sub_chain.append(output_update)
 
-        def default():
-            # The default action
-            # It is set to NoAction in this case
-            return NoAction_1(func_list, rets)
+        def output_update(func_chain, inouts):
+            rval = BitVec(255, 8)
+            expr = inouts.set("hdr.ipv4.ttl", rval)
+            return step(func_chain, inouts, expr)
+        sub_chain.append(output_update)
 
-        def select_action():
-            actions = []
-            actions.append(Implies(ma_bd_0.action(bd_0_m) == 1,
-                                   set_vrf(func_list, rets, BitVec("vrf_arg", 12))))
-            # If there is only one table action append false
-            actions.append(False)
-            return Xor(*actions)
-        # This is a table match where we look up the provided key
-        # Key probably has to be a datatype, too
-        bd_0_key_0 = ingress_metadata_t.bd(p4_output.ingress_metadata_t(ret_0))
-        return If(bd_0_key_0 == ma_bd_0.key_0(bd_0_m),
-                  select_action(), default())
+        sub_chain.extend(func_chain)
+        return step(sub_chain, inouts)
 
-    def ipv4_fib_0(func_list, rets):
+    def fib_hit_nexthop_2(func_chain, inouts, nexthop_index):
+        ''' This is an action
+            This action creates a new header type where b is set to a '''
+        # This updates an existing output variable so  we need a new version
+        # The new constant is appended to the existing list of constants
+        # Now we create the new version by using a data type constructor
+        # The data type constructor uses the values from the previous
+        # variable version, except for the update target.
+        sub_chain = []
 
-        def default():
-            # The default action
-            # It is set to NoAction in this case
-            return NoAction_8(func_list, rets)
+        def output_update(func_chain, inouts):
+            rval = nexthop_index
+            expr = inouts.set("meta.ingress_metadata.nexthop_index", rval)
+            return step(func_chain, inouts, expr)
+        sub_chain.append(output_update)
 
-        def select_action():
-            actions = []
-            actions.append(Implies(ma_ipv4_fib_0.action(ipv4_fib_0_m) == 1,
-                                   on_miss_2(func_list, rets)))
-            actions.append(Implies(ma_ipv4_fib_0.action(ipv4_fib_0_m) == 2,
-                                   fib_hit_nexthop(func_list,
-                                                   rets, BitVec("nexthop_index_arg", 16))))
-            return Xor(*actions)
+        def output_update(func_chain, inouts):
+            rval = BitVec(255, 8)
+            expr = inouts.set("hdr.ipv4.ttl", rval)
+            return step(func_chain, inouts, expr)
+        sub_chain.append(output_update)
 
-        # This is a table match where we look up the provided key
-        # Key probably has to be a datatype, too
-        ipv4_fib_0_key_0 = ingress_metadata_t.vrf(
-            p4_output.ingress_metadata_t(ret_0))
-        ipv4_fib_0_key_1 = ipv4_t.dstAddr(p4_output.ipv4_t(ret_0))
-        return If(And(ipv4_fib_0_key_0 == ma_ipv4_fib_0.key_0(ipv4_fib_0_m),
-                      ipv4_fib_0_key_1 == ma_ipv4_fib_0.key_1(ipv4_fib_0_m)),
-                  select_action(), default())
+        sub_chain.extend(func_chain)
+        return step(sub_chain, inouts)
 
-    def ipv4_fib_lpm_0(func_list, rets):
-        # This should be a mask for lpm matches
-        # TODO: Make it a proper mask and fix
-        masks = [(2**i) - 1 for i in range(32)]
+    def set_egress_details(func_chain, inouts, egress_spec):
+        ''' This is an action
+            This action creates a new header type where b is set to a '''
+        # This updates an existing output variable so  we need a new version
+        # The new constant is appended to the existing list of constants
+        # Now we create the new version by using a data type constructor
+        # The data type constructor uses the values from the previous
+        # variable version, except for the update target.
+        sub_chain = []
 
-        def default():
-            # The default action
-            # It is set to NoAction in this case
-            return NoAction_9(func_list, rets)
+        def output_update(func_chain, inouts):
+            rval = egress_spec
+            expr = inouts.set("standard_metadata.egress_spec", rval)
+            return step(func_chain, inouts, expr)
+        sub_chain.append(output_update)
 
-        def select_action():
-            actions = []
-            actions.append(Implies(
-                ma_ipv4_fib_lpm_0.action(ipv4_fib_lpm_0_m) == 1,
-                on_miss_5(func_list, rets)))
-            actions.append(Implies(
-                ma_ipv4_fib_lpm_0.action(ipv4_fib_lpm_0_m) == 2,
-                fib_hit_nexthop_2(func_list, rets, BitVec("nexthop_index_arg",
-                                                          16))))
-            return Xor(*actions)
-        # This is a table match where we look up the provided key
-        # Key probably has to be a datatype, too
-        ipv4_fib_lpm_0_key_0 = ingress_metadata_t.vrf(
-            p4_output.ingress_metadata_t(ret_0))
-        ipv4_fib_lpm_0_key_1 = ipv4_t.dstAddr(p4_output.ipv4_t(ret_0))
-        return If(And(ipv4_fib_lpm_0_key_0 == ma_ipv4_fib_lpm_0.key_0(ipv4_fib_lpm_0_m),
-                      Or([(ipv4_fib_lpm_0_key_1 ^ m) ==
-                          (ma_ipv4_fib_lpm_0.key_1(ipv4_fib_lpm_0_m) ^ m)
-                          for m in masks])),
-                  select_action(), default())
+        sub_chain.extend(func_chain)
+        return step(sub_chain, inouts)
 
-    def nexthop_0(func_list, rets):
+    def set_bd(func_chain, inouts, bd):
+        ''' This is an action
+            This action creates a new header type where b is set to a '''
+        # This updates an existing output variable so  we need a new version
+        # The new constant is appended to the existing list of constants
+        # Now we create the new version by using a data type constructor
+        # The data type constructor uses the values from the previous
+        # variable version, except for the update target.
+        sub_chain = []
 
-        def default():
-            # The default action
-            # It is set to NoAction in this case
-            return NoAction_10(func_list, rets)
+        def output_update(func_chain, inouts):
+            rval = bd
+            expr = inouts.set("meta.ingress_metadata.bd", rval)
+            return step(func_chain, inouts, expr)
+        sub_chain.append(output_update)
 
-        def select_action():
-            actions = []
-            actions.append(Implies(ma_nexthop_0.action(nexthop_0_m) == 1,
-                                   on_miss_6(func_list, rets)))
-            actions.append(Implies(ma_nexthop_0.action(nexthop_0_m) == 2,
-                                   set_egress_details(func_list, rets,
-                                                      BitVec("egress_spec_arg",
-                                                             9))))
-            return Xor(*actions)
+        sub_chain.extend(func_chain)
+        return step(sub_chain, inouts)
 
-        # This is a table match where we look up the provided key
-        # Key probably has to be a datatype, too
-        nexthop_0_key_0 = ingress_metadata_t.nexthop_index(
-            p4_output.ingress_metadata_t(ret_0))
-        return If(nexthop_0_key_0 == ma_nexthop_0.key_0(nexthop_0_m),
-                  select_action(), default())
+    class bd_0(Table):
 
-    def port_mapping_0(func_list, rets):
+        ma_bd_0 = Datatype('ma_bd_0')
+        ma_bd_0.declare('mk_ma_bd_0', ('key_0', BitVecSort(16)),
+                        ('action', IntSort()))
+        ma = ma_bd_0.create()
+        m = Const('bd_0_m', ma)
 
-        def default():
-            # The default action
-            # It is set to NoAction in this case
-            return NoAction_11(func_list, rets)
+        actions = {
+            "set_vrf": (1, (set_vrf, [BitVec("bd_0_vrf", 12)])),
+        }
+        actions["default"] = (0, (NoAction_1, ()))
 
-        def select_action():
-            actions = []
-            actions.append(Implies(ma_port_mapping_0.action(
-                port_mapping_0_m) == 1, set_bd(func_list, rets,
-                                               BitVec("bd_arg", 16))))
-            actions.append(False)
-            return Xor(*actions)
+        @classmethod
+        def table_match(cls, inouts):
 
-        # This is a table match where we look up the provided key
-        # Key probably has to be a datatype, too
-        port_mapping_0_key_0 = ingress_port
-        return If(port_mapping_0_key_0 ==
-                  ma_port_mapping_0.key_0(port_mapping_0_m),
-                  select_action(), default())
+            key_matches = []
+            bd_0_key_0 = inouts.meta.ingress_metadata.bd
+            key_matches.append(bd_0_key_0 == cls.ma.key_0(cls.m))
+            return And(key_matches)
 
-    def apply():
-        # This is the initial version of the program
-        func_list = []
+    class ipv4_fib_0(Table):
 
-        def if_block(func_list, rets):
-            # If blocks track two expression lists for the if and the else case
-            if_list = []
-            else_list = []
-            assignments = []
-            if_list.append(port_mapping_0)
-            if_list.append(bd_0)
-            if_list.append(ipv4_fib_0)
+        ma_ipv4_fib_0 = Datatype('ma_ipv4_fib_0')
+        ma_ipv4_fib_0.declare('mk_ma_ipv4_fib_0', ('key_0', BitVecSort(12)), ('key_1', BitVecSort(32)),
+                              ('action', IntSort()))
+        ma = ma_ipv4_fib_0.create()
+        m = Const('ipv4_fib_0_m', ma)
 
-            def switch_block(func_list, rets):
-                # A switch block operates like a table lookup
-                # Each select expression generates a new implication clause
-                cases = []
-                select_case = ma_ipv4_fib_0.action(ipv4_fib_0_m) == 1
-                select_expression = ipv4_fib_lpm_0(func_list, rets)
-                cases.append(Implies(select_case, select_expression))
-                # Append false if there is only one case
-                cases.append(False)
-                return Xor(*cases)
-            if_list.append(switch_block)
-            if_list.append(nexthop_0)
-            else_list = []
-            return If(ipv4_valid, step(if_list, rets, assignments),
-                      step(else_list, rets, assignments))
-        func_list.append(if_block)
+        actions = {
+            "on_miss_2": (1, (on_miss_2, ())),
+            "fib_hit_nexthop": (2, (fib_hit_nexthop, [BitVec("ipv4_fib_0_nexthop_index", 16)])),
+        }
+        actions["default"] = (0, (NoAction_8, ()))
 
-        return func_list
+        @classmethod
+        def table_match(cls, inouts):
 
+            key_matches = []
+            ipv4_fib_0_key_0 = inouts.meta.ingress_metadata.vrf
+            key_matches.append(ipv4_fib_0_key_0 == cls.ma.key_0(cls.m))
+            ipv4_fib_0_key_1 = inouts.hdr.ipv4.dstAddr
+            key_matches.append(ipv4_fib_0_key_1 == cls.ma.key_1(cls.m))
+            return And(key_matches)
+
+    class ipv4_fib_lpm_0(Table):
+
+        ma_ipv4_fib_lpm_0 = Datatype('ma_ipv4_fib_lpm_0')
+        ma_ipv4_fib_lpm_0.declare('mk_ma_ipv4_fib_lpm_0', ('key_0', BitVecSort(12)), ('key_1', BitVecSort(32)),
+                                  ('action', IntSort()))
+        ma = ma_ipv4_fib_lpm_0.create()
+        m = Const('ipv4_fib_lpm_0_m', ma)
+
+        actions = {
+            "on_miss_5": (1, (on_miss_5, ())),
+            "fib_hit_nexthop_2": (2, (fib_hit_nexthop_2, [BitVec("ipv4_fib_lpm_0_nexthop_index", 16)]))
+        }
+        actions["default"] = (0, (NoAction_9, ()))
+
+        @classmethod
+        def table_match(cls, inouts):
+
+            key_matches = []
+            ipv4_fib_lpm_0_key_0 = inouts.meta.ingress_metadata.vrf
+            key_matches.append(ipv4_fib_lpm_0_key_0 == cls.ma.key_0(cls.m))
+
+            # This should be a mask for lpm matches
+            # TODO: Make it a proper mask and fix
+            masks = [(2**i) - 1 for i in range(32)]
+            ipv4_fib_lpm_0_key_1 = inouts.hdr.ipv4.dstAddr
+            key_matches.append(Or([ipv4_fib_lpm_0_key_1 & m ==
+                                   cls.ma.key_1(cls.m) & m
+                                   for m in masks]))
+            return And(key_matches)
+
+    class nexthop_0(Table):
+
+        ma_nexthop_0 = Datatype('ma_nexthop_0')
+        ma_nexthop_0.declare('mk_ma_nexthop_0', ('key_0', BitVecSort(16)),
+                             ('action', IntSort()))
+        ma = ma_nexthop_0.create()
+        m = Const('nexthop_0_m', ma)
+
+        actions = {
+            "on_miss_6": (1, (on_miss_6, ())),
+            "set_egress_details": (2, (set_egress_details, [BitVec("nexthop_0_egress_spec", 9)])),
+        }
+        actions["default"] = (0, (NoAction_10, ()))
+
+        @classmethod
+        def table_match(cls, inouts):
+
+            key_matches = []
+            nexthop_0_key_0 = inouts.meta.ingress_metadata.nexthop_index
+            key_matches.append(nexthop_0_key_0 == cls.ma.key_0(cls.m))
+            return And(key_matches)
+
+    class port_mapping_0(Table):
+
+        ma_port_mapping_0 = Datatype('ma_port_mapping_0')
+        ma_port_mapping_0.declare('mk_ma_port_mapping_0', ('key_0', BitVecSort(9)),
+                                  ('action', IntSort()))
+        ma = ma_port_mapping_0.create()
+        m = Const('port_mapping_0_m', ma)
+
+        actions = {
+            "set_bd": (1, (set_bd, [BitVec("port_mapping_0_bd", 16)])),
+        }
+        actions["default"] = (0, (NoAction_11, ()))
+
+        @classmethod
+        def table_match(cls, inouts):
+
+            key_matches = []
+            port_mapping_0_key_0 = inouts.standard_metadata.ingress_port
+            key_matches.append(port_mapping_0_key_0 == cls.ma.key_0(cls.m))
+            return And(key_matches)
+
+    def apply(func_chain, inouts):
+        ''' The main function of the control plane. Each statement in this pipe
+        is part of a list of functions. '''
+        sub_chain = []
+
+        def if_block(func_chain, inouts):
+
+            condition = inouts.hdr.ipv4.isValid()
+
+            def is_true():
+                sub_chain = []
+
+                # sub_chain.append(port_mapping_0.apply)
+                # sub_chain.append(bd_0.apply)
+
+                sub_chain.append(ipv4_fib_0.apply)
+
+                def switch_block(sub_chain, inouts):
+                    cases = []
+                    switch = ipv4_fib_0.action_run(inouts)
+                    a = ipv4_fib_0.actions
+
+                    def case_block(sub_chain, inouts):
+                        sub_chain = []
+
+                        sub_chain.append(ipv4_fib_lpm_0.apply)
+
+                        sub_chain.extend(func_chain)
+                        return step(sub_chain, inouts)
+                    case = Implies(
+                        switch == a["on_miss_2"][0],
+                        case_block(func_chain, inouts))
+                    cases.append(case)
+
+                    return And(*cases, step(func_chain, inouts))
+                sub_chain.append(switch_block)
+
+                sub_chain.extend(func_chain)
+                return step(sub_chain, inouts)
+
+            def is_false():
+                sub_chain = []
+
+                sub_chain.extend(func_chain)
+                return step(sub_chain, inouts)
+
+            return If(condition, is_true(), is_false())
+        sub_chain.append(if_block)
+
+        # sub_chain.append(nexthop_0.apply)
+
+        sub_chain.extend(func_chain)
+        return step(sub_chain, inouts)
     # return the apply function as sequence of logic clauses
-    func_chain = apply()
-    return step(func_chain, assignments=[], rets=[ret_0])
+    return step(func_chain=[apply], inouts=inouts)
 
 
 def z3_check():
     # The equivalence check of the solver
     # For all input packets and possible table matches the programs should
     # be the same
-    set_option(verbose=10)
-    bounds = [ret_0, bd_0_m, ipv4_fib_0_m,
-              ipv4_fib_lpm_0_m, nexthop_0_m, port_mapping_0_m]
-    # the equivalence equation
-    tv_equiv = simplify(control_ingress_0()) != simplify(control_ingress_1())
-    s.add(tv_equiv)
+    ''' SOLVER '''
+    s = Solver()
 
+    inouts = z3_reg.reg["INOUTS"]()
+    bounds = [inouts.const]
+    # out = control_ingress_0(s, inouts)
+    # print("FINAL OUTPUT")
+    # print(out)
+    # exit(0)
+    # the equivalence equation
+    tv_equiv = simplify(control_ingress_0(s, inouts) !=
+                        control_ingress_1(s, inouts))
+    s.add(Exists(bounds, tv_equiv))
     print(tv_equiv)
-    # print (s.sexpr())
+    print (s.sexpr())
     ret = s.check()
     if ret == sat:
-        print(ret)
-        print(s.model())
+        print (ret)
+        print (s.model())
+        return os.EX_PROTOCOL
     else:
-        print(ret)
+        print (ret)
+        return os.EX_OK
 
 
 if __name__ == '__main__':

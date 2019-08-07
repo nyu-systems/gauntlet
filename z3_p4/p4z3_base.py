@@ -3,7 +3,37 @@ import os
 import operator
 
 
-def step(func_chain, inouts, expr=True):
+def step(func_chain, inouts, expr=None):
+    ''' The step function ensures that modifications are propagated to
+    all subsequent operations. This is important to guarantee correctness with
+    branching or local modification. '''
+    fun_expr = None
+    if func_chain:
+        next_fun = func_chain[0]
+        func_chain = func_chain[1:]
+        # emulate pass-by-value behavior
+        inouts = copy.deepcopy(inouts)
+        fun_expr = next_fun(func_chain, inouts)
+    # print("#################################")
+    # print("EXPR")
+    # print(expr)
+    # print("FUN_EXPR")
+    # print(fun_expr)
+    if fun_expr is not None and expr is not None:
+        # print("CONCATENATING")
+        return And(expr, fun_expr)
+    elif fun_expr is not None:
+        # print("EXTRACTING")
+        return fun_expr
+    elif expr is not None:
+        # print("JUST RETURNING")
+        return expr
+    else:
+        # print("RETURNING TRUE")
+        return True
+
+
+def step_old(func_chain, inouts, expr=True):
     ''' The step function ensures that modifications are propagated to
     all subsequent operations. This is important to guarantee correctness with
     branching or local modification. '''
