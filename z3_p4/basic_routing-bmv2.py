@@ -46,69 +46,37 @@ z3_reg.register_z3_type("inouts", Struct, z3_args)
 
 
 def control_ingress_0(s, inouts):
-    ''' This is the initial version of the program. '''
-
-    # @name(".NoAction") action NoAction_0() {
-    # }
     def NoAction_1(func_chain, inouts):
-        ''' This is an action
-            NoAction just returns the current header as is '''
         sub_chain = []
 
         sub_chain.extend(func_chain)
         return step(sub_chain, inouts)
 
-    # @name(".NoAction") action NoAction_0() {
-    # }
     def NoAction_8(func_chain, inouts):
-        ''' This is an action
-            NoAction just returns the current header as is '''
         sub_chain = []
 
         sub_chain.extend(func_chain)
         return step(sub_chain, inouts)
 
-    # @name(".NoAction") action NoAction_0() {
-    # }
     def NoAction_9(func_chain, inouts):
-        ''' This is an action
-            NoAction just returns the current header as is '''
         sub_chain = []
 
         sub_chain.extend(func_chain)
         return step(sub_chain, inouts)
 
-    # @name(".NoAction") action NoAction_0() {
-    # }
     def NoAction_10(func_chain, inouts):
-        ''' This is an action
-            NoAction just returns the current header as is '''
         sub_chain = []
 
         sub_chain.extend(func_chain)
         return step(sub_chain, inouts)
 
-    # @name(".NoAction") action NoAction_0() {
-    # }
     def NoAction_11(func_chain, inouts):
-        ''' This is an action
-            NoAction just returns the current header as is '''
         sub_chain = []
 
         sub_chain.extend(func_chain)
         return step(sub_chain, inouts)
 
-    # @name("ingress.c.a") action c_a_0() {
-    #     h.h.b = h.h.a;
-    # }
     def set_vrf(func_chain, inouts, vrf):
-        ''' This is an action
-            This action creates a new header type where b is set to a '''
-        # This updates an existing output variable so  we need a new version
-        # The new constant is appended to the existing list of constants
-        # Now we create the new version by using a data type constructor
-        # The data type constructor uses the values from the previous
-        # variable version, except for the update target.
         sub_chain = []
 
         def output_update(func_chain, inouts):
@@ -120,44 +88,25 @@ def control_ingress_0(s, inouts):
         sub_chain.extend(func_chain)
         return step(sub_chain, inouts)
 
-    # @name(".NoAction") action NoAction_0() {
-    # }
     def on_miss_2(func_chain, inouts):
-        ''' This is an action
-            NoAction just returns the current header as is '''
         sub_chain = []
 
         sub_chain.extend(func_chain)
         return step(sub_chain, inouts)
 
-    # @name(".NoAction") action NoAction_0() {
-    # }
     def on_miss_5(func_chain, inouts):
-        ''' This is an action
-            NoAction just returns the current header as is '''
         sub_chain = []
 
         sub_chain.extend(func_chain)
         return step(sub_chain, inouts)
 
-    # @name(".NoAction") action NoAction_0() {
-    # }
     def on_miss_6(func_chain, inouts):
-        ''' This is an action
-            NoAction just returns the current header as is '''
         sub_chain = []
 
         sub_chain.extend(func_chain)
         return step(sub_chain, inouts)
 
     def fib_hit_nexthop(func_chain, inouts, nexthop_index):
-        ''' This is an action
-            This action creates a new header type where b is set to a '''
-        # This updates an existing output variable so  we need a new version
-        # The new constant is appended to the existing list of constants
-        # Now we create the new version by using a data type constructor
-        # The data type constructor uses the values from the previous
-        # variable version, except for the update target.
         sub_chain = []
 
         def output_update(func_chain, inouts):
@@ -176,13 +125,7 @@ def control_ingress_0(s, inouts):
         return step(sub_chain, inouts)
 
     def fib_hit_nexthop_2(func_chain, inouts, nexthop_index):
-        ''' This is an action
-            This action creates a new header type where b is set to a '''
-        # This updates an existing output variable so  we need a new version
-        # The new constant is appended to the existing list of constants
-        # Now we create the new version by using a data type constructor
-        # The data type constructor uses the values from the previous
-        # variable version, except for the update target.
+
         sub_chain = []
 
         def output_update(func_chain, inouts):
@@ -201,13 +144,6 @@ def control_ingress_0(s, inouts):
         return step(sub_chain, inouts)
 
     def set_egress_details(func_chain, inouts, egress_spec):
-        ''' This is an action
-            This action creates a new header type where b is set to a '''
-        # This updates an existing output variable so  we need a new version
-        # The new constant is appended to the existing list of constants
-        # Now we create the new version by using a data type constructor
-        # The data type constructor uses the values from the previous
-        # variable version, except for the update target.
         sub_chain = []
 
         def output_update(func_chain, inouts):
@@ -220,13 +156,6 @@ def control_ingress_0(s, inouts):
         return step(sub_chain, inouts)
 
     def set_bd(func_chain, inouts, bd):
-        ''' This is an action
-            This action creates a new header type where b is set to a '''
-        # This updates an existing output variable so  we need a new version
-        # The new constant is appended to the existing list of constants
-        # Now we create the new version by using a data type constructor
-        # The data type constructor uses the values from the previous
-        # variable version, except for the update target.
         sub_chain = []
 
         def output_update(func_chain, inouts):
@@ -305,8 +234,9 @@ def control_ingress_0(s, inouts):
             key_matches.append(ipv4_fib_lpm_0_key_0 == cls.ma.key_0(cls.m))
 
             # This should be a mask for lpm matches
-            # TODO: Make it a proper mask and fix
-            masks = [(2**i) - 1 for i in range(32)]
+            # TODO: Make it a proper mask and fix, not sure how yet
+            masks = [int("0x" + ((32 // 4) - i) * "0" +
+                         i * "f", 16) for i in range(1, 32 // 4 + 1)]
             ipv4_fib_lpm_0_key_1 = inouts.hdr.ipv4.dstAddr
             key_matches.append(Or([ipv4_fib_lpm_0_key_1 & m ==
                                    cls.ma.key_1(cls.m) & m
@@ -357,8 +287,6 @@ def control_ingress_0(s, inouts):
             return And(key_matches)
 
     def apply(func_chain, inouts):
-        ''' The main function of the control plane. Each statement in this pipe
-        is part of a list of functions. '''
         sub_chain = []
 
         def if_block(func_chain, inouts):
@@ -368,8 +296,8 @@ def control_ingress_0(s, inouts):
             def is_true():
                 sub_chain = []
 
-                # sub_chain.append(port_mapping_0.apply)
-                # sub_chain.append(bd_0.apply)
+                sub_chain.append(port_mapping_0.apply)
+                sub_chain.append(bd_0.apply)
 
                 sub_chain.append(ipv4_fib_0.apply)
 
@@ -390,7 +318,9 @@ def control_ingress_0(s, inouts):
                         case_block(func_chain, inouts))
                     cases.append(case)
 
-                    return And(*cases, step(func_chain, inouts))
+                    default = step(func_chain, inouts)
+
+                    return And(*cases, default)
                 sub_chain.append(switch_block)
 
                 sub_chain.extend(func_chain)
@@ -405,7 +335,7 @@ def control_ingress_0(s, inouts):
             return If(condition, is_true(), is_false())
         sub_chain.append(if_block)
 
-        # sub_chain.append(nexthop_0.apply)
+        sub_chain.append(nexthop_0.apply)
 
         sub_chain.extend(func_chain)
         return step(sub_chain, inouts)
@@ -416,67 +346,37 @@ def control_ingress_0(s, inouts):
 def control_ingress_1(s, inouts):
     ''' This is the initial version of the program. '''
 
-    # @name(".NoAction") action NoAction_0() {
-    # }
     def NoAction_1(func_chain, inouts):
-        ''' This is an action
-            NoAction just returns the current header as is '''
         sub_chain = []
 
         sub_chain.extend(func_chain)
         return step(sub_chain, inouts)
 
-    # @name(".NoAction") action NoAction_0() {
-    # }
     def NoAction_8(func_chain, inouts):
-        ''' This is an action
-            NoAction just returns the current header as is '''
         sub_chain = []
 
         sub_chain.extend(func_chain)
         return step(sub_chain, inouts)
 
-    # @name(".NoAction") action NoAction_0() {
-    # }
     def NoAction_9(func_chain, inouts):
-        ''' This is an action
-            NoAction just returns the current header as is '''
         sub_chain = []
 
         sub_chain.extend(func_chain)
         return step(sub_chain, inouts)
 
-    # @name(".NoAction") action NoAction_0() {
-    # }
     def NoAction_10(func_chain, inouts):
-        ''' This is an action
-            NoAction just returns the current header as is '''
         sub_chain = []
 
         sub_chain.extend(func_chain)
         return step(sub_chain, inouts)
 
-    # @name(".NoAction") action NoAction_0() {
-    # }
     def NoAction_11(func_chain, inouts):
-        ''' This is an action
-            NoAction just returns the current header as is '''
         sub_chain = []
 
         sub_chain.extend(func_chain)
         return step(sub_chain, inouts)
 
-    # @name("ingress.c.a") action c_a_0() {
-    #     h.h.b = h.h.a;
-    # }
     def set_vrf(func_chain, inouts, vrf):
-        ''' This is an action
-            This action creates a new header type where b is set to a '''
-        # This updates an existing output variable so  we need a new version
-        # The new constant is appended to the existing list of constants
-        # Now we create the new version by using a data type constructor
-        # The data type constructor uses the values from the previous
-        # variable version, except for the update target.
         sub_chain = []
 
         def output_update(func_chain, inouts):
@@ -488,44 +388,25 @@ def control_ingress_1(s, inouts):
         sub_chain.extend(func_chain)
         return step(sub_chain, inouts)
 
-    # @name(".NoAction") action NoAction_0() {
-    # }
     def on_miss_2(func_chain, inouts):
-        ''' This is an action
-            NoAction just returns the current header as is '''
         sub_chain = []
 
         sub_chain.extend(func_chain)
         return step(sub_chain, inouts)
 
-    # @name(".NoAction") action NoAction_0() {
-    # }
     def on_miss_5(func_chain, inouts):
-        ''' This is an action
-            NoAction just returns the current header as is '''
         sub_chain = []
 
         sub_chain.extend(func_chain)
         return step(sub_chain, inouts)
 
-    # @name(".NoAction") action NoAction_0() {
-    # }
     def on_miss_6(func_chain, inouts):
-        ''' This is an action
-            NoAction just returns the current header as is '''
         sub_chain = []
 
         sub_chain.extend(func_chain)
         return step(sub_chain, inouts)
 
     def fib_hit_nexthop(func_chain, inouts, nexthop_index):
-        ''' This is an action
-            This action creates a new header type where b is set to a '''
-        # This updates an existing output variable so  we need a new version
-        # The new constant is appended to the existing list of constants
-        # Now we create the new version by using a data type constructor
-        # The data type constructor uses the values from the previous
-        # variable version, except for the update target.
         sub_chain = []
 
         def output_update(func_chain, inouts):
@@ -544,13 +425,6 @@ def control_ingress_1(s, inouts):
         return step(sub_chain, inouts)
 
     def fib_hit_nexthop_2(func_chain, inouts, nexthop_index):
-        ''' This is an action
-            This action creates a new header type where b is set to a '''
-        # This updates an existing output variable so  we need a new version
-        # The new constant is appended to the existing list of constants
-        # Now we create the new version by using a data type constructor
-        # The data type constructor uses the values from the previous
-        # variable version, except for the update target.
         sub_chain = []
 
         def output_update(func_chain, inouts):
@@ -569,13 +443,6 @@ def control_ingress_1(s, inouts):
         return step(sub_chain, inouts)
 
     def set_egress_details(func_chain, inouts, egress_spec):
-        ''' This is an action
-            This action creates a new header type where b is set to a '''
-        # This updates an existing output variable so  we need a new version
-        # The new constant is appended to the existing list of constants
-        # Now we create the new version by using a data type constructor
-        # The data type constructor uses the values from the previous
-        # variable version, except for the update target.
         sub_chain = []
 
         def output_update(func_chain, inouts):
@@ -588,13 +455,6 @@ def control_ingress_1(s, inouts):
         return step(sub_chain, inouts)
 
     def set_bd(func_chain, inouts, bd):
-        ''' This is an action
-            This action creates a new header type where b is set to a '''
-        # This updates an existing output variable so  we need a new version
-        # The new constant is appended to the existing list of constants
-        # Now we create the new version by using a data type constructor
-        # The data type constructor uses the values from the previous
-        # variable version, except for the update target.
         sub_chain = []
 
         def output_update(func_chain, inouts):
@@ -674,10 +534,11 @@ def control_ingress_1(s, inouts):
 
             # This should be a mask for lpm matches
             # TODO: Make it a proper mask and fix
-            masks = [(2**i) - 1 for i in range(32)]
+            masks = [int("0x" + ((32 // 4) - i) * "0" +
+                         i * "f", 16) for i in range(1, 32 // 4 + 1)]
             ipv4_fib_lpm_0_key_1 = inouts.hdr.ipv4.dstAddr
-            key_matches.append(Or([ipv4_fib_lpm_0_key_1 & m ==
-                                   cls.ma.key_1(cls.m) & m
+            key_matches.append(Or([(ipv4_fib_lpm_0_key_1 & m) ==
+                                   (cls.ma.key_1(cls.m) & m)
                                    for m in masks]))
             return And(key_matches)
 
@@ -725,8 +586,6 @@ def control_ingress_1(s, inouts):
             return And(key_matches)
 
     def apply(func_chain, inouts):
-        ''' The main function of the control plane. Each statement in this pipe
-        is part of a list of functions. '''
         sub_chain = []
 
         def if_block(func_chain, inouts):
@@ -736,8 +595,8 @@ def control_ingress_1(s, inouts):
             def is_true():
                 sub_chain = []
 
-                # sub_chain.append(port_mapping_0.apply)
-                # sub_chain.append(bd_0.apply)
+                sub_chain.append(port_mapping_0.apply)
+                sub_chain.append(bd_0.apply)
 
                 sub_chain.append(ipv4_fib_0.apply)
 
@@ -757,8 +616,9 @@ def control_ingress_1(s, inouts):
                         switch == a["on_miss_2"][0],
                         case_block(func_chain, inouts))
                     cases.append(case)
+                    default = step(func_chain, inouts)
 
-                    return And(*cases, step(func_chain, inouts))
+                    return And(*cases, default)
                 sub_chain.append(switch_block)
 
                 sub_chain.extend(func_chain)
@@ -773,19 +633,15 @@ def control_ingress_1(s, inouts):
             return If(condition, is_true(), is_false())
         sub_chain.append(if_block)
 
-        # sub_chain.append(nexthop_0.apply)
+        sub_chain.append(nexthop_0.apply)
 
         sub_chain.extend(func_chain)
         return step(sub_chain, inouts)
-    # return the apply function as sequence of logic clauses
     return step(func_chain=[apply], inouts=inouts)
 
 
 def z3_check():
-    # The equivalence check of the solver
-    # For all input packets and possible table matches the programs should
-    # be the same
-    ''' SOLVER '''
+
     s = Solver()
 
     inouts = z3_reg.reg["INOUTS"]()
@@ -794,7 +650,6 @@ def z3_check():
     # print("FINAL OUTPUT")
     # print(out)
     # exit(0)
-    # the equivalence equation
     tv_equiv = simplify(control_ingress_0(s, inouts) !=
                         control_ingress_1(s, inouts))
     s.add(Exists(bounds, tv_equiv))

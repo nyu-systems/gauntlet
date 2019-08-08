@@ -96,7 +96,7 @@ class Header():
 
     def set_basic_attrs(self):
         cls_name = self.__class__.__name__.lower()
-        cls_id = str(id(self))[-4:]
+        cls_id = ""  # str(id(self))[-4:]
         self.name = "%s%s" % (cls_name, cls_id)
         self.z3_type = z3_reg.reg[cls_name]
 
@@ -137,7 +137,6 @@ class Header():
             lvalue = operator.attrgetter(lstring)(self)
             setattr(self, lvalue, rvalue)
 
-
     def set_valid(self):
         cls_name = self.__class__.__name__.lower()
         self.valid = Const("%s_valid" % cls_name, BoolSort())
@@ -167,7 +166,7 @@ class Struct():
 
     def set_basic_attrs(self):
         cls_name = self.__class__.__name__.lower()
-        cls_id = str(id(self))[-4:]
+        cls_id = ""  # str(id(self))[-4:]
         self.name = "%s%s" % (cls_name, cls_id)
         self.z3_type = z3_reg.reg[cls_name]
 
@@ -223,6 +222,7 @@ class Struct():
 
 
 class Table():
+    action = Const("c_t_action", IntSort())
 
     @classmethod
     def table_action(cls, func_chain, p4_vars):
@@ -237,7 +237,7 @@ class Table():
             f_id = f_tuple[0]
             f_fun = f_tuple[1][0]
             f_args = f_tuple[1][1]
-            expr = Implies(cls.ma.action(cls.m) == f_id,
+            expr = Implies(cls.action == f_id,
                            f_fun(func_chain, p4_vars, *f_args))
             actions.append(expr)
         return And(*actions)
@@ -249,7 +249,7 @@ class Table():
     @classmethod
     def action_run(cls, p4_vars):
         return If(cls.table_match(p4_vars),
-                  cls.ma.action(cls.m),
+                  cls.action,
                   0)
 
     @classmethod
@@ -262,3 +262,8 @@ class Table():
         return If(cls.table_match(p4_vars),
                   cls.table_action(func_chain, p4_vars),
                   def_fun(func_chain, p4_vars, *def_args))
+
+
+def output_update(func_chain, p4_vars, lval, rval):
+    expr = p4_vars.set(lval, rval)
+    return step(func_chain, p4_vars, expr)
