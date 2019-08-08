@@ -3,7 +3,7 @@ import os
 import operator
 
 
-def step(func_chain, inouts, expr=None):
+def step(func_chain, p4_vars, expr=None):
     ''' The step function ensures that modifications are propagated to
     all subsequent operations. This is important to guarantee correctness with
     branching or local modification. '''
@@ -12,8 +12,8 @@ def step(func_chain, inouts, expr=None):
         next_fun = func_chain[0]
         func_chain = func_chain[1:]
         # emulate pass-by-value behavior
-        inouts = copy.deepcopy(inouts)
-        fun_expr = next_fun(func_chain, inouts)
+        p4_vars = copy.deepcopy(p4_vars)
+        fun_expr = next_fun(func_chain, p4_vars)
     # print("#################################")
     # print("EXPR")
     # print(expr)
@@ -33,7 +33,7 @@ def step(func_chain, inouts, expr=None):
         return True
 
 
-def step_old(func_chain, inouts, expr=True):
+def step_old(func_chain, p4_vars, expr=True):
     ''' The step function ensures that modifications are propagated to
     all subsequent operations. This is important to guarantee correctness with
     branching or local modification. '''
@@ -41,8 +41,8 @@ def step_old(func_chain, inouts, expr=True):
         next_fun = func_chain[0]
         func_chain = func_chain[1:]
         # emulate pass-by-value behavior
-        inouts = copy.deepcopy(inouts)
-        expr = next_fun(func_chain, inouts)
+        p4_vars = copy.deepcopy(p4_vars)
+        expr = next_fun(func_chain, p4_vars)
     return expr
 
 
@@ -123,16 +123,20 @@ class Header():
 
     def set(self, lstring, rvalue):
         # update the internal representation of the attribute
-        lvalue = operator.attrgetter(lstring)(self)
-        prefix, suffix = lstring.rsplit(".", 1)
-        target_class = operator.attrgetter(prefix)(self)
-        setattr(target_class, suffix, rvalue)
-        # generate a new version of the z3 datatype
-        copy = self.make()
-        # update the SSA version
-        self.update()
-        # return the update expression
-        return (self.const == copy)
+        if ("." in lstring):
+            prefix, suffix = lstring.rsplit(".", 1)
+            target_class = operator.attrgetter(prefix)(self)
+            setattr(target_class, suffix, rvalue)
+            # generate a new version of the z3 datatype
+            copy = self.make()
+            # update the SSA version
+            self.update()
+            # return the update expression
+            return (self.const == copy)
+        else:
+            lvalue = operator.attrgetter(lstring)(self)
+            setattr(self, lvalue, rvalue)
+
 
     def set_valid(self):
         cls_name = self.__class__.__name__.lower()
@@ -204,22 +208,24 @@ class Struct():
 
     def set(self, lstring, rvalue):
         # update the internal representation of the attribute
-        lvalue = operator.attrgetter(lstring)(self)
-        prefix, suffix = lstring.rsplit(".", 1)
-        target_class = operator.attrgetter(prefix)(self)
-        setattr(target_class, suffix, rvalue)
-        # generate a new version of the z3 datatype
-        copy = self.make()
-        # update the SSA version
-        self.update()
-        # return the update expression
-        return (self.const == copy)
+        if ("." in lstring):
+            prefix, suffix = lstring.rsplit(".", 1)
+            target_class = operator.attrgetter(prefix)(self)
+            setattr(target_class, suffix, rvalue)
+            # generate a new version of the z3 datatype
+            copy = self.make()
+            # update the SSA version
+            self.update()
+            # return the update expression
+            return (self.const == copy)
+        else:
+            setattr(self, lstring, rvalue)
 
 
 class Table():
 
     @classmethod
-    def table_action(cls, func_chain, inouts):
+    def table_action(cls, func_chain, p4_vars):
         ''' This is a special macro to define action selection. We treat
         selection as a chain of implications. If we match, then the clause
         returned by the action must be valid.
@@ -232,27 +238,27 @@ class Table():
             f_fun = f_tuple[1][0]
             f_args = f_tuple[1][1]
             expr = Implies(cls.ma.action(cls.m) == f_id,
-                           f_fun(func_chain, inouts, *f_args))
+                           f_fun(func_chain, p4_vars, *f_args))
             actions.append(expr)
         return And(*actions)
 
     @classmethod
-    def table_match(cls, inouts):
+    def table_match(cls, p4_vars):
         raise NotImplementedError
 
     @classmethod
-    def action_run(cls, inouts):
-        return If(cls.table_match(inouts),
+    def action_run(cls, p4_vars):
+        return If(cls.table_match(p4_vars),
                   cls.ma.action(cls.m),
                   0)
 
     @classmethod
-    def apply(cls, func_chain, inouts):
+    def apply(cls, func_chain, p4_vars):
         # This is a table match where we look up the provided key
         # If we match select the associated action,
         # else use the default action
         def_fun = cls.actions["default"][1][0]
         def_args = cls.actions["default"][1][1]
-        return If(cls.table_match(inouts),
-                  cls.table_action(func_chain, inouts),
-                  def_fun(func_chain, inouts, *def_args))
+        return If(cls.table_match(p4_vars),
+                  cls.table_action(func_chain, p4_vars),
+                  def_fun(func_chain, p4_vars, *def_args))

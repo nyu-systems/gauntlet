@@ -45,23 +45,23 @@ z3_args = [('h', z3_reg.reg["headers"]), ('m', z3_reg.reg["meta"]),
 z3_reg.register_z3_type("inouts", Struct, z3_args)
 
 
-def control_ingress_0(s, inouts):
+def control_ingress_0(s, p4_vars):
     ''' This is the initial version of the program. '''
 
     # @name(".NoAction") action NoAction_0() {
     # }
-    def NoAction_0(func_chain, inouts):
+    def NoAction_0(func_chain, p4_vars):
         ''' This is an action
             NoAction just returns the current header as is '''
         sub_chain = []
 
         sub_chain.extend(func_chain)
-        return step(sub_chain, inouts)
+        return step(sub_chain, p4_vars)
 
     # @name("ingress.c.a") action c_a_0() {
     #     h.h.b = h.h.a;
     # }
-    def c_a_0(func_chain, inouts):
+    def c_a_0(func_chain, p4_vars):
         ''' This is an action
             This action creates a new header type where b is set to a '''
         # This updates an existing output variable so  we need a new version
@@ -71,14 +71,14 @@ def control_ingress_0(s, inouts):
         # variable version, except for the update target.
         sub_chain = []
 
-        def output_update(func_chain, inouts):
-            rval = inouts.h.h.a
-            expr = inouts.set("h.h.b", rval)
-            return step(func_chain, inouts, expr)
+        def output_update(func_chain, p4_vars):
+            rval = p4_vars.h.h.a
+            expr = p4_vars.set("h.h.b", rval)
+            return step(func_chain, p4_vars, expr)
         sub_chain.append(output_update)
 
         sub_chain.extend(func_chain)
-        return step(sub_chain, inouts)
+        return step(sub_chain, p4_vars)
     # @name("ingress.c.t") table c_t {
 
     # @name("ingress.c.t") table c_t {
@@ -95,7 +95,7 @@ def control_ingress_0(s, inouts):
         ma = ma_c_t.create()
 
         @classmethod
-        def table_match(cls, inouts):
+        def table_match(cls, p4_vars):
             # The keys of the table are compared with the input keys.
             # In this case we are matching a single value
             # key = {
@@ -103,7 +103,7 @@ def control_ingress_0(s, inouts):
             # }
             key_matches = []
             # The key is an addition of two variables
-            c_t_key_0 = inouts.h.h.a + inouts.h.h.a
+            c_t_key_0 = p4_vars.h.h.a + p4_vars.h.h.a
             # It is an exact match, so we use direct comparison
             key_matches.append(c_t_key_0 == cls.ma.key_0(cls.m))
             return And(key_matches)
@@ -120,44 +120,44 @@ def control_ingress_0(s, inouts):
         }
         actions["default"] = (0, (NoAction_0, ()))
 
-    def apply(func_chain, inouts):
+    def apply(func_chain, p4_vars):
         ''' The main function of the control plane. Each statement in this pipe
         is part of a list of functions. '''
         sub_chain = []
         # c_t.apply();
         sub_chain.append(c_t.apply)
 
-        def output_update(func_chain, inouts):
+        def output_update(func_chain, p4_vars):
             rval = BitVecVal(0, 9)
-            update = inouts.set("sm.egress_spec", rval)
+            update = p4_vars.set("sm.egress_spec", rval)
             expr = (update)
-            return step(func_chain, inouts, expr)
+            return step(func_chain, p4_vars, expr)
         # sm.egress_spec = 9w0
         sub_chain.append(output_update)
 
         sub_chain.extend(func_chain)
-        return step(sub_chain, inouts)
+        return step(sub_chain, p4_vars)
     # return the apply function as sequence of logic clauses
-    return step(func_chain=[apply], inouts=inouts)
+    return step(func_chain=[apply], p4_vars=p4_vars)
 
 
-def control_ingress_1(s, inouts):
+def control_ingress_1(s, p4_vars):
     ''' This is the initial version of the program. '''
 
     # @name(".NoAction") action NoAction_0() {
     # }
-    def NoAction_0(func_chain, inouts):
+    def NoAction_0(func_chain, p4_vars):
         ''' This is an action
             NoAction just returns the current header as is '''
         sub_chain = []
 
         sub_chain.extend(func_chain)
-        return step(sub_chain, inouts)
+        return step(sub_chain, p4_vars)
 
     # @name("ingress.c.a") action c_a_0() {
     #     h.h.b = h.h.a;
     # }
-    def c_a_0(func_chain, inouts):
+    def c_a_0(func_chain, p4_vars):
         ''' This is an action
             This action creates a new header type where b is set to a '''
         # This updates an existing output variable so  we need a new version
@@ -167,18 +167,18 @@ def control_ingress_1(s, inouts):
         # variable version, except for the update target.
         sub_chain = []
 
-        def output_update(func_chain, inouts):
-            rval = inouts.h.h.a
-            expr = inouts.set("h.h.b", rval)
-            return step(func_chain, inouts, expr)
+        def output_update(func_chain, p4_vars):
+            rval = p4_vars.h.h.a
+            expr = p4_vars.set("h.h.b", rval)
+            return step(func_chain, p4_vars, expr)
         sub_chain.append(output_update)
 
         sub_chain.extend(func_chain)
-        return step(sub_chain, inouts)
+        return step(sub_chain, p4_vars)
 
     # The key is defined in the control function
     # Practically, this is a placeholder variable
-    key_0 = BitVec("key_0", 32)  # bit<32> key_0;
+    p4_vars.key_0 = BitVec("key_0", 32)  # bit<32> key_0;
 
     # @name("ingress.c.t") table c_t {
     class c_t(Table):
@@ -194,7 +194,7 @@ def control_ingress_1(s, inouts):
         ma = ma_c_t.create()
 
         @classmethod
-        def table_match(cls, inouts):
+        def table_match(cls, p4_vars):
             # The keys of the table are compared with the input keys.
             # In this case we are matching a single value
             # key = {
@@ -202,7 +202,7 @@ def control_ingress_1(s, inouts):
             # }
             key_matches = []
             # Access the global variable key_0, which has been updated before
-            c_t_key_0 = key_0
+            c_t_key_0 = p4_vars.key_0
             # It is an exact match, so we use direct comparison
             key_matches.append(c_t_key_0 == cls.ma.key_0(cls.m))
             return And(key_matches)
@@ -219,45 +219,40 @@ def control_ingress_1(s, inouts):
         }
         actions["default"] = (0, (NoAction_0, ()))
 
-    def apply(func_chain, inouts):
+    def apply(func_chain, p4_vars):
         ''' The main function of the control plane. Each statement in this pipe
         is part of a list of functions. '''
         sub_chain = []
 
         # {
-        def block(func_chain, inouts):
+        def block(func_chain, p4_vars):
             sub_chain = []
 
-            def local_update(func_chain, inouts):
-                ''' Updates to local variables will not play a role in the
-                final output. We do not need to add new constraints. Instead,
-                we update the python variable directly for later use. The
-                variable is accessed using the nonlocal keyword. '''
-                # key_0 is updated to have the value h.h.a + h.h.a
-                nonlocal key_0
-                key_0 = inouts.h.h.a + inouts.h.h.a
-                return step(func_chain, inouts)
+            def output_update(func_chain, p4_vars):
+                rval = p4_vars.h.h.a + p4_vars.h.h.a
+                expr = p4_vars.set("key_0", rval)
+                return step(func_chain, p4_vars, expr)
             # key_0 = h.h.a + h.h.a;
-            sub_chain.append(local_update)
+            sub_chain.append(output_update)
             # c_t.apply();
             sub_chain.append(c_t.apply)
 
             sub_chain.extend(func_chain)
-            return step(sub_chain, inouts)
+            return step(sub_chain, p4_vars)
         # }
         sub_chain.append(block)
 
-        def output_update(func_chain, inouts):
+        def output_update(func_chain, p4_vars):
             rval = BitVecVal(0, 9)
-            update = inouts.set("sm.egress_spec", rval)
-            return step(func_chain, inouts, update)
+            update = p4_vars.set("sm.egress_spec", rval)
+            return step(func_chain, p4_vars, update)
         # sm.egress_spec = 9w0
         sub_chain.append(output_update)
 
         sub_chain.extend(func_chain)
-        return step(sub_chain, inouts)
+        return step(sub_chain, p4_vars)
     # return the apply function as sequence of logic clauses
-    return step(func_chain=[apply], inouts=inouts)
+    return step(func_chain=[apply], p4_vars=p4_vars)
 
 
 def z3_check():
@@ -267,15 +262,15 @@ def z3_check():
     ''' SOLVER '''
     s = Solver()
 
-    inouts = z3_reg.reg["INOUTS"]()
-    bounds = [inouts.const]
-    out = control_ingress_0(s, inouts)
-    print("FINAL OUTPUT")
-    print(out)
-    exit(0)
+    p4_vars = z3_reg.reg["INOUTS"]()
+    bounds = [p4_vars.const]
+    # out = control_ingress_1(s, p4_vars)
+    # print("FINAL OUTPUT")
+    # print(out)
+    # exit(0)
     # the equivalence equation
-    tv_equiv = simplify(control_ingress_0(s, inouts) !=
-                        control_ingress_0(s, inouts))
+    tv_equiv = simplify(control_ingress_0(s, p4_vars) !=
+                        control_ingress_1(s, p4_vars))
     s.add(Exists(bounds, tv_equiv))
     print(tv_equiv)
     print (s.sexpr())
@@ -295,18 +290,18 @@ if __name__ == '__main__':
 
 # If(And(a(hdr6192_0) + a(hdr6192_0) == key_0(c_t_m)),
 #    Xor(Implies(action(c_t_m) == 1,
-#                inouts5688_2 ==
-#                mk_inouts(mk_headers(mk_hdr(a(hdr6192_0),
+#                p4_vars5688_2 ==
+#                mk_p4_vars(mk_headers(mk_hdr(a(hdr6192_0),
 #                                         a(hdr6192_0))),
 #                          mk_meta,
 #                          mk_standard_metadata_t(0))),
 #        Implies(action(c_t_m) == 2,
-#                inouts5688_2 ==
-#                mk_inouts(mk_headers(mk_hdr(a(hdr6192_0),
+#                p4_vars5688_2 ==
+#                mk_p4_vars(mk_headers(mk_hdr(a(hdr6192_0),
 #                                         a(hdr6192_0))),
 #                          mk_meta,
 #                          mk_standard_metadata_t(0)))),
-#    inouts5688_2 ==
-#    mk_inouts(mk_headers(mk_hdr(a(hdr6192_0), a(hdr6192_0))),
+#    p4_vars5688_2 ==
+#    mk_p4_vars(mk_headers(mk_hdr(a(hdr6192_0), a(hdr6192_0))),
 #              mk_meta,
 #              mk_standard_metadata_t(0)))
