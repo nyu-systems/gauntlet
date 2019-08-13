@@ -1,21 +1,21 @@
 from p4z3_base import *
 
-''' Model imports at the top of the p4 file '''
-from v1model import *
 
+def p4_program_0(Z3Reg):
+    Z3Reg.reset()
 
-def p4_program_0():
     ''' HEADERS '''
     # The input headers of the control pipeline
-    # Datatypes have to be declared outside the type object because of issues with
-    # deepcopy()
 
+    # Model imports at the top of the p4 file '''
+    import v1model
+    Z3Reg = v1model.register(Z3Reg)
     # header hdr {
     #     bit<32> a;
     #     bit<32> b;
     # }
     z3_args = [('a', BitVecSort(32)), ('b', BitVecSort(32))]
-    z3_reg.register_z3_type("hdr", Header, z3_args)
+    Z3Reg.register_z3_type("hdr", Header, z3_args)
 
     ''' STRUCTS '''
     # Data structures that were declared globally
@@ -23,13 +23,13 @@ def p4_program_0():
     # struct Headers {
     #     hdr h;
     # }
-    z3_args = [('h', z3_reg.reg["hdr"])]
-    z3_reg.register_z3_type("headers", Struct, z3_args)
+    z3_args = [('h', Z3Reg.reg["hdr"])]
+    Z3Reg.register_z3_type("headers", Struct, z3_args)
 
     # struct Meta {
     # }
     z3_args = []
-    z3_reg.register_z3_type("meta", Struct, z3_args)
+    Z3Reg.register_z3_type("meta", Struct, z3_args)
 
     def p():
         pass
@@ -53,11 +53,11 @@ def p4_program_0():
      This corresponds to the arguments of the control function'''
 
     # control ingress(inout Headers h, inout Meta m, inout standard_metadata_t sm)
-    z3_args = [('h', z3_reg.reg["headers"]), ('m', z3_reg.reg["meta"]),
-               ('sm', z3_reg.reg["standard_metadata_t"])]
-    z3_reg.register_z3_type("inouts", Struct, z3_args)
+    z3_args = [('h', Z3Reg.reg["headers"]), ('m', Z3Reg.reg["meta"]),
+               ('sm', Z3Reg.reg["standard_metadata_t"])]
+    Z3Reg.register_z3_type("inouts", Struct, z3_args)
     ''' This is the initial version of the program. '''
-    ingress_args = z3_reg.reg["INOUTS"]()
+    ingress_args = Z3Reg.reg["INOUTS"]()
 
     def ingress(p4_vars):
         # @name(".NoAction") action NoAction_0() {
@@ -112,10 +112,10 @@ def p4_program_0():
                 key_matches = []
                 # The key is an addition of two variables
                 c_t_key_0 = p4_vars.h.h.a + p4_vars.h.h.a
-                c_t_z3_key_0 = Const("c_t_key_0", c_t_key_0.sort())
+                c_t_key_0_const = Const("c_t_key_0", c_t_key_0.sort())
 
                 # It is an exact match, so we use direct comparison
-                key_matches.append(c_t_key_0 == c_t_z3_key_0)
+                key_matches.append(c_t_key_0 == c_t_key_0_const)
                 return And(key_matches)
 
             # actions = {
@@ -149,18 +149,21 @@ def p4_program_0():
     return ((p,), (vrfy,), (ingress, ingress_args), (egress,), (update,), (deparser,))
 
 
-def p4_program_1():
+def p4_program_1(Z3Reg):
+    Z3Reg.reset()
+
     ''' HEADERS '''
     # The input headers of the control pipeline
-    # Datatypes have to be declared outside the type object because of issues with
-    # deepcopy()
+    # Model imports at the top of the p4 file '''
+    import v1model
+    Z3Reg = v1model.register(Z3Reg)
 
     # header hdr {
     #     bit<32> a;
     #     bit<32> b;
     # }
     z3_args = [('a', BitVecSort(32)), ('b', BitVecSort(32))]
-    z3_reg.register_z3_type("hdr", Header, z3_args)
+    Z3Reg.register_z3_type("hdr", Header, z3_args)
 
     ''' STRUCTS '''
     # Data structures that were declared globally
@@ -168,13 +171,13 @@ def p4_program_1():
     # struct Headers {
     #     hdr h;
     # }
-    z3_args = [('h', z3_reg.reg["hdr"])]
-    z3_reg.register_z3_type("headers", Struct, z3_args)
+    z3_args = [('h', Z3Reg.reg["hdr"])]
+    Z3Reg.register_z3_type("headers", Struct, z3_args)
 
     # struct Meta {
     # }
     z3_args = []
-    z3_reg.register_z3_type("meta", Struct, z3_args)
+    Z3Reg.register_z3_type("meta", Struct, z3_args)
 
     def p():
         pass
@@ -198,11 +201,11 @@ def p4_program_1():
      This corresponds to the arguments of the control function'''
 
     # control ingress(inout Headers h, inout Meta m, inout standard_metadata_t sm)
-    z3_args = [('h', z3_reg.reg["headers"]), ('m', z3_reg.reg["meta"]),
-               ('sm', z3_reg.reg["standard_metadata_t"])]
-    z3_reg.register_z3_type("inouts", Struct, z3_args)
+    z3_args = [('h', Z3Reg.reg["headers"]), ('m', Z3Reg.reg["meta"]),
+               ('sm', Z3Reg.reg["standard_metadata_t"])]
+    Z3Reg.register_z3_type("inouts", Struct, z3_args)
     ''' This is the initial version of the program. '''
-    ingress_args = z3_reg.reg["INOUTS"]()
+    ingress_args = Z3Reg.reg["INOUTS"]()
 
     def ingress(p4_vars):
         ''' This is the initial version of the program. '''
@@ -261,10 +264,10 @@ def p4_program_1():
                 # }
                 key_matches = []
                 # The key is an addition of two variables
-                c_t_key_0 = p4_vars.h.h.a + p4_vars.h.h.a
-                c_t_z3_key_0 = Const("c_t_key_0", c_t_key_0.sort())
+                c_t_key_0 = p4_vars.key_0
+                c_t_key_0_const = Const("c_t_key_0", c_t_key_0.sort())
                 # It is an exact match, so we use direct comparison
-                key_matches.append(c_t_key_0 == c_t_z3_key_0)
+                key_matches.append(c_t_key_0 == c_t_key_0_const)
 
                 return And(key_matches)
 
@@ -311,7 +314,7 @@ def p4_program_1():
             sub_chain.extend(func_chain)
             return step(sub_chain, p4_vars)
         # return the apply function as sequence of logic clauses
-        return step(func_chain=[apply], p4_vars=p4_vars)
+        return apply([], p4_vars)
     return ((p,), (vrfy,), (ingress, ingress_args), (egress,), (update,), (deparser,))
 
 
@@ -328,8 +331,8 @@ def z3_check():
     # print(out)
     # exit(0)
     # the equivalence equation
-    p4_ctrl_0, p4_ctrl_0_args = p4_program_0()[2]
-    p4_ctrl_1, p4_ctrl_1_args = p4_program_1()[2]
+    p4_ctrl_0, p4_ctrl_0_args = p4_program_0(Z3Reg)[2]
+    p4_ctrl_1, p4_ctrl_1_args = p4_program_1(Z3Reg)[2]
 
     print("PROGRAM 1")
     print(p4_ctrl_0(p4_ctrl_0_args))

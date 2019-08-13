@@ -3,81 +3,22 @@ import os
 import operator
 
 
-def step(func_chain, p4_vars, expr=None):
-    ''' The step function ensures that modifications are propagated to
-    all subsequent operations. This is important to guarantee correctness with
-    branching or local modification. '''
-    fun_expr = None
-    if func_chain:
-        next_fun = func_chain[0]
-        func_chain = func_chain[1:]
-        # emulate pass-by-value behavior
-        p4_vars = copy.deepcopy(p4_vars)
-        fun_expr = next_fun(func_chain, p4_vars)
-    # print("#################################")
-    # print("EXPR")
-    # print(expr)
-    # print("FUN_EXPR")
-    # print(fun_expr)
-    if fun_expr is not None and expr is not None:
-        # print("CONCATENATING")
-        return And(expr, fun_expr)
-    elif fun_expr is not None:
-        # print("EXTRACTING")
-        return fun_expr
-    elif expr is not None:
-        # print("JUST RETURNING")
-        return expr
-    else:
-        # print("RETURNING TRUE")
-        return True
-
-
-def step_old(func_chain, p4_vars, expr=True):
-    ''' The step function ensures that modifications are propagated to
-    all subsequent operations. This is important to guarantee correctness with
-    branching or local modification. '''
-    if func_chain:
-        next_fun = func_chain[0]
-        func_chain = func_chain[1:]
-        # emulate pass-by-value behavior
-        p4_vars = copy.deepcopy(p4_vars)
-        expr = next_fun(func_chain, p4_vars)
-    return expr
-
-
-def slice_assign(lval, rval, range):
-    lval_max = lval.size() - 1
-    slice_l = range[0]
-    slice_r = range[1]
-    if slice_l == lval_max and slice_r == 0:
-        return rval
-    assemble = []
-    if (slice_l < lval_max):
-        assemble.append(Extract(lval_max, slice_l + 1, lval))
-    assemble.append(rval)
-    if (slice_r > 0):
-        assemble.append(Extract(slice_r - 1, 0, lval))
-    return Concat(*assemble)
-
-
-class Z3Registry():
+class Z3Reg():
     reg = {}
 
-    def __init__(self):
-        pass
-
-    def register_z3_type(self, name, p4_class, z3_args):
+    @classmethod
+    def register_z3_type(cls, name, p4_class, z3_args):
         z3_type = name
         z3_class = name.upper()
-        self.reg[z3_type] = Datatype(z3_type)
-        self.reg[z3_type].declare(f"mk_{z3_type}", *z3_args)
-        self.reg[z3_type] = self.reg[z3_type].create()
+        cls.reg[z3_type] = Datatype(z3_type)
+        cls.reg[z3_type].declare(f"mk_{z3_type}", *z3_args)
+        cls.reg[z3_type] = cls.reg[z3_type].create()
 
-        self.reg[z3_class] = type(name.upper(), (p4_class,), {})
+        cls.reg[z3_class] = type(name.upper(), (p4_class,), {})
 
-
-z3_reg = Z3Registry()
+    @classmethod
+    def reset(cls):
+        cls.reg.clear()
 
 
 class Header():
@@ -98,7 +39,7 @@ class Header():
         cls_name = self.__class__.__name__.lower()
         cls_id = ""  # str(id(self))[-4:]
         self.name = "%s%s" % (cls_name, cls_id)
-        self.z3_type = z3_reg.reg[cls_name]
+        self.z3_type = Z3Reg.reg[cls_name]
 
     def generate_accessors(self, z3_type, constructor):
         accessors = []
@@ -168,7 +109,7 @@ class Struct():
         cls_name = self.__class__.__name__.lower()
         cls_id = ""  # str(id(self))[-4:]
         self.name = "%s%s" % (cls_name, cls_id)
-        self.z3_type = z3_reg.reg[cls_name]
+        self.z3_type = Z3Reg.reg[cls_name]
 
     def generate_accessors(self, z3_type, constructor):
         accessors = []
@@ -181,7 +122,7 @@ class Struct():
             arg_type = accessor.range()
             is_datatype = type(arg_type) == (DatatypeSortRef)
             if is_datatype:
-                member_cls = z3_reg.reg[arg_type.name().upper()]
+                member_cls = Z3Reg.reg[arg_type.name().upper()]
                 setattr(self, accessor.name(), member_cls())
             else:
                 setattr(self, accessor.name(), accessor(self.const))
@@ -222,10 +163,11 @@ class Struct():
 
 
 class Table():
-    action = Const("c_t_action", IntSort())
 
     @classmethod
     def table_action(cls, func_chain, p4_vars):
+        name = cls.__name__
+        action = Const(f"{name}_action", IntSort())
         ''' This is a special macro to define action selection. We treat
         selection as a chain of implications. If we match, then the clause
         returned by the action must be valid.
@@ -237,7 +179,7 @@ class Table():
             f_id = f_tuple[0]
             f_fun = f_tuple[1][0]
             f_args = f_tuple[1][1]
-            expr = Implies(cls.action == f_id,
+            expr = Implies(action == f_id,
                            f_fun(func_chain, p4_vars, *f_args))
             actions.append(expr)
         return And(*actions)
@@ -248,8 +190,10 @@ class Table():
 
     @classmethod
     def action_run(cls, p4_vars):
+        name = cls.__name__
+        action = Const(f"{name}_action", IntSort())
         return If(cls.table_match(p4_vars),
-                  cls.action,
+                  action,
                   0)
 
     @classmethod
@@ -262,6 +206,64 @@ class Table():
         return If(cls.table_match(p4_vars),
                   cls.table_action(func_chain, p4_vars),
                   def_fun(func_chain, p4_vars, *def_args))
+
+
+def step(func_chain, p4_vars, expr=None):
+    ''' The step function ensures that modifications are propagated to
+    all subsequent operations. This is important to guarantee correctness with
+    branching or local modification. '''
+    fun_expr = None
+    if func_chain:
+        next_fun = func_chain[0]
+        func_chain = func_chain[1:]
+        # emulate pass-by-value behavior
+        p4_vars = copy.deepcopy(p4_vars)
+        fun_expr = next_fun(func_chain, p4_vars)
+    # print("#################################")
+    # print("EXPR")
+    # print(expr)
+    # print("FUN_EXPR")
+    # print(fun_expr)
+    if fun_expr is not None and expr is not None:
+        # print("CONCATENATING")
+        return And(expr, fun_expr)
+    elif fun_expr is not None:
+        # print("EXTRACTING")
+        return fun_expr
+    elif expr is not None:
+        # print("JUST RETURNING")
+        return expr
+    else:
+        # print("RETURNING TRUE")
+        return True
+
+
+def step_old(func_chain, p4_vars, expr=True):
+    ''' The step function ensures that modifications are propagated to
+    all subsequent operations. This is important to guarantee correctness with
+    branching or local modification. '''
+    if func_chain:
+        next_fun = func_chain[0]
+        func_chain = func_chain[1:]
+        # emulate pass-by-value behavior
+        p4_vars = copy.deepcopy(p4_vars)
+        expr = next_fun(func_chain, p4_vars)
+    return expr
+
+
+def slice_assign(lval, rval, range):
+    lval_max = lval.size() - 1
+    slice_l = range[0]
+    slice_r = range[1]
+    if slice_l == lval_max and slice_r == 0:
+        return rval
+    assemble = []
+    if (slice_l < lval_max):
+        assemble.append(Extract(lval_max, slice_l + 1, lval))
+    assemble.append(rval)
+    if (slice_r > 0):
+        assemble.append(Extract(slice_r - 1, 0, lval))
+    return Concat(*assemble)
 
 
 def output_update(func_chain, p4_vars, lval, rval):
