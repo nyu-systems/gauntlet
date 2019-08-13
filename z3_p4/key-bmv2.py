@@ -23,7 +23,7 @@ def p4_program_0(Z3Reg):
     # struct Headers {
     #     hdr h;
     # }
-    z3_args = [('h', Z3Reg.reg["hdr"])]
+    z3_args = [('h', Z3Reg.types["hdr"])]
     Z3Reg.register_z3_type("headers", Struct, z3_args)
 
     # struct Meta {
@@ -53,11 +53,11 @@ def p4_program_0(Z3Reg):
      This corresponds to the arguments of the control function'''
 
     # control ingress(inout Headers h, inout Meta m, inout standard_metadata_t sm)
-    z3_args = [('h', Z3Reg.reg["headers"]), ('m', Z3Reg.reg["meta"]),
-               ('sm', Z3Reg.reg["standard_metadata_t"])]
+    z3_args = [('h', Z3Reg.types["headers"]), ('m', Z3Reg.types["meta"]),
+               ('sm', Z3Reg.types["standard_metadata_t"])]
     Z3Reg.register_z3_type("inouts", Struct, z3_args)
     ''' This is the initial version of the program. '''
-    ingress_args = Z3Reg.reg["INOUTS"]()
+    ingress_args = Z3Reg.classes["inouts"]()
 
     def ingress(p4_vars):
         # @name(".NoAction") action NoAction_0() {
@@ -171,7 +171,7 @@ def p4_program_1(Z3Reg):
     # struct Headers {
     #     hdr h;
     # }
-    z3_args = [('h', Z3Reg.reg["hdr"])]
+    z3_args = [('h', Z3Reg.types["hdr"])]
     Z3Reg.register_z3_type("headers", Struct, z3_args)
 
     # struct Meta {
@@ -201,11 +201,11 @@ def p4_program_1(Z3Reg):
      This corresponds to the arguments of the control function'''
 
     # control ingress(inout Headers h, inout Meta m, inout standard_metadata_t sm)
-    z3_args = [('h', Z3Reg.reg["headers"]), ('m', Z3Reg.reg["meta"]),
-               ('sm', Z3Reg.reg["standard_metadata_t"])]
+    z3_args = [('h', Z3Reg.types["headers"]), ('m', Z3Reg.types["meta"]),
+               ('sm', Z3Reg.types["standard_metadata_t"])]
     Z3Reg.register_z3_type("inouts", Struct, z3_args)
     ''' This is the initial version of the program. '''
-    ingress_args = Z3Reg.reg["INOUTS"]()
+    ingress_args = Z3Reg.classes["inouts"]()
 
     def ingress(p4_vars):
         ''' This is the initial version of the program. '''

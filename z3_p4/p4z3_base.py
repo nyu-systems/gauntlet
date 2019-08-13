@@ -4,128 +4,43 @@ import operator
 
 
 class Z3Reg():
-    reg = {}
+    types = {}
+    classes = {}
 
     @classmethod
     def register_z3_type(cls, name, p4_class, z3_args):
-        z3_type = name
-        z3_class = name.upper()
-        cls.reg[z3_type] = Datatype(z3_type)
-        cls.reg[z3_type].declare(f"mk_{z3_type}", *z3_args)
-        cls.reg[z3_type] = cls.reg[z3_type].create()
+        cls.types[name] = Datatype(name)
+        cls.types[name].declare(f"mk_{name}", *z3_args)
+        cls.types[name] = cls.types[name].create()
 
-        cls.reg[z3_class] = type(name.upper(), (p4_class,), {})
+        cls.classes[name] = type(name, (p4_class,), {})
 
     @classmethod
     def reset(cls):
-        cls.reg.clear()
+        cls.types.clear()
+        cls.classes.clear()
 
 
-class Header():
-
-    def __init__(self):
-        self.set_basic_attrs()
+class Z3P4Class():
+    def __init__(self, z3_id=0):
+        self.set_basic_attrs(z3_id)
         self.constructor = self.z3_type.constructor(0)
         self.const = Const(f"{self.name}_0", self.z3_type)
         self.revisions = [self.const]
         self.accessors = self.generate_accessors(
             self.z3_type, self.constructor)
 
-        # These are special for headers
-        self.set_hdr_accessors()
-        self.set_valid()
-
-    def set_basic_attrs(self):
-        cls_name = self.__class__.__name__.lower()
-        cls_id = ""  # str(id(self))[-4:]
-        self.name = "%s%s" % (cls_name, cls_id)
-        self.z3_type = Z3Reg.reg[cls_name]
+    def set_basic_attrs(self, z3_id):
+        cls_name = self.__class__.__name__
+        # cls_id = str(z3_id)  # str(id(self))[-4:]
+        self.name = "%s%d" % (cls_name, z3_id)
+        self.z3_type = Z3Reg.types[cls_name]
 
     def generate_accessors(self, z3_type, constructor):
         accessors = []
         for type_index in range(constructor.arity()):
             accessors.append(z3_type.accessor(0, type_index))
         return accessors
-
-    def set_hdr_accessors(self):
-        for accessor in self.accessors:
-            setattr(self, accessor.name(), accessor(self.const))
-
-    def update(self):
-        index = len(self.revisions)
-        self.const = Const(f"{self.name}_{index}", self.z3_type)
-        self.revisions.append(self.const)
-
-    def make(self):
-        members = []
-        for accessor in self.accessors:
-            members.append(getattr(self, accessor.name()))
-        return self.constructor(*members)
-
-    def set(self, lstring, rvalue):
-        # update the internal representation of the attribute
-        if ("." in lstring):
-            prefix, suffix = lstring.rsplit(".", 1)
-            target_class = operator.attrgetter(prefix)(self)
-            setattr(target_class, suffix, rvalue)
-            # generate a new version of the z3 datatype
-            copy = self.make()
-            # update the SSA version
-            self.update()
-            # return the update expression
-            return (self.const == copy)
-        else:
-            lvalue = operator.attrgetter(lstring)(self)
-            setattr(self, lvalue, rvalue)
-
-    def set_valid(self):
-        cls_name = self.__class__.__name__.lower()
-        self.valid = Const("%s_valid" % cls_name, BoolSort())
-
-    def isValid(self):
-        return self.valid
-
-    def setValid(self):
-        self.valid = True
-
-    def setInvalid(self):
-        self.valid = False
-
-
-class Struct():
-
-    def __init__(self):
-        self.set_basic_attrs()
-        self.constructor = self.z3_type.constructor(0)
-        self.const = Const(f"{self.name}_0", self.z3_type)
-        self.revisions = [self.const]
-        self.accessors = self.generate_accessors(
-            self.z3_type, self.constructor)
-
-        # These are special for structs
-        self.set_struct_accessors()
-
-    def set_basic_attrs(self):
-        cls_name = self.__class__.__name__.lower()
-        cls_id = ""  # str(id(self))[-4:]
-        self.name = "%s%s" % (cls_name, cls_id)
-        self.z3_type = Z3Reg.reg[cls_name]
-
-    def generate_accessors(self, z3_type, constructor):
-        accessors = []
-        for type_index in range(constructor.arity()):
-            accessors.append(z3_type.accessor(0, type_index))
-        return accessors
-
-    def set_struct_accessors(self):
-        for accessor in self.accessors:
-            arg_type = accessor.range()
-            is_datatype = type(arg_type) == (DatatypeSortRef)
-            if is_datatype:
-                member_cls = Z3Reg.reg[arg_type.name().upper()]
-                setattr(self, accessor.name(), member_cls())
-            else:
-                setattr(self, accessor.name(), accessor(self.const))
 
     def update(self):
         index = len(self.revisions)
@@ -160,6 +75,54 @@ class Struct():
             return (self.const == copy)
         else:
             setattr(self, lstring, rvalue)
+
+
+class Header(Z3P4Class):
+
+    def __init__(self, z3_id=0):
+        super(Header, self).__init__(z3_id)
+
+        # These are special for headers
+        self.set_hdr_accessors()
+        self.set_valid()
+
+    def set_hdr_accessors(self):
+        for accessor in self.accessors:
+            setattr(self, accessor.name(), accessor(self.const))
+
+    def set_valid(self):
+        cls_name = self.__class__.__name__
+        self.valid = Const("%s_valid" % cls_name, BoolSort())
+
+    def isValid(self):
+        return self.valid
+
+    def setValid(self):
+        self.valid = True
+
+    def setInvalid(self):
+        self.valid = False
+
+
+class Struct(Z3P4Class):
+
+    def __init__(self, z3_id=0):
+        super(Struct, self).__init__(z3_id)
+
+        # These are special for structs
+        self.set_struct_accessors()
+
+    def set_struct_accessors(self):
+        counter = 0
+        for accessor in self.accessors:
+            arg_type = accessor.range()
+            is_datatype = type(arg_type) == (DatatypeSortRef)
+            if is_datatype:
+                member_cls = Z3Reg.classes[arg_type.name()]
+                setattr(self, accessor.name(), member_cls(counter))
+                counter += 1
+            else:
+                setattr(self, accessor.name(), accessor(self.const))
 
 
 class Table():

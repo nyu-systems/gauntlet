@@ -34,17 +34,17 @@ def p4_program_0(Z3Reg):
                ]
     Z3Reg.register_z3_type("ipv4_t", Header, z3_args)
 
-    z3_args = [('ingress_metadata', Z3Reg.reg["ingress_metadata_t"])]
+    z3_args = [('ingress_metadata', Z3Reg.types["ingress_metadata_t"])]
     Z3Reg.register_z3_type("metadata", Struct, z3_args)
 
-    z3_args = [('ethernet', Z3Reg.reg["ethernet_t"]),
-               ('ipv4', Z3Reg.reg["ipv4_t"])]
+    z3_args = [('ethernet', Z3Reg.types["ethernet_t"]),
+               ('ipv4', Z3Reg.types["ipv4_t"])]
     Z3Reg.register_z3_type("headers", Struct, z3_args)
 
-    z3_args = [('hdr', Z3Reg.reg["headers"]), ('meta', Z3Reg.reg["metadata"]),
-               ('standard_metadata', Z3Reg.reg["standard_metadata_t"])]
+    z3_args = [('hdr', Z3Reg.types["headers"]), ('meta', Z3Reg.types["metadata"]),
+               ('standard_metadata', Z3Reg.types["standard_metadata_t"])]
     Z3Reg.register_z3_type("inouts", Struct, z3_args)
-    ingress_args = Z3Reg.reg["INOUTS"]()
+    ingress_args = Z3Reg.classes["inouts"]()
 
     def p():
         pass
@@ -380,17 +380,17 @@ def p4_program_1(Z3Reg):
                ]
     Z3Reg.register_z3_type("ipv4_t", Header, z3_args)
 
-    z3_args = [('ingress_metadata', Z3Reg.reg["ingress_metadata_t"])]
+    z3_args = [('ingress_metadata', Z3Reg.types["ingress_metadata_t"])]
     Z3Reg.register_z3_type("metadata", Struct, z3_args)
 
-    z3_args = [('ethernet', Z3Reg.reg["ethernet_t"]),
-               ('ipv4', Z3Reg.reg["ipv4_t"])]
+    z3_args = [('ethernet', Z3Reg.types["ethernet_t"]),
+               ('ipv4', Z3Reg.types["ipv4_t"])]
     Z3Reg.register_z3_type("headers", Struct, z3_args)
 
-    z3_args = [('hdr', Z3Reg.reg["headers"]), ('meta', Z3Reg.reg["metadata"]),
-               ('standard_metadata', Z3Reg.reg["standard_metadata_t"])]
+    z3_args = [('hdr', Z3Reg.types["headers"]), ('meta', Z3Reg.types["metadata"]),
+               ('standard_metadata', Z3Reg.types["standard_metadata_t"])]
     Z3Reg.register_z3_type("inouts", Struct, z3_args)
-    ingress_args = Z3Reg.reg["INOUTS"]()
+    ingress_args = Z3Reg.classes["inouts"]()
 
     def p():
         pass
