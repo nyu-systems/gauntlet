@@ -1,8 +1,7 @@
 from p4z3_base import *
 
 
-def p4_program_0():
-    z3_reg = Z3Reg()
+def p4_program_0(z3_reg):
 
     ''' HEADERS '''
     # The input headers of the control pipeline
@@ -347,9 +346,7 @@ def p4_program_0():
     return ((p,), (vrfy,), (ingress, ingress_args), (egress,), (update,), (deparser,))
 
 
-def p4_program_1():
-    z3_reg = Z3Reg()
-
+def p4_program_1(z3_reg):
     ''' HEADERS '''
     # The input headers of the control pipeline
     # Model imports at the top of the p4 file '''
@@ -706,8 +703,8 @@ def z3_check():
     # print(out)
     # exit(0)
     # the equivalence equation
-    p4_ctrl_0, p4_ctrl_0_args = p4_program_0()[2]
-    p4_ctrl_1, p4_ctrl_1_args = p4_program_1()[2]
+    p4_ctrl_0, p4_ctrl_0_args = p4_program_0(Z3Reg())[2]
+    p4_ctrl_1, p4_ctrl_1_args = p4_program_1(Z3Reg())[2]
 
     # print("PROGRAM 1")
     # print(p4_ctrl_0(p4_ctrl_0_args))

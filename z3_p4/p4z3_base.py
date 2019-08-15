@@ -30,38 +30,37 @@ class Z3Reg():
 
 class Z3P4Class():
     def __init__(self, z3_reg, z3_id=0):
-        self.set_basic_attrs(z3_reg, z3_id)
+        self._set_basic_attrs(z3_reg, z3_id)
         self.constructor = self.z3_type.constructor(0)
         self.const = Const(f"{self.name}_0", self.z3_type)
         self.revisions = [self.const]
-        self.accessors = self.generate_accessors(
+        self.accessors = self._generate_accessors(
             self.z3_type, self.constructor)
 
-    def set_basic_attrs(self, z3_reg, z3_id):
+    def _set_basic_attrs(self, z3_reg, z3_id):
         cls_name = self.__class__.__name__
-        # cls_id = str(z3_id)  # str(id(self))[-4:]
         self.name = "%s%d" % (cls_name, z3_id)
         self.z3_type = z3_reg.types[cls_name]
 
-    def generate_accessors(self, z3_type, constructor):
+    def _generate_accessors(self, z3_type, constructor):
         accessors = []
         for type_index in range(constructor.arity()):
             accessors.append(z3_type.accessor(0, type_index))
         return accessors
 
-    def update(self):
+    def _update(self):
         index = len(self.revisions)
         self.const = Const(f"{self.name}_{index}", self.z3_type)
         self.revisions.append(self.const)
 
-    def make(self):
+    def _make(self):
         members = []
         for accessor in self.accessors:
             arg_type = accessor.range()
             is_datatype = type(arg_type) == (DatatypeSortRef)
             if is_datatype:
                 member_make = operator.attrgetter(
-                    accessor.name() + ".make")(self)
+                    accessor.name() + "._make")(self)
                 members.append(member_make())
             else:
                 member_make = operator.attrgetter(accessor.name())(self)
@@ -75,9 +74,9 @@ class Z3P4Class():
             target_class = operator.attrgetter(prefix)(self)
             setattr(target_class, suffix, rvalue)
             # generate a new version of the z3 datatype
-            copy = self.make()
+            copy = self._make()
             # update the SSA version
-            self.update()
+            self._update()
             # return the update expression
             return (self.const == copy)
         else:
@@ -90,14 +89,14 @@ class Header(Z3P4Class):
         super(Header, self).__init__(z3_reg, z3_id)
 
         # These are special for headers
-        self.set_hdr_accessors()
-        self.init_valid()
+        self._set_hdr_accessors()
+        self._init_valid()
 
-    def set_hdr_accessors(self):
+    def _set_hdr_accessors(self):
         for accessor in self.accessors:
             setattr(self, accessor.name(), accessor(self.const))
 
-    def init_valid(self):
+    def _init_valid(self):
         self.valid = Const("%s_valid" % self.name, BoolSort())
 
     def isValid(self):
@@ -116,9 +115,9 @@ class Struct(Z3P4Class):
         super(Struct, self).__init__(z3_reg, z3_id)
 
         # These are special for structs
-        self.set_struct_accessors(z3_reg)
+        self._set_struct_accessors(z3_reg)
 
-    def set_struct_accessors(self, z3_reg):
+    def _set_struct_accessors(self, z3_reg):
         for accessor in self.accessors:
             arg_type = accessor.range()
             is_datatype = type(arg_type) == (DatatypeSortRef)

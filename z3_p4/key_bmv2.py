@@ -1,9 +1,7 @@
 from p4z3_base import *
 
 
-def p4_program_0():
-    z3_reg = Z3Reg()
-
+def p4_program_0(z3_reg):
     ''' HEADERS '''
     # The input headers of the control pipeline
 
@@ -111,11 +109,11 @@ def p4_program_0():
                 # }
                 key_matches = []
                 # The key is an addition of two variables
-                c_t_key_0 = p4_vars.h.h.a + p4_vars.h.h.a
-                c_t_key_0_const = Const("c_t_key_0", c_t_key_0.sort())
+                key_0 = p4_vars.h.h.a + p4_vars.h.h.a
+                key_0_match = Const(f"{cls.__name__}_key_0", key_0.sort())
 
                 # It is an exact match, so we use direct comparison
-                key_matches.append(c_t_key_0 == c_t_key_0_const)
+                key_matches.append(key_0 == key_0_match)
                 return And(key_matches)
 
             # actions = {
@@ -149,9 +147,7 @@ def p4_program_0():
     return ((p,), (vrfy,), (ingress, ingress_args), (egress,), (update,), (deparser,))
 
 
-def p4_program_1():
-    z3_reg = Z3Reg()
-
+def p4_program_1(z3_reg):
     ''' HEADERS '''
     # The input headers of the control pipeline
     # Model imports at the top of the p4 file '''
@@ -257,6 +253,7 @@ def p4_program_1():
 
             @classmethod
             def table_match(cls, p4_vars):
+                name = cls.__name__
                 # The keys of the table are compared with the input keys.
                 # In this case we are matching a single value
                 # key = {
@@ -264,11 +261,11 @@ def p4_program_1():
                 # }
                 key_matches = []
                 # The key is an addition of two variables
-                c_t_key_0 = p4_vars.key_0
-                c_t_key_0_const = Const("c_t_key_0", c_t_key_0.sort())
-                # It is an exact match, so we use direct comparison
-                key_matches.append(c_t_key_0 == c_t_key_0_const)
+                key_0 = p4_vars.h.h.a + p4_vars.h.h.a
+                key_0_match = Const(f"{name}_key_0", key_0.sort())
 
+                # It is an exact match, so we use direct comparison
+                key_matches.append(key_0 == key_0_match)
                 return And(key_matches)
 
             # actions = {
@@ -331,8 +328,8 @@ def z3_check():
     # print(out)
     # exit(0)
     # the equivalence equation
-    p4_ctrl_0, p4_ctrl_0_args = p4_program_0()[2]
-    p4_ctrl_1, p4_ctrl_1_args = p4_program_1()[2]
+    p4_ctrl_0, p4_ctrl_0_args = p4_program_0(Z3Reg())[2]
+    p4_ctrl_1, p4_ctrl_1_args = p4_program_1(Z3Reg())[2]
 
     print("PROGRAM 1")
     print(p4_ctrl_0(p4_ctrl_0_args))
