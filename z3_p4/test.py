@@ -15,6 +15,10 @@ class Z3Tests(unittest.TestCase):
         import basic_routing_bmv2
         self.assertEqual(basic_routing_bmv2.z3_check(), 0)
 
+    def test_strength3(self):
+        import strength3
+        self.assertEqual(strength3.z3_check(), 0)
+
 
 if __name__ == '__main__':
     unittest.main()
