@@ -1,14 +1,14 @@
 from p4z3_base import *
 
 
-def p4_program_0(Z3Reg):
-    Z3Reg.reset()
+def p4_program_0():
+    z3_reg = Z3Reg()
 
     ''' HEADERS '''
     # The input headers of the control pipeline
     # Model imports at the top of the p4 file '''
     import v1model
-    Z3Reg = v1model.register(Z3Reg)
+    z3_reg = v1model.register(z3_reg)
 
     z3_args = [
         ('vrf', BitVecSort(12)),
@@ -16,14 +16,14 @@ def p4_program_0(Z3Reg):
         ('nexthop_index', BitVecSort(16))
     ]
 
-    Z3Reg.register_z3_type("ingress_metadata_t", Struct, z3_args)
+    z3_reg.register_z3_type("ingress_metadata_t", Struct, z3_args)
 
     z3_args = [
         ('dstAddr', BitVecSort(48)),
         ('srcAddr', BitVecSort(48)),
         ('etherType', BitVecSort(16))]
 
-    Z3Reg.register_z3_type("ethernet_t", Header, z3_args)
+    z3_reg.register_z3_type("ethernet_t", Header, z3_args)
 
     z3_args = [('version', BitVecSort(4)), ('ihl', BitVecSort(4)),
                ('diffserv', BitVecSort(8)), ('totalLen', BitVecSort(16)),
@@ -32,19 +32,19 @@ def p4_program_0(Z3Reg):
                ('protocol', BitVecSort(8)), ('hdrChecksum', BitVecSort(16)),
                ('srcAddr', BitVecSort(32)), ('dstAddr', BitVecSort(32))
                ]
-    Z3Reg.register_z3_type("ipv4_t", Header, z3_args)
+    z3_reg.register_z3_type("ipv4_t", Header, z3_args)
 
-    z3_args = [('ingress_metadata', Z3Reg.types["ingress_metadata_t"])]
-    Z3Reg.register_z3_type("metadata", Struct, z3_args)
+    z3_args = [('ingress_metadata', z3_reg.types["ingress_metadata_t"])]
+    z3_reg.register_z3_type("metadata", Struct, z3_args)
 
-    z3_args = [('ethernet', Z3Reg.types["ethernet_t"]),
-               ('ipv4', Z3Reg.types["ipv4_t"])]
-    Z3Reg.register_z3_type("headers", Struct, z3_args)
+    z3_args = [('ethernet', z3_reg.types["ethernet_t"]),
+               ('ipv4', z3_reg.types["ipv4_t"])]
+    z3_reg.register_z3_type("headers", Struct, z3_args)
 
-    z3_args = [('hdr', Z3Reg.types["headers"]), ('meta', Z3Reg.types["metadata"]),
-               ('standard_metadata', Z3Reg.types["standard_metadata_t"])]
-    Z3Reg.register_z3_type("inouts", Struct, z3_args)
-    ingress_args = Z3Reg.classes["inouts"]()
+    z3_args = [('hdr', z3_reg.types["headers"]), ('meta', z3_reg.types["metadata"]),
+               ('standard_metadata', z3_reg.types["standard_metadata_t"])]
+    z3_reg.register_z3_type("inouts", Struct, z3_args)
+    ingress_args = z3_reg.instance("inouts")
 
     def p():
         pass
@@ -347,14 +347,14 @@ def p4_program_0(Z3Reg):
     return ((p,), (vrfy,), (ingress, ingress_args), (egress,), (update,), (deparser,))
 
 
-def p4_program_1(Z3Reg):
-    Z3Reg.reset()
+def p4_program_1():
+    z3_reg = Z3Reg()
 
     ''' HEADERS '''
     # The input headers of the control pipeline
     # Model imports at the top of the p4 file '''
     import v1model
-    Z3Reg = v1model.register(Z3Reg)
+    z3_reg = v1model.register(z3_reg)
 
     z3_args = [
         ('vrf', BitVecSort(12)),
@@ -362,14 +362,14 @@ def p4_program_1(Z3Reg):
         ('nexthop_index', BitVecSort(16))
     ]
 
-    Z3Reg.register_z3_type("ingress_metadata_t", Struct, z3_args)
+    z3_reg.register_z3_type("ingress_metadata_t", Struct, z3_args)
 
     z3_args = [
         ('dstAddr', BitVecSort(48)),
         ('srcAddr', BitVecSort(48)),
         ('etherType', BitVecSort(16))]
 
-    Z3Reg.register_z3_type("ethernet_t", Header, z3_args)
+    z3_reg.register_z3_type("ethernet_t", Header, z3_args)
 
     z3_args = [('version', BitVecSort(4)), ('ihl', BitVecSort(4)),
                ('diffserv', BitVecSort(8)), ('totalLen', BitVecSort(16)),
@@ -378,19 +378,19 @@ def p4_program_1(Z3Reg):
                ('protocol', BitVecSort(8)), ('hdrChecksum', BitVecSort(16)),
                ('srcAddr', BitVecSort(32)), ('dstAddr', BitVecSort(32))
                ]
-    Z3Reg.register_z3_type("ipv4_t", Header, z3_args)
+    z3_reg.register_z3_type("ipv4_t", Header, z3_args)
 
-    z3_args = [('ingress_metadata', Z3Reg.types["ingress_metadata_t"])]
-    Z3Reg.register_z3_type("metadata", Struct, z3_args)
+    z3_args = [('ingress_metadata', z3_reg.types["ingress_metadata_t"])]
+    z3_reg.register_z3_type("metadata", Struct, z3_args)
 
-    z3_args = [('ethernet', Z3Reg.types["ethernet_t"]),
-               ('ipv4', Z3Reg.types["ipv4_t"])]
-    Z3Reg.register_z3_type("headers", Struct, z3_args)
+    z3_args = [('ethernet', z3_reg.types["ethernet_t"]),
+               ('ipv4', z3_reg.types["ipv4_t"])]
+    z3_reg.register_z3_type("headers", Struct, z3_args)
 
-    z3_args = [('hdr', Z3Reg.types["headers"]), ('meta', Z3Reg.types["metadata"]),
-               ('standard_metadata', Z3Reg.types["standard_metadata_t"])]
-    Z3Reg.register_z3_type("inouts", Struct, z3_args)
-    ingress_args = Z3Reg.classes["inouts"]()
+    z3_args = [('hdr', z3_reg.types["headers"]), ('meta', z3_reg.types["metadata"]),
+               ('standard_metadata', z3_reg.types["standard_metadata_t"])]
+    z3_reg.register_z3_type("inouts", Struct, z3_args)
+    ingress_args = z3_reg.instance("inouts")
 
     def p():
         pass
@@ -706,8 +706,8 @@ def z3_check():
     # print(out)
     # exit(0)
     # the equivalence equation
-    p4_ctrl_0, p4_ctrl_0_args = p4_program_0(Z3Reg)[2]
-    p4_ctrl_1, p4_ctrl_1_args = p4_program_1(Z3Reg)[2]
+    p4_ctrl_0, p4_ctrl_0_args = p4_program_0()[2]
+    p4_ctrl_1, p4_ctrl_1_args = p4_program_1()[2]
 
     # print("PROGRAM 1")
     # print(p4_ctrl_0(p4_ctrl_0_args))

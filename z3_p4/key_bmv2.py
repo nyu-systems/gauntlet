@@ -1,21 +1,21 @@
 from p4z3_base import *
 
 
-def p4_program_0(Z3Reg):
-    Z3Reg.reset()
+def p4_program_0():
+    z3_reg = Z3Reg()
 
     ''' HEADERS '''
     # The input headers of the control pipeline
 
     # Model imports at the top of the p4 file '''
     import v1model
-    Z3Reg = v1model.register(Z3Reg)
+    z3_reg = v1model.register(z3_reg)
     # header hdr {
     #     bit<32> a;
     #     bit<32> b;
     # }
     z3_args = [('a', BitVecSort(32)), ('b', BitVecSort(32))]
-    Z3Reg.register_z3_type("hdr", Header, z3_args)
+    z3_reg.register_z3_type("hdr", Header, z3_args)
 
     ''' STRUCTS '''
     # Data structures that were declared globally
@@ -23,13 +23,13 @@ def p4_program_0(Z3Reg):
     # struct Headers {
     #     hdr h;
     # }
-    z3_args = [('h', Z3Reg.types["hdr"])]
-    Z3Reg.register_z3_type("headers", Struct, z3_args)
+    z3_args = [('h', z3_reg.types["hdr"])]
+    z3_reg.register_z3_type("headers", Struct, z3_args)
 
     # struct Meta {
     # }
     z3_args = []
-    Z3Reg.register_z3_type("meta", Struct, z3_args)
+    z3_reg.register_z3_type("meta", Struct, z3_args)
 
     def p():
         pass
@@ -53,11 +53,11 @@ def p4_program_0(Z3Reg):
      This corresponds to the arguments of the control function'''
 
     # control ingress(inout Headers h, inout Meta m, inout standard_metadata_t sm)
-    z3_args = [('h', Z3Reg.types["headers"]), ('m', Z3Reg.types["meta"]),
-               ('sm', Z3Reg.types["standard_metadata_t"])]
-    Z3Reg.register_z3_type("inouts", Struct, z3_args)
+    z3_args = [('h', z3_reg.types["headers"]), ('m', z3_reg.types["meta"]),
+               ('sm', z3_reg.types["standard_metadata_t"])]
+    z3_reg.register_z3_type("inouts", Struct, z3_args)
     ''' This is the initial version of the program. '''
-    ingress_args = Z3Reg.classes["inouts"]()
+    ingress_args = z3_reg.instance("inouts")
 
     def ingress(p4_vars):
         # @name(".NoAction") action NoAction_0() {
@@ -149,21 +149,21 @@ def p4_program_0(Z3Reg):
     return ((p,), (vrfy,), (ingress, ingress_args), (egress,), (update,), (deparser,))
 
 
-def p4_program_1(Z3Reg):
-    Z3Reg.reset()
+def p4_program_1():
+    z3_reg = Z3Reg()
 
     ''' HEADERS '''
     # The input headers of the control pipeline
     # Model imports at the top of the p4 file '''
     import v1model
-    Z3Reg = v1model.register(Z3Reg)
+    z3_reg = v1model.register(z3_reg)
 
     # header hdr {
     #     bit<32> a;
     #     bit<32> b;
     # }
     z3_args = [('a', BitVecSort(32)), ('b', BitVecSort(32))]
-    Z3Reg.register_z3_type("hdr", Header, z3_args)
+    z3_reg.register_z3_type("hdr", Header, z3_args)
 
     ''' STRUCTS '''
     # Data structures that were declared globally
@@ -171,13 +171,13 @@ def p4_program_1(Z3Reg):
     # struct Headers {
     #     hdr h;
     # }
-    z3_args = [('h', Z3Reg.types["hdr"])]
-    Z3Reg.register_z3_type("headers", Struct, z3_args)
+    z3_args = [('h', z3_reg.types["hdr"])]
+    z3_reg.register_z3_type("headers", Struct, z3_args)
 
     # struct Meta {
     # }
     z3_args = []
-    Z3Reg.register_z3_type("meta", Struct, z3_args)
+    z3_reg.register_z3_type("meta", Struct, z3_args)
 
     def p():
         pass
@@ -201,11 +201,11 @@ def p4_program_1(Z3Reg):
      This corresponds to the arguments of the control function'''
 
     # control ingress(inout Headers h, inout Meta m, inout standard_metadata_t sm)
-    z3_args = [('h', Z3Reg.types["headers"]), ('m', Z3Reg.types["meta"]),
-               ('sm', Z3Reg.types["standard_metadata_t"])]
-    Z3Reg.register_z3_type("inouts", Struct, z3_args)
+    z3_args = [('h', z3_reg.types["headers"]), ('m', z3_reg.types["meta"]),
+               ('sm', z3_reg.types["standard_metadata_t"])]
+    z3_reg.register_z3_type("inouts", Struct, z3_args)
     ''' This is the initial version of the program. '''
-    ingress_args = Z3Reg.classes["inouts"]()
+    ingress_args = z3_reg.instance("inouts")
 
     def ingress(p4_vars):
         ''' This is the initial version of the program. '''
@@ -331,8 +331,8 @@ def z3_check():
     # print(out)
     # exit(0)
     # the equivalence equation
-    p4_ctrl_0, p4_ctrl_0_args = p4_program_0(Z3Reg)[2]
-    p4_ctrl_1, p4_ctrl_1_args = p4_program_1(Z3Reg)[2]
+    p4_ctrl_0, p4_ctrl_0_args = p4_program_0()[2]
+    p4_ctrl_1, p4_ctrl_1_args = p4_program_1()[2]
 
     print("PROGRAM 1")
     print(p4_ctrl_0(p4_ctrl_0_args))

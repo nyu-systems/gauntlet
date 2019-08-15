@@ -5,36 +5,43 @@ import operator
 
 class Z3Reg():
     types = {}
-    classes = {}
+    _classes = {}
+    _ref_count = {}
 
-    @classmethod
-    def register_z3_type(cls, name, p4_class, z3_args):
-        cls.types[name] = Datatype(name)
-        cls.types[name].declare(f"mk_{name}", *z3_args)
-        cls.types[name] = cls.types[name].create()
+    def register_z3_type(self, name, p4_class, z3_args):
+        self.types[name] = Datatype(name)
+        self.types[name].declare(f"mk_{name}", *z3_args)
+        self.types[name] = self.types[name].create()
 
-        cls.classes[name] = type(name, (p4_class,), {})
+        self._classes[name] = type(name, (p4_class,), {})
+        self._ref_count[name] = 0
 
-    @classmethod
-    def reset(cls):
-        cls.types.clear()
-        cls.classes.clear()
+    def reset(self):
+        self.types.clear()
+        self._classes.clear()
+        self._ref_count.clear()
+
+    def instance(self, type_name):
+        args = [self, self._ref_count[type_name]]
+        z3_cls = self._classes[type_name](*args)
+        self._ref_count[type_name] += 1
+        return z3_cls
 
 
 class Z3P4Class():
-    def __init__(self, z3_id=0):
-        self.set_basic_attrs(z3_id)
+    def __init__(self, z3_reg, z3_id=0):
+        self.set_basic_attrs(z3_reg, z3_id)
         self.constructor = self.z3_type.constructor(0)
         self.const = Const(f"{self.name}_0", self.z3_type)
         self.revisions = [self.const]
         self.accessors = self.generate_accessors(
             self.z3_type, self.constructor)
 
-    def set_basic_attrs(self, z3_id):
+    def set_basic_attrs(self, z3_reg, z3_id):
         cls_name = self.__class__.__name__
         # cls_id = str(z3_id)  # str(id(self))[-4:]
         self.name = "%s%d" % (cls_name, z3_id)
-        self.z3_type = Z3Reg.types[cls_name]
+        self.z3_type = z3_reg.types[cls_name]
 
     def generate_accessors(self, z3_type, constructor):
         accessors = []
@@ -79,20 +86,19 @@ class Z3P4Class():
 
 class Header(Z3P4Class):
 
-    def __init__(self, z3_id=0):
-        super(Header, self).__init__(z3_id)
+    def __init__(self, z3_reg, z3_id=0):
+        super(Header, self).__init__(z3_reg, z3_id)
 
         # These are special for headers
         self.set_hdr_accessors()
-        self.set_valid()
+        self.init_valid()
 
     def set_hdr_accessors(self):
         for accessor in self.accessors:
             setattr(self, accessor.name(), accessor(self.const))
 
-    def set_valid(self):
-        cls_name = self.__class__.__name__
-        self.valid = Const("%s_valid" % cls_name, BoolSort())
+    def init_valid(self):
+        self.valid = Const("%s_valid" % self.name, BoolSort())
 
     def isValid(self):
         return self.valid
@@ -106,21 +112,19 @@ class Header(Z3P4Class):
 
 class Struct(Z3P4Class):
 
-    def __init__(self, z3_id=0):
-        super(Struct, self).__init__(z3_id)
+    def __init__(self, z3_reg, z3_id=0):
+        super(Struct, self).__init__(z3_reg, z3_id)
 
         # These are special for structs
-        self.set_struct_accessors()
+        self.set_struct_accessors(z3_reg)
 
-    def set_struct_accessors(self):
-        counter = 0
+    def set_struct_accessors(self, z3_reg):
         for accessor in self.accessors:
             arg_type = accessor.range()
             is_datatype = type(arg_type) == (DatatypeSortRef)
             if is_datatype:
-                member_cls = Z3Reg.classes[arg_type.name()]
-                setattr(self, accessor.name(), member_cls(counter))
-                counter += 1
+                member_cls = z3_reg.instance(arg_type.name())
+                setattr(self, accessor.name(), member_cls)
             else:
                 setattr(self, accessor.name(), accessor(self.const))
 
