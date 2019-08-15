@@ -82,6 +82,19 @@ class Z3P4Class():
         else:
             setattr(self, lstring, rvalue)
 
+    def set_struct(self, args):
+        # this operation assumes that
+        # args matches accessors in length
+        members = []
+        for index, accessor in enumerate(self.accessors):
+            setattr(self, accessor.name(), args[index])
+        # generate a new version of the z3 datatype
+        # copy = self._make()
+        # # update the SSA version
+        # self._update()
+        # # return the update expression
+        # return (self.const == copy)
+
 
 class Header(Z3P4Class):
 
