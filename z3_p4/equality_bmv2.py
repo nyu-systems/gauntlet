@@ -35,7 +35,7 @@ def p4_program_0(z3_reg):
 
     z3_args = [('hdr', z3_reg.types["headers"]), ('meta', z3_reg.types["metadata"]),
                ('stdmeta', z3_reg.types["standard_metadata_t"])]
-    z3_reg.register_z3_type("inouts", Struct, z3_args)
+    z3_reg.register_z3_type("inouts", P4State, z3_args)
     ingress_args = z3_reg.instance("inouts")
 
     def ingress(p4_vars):
@@ -50,12 +50,6 @@ def p4_program_0(z3_reg):
             def output_update(func_chain, p4_vars):
                 rval = BitVecVal(0, 8)
                 expr = p4_vars.set("hdr.same.same", rval)
-                return step(func_chain, p4_vars, expr)
-            sub_chain.append(output_update)
-
-            def output_update(func_chain, p4_vars):
-                rval = BitVecVal(0, 9)
-                expr = p4_vars.set("stdmeta.egress_spec", rval)
                 return step(func_chain, p4_vars, expr)
             sub_chain.append(output_update)
 
@@ -82,6 +76,12 @@ def p4_program_0(z3_reg):
 
                 return If(condition, is_true(), is_false())
             sub_chain.append(if_block)
+
+            def output_update(func_chain, p4_vars):
+                rval = BitVecVal(0, 9)
+                expr = p4_vars.set("stdmeta.egress_spec", rval)
+                return step(func_chain, p4_vars, expr)
+            sub_chain.append(output_update)
 
             def if_block(func_chain, p4_vars):
 
@@ -224,7 +224,7 @@ def p4_program_1(z3_reg):
 
     z3_args = [('hdr', z3_reg.types["headers"]), ('meta', z3_reg.types["metadata"]),
                ('stdmeta', z3_reg.types["standard_metadata_t"])]
-    z3_reg.register_z3_type("inouts", Struct, z3_args)
+    z3_reg.register_z3_type("inouts", P4State, z3_args)
     ingress_args = z3_reg.instance("inouts")
 
     def ingress(p4_vars):
@@ -413,7 +413,7 @@ def p4_program_2(z3_reg):
 
     z3_args = [('hdr', z3_reg.types["headers"]), ('meta', z3_reg.types["metadata"]),
                ('stdmeta', z3_reg.types["standard_metadata_t"])]
-    z3_reg.register_z3_type("inouts", Struct, z3_args)
+    z3_reg.register_z3_type("inouts", P4State, z3_args)
     ingress_args = z3_reg.instance("inouts")
 
     def ingress(p4_vars):

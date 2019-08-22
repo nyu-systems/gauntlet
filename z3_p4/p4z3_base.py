@@ -67,6 +67,20 @@ class Z3P4Class():
                 members.append(member_make)
         return self.constructor(*members)
 
+
+class P4State(Z3P4Class):
+
+    def __init__(self, z3_reg, z3_id=0):
+        super(P4State, self).__init__(z3_reg, z3_id)
+        # These are special for structs
+        self._set_accessors(z3_reg)
+
+    def _set_accessors(self, z3_reg):
+        for accessor in self.accessors:
+            arg_type = accessor.range()
+            member_cls = z3_reg.instance(arg_type.name())
+            setattr(self, accessor.name(), member_cls)
+
     def set(self, lstring, rvalue):
         # update the internal representation of the attribute
         if ("." in lstring):
@@ -191,43 +205,27 @@ def step(func_chain, p4_vars, expr=None):
     ''' The step function ensures that modifications are propagated to
     all subsequent operations. This is important to guarantee correctness with
     branching or local modification. '''
-    fun_expr = None
     if func_chain:
-        next_fun = func_chain[0]
-        func_chain = func_chain[1:]
+        # pop the first function in the list
+        next_fun = func_chain.pop(0)
         # emulate pass-by-value behavior
+        # this is necessary to for state branches
         p4_vars = copy.deepcopy(p4_vars)
+        func_chain = list(func_chain)
+        # iterate through all the remaining functions in the chain
         fun_expr = next_fun(func_chain, p4_vars)
-    # print("#################################")
-    # print("EXPR")
-    # print(expr)
-    # print("FUN_EXPR")
-    # print(fun_expr)
-    if fun_expr is not None and expr is not None:
-        # print("CONCATENATING")
-        return And(expr, fun_expr)
-    elif fun_expr is not None:
-        # print("EXTRACTING")
-        return fun_expr
-    elif expr is not None:
-        # print("JUST RETURNING")
+        if expr is not None:
+            # concatenate chain result with the provided expression
+            return And(expr, fun_expr)
+        else:
+            # extract the chained result
+            return fun_expr
+    if expr is not None:
+        # end of chain, just mirror the passed expressions
         return expr
     else:
-        # print("RETURNING TRUE")
+        # empty statement, just return true
         return True
-
-
-def step_old(func_chain, p4_vars, expr=True):
-    ''' The step function ensures that modifications are propagated to
-    all subsequent operations. This is important to guarantee correctness with
-    branching or local modification. '''
-    if func_chain:
-        next_fun = func_chain[0]
-        func_chain = func_chain[1:]
-        # emulate pass-by-value behavior
-        p4_vars = copy.deepcopy(p4_vars)
-        expr = next_fun(func_chain, p4_vars)
-    return expr
 
 
 def slice_assign(lval, rval, range):
@@ -245,6 +243,128 @@ def slice_assign(lval, rval, range):
     return Concat(*assemble)
 
 
-def output_update(func_chain, p4_vars, lval, rval):
-    expr = p4_vars.set(lval, rval)
-    return step(func_chain, p4_vars, expr)
+def step_alt(p4_vars, expr_chain=[], expr=None):
+    ''' The step function ensures that modifications are propagated to
+    all subsequent operations. This is important to guarantee correctness with
+    branching or local modification. '''
+    if expr_chain:
+        # emulate pass-by-value behavior
+        # this is necessary to for state branches
+        p4_vars = copy.deepcopy(p4_vars)
+        expr_chain = list(expr_chain)
+        # pop the first expression in the list
+        next_expr = expr_chain.pop(0)
+        # iterate through all the remaining functions in the chain
+        fun_expr = next_expr.eval(p4_vars, expr_chain)
+        if expr is not None:
+            # concatenate chain result with the provided expression
+            return And(expr, fun_expr)
+        else:
+            # extract the chained result
+            return fun_expr
+    if expr is not None:
+        # end of chain, just mirror the passed expressions
+        return expr
+    else:
+        # empty statement, just return true
+        return True
+
+
+class AssignmentStatement():
+    def __init__(self, lval, rval):
+        self.lval = lval
+        self.rval = rval
+
+    def eval(self, p4_vars, expr_chain=[]):
+        expr = p4_vars.set(self.lval, self.rval)
+        return step_alt(p4_vars, expr_chain, expr)
+
+
+class BlockStatement():
+    def __init__(self):
+        self.exprs = []
+
+    def add(self, expr):
+        self.exprs.append(expr)
+
+    def eval(self, p4_vars, expr_chain=[]):
+        return step_alt(p4_vars, self.exprs + expr_chain)
+
+
+class Action():
+
+    @classmethod
+    def add(cls, block_statement):
+        cls.block_statement = block_statement
+
+    @classmethod
+    def eval(cls, p4_vars, expr_chain=[]):
+
+        return cls.block.eval(p4_vars, expr_chain)
+
+
+class IfStatement():
+
+    def __init__(self, condition, then_block, else_block):
+        self.condition = condition
+        self.then_block = then_block
+        self.else_block = else_block
+
+    def eval(self, p4_vars, expr_chain=[]):
+        if (isinstance(self.condition, AstRef)):
+            condition = self.condition
+        else:
+            condition = self.condition.eval(p4_vars, expr_chain)
+        return If(condition, self.then_block.eval(p4_vars, expr_chain),
+                  self.else_block.eval(p4_vars, expr_chain))
+
+
+class TableExpr():
+
+    @classmethod
+    def table_action(cls, p4_vars, expr_chain=[]):
+        name = cls.__name__
+        action = Const(f"{name}_action", IntSort())
+        ''' This is a special macro to define action selection. We treat
+        selection as a chain of implications. If we match, then the clause
+        returned by the action must be valid.
+        '''
+        actions = []
+        for f_name, f_tuple in cls.actions.items():
+            if f_name == "default":
+                continue
+            f_id = f_tuple[0]
+            f_fun = f_tuple[1][0]
+            f_args = f_tuple[1][1]
+            expr = Implies(action == f_id,
+                           f_fun(p4_vars, expr_chain, *f_args))
+            actions.append(expr)
+        return And(*actions)
+
+    @classmethod
+    def table_match(cls, p4_vars):
+        raise NotImplementedError
+
+    @classmethod
+    def action_run(cls, p4_vars):
+        name = cls.__name__
+        action = Const(f"{name}_action", IntSort())
+        return If(cls.table_match(p4_vars),
+                  action,
+                  0)
+
+    @classmethod
+    def apply(cls):
+        return cls
+
+    @classmethod
+    def eval(cls, p4_vars, expr_chain=[]):
+        # This is a table match where we look up the provided key
+        # If we match select the associated action,
+        # else use the default action
+        def_fun = cls.actions["default"][1][0]
+        def_args = cls.actions["default"][1][1]
+        return If(cls.table_match(p4_vars),
+                  cls.table_action(p4_vars, expr_chain),
+                  def_fun(p4_vars, expr_chain, *def_args))
+        return cls.apply(p4_vars, expr_chain)

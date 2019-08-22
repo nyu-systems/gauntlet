@@ -53,7 +53,7 @@ def p4_program_0(z3_reg):
     # control ingress(inout Headers h, inout Meta m, inout standard_metadata_t sm)
     z3_args = [('h', z3_reg.types["headers"]), ('m', z3_reg.types["meta"]),
                ('sm', z3_reg.types["standard_metadata_t"])]
-    z3_reg.register_z3_type("inouts", Struct, z3_args)
+    z3_reg.register_z3_type("inouts", P4State, z3_args)
     ''' This is the initial version of the program. '''
     ingress_args = z3_reg.instance("inouts")
 
@@ -65,8 +65,7 @@ def p4_program_0(z3_reg):
                 NoAction just returns the current header as is '''
             sub_chain = []
 
-            sub_chain.extend(func_chain)
-            return step(sub_chain, p4_vars)
+            return step(sub_chain + func_chain, p4_vars)
 
         # @name("ingress.c.a") action c_a_0() {
         #     h.h.b = h.h.a;
@@ -87,8 +86,7 @@ def p4_program_0(z3_reg):
                 return step(func_chain, p4_vars, expr)
             sub_chain.append(output_update)
 
-            sub_chain.extend(func_chain)
-            return step(sub_chain, p4_vars)
+            return step(sub_chain + func_chain, p4_vars)
         # @name("ingress.c.t") table c_t {
 
         # @name("ingress.c.t") table c_t {
@@ -140,8 +138,7 @@ def p4_program_0(z3_reg):
             # sm.egress_spec = 9w0
             sub_chain.append(output_update)
 
-            sub_chain.extend(func_chain)
-            return step(sub_chain, p4_vars)
+            return step(sub_chain + func_chain, p4_vars)
         # return the apply function as sequence of logic clauses
         return step(func_chain=[apply], p4_vars=p4_vars)
     return ((p,), (vrfy,), (ingress, ingress_args), (egress,), (update,), (deparser,))
@@ -199,7 +196,7 @@ def p4_program_1(z3_reg):
     # control ingress(inout Headers h, inout Meta m, inout standard_metadata_t sm)
     z3_args = [('h', z3_reg.types["headers"]), ('m', z3_reg.types["meta"]),
                ('sm', z3_reg.types["standard_metadata_t"])]
-    z3_reg.register_z3_type("inouts", Struct, z3_args)
+    z3_reg.register_z3_type("inouts", P4State, z3_args)
     ''' This is the initial version of the program. '''
     ingress_args = z3_reg.instance("inouts")
 
@@ -213,8 +210,7 @@ def p4_program_1(z3_reg):
                 NoAction just returns the current header as is '''
             sub_chain = []
 
-            sub_chain.extend(func_chain)
-            return step(sub_chain, p4_vars)
+            return step(sub_chain + func_chain, p4_vars)
 
         # @name("ingress.c.a") action c_a_0() {
         #     h.h.b = h.h.a;
@@ -235,8 +231,7 @@ def p4_program_1(z3_reg):
                 return step(func_chain, p4_vars, expr)
             sub_chain.append(output_update)
 
-            sub_chain.extend(func_chain)
-            return step(sub_chain, p4_vars)
+            return step(sub_chain + func_chain, p4_vars)
 
         # The key is defined in the control function
         # Practically, this is a placeholder variable
@@ -296,8 +291,7 @@ def p4_program_1(z3_reg):
                 # c_t.apply();
                 sub_chain.append(c_t.apply)
 
-                sub_chain.extend(func_chain)
-                return step(sub_chain, p4_vars)
+                return step(sub_chain + func_chain, p4_vars)
             # }
             sub_chain.append(block)
 
@@ -308,10 +302,9 @@ def p4_program_1(z3_reg):
             # sm.egress_spec = 9w0
             sub_chain.append(output_update)
 
-            sub_chain.extend(func_chain)
-            return step(sub_chain, p4_vars)
+            return step(sub_chain + func_chain, p4_vars)
         # return the apply function as sequence of logic clauses
-        return apply([], p4_vars)
+        return step(func_chain=[apply], p4_vars=p4_vars)
     return ((p,), (vrfy,), (ingress, ingress_args), (egress,), (update,), (deparser,))
 
 

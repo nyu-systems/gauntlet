@@ -2,7 +2,6 @@ from p4z3_base import *
 
 
 def p4_program_0(z3_reg):
-
     ''' HEADERS '''
     # The input headers of the control pipeline
     # Model imports at the top of the p4 file '''
@@ -42,7 +41,7 @@ def p4_program_0(z3_reg):
 
     z3_args = [('hdr', z3_reg.types["headers"]), ('meta', z3_reg.types["metadata"]),
                ('standard_metadata', z3_reg.types["standard_metadata_t"])]
-    z3_reg.register_z3_type("inouts", Struct, z3_args)
+    z3_reg.register_z3_type("inouts", P4State, z3_args)
     ingress_args = z3_reg.instance("inouts")
 
     def p():
@@ -386,7 +385,7 @@ def p4_program_1(z3_reg):
 
     z3_args = [('hdr', z3_reg.types["headers"]), ('meta', z3_reg.types["metadata"]),
                ('standard_metadata', z3_reg.types["standard_metadata_t"])]
-    z3_reg.register_z3_type("inouts", Struct, z3_args)
+    z3_reg.register_z3_type("inouts", P4State, z3_args)
     ingress_args = z3_reg.instance("inouts")
 
     def p():

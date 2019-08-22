@@ -33,7 +33,7 @@ def p4_program_0(z3_reg):
 
     z3_args = [('h', z3_reg.types["headers"]), ('m', z3_reg.types["meta"]),
                ('sm', z3_reg.types["standard_metadata_t"])]
-    z3_reg.register_z3_type("inouts", Struct, z3_args)
+    z3_reg.register_z3_type("inouts", P4State, z3_args)
     ingress_args = z3_reg.instance("inouts")
 
     def ingress(p4_vars):
@@ -204,7 +204,7 @@ def p4_program_1(z3_reg):
 
     z3_args = [('h', z3_reg.types["headers"]), ('m', z3_reg.types["meta"]),
                ('sm', z3_reg.types["standard_metadata_t"])]
-    z3_reg.register_z3_type("inouts", Struct, z3_args)
+    z3_reg.register_z3_type("inouts", P4State, z3_args)
     ingress_args = z3_reg.instance("inouts")
 
     def ingress(p4_vars):
