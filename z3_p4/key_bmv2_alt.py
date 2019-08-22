@@ -61,21 +61,21 @@ def p4_program_0(z3_reg):
 
         # @name(".NoAction") action NoAction_0() {
         # }
-        def NoAction_0(p4_vars, expr_chain=[]):
-            block = BlockStatement()
-            return block.eval(p4_vars=p4_vars, expr_chain=expr_chain)
+
+        NoAction_0 = Function()
+        block = BlockStatement()
+        NoAction_0.add(block)
         # @name("ingress.c.a") action c_a_0() {
         #     h.h.b = h.h.a;
         # }
 
-        def c_a_0(p4_vars, expr_chain=[]):
-            block = BlockStatement()
-            rval = p4_vars.h.h.a
-            lval = "h.h.b"
-            assign = AssignmentStatement(lval, rval)
-            block.add(assign)
-            return block.eval(p4_vars=p4_vars, expr_chain=expr_chain)
-
+        c_a_0 = Function()
+        block = BlockStatement()
+        rval = p4_vars.h.h.a
+        lval = "h.h.b"
+        assign = AssignmentStatement(lval, rval)
+        block.add(assign)
+        c_a_0.add(block)
 
         # @name("ingress.c.t") table c_t {
         class c_t(TableExpr):
@@ -107,23 +107,26 @@ def p4_program_0(z3_reg):
             #     NoAction_0();
             # }
             actions = {
-                "c_a_0": (1, (c_a_0, ())),
-                "NoAction_0": (2, (NoAction_0, ())),
+                "c_a_0": (1, (c_a_0.eval, ())),
+                "NoAction_0": (2, (NoAction_0.eval, ())),
             }
-            actions["default"] = (0, (NoAction_0, ()))
+            actions["default"] = (0, (NoAction_0.eval, ()))
 
-        def apply(p4_vars, expr_chain=[]):
-            block = BlockStatement()
+        apply = Function()
 
-            block.add(c_t.apply())
+        block = BlockStatement()
 
-            rval = BitVecVal(0, 9)
-            lval = "sm.egress_spec"
-            assign = AssignmentStatement(lval, rval)
-            block.add(assign)
+        block.add(c_t.apply())
 
-            return block.eval(p4_vars=p4_vars, expr_chain=expr_chain)
-        return apply(p4_vars)
+        rval = BitVecVal(0, 9)
+        lval = "sm.egress_spec"
+        assign = AssignmentStatement(lval, rval)
+
+        block.add(assign)
+
+        apply.add(block)
+
+        return apply.eval(p4_vars)
 
     print(ingress(ingress_args))
     exit(0)

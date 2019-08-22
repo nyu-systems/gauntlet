@@ -291,16 +291,15 @@ class BlockStatement():
         return step_alt(p4_vars, self.exprs + expr_chain)
 
 
-class Action():
+class Function():
+    def __init__(self):
+        self.block_statement = None
 
-    @classmethod
-    def add(cls, block_statement):
-        cls.block_statement = block_statement
+    def add(self, block_statement):
+        self.block_statement = block_statement
 
-    @classmethod
-    def eval(cls, p4_vars, expr_chain=[]):
-
-        return cls.block.eval(p4_vars, expr_chain)
+    def eval(self, p4_vars, expr_chain=[]):
+        return self.block_statement.eval(p4_vars, expr_chain)
 
 
 class IfStatement():
