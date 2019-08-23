@@ -19,6 +19,14 @@ class Z3Tests(unittest.TestCase):
         import strength3
         self.assertEqual(strength3.z3_check(), 0)
 
+    def test_issue983(self):
+        import issue983
+        self.assertEqual(issue983.z3_check(), 0)
+
+    def test_issue1544_bmv2(self):
+        import issue1544_bmv2
+        self.assertEqual(issue1544_bmv2.z3_check(), 0)
+
 
 if __name__ == '__main__':
     unittest.main()

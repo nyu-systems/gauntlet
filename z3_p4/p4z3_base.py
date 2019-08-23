@@ -228,10 +228,8 @@ def step(func_chain, p4_vars, expr=None):
         return True
 
 
-def slice_assign(lval, rval, range):
+def slice_assign(lval, rval, slice_l, slice_r):
     lval_max = lval.size() - 1
-    slice_l = range[0]
-    slice_r = range[1]
     if slice_l == lval_max and slice_r == 0:
         return rval
     assemble = []
@@ -241,6 +239,19 @@ def slice_assign(lval, rval, range):
     if (slice_r > 0):
         assemble.append(Extract(slice_r - 1, 0, lval))
     return Concat(*assemble)
+
+
+def z3_cast(val, to_size):
+    if (val.size() < to_size):
+        return ZeroExt(to_size - val.size(), val)
+    else:
+        slice_l = val.size() - 1
+        slice_r = val.size() - to_size
+        return Extract(slice_l, slice_r, val)
+
+
+def z3_slice(val, slice_l, slice_r):
+    return Extract(slice_l, slice_r, val)
 
 
 def step_alt(p4_vars, expr_chain=[], expr=None):

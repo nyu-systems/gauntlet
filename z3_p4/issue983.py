@@ -46,15 +46,14 @@ def p4_program_0(z3_reg):
     z3_args = [('hdr', z3_reg.types["headers"]),
                ('user_meta', z3_reg.types["metadata"]),
                ('standard_metadata', z3_reg.types["standard_metadata_t"])]
-    z3_reg.register_z3_type("inouts", Struct, z3_args)
+    z3_reg.register_z3_type("inouts", P4State, z3_args)
     ingress_args = z3_reg.instance("inouts")
 
     def ingress(p4_vars):
         def NoAction_0(func_chain, p4_vars):
             sub_chain = []
 
-            sub_chain.extend(func_chain)
-            return step(sub_chain, p4_vars)
+            return step(sub_chain + func_chain, p4_vars)
 
         class debug_table_cksum1_0(Table):
             ''' This is a table '''
@@ -138,14 +137,14 @@ def p4_program_0(z3_reg):
             sub_chain.append(output_update)
 
             def output_update(func_chain, p4_vars):
-                rval = ZeroExt(32 - p4_vars.tmp_0.size(), p4_vars.tmp_0,)
+                rval = z3_cast(p4_vars.tmp_0, 32)
                 expr = p4_vars.set("x1_0", rval)
                 return step(func_chain, p4_vars, expr)
             sub_chain.append(output_update)
 
             def output_update(func_chain, p4_vars):
-                rval = Extract(31, 16, p4_vars.x1_0) + \
-                    Extract(15, 0, p4_vars.x1_0)
+                rval = z3_slice(p4_vars.x1_0, 31, 16) + \
+                    z3_slice(p4_vars.x1_0, 15, 0)
                 expr = p4_vars.set("x2_0", rval)
                 return step(func_chain, p4_vars, expr)
             sub_chain.append(output_update)
@@ -169,15 +168,13 @@ def p4_program_0(z3_reg):
             sub_chain.append(output_update)
 
             def output_update(func_chain, p4_vars):
-                rval = ZeroExt(32 - p4_vars.hdr.ethernet.etherType.size(),
-                               ~p4_vars.hdr.ethernet.etherType)
+                rval = z3_cast(~p4_vars.hdr.ethernet.etherType, 32)
                 expr = p4_vars.set("user_meta.fwd_meta.x3", rval)
                 return step(func_chain, p4_vars, expr)
             sub_chain.append(output_update)
 
             def output_update(func_chain, p4_vars):
-                rval = ~ZeroExt(32 - p4_vars.hdr.ethernet.etherType.size(),
-                                p4_vars.hdr.ethernet.etherType)
+                rval = ~z3_cast(p4_vars.hdr.ethernet.etherType, 32)
 
                 expr = p4_vars.set("user_meta.fwd_meta.x4", rval)
                 return step(func_chain, p4_vars, expr)
@@ -229,18 +226,17 @@ def p4_program_0(z3_reg):
 
                     def output_update(func_chain, p4_vars):
                         rval = slice_assign(
-                            p4_vars.hdr.ethernet.dstAddr, BitVecVal(1, 8), (47, 40))
+                            p4_vars.hdr.ethernet.dstAddr, BitVecVal(1, 8), 47, 40)
                         expr = p4_vars.set("hdr.ethernet.dstAddr", rval)
                         return step(func_chain, p4_vars, expr)
                     sub_chain.append(output_update)
 
-                    sub_chain.extend(func_chain)
-                    return step(sub_chain, p4_vars)
+                    return step(sub_chain + func_chain, p4_vars)
 
                 def is_false():
                     sub_chain = []
-                    sub_chain.extend(func_chain)
-                    return step(sub_chain, p4_vars)
+
+                    return step(sub_chain + func_chain, p4_vars)
 
                 return If(condition, is_true(), is_false())
             sub_chain.append(if_block)
@@ -255,18 +251,16 @@ def p4_program_0(z3_reg):
 
                     def output_update(func_chain, p4_vars):
                         rval = slice_assign(
-                            p4_vars.hdr.ethernet.dstAddr, BitVecVal(1, 8), (39, 32))
+                            p4_vars.hdr.ethernet.dstAddr, BitVecVal(1, 8), 39, 32)
                         expr = p4_vars.set("hdr.ethernet.dstAddr", rval)
                         return step(func_chain, p4_vars, expr)
                     sub_chain.append(output_update)
 
-                    sub_chain.extend(func_chain)
-                    return step(sub_chain, p4_vars)
+                    return step(sub_chain + func_chain, p4_vars)
 
                 def is_false():
                     sub_chain = []
-                    sub_chain.extend(func_chain)
-                    return step(sub_chain, p4_vars)
+                    return step(sub_chain + func_chain, p4_vars)
 
                 return If(condition, is_true(), is_false())
             sub_chain.append(if_block)
@@ -281,18 +275,16 @@ def p4_program_0(z3_reg):
 
                     def output_update(func_chain, p4_vars):
                         rval = slice_assign(
-                            p4_vars.hdr.ethernet.dstAddr, BitVecVal(1, 8), (31, 24))
+                            p4_vars.hdr.ethernet.dstAddr, BitVecVal(1, 8), 31, 24)
                         expr = p4_vars.set("hdr.ethernet.dstAddr", rval)
                         return step(func_chain, p4_vars, expr)
                     sub_chain.append(output_update)
 
-                    sub_chain.extend(func_chain)
-                    return step(sub_chain, p4_vars)
+                    return step(sub_chain + func_chain, p4_vars)
 
                 def is_false():
                     sub_chain = []
-                    sub_chain.extend(func_chain)
-                    return step(sub_chain, p4_vars)
+                    return step(sub_chain + func_chain, p4_vars)
 
                 return If(condition, is_true(), is_false())
             sub_chain.append(if_block)
@@ -307,18 +299,16 @@ def p4_program_0(z3_reg):
 
                     def output_update(func_chain, p4_vars):
                         rval = slice_assign(
-                            p4_vars.hdr.ethernet.dstAddr, BitVecVal(1, 8), (23, 16))
+                            p4_vars.hdr.ethernet.dstAddr, BitVecVal(1, 8), 23, 16)
                         expr = p4_vars.set("hdr.ethernet.dstAddr", rval)
                         return step(func_chain, p4_vars, expr)
                     sub_chain.append(output_update)
 
-                    sub_chain.extend(func_chain)
-                    return step(sub_chain, p4_vars)
+                    return step(sub_chain + func_chain, p4_vars)
 
                 def is_false():
                     sub_chain = []
-                    sub_chain.extend(func_chain)
-                    return step(sub_chain, p4_vars)
+                    return step(sub_chain + func_chain, p4_vars)
 
                 return If(condition, is_true(), is_false())
             sub_chain.append(if_block)
@@ -333,26 +323,23 @@ def p4_program_0(z3_reg):
 
                     def output_update(func_chain, p4_vars):
                         rval = slice_assign(
-                            p4_vars.hdr.ethernet.dstAddr, BitVecVal(1, 8), (15, 8))
+                            p4_vars.hdr.ethernet.dstAddr, BitVecVal(1, 8), 15, 8)
                         expr = p4_vars.set("hdr.ethernet.dstAddr", rval)
                         return step(func_chain, p4_vars, expr)
                     sub_chain.append(output_update)
 
-                    sub_chain.extend(func_chain)
-                    return step(sub_chain, p4_vars)
+                    return step(sub_chain + func_chain, p4_vars)
 
                 def is_false():
                     sub_chain = []
-                    sub_chain.extend(func_chain)
-                    return step(sub_chain, p4_vars)
+                    return step(sub_chain + func_chain, p4_vars)
 
                 return If(condition, is_true(), is_false())
             sub_chain.append(if_block)
 
             sub_chain.append(debug_table_cksum1_0.apply)
 
-            sub_chain.extend(func_chain)
-            return step(sub_chain, p4_vars)
+            return step(sub_chain + func_chain, p4_vars)
         return step(func_chain=[apply], p4_vars=p4_vars)
     return ((p,), (vrfy,), (ingress, ingress_args), (egress,), (update,), (deparser,))
 
@@ -402,15 +389,14 @@ def p4_program_1(z3_reg):
     z3_args = [('hdr', z3_reg.types["headers"]),
                ('user_meta', z3_reg.types["metadata"]),
                ('standard_metadata', z3_reg.types["standard_metadata_t"])]
-    z3_reg.register_z3_type("inouts", Struct, z3_args)
+    z3_reg.register_z3_type("inouts", P4State, z3_args)
     ingress_args = z3_reg.instance("inouts")
 
     def ingress(p4_vars):
         def NoAction_0(func_chain, p4_vars):
             sub_chain = []
 
-            sub_chain.extend(func_chain)
-            return step(sub_chain, p4_vars)
+            return step(sub_chain + func_chain, p4_vars)
 
         class debug_table_cksum1_0(Table):
             ''' This is a table '''
@@ -569,18 +555,17 @@ def p4_program_1(z3_reg):
 
                     def output_update(func_chain, p4_vars):
                         rval = slice_assign(
-                            p4_vars.hdr.ethernet.dstAddr, BitVecVal(1, 8), (47, 40))
+                            p4_vars.hdr.ethernet.dstAddr, BitVecVal(1, 8), 47, 40)
                         expr = p4_vars.set("hdr.ethernet.dstAddr", rval)
                         return step(func_chain, p4_vars, expr)
                     sub_chain.append(output_update)
 
-                    sub_chain.extend(func_chain)
-                    return step(sub_chain, p4_vars)
+                    return step(sub_chain + func_chain, p4_vars)
 
                 def is_false():
                     sub_chain = []
-                    sub_chain.extend(func_chain)
-                    return step(sub_chain, p4_vars)
+
+                    return step(sub_chain + func_chain, p4_vars)
 
                 return If(condition, is_true(), is_false())
             sub_chain.append(if_block)
@@ -596,18 +581,17 @@ def p4_program_1(z3_reg):
 
                     def output_update(func_chain, p4_vars):
                         rval = slice_assign(
-                            p4_vars.hdr.ethernet.dstAddr, BitVecVal(1, 8), (39, 32))
+                            p4_vars.hdr.ethernet.dstAddr, BitVecVal(1, 8), 39, 32)
                         expr = p4_vars.set("hdr.ethernet.dstAddr", rval)
                         return step(func_chain, p4_vars, expr)
                     sub_chain.append(output_update)
 
-                    sub_chain.extend(func_chain)
-                    return step(sub_chain, p4_vars)
+                    return step(sub_chain + func_chain, p4_vars)
 
                 def is_false():
                     sub_chain = []
-                    sub_chain.extend(func_chain)
-                    return step(sub_chain, p4_vars)
+
+                    return step(sub_chain + func_chain, p4_vars)
 
                 return If(condition, is_true(), is_false())
             sub_chain.append(if_block)
@@ -624,18 +608,17 @@ def p4_program_1(z3_reg):
 
                     def output_update(func_chain, p4_vars):
                         rval = slice_assign(
-                            p4_vars.hdr.ethernet.dstAddr, BitVecVal(1, 8), (31, 24))
+                            p4_vars.hdr.ethernet.dstAddr, BitVecVal(1, 8), 31, 24)
                         expr = p4_vars.set("hdr.ethernet.dstAddr", rval)
                         return step(func_chain, p4_vars, expr)
                     sub_chain.append(output_update)
 
-                    sub_chain.extend(func_chain)
-                    return step(sub_chain, p4_vars)
+                    return step(sub_chain + func_chain, p4_vars)
 
                 def is_false():
                     sub_chain = []
-                    sub_chain.extend(func_chain)
-                    return step(sub_chain, p4_vars)
+
+                    return step(sub_chain + func_chain, p4_vars)
 
                 return If(condition, is_true(), is_false())
             sub_chain.append(if_block)
@@ -650,25 +633,23 @@ def p4_program_1(z3_reg):
 
                     def output_update(func_chain, p4_vars):
                         rval = slice_assign(
-                            p4_vars.hdr.ethernet.dstAddr, BitVecVal(1, 8), (23, 16))
+                            p4_vars.hdr.ethernet.dstAddr, BitVecVal(1, 8), 23, 16)
                         expr = p4_vars.set("hdr.ethernet.dstAddr", rval)
                         return step(func_chain, p4_vars, expr)
                     sub_chain.append(output_update)
 
-                    sub_chain.extend(func_chain)
-                    return step(sub_chain, p4_vars)
+                    return step(sub_chain + func_chain, p4_vars)
 
                 def is_false():
                     sub_chain = []
-                    sub_chain.extend(func_chain)
-                    return step(sub_chain, p4_vars)
+                    return step(sub_chain + func_chain, p4_vars)
 
                 return If(condition, is_true(), is_false())
             sub_chain.append(if_block)
 
             def if_block(func_chain, p4_vars):
 
-                condition = (~ZeroExt(32 - p4_vars.hdr.ethernet.etherType.size(), p4_vars.hdr.ethernet.etherType) !=
+                condition = (~z3_cast(p4_vars.hdr.ethernet.etherType, 32) !=
                              BitVecVal(0xfffff7ff, 32))
 
                 def is_true():
@@ -676,26 +657,24 @@ def p4_program_1(z3_reg):
 
                     def output_update(func_chain, p4_vars):
                         rval = slice_assign(
-                            p4_vars.hdr.ethernet.dstAddr, BitVecVal(1, 8), (15, 8))
+                            p4_vars.hdr.ethernet.dstAddr, BitVecVal(1, 8), 15, 8)
                         expr = p4_vars.set("hdr.ethernet.dstAddr", rval)
                         return step(func_chain, p4_vars, expr)
                     sub_chain.append(output_update)
 
-                    sub_chain.extend(func_chain)
-                    return step(sub_chain, p4_vars)
+                    return step(sub_chain + func_chain, p4_vars)
 
                 def is_false():
                     sub_chain = []
-                    sub_chain.extend(func_chain)
-                    return step(sub_chain, p4_vars)
+
+                    return step(sub_chain + func_chain, p4_vars)
 
                 return If(condition, is_true(), is_false())
             sub_chain.append(if_block)
 
             sub_chain.append(debug_table_cksum1_0.apply)
 
-            sub_chain.extend(func_chain)
-            return step(sub_chain, p4_vars)
+            return step(sub_chain + func_chain, p4_vars)
         return step(func_chain=[apply], p4_vars=p4_vars)
     return ((p,), (vrfy,), (ingress, ingress_args), (egress,), (update,), (deparser,))
 
