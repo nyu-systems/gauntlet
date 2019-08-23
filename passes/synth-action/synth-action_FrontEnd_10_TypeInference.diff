@@ -1,0 +1,16 @@
+--- before_pass
++++ after_pass
+@@ -1,9 +1,9 @@
+ control c(inout bit<32> x) {
+     apply {
+-        x = 10;
+-        if (x == 10) {
+-            x = x + 2;
+-            x = x - 6;
++        x = (bit<32>)32w10;
++        if (x == 32w10) {
++            x = x + 32w2;
++            x = x - 32w6;
+         } else {
+             x = x << 2;
+         }

@@ -1,0 +1,40 @@
+--- before_pass
++++ after_pass
+@@ -18,28 +18,18 @@ control Eg(inout Headers hdrs, inout Met
+     bit<64> res_0;
+     @name("update") action update_0(in bool p, inout bit<64> val) {
+         bit<32> tmp;
+-        {
+-            _sub_0 = val[31:0];
+-        }
+-        {
+-            if (p) {
+-                tmp = _sub_0;
+-            } else {
+-                tmp = 32w1;
+-            }
+-            _sub_0 = tmp;
+-        }
+-        {
+-            val[31:0] = _sub_0;
++        _sub_0 = val[31:0];
++        if (p) {
++            tmp = _sub_0;
++        } else {
++            tmp = 32w1;
+         }
++        _sub_0 = tmp;
++        val[31:0] = _sub_0;
+     }
+     apply {
+-        {
+-            res_0 = 64w0;
+-        }
+-        {
+-            update_0(true, res_0);
+-        }
++        res_0 = 64w0;
++        update_0(true, res_0);
+     }
+ }
+ control DP(packet_out b, in Headers p) {

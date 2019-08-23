@@ -1,0 +1,13 @@
+--- before_pass
++++ after_pass
+@@ -22,9 +22,7 @@ parser caller() {
+ control ingress() {
+     @name("rand1") Random2() rand1_1;
+     apply {
+-        {
+-            rand1_1.read();
+-        }
++        rand1_1.read();
+     }
+ }
+ Top(ingress(), caller()) main;

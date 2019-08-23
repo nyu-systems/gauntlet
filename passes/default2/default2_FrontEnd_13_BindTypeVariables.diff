@@ -1,0 +1,11 @@
+--- before_pass
++++ after_pass
+@@ -4,7 +4,7 @@ header Header {
+ }
+ parser p0(packet_in p, out Header h) {
+     state start {
+-        p.extract(h);
++        p.extract<Header>(h);
+         transition select(h.data) {
+             default: next;
+             default: reject;

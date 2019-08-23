@@ -1,0 +1,11 @@
+--- before_pass
++++ after_pass
+@@ -56,7 +56,7 @@ control ingress(inout headers hdr, inout
+             @defaultonly NoAction();
+         }
+         key = {
+-            hdr.ethernet.etherType: exact;
++            hdr.ethernet.etherType: exact @name("hdr.ethernet.etherType") ;
+         }
+         default_action = NoAction();
+     }

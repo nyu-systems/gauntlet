@@ -1,0 +1,11 @@
+--- before_pass
++++ after_pass
+@@ -33,7 +33,7 @@ extern ExternCounter {
+     void increment();
+ }
+ control ingress(inout Headers h, inout Meta m, inout standard_metadata_t sm) {
+-    @name("extr") ExternCounter(5) extr_0;
++    @name("ingress.extr") ExternCounter(5) extr_0;
+     apply {
+         extr_0.increment();
+     }

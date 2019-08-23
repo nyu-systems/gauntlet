@@ -1,0 +1,12 @@
+--- before_pass
++++ after_pass
+@@ -1,7 +1,8 @@
+ typedef tuple<> emptyTuple;
+ control c(out bool b) {
++    emptyTuple t_0;
+     apply {
+-        emptyTuple t_0 = {  };
++        t_0 = {  };
+         if (t_0 == {  }) {
+             b = true;
+         } else {

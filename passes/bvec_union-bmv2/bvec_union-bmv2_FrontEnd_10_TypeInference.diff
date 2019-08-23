@@ -1,0 +1,11 @@
+--- before_pass
++++ after_pass
+@@ -31,7 +31,7 @@ parser p(packet_in b, out Headers h, ino
+     state start {
+         b.extract(h.h1);
+         transition select(h.h1.a) {
+-            0: getH1;
++            8w0: getH1;
+             default: getH2;
+         }
+     }

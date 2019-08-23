@@ -1,0 +1,13 @@
+--- before_pass
++++ after_pass
+@@ -4,8 +4,9 @@ parser p() {
+     }
+ }
+ parser q() {
++    @name("p") p() p_inst;
+     state start {
+-        p.apply();
++        p_inst.apply();
+         transition accept;
+     }
+ }

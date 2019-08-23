@@ -1,0 +1,22 @@
+--- before_pass
++++ after_pass
+@@ -32,17 +32,13 @@ control aux(inout M meta, in H hdr) {
+         default_action = NoAction();
+     }
+     apply {
+-        {
+-            adjust_lkp_fields_0.apply();
+-        }
++        adjust_lkp_fields_0.apply();
+     }
+ }
+ control IngressI(inout H hdr, inout M meta, inout std_meta_t std_meta) {
+     @name("do_aux") aux() do_aux_0;
+     apply {
+-        {
+-            do_aux_0.apply(meta, hdr);
+-        }
++        do_aux_0.apply(meta, hdr);
+     }
+ }
+ control EgressI(inout H hdr, inout M meta, inout std_meta_t std_meta) {

@@ -1,0 +1,11 @@
+--- before_pass
++++ after_pass
+@@ -33,7 +33,7 @@ control my(out H[2] s) {
+         tmp_5 = a_0;
+         tmp_6 = s[tmp_5].z;
+         tmp_9 = f(tmp_6, 1w1);
+-        tmp_7 = tmp_9;
++        ;
+         s[tmp_5].z = tmp_6;
+     }
+     @name("tbl_act") table tbl_act_0 {

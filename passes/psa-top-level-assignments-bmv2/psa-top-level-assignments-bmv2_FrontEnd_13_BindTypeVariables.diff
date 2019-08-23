@@ -1,0 +1,30 @@
+--- before_pass
++++ after_pass
+@@ -15,7 +15,7 @@ struct headers_t {
+ }
+ parser ingressParserImpl(packet_in packet, out headers_t hdr, inout metadata_t meta, in psa_ingress_parser_input_metadata_t istd, in empty_metadata_t resubmit_meta, in empty_metadata_t recirculate_meta) {
+     state start {
+-        packet.extract(hdr.ethernet);
++        packet.extract<ethernet_t>(hdr.ethernet);
+         transition accept;
+     }
+ }
+@@ -36,7 +36,7 @@ control egressImpl(inout headers_t hdr,
+ }
+ control CommonDeparserImpl(packet_out packet, inout headers_t hdr) {
+     apply {
+-        packet.emit(hdr.ethernet);
++        packet.emit<ethernet_t>(hdr.ethernet);
+     }
+ }
+ control ingressDeparserImpl(packet_out packet, out empty_metadata_t clone_i2e_meta, out empty_metadata_t resubmit_meta, out empty_metadata_t normal_meta, inout headers_t hdr, in metadata_t meta, in psa_ingress_output_metadata_t istd) {
+@@ -51,6 +51,6 @@ control egressDeparserImpl(packet_out pa
+         cp.apply(packet, hdr);
+     }
+ }
+-IngressPipeline(ingressParserImpl(), ingressImpl(), ingressDeparserImpl()) ip;
+-EgressPipeline(egressParserImpl(), egressImpl(), egressDeparserImpl()) ep;
+-PSA_Switch(ip, PacketReplicationEngine(), ep, BufferingQueueingEngine()) main;
++IngressPipeline<headers_t, metadata_t, empty_metadata_t, empty_metadata_t, empty_metadata_t, empty_metadata_t>(ingressParserImpl(), ingressImpl(), ingressDeparserImpl()) ip;
++EgressPipeline<headers_t, metadata_t, empty_metadata_t, empty_metadata_t, empty_metadata_t, empty_metadata_t>(egressParserImpl(), egressImpl(), egressDeparserImpl()) ep;
++PSA_Switch<headers_t, metadata_t, headers_t, metadata_t, empty_metadata_t, empty_metadata_t, empty_metadata_t, empty_metadata_t, empty_metadata_t>(ip, PacketReplicationEngine(), ep, BufferingQueueingEngine()) main;

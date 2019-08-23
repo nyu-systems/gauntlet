@@ -1,0 +1,11 @@
+--- before_pass
++++ after_pass
+@@ -55,7 +55,7 @@ control ingress(inout headers hdr, inout
+     }
+     table ipv4_lpm {
+         key = {
+-            hdr.ipv4.dstAddr: lpm;
++            hdr.ipv4.dstAddr: lpm @name("hdr.ipv4.dstAddr") ;
+         }
+         actions = {
+             NoAction();

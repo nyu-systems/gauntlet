@@ -1,0 +1,15 @@
+--- before_pass
++++ after_pass
+@@ -1,8 +1,11 @@
+ control c() {
+     bit<32> x_0;
+     @name("a") action a_0(inout bit<32> arg_0) {
++        bool hasReturned = false;
+         arg_0 = 32w1;
+-        return;
++        {
++            hasReturned = true;
++        }
+     }
+     apply {
+         a_0(x_0);

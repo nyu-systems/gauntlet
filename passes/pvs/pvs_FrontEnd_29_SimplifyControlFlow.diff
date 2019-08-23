@@ -1,0 +1,13 @@
+--- before_pass
++++ after_pass
+@@ -6,9 +6,7 @@ parser p(packet_in pk) {
+     H h_0;
+     @name("vs") value_set<tuple<bit<32>, bit<2>>>(4) vs_0;
+     state start {
+-        {
+-            pk.extract<H>(h_0);
+-        }
++        pk.extract<H>(h_0);
+         transition select(h_0.f, 2w2) {
+             vs_0: next;
+             default: reject;

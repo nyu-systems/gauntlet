@@ -1,0 +1,10 @@
+--- before_pass
++++ after_pass
+@@ -25,7 +25,6 @@ control MyIC(inout ethernet_t a, inout E
+     @name("reg") Register<bit<10>, bit<10>>(32w1024) reg_0;
+     @name("execute_register") action execute_register_0(bit<10> idx) {
+         tmp = reg_0.read(idx);
+-        ;
+     }
+     @name("tbl") table tbl_0 {
+         key = {

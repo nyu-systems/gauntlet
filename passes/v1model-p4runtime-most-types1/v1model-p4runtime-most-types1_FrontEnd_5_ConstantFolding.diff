@@ -1,0 +1,20 @@
+--- before_pass
++++ after_pass
+@@ -117,7 +117,7 @@ struct valueset1_t {
+ struct metadata_t {
+ }
+ parser ParserImpl(packet_in packet, out headers_t hdr, inout metadata_t meta, inout standard_metadata_t stdmeta) {
+-    const bit<16> ETHERTYPE_CUSTOM = 0xdead;
++    const bit<16> ETHERTYPE_CUSTOM = 16w0xdead;
+     value_set<valueset1_t>(4) valueset1;
+     state start {
+         transition select(stdmeta.ingress_port) {
+@@ -135,7 +135,7 @@ parser ParserImpl(packet_in packet, out
+     state parse_ethernet {
+         packet.extract(hdr.ethernet);
+         transition select(hdr.ethernet.etherType) {
+-            ETHERTYPE_CUSTOM: parse_custom;
++            16w0xdead: parse_custom;
+             default: accept;
+         }
+     }

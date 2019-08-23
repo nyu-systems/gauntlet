@@ -1,0 +1,19 @@
+--- before_pass
++++ after_pass
+@@ -43,12 +43,10 @@ control deparser(packet_out b, in Header
+ control ingress(inout Headers h, inout Meta m, inout standard_metadata_t sm) {
+     hdr[1] c_tmp;
+     apply {
+-        {
+-            c_tmp[0].row.alt1.valid = 1w1;
+-            c_tmp[0].f = h.h.f + 32w1;
+-            h.h.f = c_tmp[0].f;
+-            h.h.row.alt1.valid = c_tmp[0].row.alt1.valid;
+-        }
++        c_tmp[0].row.alt1.valid = 1w1;
++        c_tmp[0].f = h.h.f + 32w1;
++        h.h.f = c_tmp[0].f;
++        h.h.row.alt1.valid = c_tmp[0].row.alt1.valid;
+         sm.egress_spec = 9w0;
+     }
+ }

@@ -1,0 +1,15 @@
+--- before_pass
++++ after_pass
+@@ -1,12 +1 @@
+ #include <core.p4>
+-control c() {
+-    table t {
+-        actions = {
+-            @defaultonly NoAction();
+-        }
+-        default_action = NoAction();
+-    }
+-    apply {
+-        t.apply();
+-    }
+-}

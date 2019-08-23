@@ -1,0 +1,115 @@
+--- before_pass
++++ after_pass
+@@ -34,18 +34,14 @@ struct headers {
+ }
+ parser ParserImpl(packet_in packet, out headers hdr, inout metadata meta, inout standard_metadata_t standard_metadata) {
+     @name("parse_ethernet") state parse_ethernet {
+-        {
+-            packet.extract<ethernet_t>(hdr.ethernet);
+-        }
++        packet.extract<ethernet_t>(hdr.ethernet);
+         transition select(hdr.ethernet.etherType) {
+             16w0x800: parse_ipv4;
+             default: accept;
+         }
+     }
+     @name("parse_ipv4") state parse_ipv4 {
+-        {
+-            packet.extract<ipv4_t>(hdr.ipv4);
+-        }
++        packet.extract<ipv4_t>(hdr.ipv4);
+         transition accept;
+     }
+     @name("start") state start {
+@@ -54,14 +50,10 @@ parser ParserImpl(packet_in packet, out
+ }
+ control egress(inout headers hdr, inout metadata meta, inout standard_metadata_t standard_metadata) {
+     @name(".rewrite_mac") action rewrite_mac_0(bit<48> smac) {
+-        {
+-            hdr.ethernet.srcAddr = smac;
+-        }
++        hdr.ethernet.srcAddr = smac;
+     }
+     @name("._drop") action _drop_0() {
+-        {
+-            mark_to_drop(standard_metadata);
+-        }
++        mark_to_drop(standard_metadata);
+     }
+     @name("send_frame") table send_frame_0 {
+         actions = {
+@@ -76,37 +68,23 @@ control egress(inout headers hdr, inout
+         default_action = NoAction();
+     }
+     apply {
+-        {
+-            send_frame_0.apply();
+-        }
++        send_frame_0.apply();
+     }
+ }
+ control ingress(inout headers hdr, inout metadata meta, inout standard_metadata_t standard_metadata) {
+     @name(".bcast") action bcast_0() {
+-        {
+-            standard_metadata.mcast_grp = 16w1;
+-        }
++        standard_metadata.mcast_grp = 16w1;
+     }
+     @name(".set_dmac") action set_dmac_0(bit<48> dmac) {
+-        {
+-            hdr.ethernet.dstAddr = dmac;
+-        }
++        hdr.ethernet.dstAddr = dmac;
+     }
+     @name("._drop") action _drop_1() {
+-        {
+-            mark_to_drop(standard_metadata);
+-        }
++        mark_to_drop(standard_metadata);
+     }
+     @name(".set_nhop") action set_nhop_0(bit<32> nhop_ipv4, bit<9> port) {
+-        {
+-            meta.routing_metadata.nhop_ipv4 = nhop_ipv4;
+-        }
+-        {
+-            standard_metadata.egress_spec = port;
+-        }
+-        {
+-            hdr.ipv4.ttl = hdr.ipv4.ttl + 8w255;
+-        }
++        meta.routing_metadata.nhop_ipv4 = nhop_ipv4;
++        standard_metadata.egress_spec = port;
++        hdr.ipv4.ttl = hdr.ipv4.ttl + 8w255;
+     }
+     @name("broadcast") table broadcast_0 {
+         actions = {
+@@ -142,12 +120,8 @@ control ingress(inout headers hdr, inout
+     }
+     apply {
+         if (hdr.ipv4.isValid()) {
+-            {
+-                ipv4_lpm_0.apply();
+-            }
+-            {
+-                forward_0.apply();
+-            }
++            ipv4_lpm_0.apply();
++            forward_0.apply();
+         } else {
+             broadcast_0.apply();
+         }
+@@ -155,12 +129,8 @@ control ingress(inout headers hdr, inout
+ }
+ control DeparserImpl(packet_out packet, in headers hdr) {
+     apply {
+-        {
+-            packet.emit<ethernet_t>(hdr.ethernet);
+-        }
+-        {
+-            packet.emit<ipv4_t>(hdr.ipv4);
+-        }
++        packet.emit<ethernet_t>(hdr.ethernet);
++        packet.emit<ipv4_t>(hdr.ipv4);
+     }
+ }
+ control verifyChecksum(inout headers hdr, inout metadata meta) {

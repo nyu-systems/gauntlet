@@ -1,0 +1,18 @@
+--- before_pass
++++ after_pass
+@@ -19,11 +19,11 @@ control MyVerifyChecksum(inout headers h
+     }
+ }
+ control MyIngress(inout headers hdr, inout metadata meta, inout standard_metadata_t standard_metadata) {
+-    @name("h.c1.r") register<bit<16>>(32w8) h_c1_r_0;
+-    @name("h.c2.r") register<bit<16>>(32w8) h_c2_r_0;
++    @name("h.c1.r") register<bit<16>>(32w8) h_c1_r;
++    @name("h.c2.r") register<bit<16>>(32w8) h_c2_r;
+     apply {
+-        h_c1_r_0.read(hdr.h.x, 32w0);
+-        h_c2_r_0.read(hdr.h.x, 32w0);
++        h_c1_r.read(hdr.h.x, 32w0);
++        h_c2_r.read(hdr.h.x, 32w0);
+     }
+ }
+ control MyEgress(inout headers hdr, inout metadata meta, inout standard_metadata_t standard_metadata) {

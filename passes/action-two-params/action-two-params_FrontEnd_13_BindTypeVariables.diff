@@ -1,0 +1,8 @@
+--- before_pass
++++ after_pass
+@@ -73,4 +73,4 @@ control MyComputeChecksum(inout headers
+     apply {
+     }
+ }
+-V1Switch(MyParser(), MyVerifyChecksum(), MyIngress(), MyEgress(), MyComputeChecksum(), MyDeparser()) main;
++V1Switch<headers, metadata>(MyParser(), MyVerifyChecksum(), MyIngress(), MyEgress(), MyComputeChecksum(), MyDeparser()) main;

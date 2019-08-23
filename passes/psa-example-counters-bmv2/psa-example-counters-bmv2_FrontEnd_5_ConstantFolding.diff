@@ -1,0 +1,29 @@
+--- before_pass
++++ after_pass
+@@ -30,7 +30,7 @@ struct metadata {
+ typedef bit<48> ByteCounter_t;
+ typedef bit<32> PacketCounter_t;
+ typedef bit<80> PacketByteCounter_t;
+-const bit<32> NUM_PORTS = 512;
++const bit<32> NUM_PORTS = 32w512;
+ struct headers {
+     ethernet_t ethernet;
+     ipv4_t     ipv4;
+@@ -66,7 +66,7 @@ parser EgressParserImpl(packet_in buffer
+     }
+ }
+ control ingress(inout headers hdr, inout metadata user_meta, in psa_ingress_input_metadata_t istd, inout psa_ingress_output_metadata_t ostd) {
+-    Counter<ByteCounter_t, PortId_t>(NUM_PORTS, PSA_CounterType_t.BYTES) port_bytes_in;
++    Counter<ByteCounter_t, PortId_t>(32w512, PSA_CounterType_t.BYTES) port_bytes_in;
+     DirectCounter<PacketByteCounter_t>(PSA_CounterType_t.PACKETS_AND_BYTES) per_prefix_pkt_byte_count;
+     action next_hop(PortId_t oport) {
+         per_prefix_pkt_byte_count.count();
+@@ -95,7 +95,7 @@ control ingress(inout headers hdr, inout
+     }
+ }
+ control egress(inout headers hdr, inout metadata user_meta, in psa_egress_input_metadata_t istd, inout psa_egress_output_metadata_t ostd) {
+-    Counter<ByteCounter_t, PortId_t>(NUM_PORTS, PSA_CounterType_t.BYTES) port_bytes_out;
++    Counter<ByteCounter_t, PortId_t>(32w512, PSA_CounterType_t.BYTES) port_bytes_out;
+     apply {
+         port_bytes_out.count(istd.egress_port);
+     }

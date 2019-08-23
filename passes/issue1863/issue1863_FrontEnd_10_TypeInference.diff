@@ -1,0 +1,11 @@
+--- before_pass
++++ after_pass
+@@ -4,7 +4,7 @@ struct S {
+ }
+ control c(out bit<1> b) {
+     apply {
+-        S s = { 0, 1 };
++        S s = { 1w0, 1w1 };
+         s = { s.b, s.a };
+         b = s.a;
+     }

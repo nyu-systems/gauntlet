@@ -1,0 +1,8 @@
+--- before_pass
++++ after_pass
+@@ -21,4 +21,4 @@ control D(packet_out pkt, in H h) {
+     apply {
+     }
+ }
+-V1Switch(P(), C(), G(), G(), C(), D()) main;
++V1Switch<H, M>(P(), C(), G(), G(), C(), D()) main;

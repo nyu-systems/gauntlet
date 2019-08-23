@@ -1,0 +1,11 @@
+--- before_pass
++++ after_pass
+@@ -43,7 +43,7 @@ control ingress(inout Header_t h, inout
+     }
+     table t_exact {
+         key = {
+-            m.my_err: exact;
++            m.my_err: exact @name("m.my_err") ;
+         }
+         actions = {
+             set_error_idx();

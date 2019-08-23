@@ -1,0 +1,76 @@
+--- before_pass
++++ after_pass
+@@ -23,10 +23,8 @@ parser ParserImpl(packet_in packet, out
+             bit<16> x_1 = (bit<16>)standard_metadata.ingress_port;
+             bool hasReturned = false;
+             bit<16> retval;
+-            {
+-                hasReturned = true;
+-                retval = x_1 + 16w1;
+-            }
++            hasReturned = true;
++            retval = x_1 + 16w1;
+             tmp_1 = retval;
+         }
+         tmp_port_0 = tmp_1;
+@@ -35,10 +33,8 @@ parser ParserImpl(packet_in packet, out
+             bit<16> x_2 = hdr.ethernet.etherType;
+             bool hasReturned = false;
+             bit<16> retval;
+-            {
+-                hasReturned = true;
+-                retval = x_2 + 16w1;
+-            }
++            hasReturned = true;
++            retval = x_2 + 16w1;
+             tmp_2 = retval;
+         }
+         hdr.ethernet.etherType = tmp_2;
+@@ -75,17 +71,13 @@ control ingress(inout headers hdr, inout
+                 bit<16> x_0 = x_3;
+                 bool hasReturned = false;
+                 bit<16> retval;
+-                {
+-                    hasReturned = true;
+-                    retval = x_0 + 16w1;
+-                }
++                hasReturned = true;
++                retval = x_0 + 16w1;
+                 tmp = retval;
+             }
+             tmp_0 = x_3 + tmp;
+-            {
+-                hasReturned_0 = true;
+-                retval_0 = tmp_0;
+-            }
++            hasReturned_0 = true;
++            retval_0 = tmp_0;
+             tmp_3 = retval_0;
+         }
+         hdr.ethernet.srcAddr[15:0] = tmp_3;
+@@ -93,10 +85,8 @@ control ingress(inout headers hdr, inout
+             bit<16> x_4 = hdr.ethernet.srcAddr[15:0];
+             bool hasReturned = false;
+             bit<16> retval;
+-            {
+-                hasReturned = true;
+-                retval = x_4 + 16w1;
+-            }
++            hasReturned = true;
++            retval = x_4 + 16w1;
+             tmp_4 = retval;
+         }
+         hdr.ethernet.srcAddr[15:0] = tmp_4;
+@@ -104,10 +94,8 @@ control ingress(inout headers hdr, inout
+             bit<16> x_5 = hdr.ethernet.etherType;
+             bool hasReturned = false;
+             bit<16> retval;
+-            {
+-                hasReturned = true;
+-                retval = x_5 + 16w1;
+-            }
++            hasReturned = true;
++            retval = x_5 + 16w1;
+             tmp_5 = retval;
+         }
+         hdr.ethernet.etherType = tmp_5;

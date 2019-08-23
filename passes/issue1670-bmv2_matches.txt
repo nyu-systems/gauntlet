@@ -1,6 +1,0 @@
-BMV2::SimpleSwitchMidEnd_18_CopyStructures ###########
-https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_issue1670-bmv2.p4
-BMV2::SimpleSwitchMidEnd_22_FlattenHeaders ###########
-https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_issue1670-bmv2.p4
-BMV2::SimpleSwitchMidEnd_32_SimplifyControlFlow ###########
-https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_issue1670-bmv2.p4

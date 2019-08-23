@@ -1,0 +1,11 @@
+--- before_pass
++++ after_pass
+@@ -16,7 +16,7 @@ control ingress(inout parsed_packet_t h,
+     apply {
+         HasBool b;
+         b.x = true;
+-        clone3(CloneType.I2E, 0, b);
++        clone3(CloneType.I2E, 32w0, b);
+     }
+ }
+ control egress(inout parsed_packet_t hdr, inout local_metadata_t local_metadata, inout standard_metadata_t standard_metadata) {

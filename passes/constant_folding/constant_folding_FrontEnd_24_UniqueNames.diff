@@ -1,0 +1,59 @@
+--- before_pass
++++ after_pass
+@@ -29,31 +29,31 @@ control c(out bit<32> x) {
+         x = 32w5;
+         x = 32w5;
+         x = 32w17;
+-        bool w;
+-        w = false;
+-        w = false;
+-        w = true;
+-        w = true;
+-        w = false;
+-        w = false;
+-        w = true;
+-        w = true;
+-        w = false;
+-        w = false;
+-        w = true;
+-        w = true;
+-        w = false;
+-        w = true;
+-        w = true;
+-        w = false;
+-        bit<8> z;
+-        z = 8w0;
+-        z = 8w0;
+-        z = 8w128;
+-        z = 8w128;
+-        z = 8w0;
+-        z = 8w0;
+-        z = 8w0;
++        bool w_0;
++        w_0 = false;
++        w_0 = false;
++        w_0 = true;
++        w_0 = true;
++        w_0 = false;
++        w_0 = false;
++        w_0 = true;
++        w_0 = true;
++        w_0 = false;
++        w_0 = false;
++        w_0 = true;
++        w_0 = true;
++        w_0 = false;
++        w_0 = true;
++        w_0 = true;
++        w_0 = false;
++        bit<8> z_0;
++        z_0 = 8w0;
++        z_0 = 8w0;
++        z_0 = 8w128;
++        z_0 = 8w128;
++        z_0 = 8w0;
++        z_0 = 8w0;
++        z_0 = 8w0;
+     }
+ }
+ top(c()) main;

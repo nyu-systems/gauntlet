@@ -1,0 +1,13 @@
+--- before_pass
++++ after_pass
+@@ -21,8 +21,9 @@ action my_drop(inout standard_metadata_t
+     mark_to_drop(smeta);
+ }
+ parser ParserImpl(packet_in packet, out headers hdr, inout metadata meta, inout standard_metadata_t standard_metadata) {
+-    bit<16> tmp_port_0 = incr((bit<16>)standard_metadata.ingress_port);
++    bit<16> tmp_port_0;
+     state start {
++        tmp_port_0 = incr((bit<16>)standard_metadata.ingress_port);
+         packet.extract<ethernet_t>(hdr.ethernet);
+         hdr.ethernet.etherType = incr(hdr.ethernet.etherType);
+         meta.tmp_port = tmp_port_0;

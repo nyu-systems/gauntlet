@@ -1,0 +1,117 @@
+--- before_pass
++++ after_pass
+@@ -56,15 +56,15 @@ struct headers {
+     prot_i_t                 prot_inf_1;
+ }
+ parser PROTParser(packet_in packet, out headers hdr, inout metadata meta, inout standard_metadata_t standard_metadata) {
+-    bit<9> paddingLen_0;
+-    bool currentISelected_0;
+-    bit<8> hdrLeft_0;
+-    bool currentISelected_1;
+-    prot_i_t inf_0;
+-    metadata meta_0;
+-    bool currentISelected_2;
+-    bit<8> currI_0;
+-    bool subParser_currentISelected2;
++    bit<9> paddingLen;
++    bool currentISelected;
++    bit<8> hdrLeft;
++    bool currentISelected_3;
++    prot_i_t inf;
++    metadata meta_1;
++    bool currentISelected_4;
++    bit<8> currI;
++    bool subParser_currentISelected2_0;
+     state start {
+         packet.extract<preamble_t>(hdr.preamble);
+         packet.extract<prot_common_t>(hdr.prot_common);
+@@ -79,28 +79,28 @@ parser PROTParser(packet_in packet, out
+     state parse_prot_host_addr_src_ipv4 {
+         packet.extract<prot_host_addr_ipv4_t>(hdr.prot_host_addr_src.ipv4);
+         meta.addrLen = meta.addrLen + 9w32;
+-        paddingLen_0 = 9w64 - (meta.addrLen & 9w63) & 9w63;
+-        packet.extract<prot_host_addr_padding_t>(hdr.prot_host_addr_padding, (bit<32>)paddingLen_0);
+-        meta.addrLen = meta.addrLen + paddingLen_0;
++        paddingLen = 9w64 - (meta.addrLen & 9w63) & 9w63;
++        packet.extract<prot_host_addr_padding_t>(hdr.prot_host_addr_padding, (bit<32>)paddingLen);
++        meta.addrLen = meta.addrLen + paddingLen;
+         meta.currPos = (bit<8>)(9w3 + (meta.addrLen >> 6));
+-        currentISelected_0 = hdr.prot_common.curri == meta.currPos;
+-        inf_0.setInvalid();
+-        meta_0 = meta;
+-        currentISelected_2 = currentISelected_0;
+-        currI_0 = hdr.prot_common.curri;
++        currentISelected = hdr.prot_common.curri == meta.currPos;
++        inf.setInvalid();
++        meta_1 = meta;
++        currentISelected_4 = currentISelected;
++        currI = hdr.prot_common.curri;
+         transition SubParser_start;
+     }
+     state SubParser_start {
+-        packet.extract<prot_i_t>(inf_0);
+-        subParser_currentISelected2 = currI_0 == meta_0.currPos;
+-        meta_0.currenti.upDirection = meta_0.currenti.upDirection + (bit<1>)subParser_currentISelected2 * inf_0.upDirection;
+-        meta_0.hLeft = inf_0.segLen;
+-        meta_0.currPos = meta_0.currPos + 8w1;
++        packet.extract<prot_i_t>(inf);
++        subParser_currentISelected2_0 = currI == meta_1.currPos;
++        meta_1.currenti.upDirection = meta_1.currenti.upDirection + (bit<1>)subParser_currentISelected2_0 * inf.upDirection;
++        meta_1.hLeft = inf.segLen;
++        meta_1.currPos = meta_1.currPos + 8w1;
+         transition parse_prot_host_addr_src_ipv4_0;
+     }
+     state parse_prot_host_addr_src_ipv4_0 {
+-        hdr.prot_inf_0 = inf_0;
+-        meta = meta_0;
++        hdr.prot_inf_0 = inf;
++        meta = meta_1;
+         transition parse_prot_h_0_pre;
+     }
+     state parse_prot_h_0_pre {
+@@ -116,31 +116,31 @@ parser PROTParser(packet_in packet, out
+         transition parse_prot_h_0_pre;
+     }
+     state parse_prot_1 {
+-        hdrLeft_0 = meta.headerLen - meta.currPos;
+-        transition select(hdrLeft_0) {
++        hdrLeft = meta.headerLen - meta.currPos;
++        transition select(hdrLeft) {
+             8w0: accept;
+             default: parse_prot_inf_1;
+         }
+     }
+     state parse_prot_inf_1 {
+-        currentISelected_1 = meta.currPos == hdr.prot_common.curri;
+-        inf_0.setInvalid();
+-        meta_0 = meta;
+-        currentISelected_2 = currentISelected_1;
+-        currI_0 = hdr.prot_common.curri;
++        currentISelected_3 = meta.currPos == hdr.prot_common.curri;
++        inf.setInvalid();
++        meta_1 = meta;
++        currentISelected_4 = currentISelected_3;
++        currI = hdr.prot_common.curri;
+         transition SubParser_start_0;
+     }
+     state SubParser_start_0 {
+-        packet.extract<prot_i_t>(inf_0);
+-        subParser_currentISelected2 = currI_0 == meta_0.currPos;
+-        meta_0.currenti.upDirection = meta_0.currenti.upDirection + (bit<1>)subParser_currentISelected2 * inf_0.upDirection;
+-        meta_0.hLeft = inf_0.segLen;
+-        meta_0.currPos = meta_0.currPos + 8w1;
++        packet.extract<prot_i_t>(inf);
++        subParser_currentISelected2_0 = currI == meta_1.currPos;
++        meta_1.currenti.upDirection = meta_1.currenti.upDirection + (bit<1>)subParser_currentISelected2_0 * inf.upDirection;
++        meta_1.hLeft = inf.segLen;
++        meta_1.currPos = meta_1.currPos + 8w1;
+         transition parse_prot_inf;
+     }
+     state parse_prot_inf {
+-        hdr.prot_inf_1 = inf_0;
+-        meta = meta_0;
++        hdr.prot_inf_1 = inf;
++        meta = meta_1;
+         transition accept;
+     }
+ }

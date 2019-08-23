@@ -1,0 +1,11 @@
+--- before_pass
++++ after_pass
+@@ -18,7 +18,7 @@ control c(inout S s) {
+             s.h.data3 = (bit<32>)32w0;
+         }
+         if (s.h.data2 == 32w0) {
+-            s.h.data1 = e.get(s.h.data2);
++            s.h.data1 = e.get<bit<32>>(s.h.data2);
+         }
+     }
+ }

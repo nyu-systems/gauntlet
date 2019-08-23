@@ -1,0 +1,40 @@
+--- before_pass
++++ after_pass
+@@ -14,11 +14,11 @@ struct value_set_t {
+     bit<32> field;
+ }
+ parser MyParser(packet_in b, out my_packet p, inout my_metadata m, inout standard_metadata_t s) {
+-    @name("pvs") value_set<value_set_t>(4) pvs_0;
++    @name("pvs") value_set<value_set_t>(4) pvs;
+     state start {
+         b.extract<data_h>(p.data);
+         transition select(p.data.da) {
+-            pvs_0: accept;
++            pvs: accept;
+             32w0x810: foo;
+         }
+     }
+@@ -31,11 +31,11 @@ control MyVerifyChecksum(inout my_packet
+     }
+ }
+ control MyIngress(inout my_packet p, inout my_metadata meta, inout standard_metadata_t s) {
+-    @name("set_data") action set_data_0() {
++    @name("set_data") action set_data() {
+     }
+-    @name("t") table t_0 {
++    @name("t") table t {
+         actions = {
+-            set_data_0();
++            set_data();
+             @defaultonly NoAction();
+         }
+         key = {
+@@ -44,7 +44,7 @@ control MyIngress(inout my_packet p, ino
+         default_action = NoAction();
+     }
+     apply {
+-        t_0.apply();
++        t.apply();
+     }
+ }
+ control MyEgress(inout my_packet p, inout my_metadata m, inout standard_metadata_t s) {

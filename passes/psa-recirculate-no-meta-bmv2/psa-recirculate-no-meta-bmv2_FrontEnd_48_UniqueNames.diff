@@ -1,0 +1,25 @@
+--- before_pass
++++ after_pass
+@@ -35,17 +35,17 @@ parser EgressParserImpl(packet_in buffer
+     }
+ }
+ control cEgress(inout headers_t hdr, inout metadata_t user_meta, in psa_egress_input_metadata_t istd, inout psa_egress_output_metadata_t ostd) {
+-    @name("add") action add_0() {
++    @name("add") action add_1() {
+         hdr.ethernet.dstAddr = hdr.ethernet.dstAddr + hdr.ethernet.srcAddr;
+     }
+-    @name("e") table e_0 {
++    @name("e") table e {
+         actions = {
+-            add_0();
++            add_1();
+         }
+-        default_action = add_0();
++        default_action = add_1();
+     }
+     apply {
+-        e_0.apply();
++        e.apply();
+     }
+ }
+ control IngressDeparserImpl(packet_out buffer, out empty_metadata_t clone_i2e_meta, out empty_metadata_t resubmit_meta, out empty_metadata_t normal_meta, inout headers_t hdr, in metadata_t meta, in psa_ingress_output_metadata_t istd) {

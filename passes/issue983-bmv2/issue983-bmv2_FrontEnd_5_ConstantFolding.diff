@@ -1,0 +1,17 @@
+--- before_pass
++++ after_pass
+@@ -65,10 +65,10 @@ control ingress(inout headers hdr, inout
+         user_meta.fwd_meta.x3 = (bit<32>)~hdr.ethernet.etherType;
+         user_meta.fwd_meta.x4 = ~(bit<32>)hdr.ethernet.etherType;
+         user_meta.fwd_meta.exp_etherType = 0x800;
+-        user_meta.fwd_meta.exp_x1 = (bit<32>)~16w0x800;
+-        user_meta.fwd_meta.exp_x2 = ~16w0x800;
+-        user_meta.fwd_meta.exp_x3 = (bit<32>)~16w0x800;
+-        user_meta.fwd_meta.exp_x4 = ~32w0x800;
++        user_meta.fwd_meta.exp_x1 = 32w0xf7ff;
++        user_meta.fwd_meta.exp_x2 = 16w0xf7ff;
++        user_meta.fwd_meta.exp_x3 = 32w0xf7ff;
++        user_meta.fwd_meta.exp_x4 = 32w0xfffff7ff;
+         hdr.ethernet.dstAddr = 0;
+         if (hdr.ethernet.etherType != user_meta.fwd_meta.exp_etherType) {
+             hdr.ethernet.dstAddr[47:40] = 1;

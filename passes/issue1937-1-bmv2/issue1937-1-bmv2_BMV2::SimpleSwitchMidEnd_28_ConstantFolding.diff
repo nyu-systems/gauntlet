@@ -1,0 +1,11 @@
+--- before_pass
++++ after_pass
+@@ -16,7 +16,7 @@ control ingressImpl(inout headers_t hdr,
+         tmp = tmp_0 >> 2;
+     }
+     @name(".foo") action foo_0() {
+-        hdr.h1.f2 = 8w5 >> 2;
++        hdr.h1.f2 = 8w1;
+     }
+     apply {
+         tmp_0 = hdr.h1.f1;

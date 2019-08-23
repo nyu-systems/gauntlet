@@ -1,0 +1,14 @@
+--- before_pass
++++ after_pass
+@@ -41,9 +41,9 @@ control cIngress(inout Parsed_packet hdr
+             hdr.ethernet.srcAddr: exact;
+         }
+         actions = {
+-            foo;
++            foo();
+         }
+-        default_action = foo;
++        default_action = foo();
+     }
+     apply {
+         guh.apply();

@@ -1,0 +1,51 @@
+--- before_pass
++++ after_pass
+@@ -92,10 +92,10 @@ control ingress(inout headers_t hdr, ino
+             hdr.ipv4.dstAddr: lpm;
+         }
+         actions = {
+-            set_l2ptr;
+-            set_mcast_grp;
+-            do_resubmit;
+-            do_clone_i2e;
++            set_l2ptr();
++            set_mcast_grp();
++            do_resubmit();
++            do_clone_i2e();
+             my_drop(standard_metadata);
+         }
+         default_action = my_drop(standard_metadata);
+@@ -111,7 +111,7 @@ control ingress(inout headers_t hdr, ino
+             meta.fwd.l2ptr: exact;
+         }
+         actions = {
+-            set_bd_dmac_intf;
++            set_bd_dmac_intf();
+             my_drop(standard_metadata);
+         }
+         default_action = my_drop(standard_metadata);
+@@ -141,8 +141,10 @@ control egress(inout headers_t hdr, inou
+             standard_metadata.egress_rid: exact;
+         }
+         actions = {
+-            set_out_bd;
++            set_out_bd();
++            @defaultonly NoAction();
+         }
++        default_action = NoAction();
+     }
+     action rewrite_mac(bit<48> smac) {
+         hdr.ethernet.srcAddr = smac;
+@@ -160,9 +162,9 @@ control egress(inout headers_t hdr, inou
+             meta.fwd.out_bd: exact;
+         }
+         actions = {
+-            rewrite_mac;
+-            do_recirculate;
+-            do_clone_e2e;
++            rewrite_mac();
++            do_recirculate();
++            do_clone_e2e();
+             my_drop(standard_metadata);
+         }
+         default_action = my_drop(standard_metadata);

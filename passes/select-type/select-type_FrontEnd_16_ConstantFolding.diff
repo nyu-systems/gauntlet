@@ -1,0 +1,12 @@
+--- before_pass
++++ after_pass
+@@ -1,8 +1,5 @@
+ parser p() {
+     state start {
+-        transition select(32w0) {
+-            32w5: reject;
+-            default: reject;
+-        }
++        transition reject;
+     }
+ }

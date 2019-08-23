@@ -1,0 +1,24 @@
+--- before_pass
++++ after_pass
+@@ -22,9 +22,7 @@ parser ParserI(packet_in b, out H parsed
+         transition p0;
+     }
+     state p0 {
+-        {
+-            b.extract<T>(parsedHdr.hstack.next);
+-        }
++        b.extract<T>(parsedHdr.hstack.next);
+         transition select(parsedHdr.hstack.next.y) {
+             32w0: p0;
+             default: accept;
+@@ -38,9 +36,7 @@ control ctrl(inout M meta) {
+ control IngressI(inout H hdr, inout M meta, inout std_meta_t std_meta) {
+     @name("do_ctrl") ctrl() do_ctrl_0;
+     apply {
+-        {
+-            do_ctrl_0.apply(meta);
+-        }
++        do_ctrl_0.apply(meta);
+     }
+ }
+ control EgressI(inout H hdr, inout M meta, inout std_meta_t std_meta) {

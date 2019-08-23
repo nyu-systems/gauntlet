@@ -1,0 +1,7 @@
+--- before_pass
++++ after_pass
+@@ -2,4 +2,3 @@ struct Version {
+     bit<8> major;
+     bit<8> minor;
+ }
+-const .Version version = { 8w0, 8w1 };

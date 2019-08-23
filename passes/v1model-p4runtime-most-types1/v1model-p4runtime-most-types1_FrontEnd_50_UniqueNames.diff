@@ -1,0 +1,66 @@
+--- before_pass
++++ after_pass
+@@ -117,7 +117,7 @@ struct valueset1_t {
+ struct metadata_t {
+ }
+ parser ParserImpl(packet_in packet, out headers_t hdr, inout metadata_t meta, inout standard_metadata_t stdmeta) {
+-    @name("valueset1") value_set<valueset1_t>(4) valueset1;
++    @name("valueset1") value_set<valueset1_t>(4) valueset1_0;
+     state start {
+         transition select(stdmeta.ingress_port) {
+             9w0: parse_packet_out_header;
+@@ -127,7 +127,7 @@ parser ParserImpl(packet_in packet, out
+     state parse_packet_out_header {
+         packet.extract<packet_out_header_t>(hdr.packet_out);
+         transition select(hdr.packet_out.addr0, hdr.packet_out.e, hdr.packet_out.e0, hdr.packet_out.e00) {
+-            valueset1: accept;
++            valueset1_0: accept;
+             default: parse_ethernet;
+         }
+     }
+@@ -144,10 +144,10 @@ parser ParserImpl(packet_in packet, out
+     }
+ }
+ control ingress(inout headers_t hdr, inout metadata_t meta, inout standard_metadata_t stdmeta) {
+-    @name("set_output") action set_output_0(bit<9> out_port) {
++    @name("set_output") action set_output(bit<9> out_port) {
+         stdmeta.egress_spec = out_port;
+     }
+-    @name("set_headers") action set_headers_0(Eth0_t addr0, Eth1_t addr1, Eth2_t addr2, bit<8> e, Custom0_t e0, Custom1_t e1, Custom2_t e2, Custom00_t e00, Custom01_t e01, Custom02_t e02, Custom10_t e10, Custom11_t e11, Custom12_t e12, Custom20_t e20, Custom21_t e21, Custom22_t e22, Custom001_t e001, Custom002_t e002, Custom101_t e101, Custom102_t e102, Custom201_t e201, Custom202_t e202, Custom220_t e220, Custom0020010_t e0020010, Custom0020020_t e0020020, serenum0_t s0) {
++    @name("set_headers") action set_headers(Eth0_t addr0, Eth1_t addr1, Eth2_t addr2, bit<8> e, Custom0_t e0, Custom1_t e1, Custom2_t e2, Custom00_t e00, Custom01_t e01, Custom02_t e02, Custom10_t e10, Custom11_t e11, Custom12_t e12, Custom20_t e20, Custom21_t e21, Custom22_t e22, Custom001_t e001, Custom002_t e002, Custom101_t e101, Custom102_t e102, Custom201_t e201, Custom202_t e202, Custom220_t e220, Custom0020010_t e0020010, Custom0020020_t e0020020, serenum0_t s0) {
+         hdr.custom.addr0 = addr0;
+         hdr.custom.addr1 = addr1;
+         hdr.custom.addr2 = addr2;
+@@ -175,9 +175,9 @@ control ingress(inout headers_t hdr, ino
+         hdr.custom.e0020020 = e0020020;
+         hdr.custom.s0 = s0;
+     }
+-    @name("my_drop") action my_drop_0() {
++    @name("my_drop") action my_drop() {
+     }
+-    @name("custom_table") table custom_table {
++    @name("custom_table") table custom_table_0 {
+         key = {
+             hdr.custom.addr0   : exact @name("hdr.custom.addr0") ;
+             hdr.custom.addr1   : exact @name("hdr.custom.addr1") ;
+@@ -207,15 +207,15 @@ control ingress(inout headers_t hdr, ino
+             hdr.custom.s0      : exact @name("hdr.custom.s0") ;
+         }
+         actions = {
+-            set_output_0();
+-            set_headers_0();
+-            my_drop_0();
++            set_output();
++            set_headers();
++            my_drop();
+         }
+-        default_action = my_drop_0();
++        default_action = my_drop();
+     }
+     apply {
+         if (hdr.custom.isValid()) {
+-            custom_table.apply();
++            custom_table_0.apply();
+         }
+     }
+ }

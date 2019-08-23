@@ -1,0 +1,12 @@
+--- before_pass
++++ after_pass
+@@ -1,9 +0,0 @@
+-control p() {
+-    apply {
+-        bit<1> x;
+-        bit<1> z;
+-        const bit<1> c = 1w0;
+-        x = 1w0;
+-        z = 1w0;
+-    }
+-}

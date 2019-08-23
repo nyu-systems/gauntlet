@@ -1,0 +1,25 @@
+--- before_pass
++++ after_pass
+@@ -40,7 +40,7 @@ control T_host(inout TArg1 tArg1, in TAr
+         }
+         actions = {
+             B_action(tArg1.field1);
+-            C_action;
++            C_action();
+         }
+         size = t2Size;
+         const default_action = C_action(9w5);
+@@ -59,10 +59,10 @@ control P_pipe(inout TArg1 pArg1, inout
+             pArg1.field1: ternary;
+         }
+         actions = {
+-            Drop;
+-            NoAction;
++            Drop();
++            NoAction();
+         }
+-        const default_action = NoAction;
++        const default_action = NoAction();
+     }
+     apply {
+         thost.apply(pArg1, pArg2);

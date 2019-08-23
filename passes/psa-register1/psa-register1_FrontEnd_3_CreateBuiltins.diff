@@ -1,0 +1,15 @@
+--- before_pass
++++ after_pass
+@@ -29,9 +29,10 @@ control MyIC(inout ethernet_t a, inout E
+             a.srcAddr: exact;
+         }
+         actions = {
+-            NoAction;
+-            execute_register;
++            NoAction();
++            execute_register();
+         }
++        default_action = NoAction();
+     }
+     apply {
+         tbl.apply();

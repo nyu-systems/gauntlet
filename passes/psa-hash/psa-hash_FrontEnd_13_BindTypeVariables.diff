@@ -1,0 +1,30 @@
+--- before_pass
++++ after_pass
+@@ -13,7 +13,7 @@ header ethernet_t {
+ }
+ parser MyIP(packet_in buffer, out ethernet_t eth, inout user_meta_t b, in psa_ingress_parser_input_metadata_t c, in EMPTY d, in EMPTY e) {
+     state start {
+-        buffer.extract(eth);
++        buffer.extract<ethernet_t>(eth);
+         transition accept;
+     }
+ }
+@@ -25,7 +25,7 @@ parser MyEP(packet_in buffer, out EMPTY
+ control MyIC(inout ethernet_t a, inout user_meta_t b, in psa_ingress_input_metadata_t c, inout psa_ingress_output_metadata_t d) {
+     Hash<bit<16>>(PSA_HashAlgorithm_t.CRC16) h;
+     action a1() {
+-        b.data = h.get_hash(a);
++        b.data = h.get_hash<ethernet_t>(a);
+     }
+     table tbl {
+         key = {
+@@ -53,6 +53,6 @@ control MyED(packet_out buffer, out EMPT
+     apply {
+     }
+ }
+-IngressPipeline(MyIP(), MyIC(), MyID()) ip;
+-EgressPipeline(MyEP(), MyEC(), MyED()) ep;
+-PSA_Switch(ip, PacketReplicationEngine(), ep, BufferingQueueingEngine()) main;
++IngressPipeline<ethernet_t, user_meta_t, EMPTY, EMPTY, EMPTY, EMPTY>(MyIP(), MyIC(), MyID()) ip;
++EgressPipeline<EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY>(MyEP(), MyEC(), MyED()) ep;
++PSA_Switch<ethernet_t, user_meta_t, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY>(ip, PacketReplicationEngine(), ep, BufferingQueueingEngine()) main;

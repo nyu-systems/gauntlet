@@ -1,0 +1,58 @@
+--- before_pass
++++ after_pass
+@@ -13,42 +13,20 @@ control ctrl() {
+     }
+     bool tmp;
+     apply {
+-        {
+-            a_0 = 32w0;
+-        }
+-        {
+-            b_0 = 32w1;
+-        }
+-        {
+-            c_0 = 32w2;
+-        }
+-        {
+-            tmp = t_0.apply().hit;
+-            if (tmp) {
+-                {
+-                    b_0 = 32w2;
+-                }
+-                {
+-                    t_0.apply();
+-                }
+-                {
+-                    c_0 = 32w3;
+-                }
+-            } else {
+-                {
+-                    b_0 = 32w3;
+-                }
+-                {
+-                    t_0.apply();
+-                }
+-                {
+-                    c_0 = 32w4;
+-                }
+-            }
+-        }
+-        {
+-            c_0 = 32w5;
++        a_0 = 32w0;
++        b_0 = 32w1;
++        c_0 = 32w2;
++        tmp = t_0.apply().hit;
++        if (tmp) {
++            b_0 = 32w2;
++            t_0.apply();
++            c_0 = 32w3;
++        } else {
++            b_0 = 32w3;
++            t_0.apply();
++            c_0 = 32w4;
+         }
++        c_0 = 32w5;
+     }
+ }
+ control noop();

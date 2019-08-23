@@ -1,0 +1,11 @@
+--- before_pass
++++ after_pass
+@@ -74,7 +74,7 @@ control Ingress(inout headers hdr, out b
+     }
+     table calculate {
+         key = {
+-            hdr.p4calc.op: exact;
++            hdr.p4calc.op: exact @name("hdr.p4calc.op") ;
+         }
+         actions = {
+             operation_add();

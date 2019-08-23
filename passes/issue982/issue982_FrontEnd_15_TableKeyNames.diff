@@ -1,0 +1,20 @@
+--- before_pass
++++ after_pass
+@@ -305,7 +305,7 @@ control egress(inout headers hdr, inout
+     }
+     table t {
+         key = {
+-            user_meta.custom_clone_id: exact;
++            user_meta.custom_clone_id: exact @name("user_meta.custom_clone_id") ;
+         }
+         actions = {
+             process_clone_h0();
+@@ -333,7 +333,7 @@ control ingress(inout headers hdr, inout
+     }
+     table t {
+         key = {
+-            user_meta.fwd_metadata.outport: exact;
++            user_meta.fwd_metadata.outport: exact @name("user_meta.fwd_metadata.outport") ;
+         }
+         actions = {
+             do_clone();

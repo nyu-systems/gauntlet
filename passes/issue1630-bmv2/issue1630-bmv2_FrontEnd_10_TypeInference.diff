@@ -1,0 +1,13 @@
+--- before_pass
++++ after_pass
+@@ -55,8 +55,8 @@ control MyIngress(inout headers hdr, ino
+         hdr.ethernet.srcAddr = hdr.ethernet.dstAddr;
+         hdr.ethernet.dstAddr = dstAddr;
+         standard_metadata.egress_spec = port;
+-        hdr.ipv4.ttl = hdr.ipv4.ttl - 1;
+-        hdr.ipv4.hdrChecksum = 1;
++        hdr.ipv4.ttl = hdr.ipv4.ttl - 8w1;
++        hdr.ipv4.hdrChecksum = (bit<16>)16w1;
+     }
+     table ipv4_lpm {
+         key = {

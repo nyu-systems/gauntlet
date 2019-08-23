@@ -1,0 +1,11 @@
+--- before_pass
++++ after_pass
+@@ -5,7 +5,7 @@ extern E {
+ control c(inout bit<32> r) {
+     E() e;
+     apply {
+-        r = e.f(4) + e.f(5);
++        r = e.f(32w4) + e.f(32w5);
+     }
+ }
+ control simple(inout bit<32> r);

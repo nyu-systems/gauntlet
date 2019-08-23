@@ -1,0 +1,10 @@
+--- before_pass
++++ after_pass
+@@ -51,7 +51,6 @@ struct headers {
+ }
+ typedef bit<32> PacketCounter_t;
+ typedef bit<8> ErrorIndex_t;
+-const bit<9> NUM_ERRORS = 9w256;
+ parser IngressParserImpl(packet_in buffer, out headers hdr, inout metadata user_meta, in psa_ingress_parser_input_metadata_t istd, in empty_metadata_t resubmit_meta, in empty_metadata_t recirculate_meta) {
+     InternetChecksum() ck;
+     state start {

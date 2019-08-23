@@ -1,0 +1,29 @@
+--- before_pass
++++ after_pass
+@@ -308,9 +308,9 @@ control egress(inout headers hdr, inout
+             user_meta.custom_clone_id: exact;
+         }
+         actions = {
+-            process_clone_h0;
+-            process_clone_h1;
+-            NoAction;
++            process_clone_h0();
++            process_clone_h1();
++            NoAction();
+         }
+         default_action = NoAction();
+     }
+@@ -336,10 +336,10 @@ control ingress(inout headers hdr, inout
+             user_meta.fwd_metadata.outport: exact;
+         }
+         actions = {
+-            do_clone;
+-            NoAction;
++            do_clone();
++            NoAction();
+         }
+-        default_action = NoAction;
++        default_action = NoAction();
+     }
+     apply {
+         t.apply();

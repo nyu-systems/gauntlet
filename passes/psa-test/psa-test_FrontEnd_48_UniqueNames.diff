@@ -1,0 +1,16 @@
+--- before_pass
++++ after_pass
+@@ -6,11 +6,11 @@ header hdr_t {
+     bit<16> field;
+ }
+ parser MyIP(packet_in buffer, out hdr_t a, inout EMPTY b, in psa_ingress_parser_input_metadata_t c, in EMPTY d, in EMPTY e) {
+-    @name("pvs") value_set<bit<16>>(4) pvs_0;
++    @name("pvs") value_set<bit<16>>(4) pvs;
+     state start {
+         buffer.extract<hdr_t>(a);
+         transition select(a.field) {
+-            pvs_0: accept;
++            pvs: accept;
+             default: accept;
+         }
+     }

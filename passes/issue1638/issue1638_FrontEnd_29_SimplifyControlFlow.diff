@@ -1,0 +1,22 @@
+--- before_pass
++++ after_pass
+@@ -25,17 +25,13 @@ control MyC2(in meta_t meta={ 0, 0, 0 })
+         default_action = NoAction();
+     }
+     apply {
+-        {
+-            a_0.apply();
+-        }
++        a_0.apply();
+     }
+ }
+ control MyC(inout hdr_t hdr, inout meta_t meta, in intrinsic_metadata_t intr_md) {
+     @name("c2") MyC2() c2_0;
+     apply {
+-        {
+-            c2_0.apply(meta = meta_t {f0 = 8w0,f1 = 8w0,f2 = 8w0});
+-        }
++        c2_0.apply(meta = meta_t {f0 = 8w0,f1 = 8w0,f2 = 8w0});
+     }
+ }
+ P<hdr_t, meta_t>(MyC()) main;

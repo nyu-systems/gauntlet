@@ -1,2 +1,0 @@
-BMV2::SimpleSwitchMidEnd_14_SimplifyParsers ###########
-https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_default2.p4

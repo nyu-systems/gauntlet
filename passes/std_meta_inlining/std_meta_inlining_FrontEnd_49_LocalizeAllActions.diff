@@ -1,0 +1,30 @@
+--- before_pass
++++ after_pass
+@@ -13,19 +13,21 @@ control DeparserImpl(packet_out packet,
+     apply {
+     }
+ }
+-action send_to_cpu(inout standard_metadata_t standard_metadata_0) {
+-    standard_metadata_0.egress_spec = 9w64;
+-}
+ control ingress(inout headers_t hdr, inout metadata_t meta, inout standard_metadata_t standard_metadata) {
++    @name(".send_to_cpu") action send_to_cpu_1(inout standard_metadata_t standard_metadata_0) {
++        standard_metadata_0.egress_spec = 9w64;
++    }
++    @name(".NoAction") action NoAction_1() {
++    }
+     @name("t0") table t0 {
+         key = {
+             standard_metadata.ingress_port: ternary @name("standard_metadata.ingress_port") ;
+         }
+         actions = {
+-            send_to_cpu(standard_metadata);
+-            @defaultonly NoAction();
++            send_to_cpu_1(standard_metadata);
++            @defaultonly NoAction_1();
+         }
+-        default_action = NoAction();
++        default_action = NoAction_1();
+     }
+     apply {
+         t0.apply();

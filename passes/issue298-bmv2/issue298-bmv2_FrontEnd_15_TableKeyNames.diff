@@ -1,0 +1,11 @@
+--- before_pass
++++ after_pass
+@@ -105,7 +105,7 @@ control egress(inout headers hdr, inout
+     }
+     table drop_tbl {
+         key = {
+-            meta.local_metadata.set_drop: exact;
++            meta.local_metadata.set_drop: exact @name("meta.ingress_metadata.set_drop") ;
+         }
+         actions = {
+             _drop();

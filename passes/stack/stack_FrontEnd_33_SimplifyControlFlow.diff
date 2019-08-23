@@ -1,0 +1,13 @@
+--- before_pass
++++ after_pass
+@@ -10,10 +10,8 @@ parser p() {
+         stack_0[2].setInvalid();
+         stack_0[3].setInvalid();
+         stack_0[3].setValid();
+-        ;
+         b_0 = stack_0.last;
+         stack_0[2] = b_0;
+-        ;
+         transition accept;
+     }
+ }

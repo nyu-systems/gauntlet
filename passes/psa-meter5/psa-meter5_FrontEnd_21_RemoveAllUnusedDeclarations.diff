@@ -1,0 +1,12 @@
+--- before_pass
++++ after_pass
+@@ -21,9 +21,6 @@ parser MyEP(packet_in buffer, out EMPTY
+ }
+ control MyIC(inout ethernet_t a, inout EMPTY b, in psa_ingress_input_metadata_t c, inout psa_ingress_output_metadata_t d) {
+     DirectMeter(PSA_MeterType_t.PACKETS) meter0;
+-    action execute_meter() {
+-        meter0.execute();
+-    }
+     table tbl {
+         key = {
+             a.srcAddr: exact @name("a.srcAddr") ;

@@ -1,0 +1,55 @@
+--- before_pass
++++ after_pass
+@@ -20,37 +20,37 @@ parser MyEP(packet_in buffer, out EMPTY
+     }
+ }
+ control MyIC(inout ethernet_t a, inout EMPTY b, in psa_ingress_input_metadata_t c, inout psa_ingress_output_metadata_t d) {
+-    @name(".NoAction") action NoAction_1() {
++    @name(".NoAction") action NoAction_0() {
+     }
+-    @name(".NoAction") action NoAction_2() {
++    @name(".NoAction") action NoAction_3() {
+     }
+-    @name("meter0") DirectMeter(PSA_MeterType_t.PACKETS) meter0;
+-    @name("execute_meter") action execute_meter_0() {
+-        meter0.execute();
++    @name("meter0") DirectMeter(PSA_MeterType_t.PACKETS) meter0_0;
++    @name("execute_meter") action execute_meter() {
++        meter0_0.execute();
+     }
+-    @name("tbl") table tbl {
++    @name("tbl") table tbl_0 {
+         key = {
+             a.srcAddr: exact @name("a.srcAddr") ;
+         }
+         actions = {
+-            NoAction_1();
++            NoAction_0();
+         }
+-        psa_direct_meter = meter0;
+-        default_action = NoAction_1();
++        psa_direct_meter = meter0_0;
++        default_action = NoAction_0();
+     }
+-    @name("tbl2") table tbl2 {
++    @name("tbl2") table tbl2_0 {
+         key = {
+             a.srcAddr: exact @name("a.srcAddr") ;
+         }
+         actions = {
+-            NoAction_2();
+-            execute_meter_0();
++            NoAction_3();
++            execute_meter();
+         }
+-        default_action = NoAction_2();
++        default_action = NoAction_3();
+     }
+     apply {
+-        tbl.apply();
+-        tbl2.apply();
++        tbl_0.apply();
++        tbl2_0.apply();
+     }
+ }
+ control MyEC(inout EMPTY a, inout EMPTY b, in psa_egress_input_metadata_t c, inout psa_egress_output_metadata_t d) {

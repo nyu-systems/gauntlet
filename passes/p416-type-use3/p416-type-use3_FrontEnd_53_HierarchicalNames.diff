@@ -1,0 +1,27 @@
+--- before_pass
++++ after_pass
+@@ -59,10 +59,10 @@ parser ParserImpl(packet_in packet, out
+     }
+ }
+ control ingress(inout headers_t hdr, inout meta_t meta, inout standard_metadata_t standard_metadata) {
+-    @name("set_output") action set_output(bit<9> out_port) {
++    @name("ingress.set_output") action set_output(bit<9> out_port) {
+         standard_metadata.egress_spec = out_port;
+     }
+-    @name("set_headers") action set_headers(bit<8> e, CustomD_t ed, CustomT_t et, CustomDD_t edd, CustomDT_t edt, CustomTD_t etd, CustomTT_t ett, CustomDDD_t eddd, CustomDDT_t eddt, CustomDTD_t edtd, CustomDTT_t edtt, CustomTDD_t etdd, CustomTDT_t etdt, CustomTTD_t ettd, CustomTTT_t ettt) {
++    @name("ingress.set_headers") action set_headers(bit<8> e, CustomD_t ed, CustomT_t et, CustomDD_t edd, CustomDT_t edt, CustomTD_t etd, CustomTT_t ett, CustomDDD_t eddd, CustomDDT_t eddt, CustomDTD_t edtd, CustomDTT_t edtt, CustomTDD_t etdd, CustomTDT_t etdt, CustomTTD_t ettd, CustomTTT_t ettt) {
+         hdr.custom.e = e;
+         hdr.custom.ed = ed;
+         hdr.custom.et = et;
+@@ -79,9 +79,9 @@ control ingress(inout headers_t hdr, ino
+         hdr.custom.ettd = ettd;
+         hdr.custom.ettt = ettt;
+     }
+-    @name("my_drop") action my_drop() {
++    @name("ingress.my_drop") action my_drop() {
+     }
+-    @name("custom_table") table custom_table_0 {
++    @name("ingress.custom_table") table custom_table_0 {
+         key = {
+             hdr.ethernet.srcAddr: exact @name("hdr.ethernet.srcAddr") ;
+             hdr.ethernet.dstAddr: exact @name("hdr.ethernet.dstAddr") ;

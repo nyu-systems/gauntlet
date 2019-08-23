@@ -1,0 +1,68 @@
+--- before_pass
++++ after_pass
+@@ -25,47 +25,47 @@ parser parserI(packet_in pkt, out Parsed
+     }
+ }
+ control cIngress(inout Parsed_packet hdr, inout metadata_t meta, inout standard_metadata_t stdmeta) {
+-    @name(".NoAction") action NoAction_1() {
++    @name(".NoAction") action NoAction_0() {
+     }
+-    @name("a1") action a1_0() {
++    @name("a1") action a1() {
+         hdr.ethernet.srcAddr = 48w1;
+     }
+-    @name("a2") action a2_0() {
++    @name("a2") action a2() {
+         hdr.ethernet.srcAddr[47:40] = 8w2;
+     }
+-    @name("a3") action a3_0() {
++    @name("a3") action a3() {
+         hdr.ethernet.srcAddr[47:40] = 8w3;
+     }
+-    @name("a4") action a4_0() {
++    @name("a4") action a4() {
+         hdr.ethernet.srcAddr[47:40] = 8w4;
+     }
+-    @name("t1") table t1 {
++    @name("t1") table t1_0 {
+         key = {
+             hdr.ethernet.dstAddr: exact @name("hdr.ethernet.dstAddr") ;
+         }
+         actions = {
+-            a1_0();
+-            a2_0();
+-            a3_0();
+-            a4_0();
+-            NoAction_1();
++            a1();
++            a2();
++            a3();
++            a4();
++            NoAction_0();
+         }
+-        default_action = NoAction_1();
++        default_action = NoAction_0();
+     }
+     apply {
+-        switch (t1.apply().action_run) {
+-            a1_0: {
++        switch (t1_0.apply().action_run) {
++            a1: {
+             }
+-            a2_0: {
++            a2: {
+                 hdr.ethernet.srcAddr[39:32] = 8w2;
+             }
+-            a3_0: {
++            a3: {
+                 hdr.ethernet.srcAddr[39:32] = 8w3;
+             }
+-            a4_0: {
++            a4: {
+                 hdr.ethernet.srcAddr[39:32] = 8w4;
+             }
+-            NoAction_1: {
++            NoAction_0: {
+                 hdr.ethernet.srcAddr[39:32] = 8w5;
+             }
+         }

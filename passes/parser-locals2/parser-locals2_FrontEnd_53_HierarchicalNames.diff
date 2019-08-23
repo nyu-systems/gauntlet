@@ -1,0 +1,15 @@
+--- before_pass
++++ after_pass
+@@ -54,10 +54,10 @@ parser parserI(packet_in pkt, out Parsed
+     }
+ }
+ control cIngress(inout Parsed_packet hdr, inout mystruct1 meta, inout standard_metadata_t stdmeta) {
+-    @name("foo") action foo() {
++    @name("cIngress.foo") action foo() {
+         meta.b = meta.b + 4w5;
+     }
+-    @name("guh") table guh_0 {
++    @name("cIngress.guh") table guh_0 {
+         key = {
+             hdr.ethernet.srcAddr: exact @name("hdr.ethernet.srcAddr") ;
+         }

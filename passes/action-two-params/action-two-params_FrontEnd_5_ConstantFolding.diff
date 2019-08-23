@@ -1,0 +1,11 @@
+--- before_pass
++++ after_pass
+@@ -48,7 +48,7 @@ control MyIngress(inout headers hdr, ino
+         }
+         const default_action = drop();
+         const entries = {
+-                        8w0x20 ++ 8w0x2 ++ 8w0x4 ++ 8w0x20 : actTbl(24w42, 8w0x20 ++ 8w0x2 ++ 8w0x42 ++ 8w0x0);
++                        32w0x20020420 : actTbl(24w42, 32w0x20024200);
+         }
+     }
+     apply {

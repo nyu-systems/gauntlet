@@ -1,0 +1,66 @@
+--- before_pass
++++ after_pass
+@@ -40,46 +40,46 @@ control deparser(packet_out b, in Header
+     }
+ }
+ control ingress(inout Header_t h, inout Meta_t m, inout standard_metadata_t standard_meta) {
+-    @name("usat_plus") action usat_plus_0() {
++    @name("usat_plus") action usat_plus() {
+         standard_meta.egress_spec = 9w0;
+         h.h.res_8 = h.h.opr1_8 |+| h.h.opr2_8;
+     }
+-    @name("usat_minus") action usat_minus_0() {
++    @name("usat_minus") action usat_minus() {
+         standard_meta.egress_spec = 9w0;
+         h.h.res_8 = h.h.opr1_8 |-| h.h.opr2_8;
+     }
+-    @name("sat_plus") action sat_plus_0() {
++    @name("sat_plus") action sat_plus() {
+         standard_meta.egress_spec = 9w0;
+         h.h.res_16 = h.h.opr1_16 |+| h.h.opr2_16;
+     }
+-    @name("sat_minus") action sat_minus_0() {
++    @name("sat_minus") action sat_minus() {
+         standard_meta.egress_spec = 9w0;
+         h.h.res_16 = h.h.opr1_16 |-| h.h.opr2_16;
+     }
+-    @name("drop") action drop_0() {
++    @name("drop") action drop() {
+         mark_to_drop(standard_meta);
+     }
+-    @name("t") table t {
++    @name("t") table t_0 {
+         key = {
+             h.h.op: exact @name("h.h.op") ;
+         }
+         actions = {
+-            usat_plus_0();
+-            usat_minus_0();
+-            sat_plus_0();
+-            sat_minus_0();
+-            drop_0();
++            usat_plus();
++            usat_minus();
++            sat_plus();
++            sat_minus();
++            drop();
+         }
+-        default_action = drop_0();
++        default_action = drop();
+         const entries = {
+-                        8w0x1 : usat_plus_0();
+-                        8w0x2 : usat_minus_0();
+-                        8w0x3 : sat_plus_0();
+-                        8w0x4 : sat_minus_0();
++                        8w0x1 : usat_plus();
++                        8w0x2 : usat_minus();
++                        8w0x3 : sat_plus();
++                        8w0x4 : sat_minus();
+         }
+     }
+     apply {
+-        t.apply();
++        t_0.apply();
+     }
+ }
+ V1Switch<Header_t, Meta_t>(p(), vrfy(), ingress(), egress(), update(), deparser()) main;

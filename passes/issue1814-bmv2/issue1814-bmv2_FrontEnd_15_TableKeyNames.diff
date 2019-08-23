@@ -1,0 +1,11 @@
+--- before_pass
++++ after_pass
+@@ -14,7 +14,7 @@ control IngressImpl(inout headers hdr, i
+     register<bit<1>>(32w1) testRegister;
+     table debug_table {
+         key = {
+-            meta.test: exact;
++            meta.test: exact @name("meta.test") ;
+         }
+         actions = {
+             NoAction();

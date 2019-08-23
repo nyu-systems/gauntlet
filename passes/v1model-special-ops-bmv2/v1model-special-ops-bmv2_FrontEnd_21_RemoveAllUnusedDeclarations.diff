@@ -1,0 +1,34 @@
+--- before_pass
++++ after_pass
+@@ -1,14 +1,5 @@
+ #include <core.p4>
+ #include <v1model.p4>
+-const bit<32> BMV2_V1MODEL_INSTANCE_TYPE_NORMAL = 32w0;
+-const bit<32> BMV2_V1MODEL_INSTANCE_TYPE_INGRESS_CLONE = 32w1;
+-const bit<32> BMV2_V1MODEL_INSTANCE_TYPE_EGRESS_CLONE = 32w2;
+-const bit<32> BMV2_V1MODEL_INSTANCE_TYPE_COALESCED = 32w3;
+-const bit<32> BMV2_V1MODEL_INSTANCE_TYPE_RECIRC = 32w4;
+-const bit<32> BMV2_V1MODEL_INSTANCE_TYPE_REPLICATION = 32w5;
+-const bit<32> BMV2_V1MODEL_INSTANCE_TYPE_RESUBMIT = 32w6;
+-const bit<32> I2E_CLONE_SESSION_ID = 32w5;
+-const bit<32> E2E_CLONE_SESSION_ID = 32w11;
+ header ethernet_t {
+     bit<48> dstAddr;
+     bit<48> srcAddr;
+@@ -48,7 +39,6 @@ action my_drop(inout standard_metadata_t
+     mark_to_drop(smeta);
+ }
+ parser ParserImpl(packet_in packet, out headers_t hdr, inout meta_t meta, inout standard_metadata_t standard_metadata) {
+-    const bit<16> ETHERTYPE_IPV4 = 16w0x800;
+     state start {
+         transition parse_ethernet;
+     }
+@@ -71,8 +61,6 @@ control fill_ipv4_address(out bit<32> ip
+ }
+ control ingress(inout headers_t hdr, inout meta_t meta, inout standard_metadata_t standard_metadata) {
+     fill_ipv4_address() c_fill_ipv4_address;
+-    const bit<32> RESUBMITTED_PKT_L2PTR = 32w0xe50b;
+-    const bit<32> RECIRCULATED_PKT_L2PTR = 32w0xec1c;
+     action set_l2ptr(bit<32> l2ptr) {
+         meta.fwd.l2ptr = l2ptr;
+     }

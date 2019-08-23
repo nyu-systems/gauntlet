@@ -1,0 +1,41 @@
+--- before_pass
++++ after_pass
+@@ -36,29 +36,29 @@ control deparser(packet_out b, in Header
+     }
+ }
+ control ingress(inout Header_t h, inout Meta_t m, inout standard_metadata_t standard_meta) {
+-    action a() {
++    @name("a") action a_0() {
+         standard_meta.egress_spec = 9w0;
+     }
+-    action a_with_control_params(bit<9> x) {
++    @name("a_with_control_params") action a_with_control_params_0(bit<9> x) {
+         standard_meta.egress_spec = x;
+     }
+-    table t_valid {
++    @name("t_valid") table t_valid_0 {
+         key = {
+             h.h.isValid(): exact @name("h.h.$valid$") ;
+             h.h.e        : exact @name("h.h.e") ;
+         }
+         actions = {
+-            a();
+-            a_with_control_params();
++            a_0();
++            a_with_control_params_0();
+         }
+-        default_action = a();
++        default_action = a_0();
+         const entries = {
+-                        (true, 8w0x1) : a_with_control_params(9w1);
+-                        (false, 8w0x2) : a_with_control_params(9w2);
++                        (true, 8w0x1) : a_with_control_params_0(9w1);
++                        (false, 8w0x2) : a_with_control_params_0(9w2);
+         }
+     }
+     apply {
+-        t_valid.apply();
++        t_valid_0.apply();
+     }
+ }
+ V1Switch<Header_t, Meta_t>(p(), vrfy(), ingress(), egress(), update(), deparser()) main;

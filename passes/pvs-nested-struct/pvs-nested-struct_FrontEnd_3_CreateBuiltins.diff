@@ -1,0 +1,17 @@
+--- before_pass
++++ after_pass
+@@ -39,11 +39,13 @@ control MyIngress(inout my_packet p, ino
+     }
+     table t {
+         actions = {
+-            set_data;
++            set_data();
++            @defaultonly NoAction();
+         }
+         key = {
+             meta.data[0].da: exact;
+         }
++        default_action = NoAction();
+     }
+     apply {
+         t.apply();

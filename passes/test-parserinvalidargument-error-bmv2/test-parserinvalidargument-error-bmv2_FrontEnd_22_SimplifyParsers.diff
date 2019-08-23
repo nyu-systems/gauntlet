@@ -1,0 +1,12 @@
+--- before_pass
++++ after_pass
+@@ -18,9 +18,6 @@ struct metadata_t {
+ parser parserImpl(packet_in packet, out headers_t hdr, inout metadata_t meta, inout standard_metadata_t stdmeta) {
+     state start {
+         packet.extract<ethernet_t>(hdr.ethernet);
+-        transition parse_custom_variable_len_header;
+-    }
+-    state parse_custom_variable_len_header {
+         packet.extract<custom_var_len_t>(hdr.custom_var_len, (bit<32>)hdr.ethernet.etherType[7:0]);
+         transition accept;
+     }

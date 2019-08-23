@@ -1,0 +1,13 @@
+--- before_pass
++++ after_pass
+@@ -9,9 +9,7 @@ control Ingress(inout M sm);
+ package V1Switch(Ingress ig);
+ control FabricIngress(inout M sm) {
+     apply {
+-        {
+-            sm.es = (PortIdUInt_t)sm.e;
+-        }
++        sm.es = (PortIdUInt_t)sm.e;
+     }
+ }
+ V1Switch(FabricIngress()) main;

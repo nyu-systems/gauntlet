@@ -1,0 +1,13 @@
+--- before_pass
++++ after_pass
+@@ -2,8 +2,8 @@ control c(out bit<32> x);
+ package top(c _c);
+ control my(out bit<32> x) {
+     apply {
+-        x = 1;
+-        x = 2;
++        x = (bit<32>)32w1;
++        x = (bit<32>)32w2;
+     }
+ }
+ top(my()) main;

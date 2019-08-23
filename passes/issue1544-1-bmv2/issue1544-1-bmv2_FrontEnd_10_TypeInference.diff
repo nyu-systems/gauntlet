@@ -1,0 +1,13 @@
+--- before_pass
++++ after_pass
+@@ -2,8 +2,8 @@
+ #include <v1model.p4>
+ bit<16> sometimes_dec(in bit<16> x) {
+     bit<16> tmp;
+-    if (x > 5) {
+-        tmp = x - 1;
++    if (x > 16w5) {
++        tmp = x - 16w1;
+     } else {
+         tmp = x;
+     }

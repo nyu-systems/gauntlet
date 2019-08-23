@@ -1,0 +1,11 @@
+--- before_pass
++++ after_pass
+@@ -11,7 +11,7 @@ struct S {
+ parser p() {
+     state start {
+         S s;
+-        s.c = (bit<32>)32w0;
++        s.c = 32w0;
+         transition accept;
+     }
+ }

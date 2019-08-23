@@ -1,0 +1,11 @@
+--- before_pass
++++ after_pass
+@@ -4,7 +4,7 @@ package top(proto _p);
+ control c() {
+     tuple<bit<32>, bool> x = { 32w10, false };
+     apply {
+-        f(x);
++        f<tuple<bit<32>, bool>>(x);
+     }
+ }
+ top(c()) main;

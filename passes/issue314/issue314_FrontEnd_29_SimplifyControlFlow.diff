@@ -1,0 +1,13 @@
+--- before_pass
++++ after_pass
+@@ -7,9 +7,7 @@ struct struct_t {
+ }
+ parser Parser(inout struct_t input) {
+     state start {
+-        {
+-            input.stack[input.stack.lastIndex].field = 8w1;
+-        }
++        input.stack[input.stack.lastIndex].field = 8w1;
+         transition accept;
+     }
+ }

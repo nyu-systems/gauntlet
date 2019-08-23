@@ -1,0 +1,29 @@
+--- before_pass
++++ after_pass
+@@ -7,12 +7,12 @@ extern Random2 {
+     bit<10> read();
+ }
+ parser caller() {
+-    @name("rand1") Random2() rand1_0;
++    @name("rand1") Random2() rand1;
+     state start {
+         transition callee_start;
+     }
+     state callee_start {
+-        rand1_0.read();
++        rand1.read();
+         transition start_0;
+     }
+     state start_0 {
+@@ -20,9 +20,9 @@ parser caller() {
+     }
+ }
+ control ingress() {
+-    @name("rand1") Random2() rand1_1;
++    @name("rand1") Random2() rand1_2;
+     apply {
+-        rand1_1.read();
++        rand1_2.read();
+     }
+ }
+ Top(ingress(), caller()) main;

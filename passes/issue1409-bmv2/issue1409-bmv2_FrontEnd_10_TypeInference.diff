@@ -1,0 +1,14 @@
+--- before_pass
++++ after_pass
+@@ -11,9 +11,9 @@ struct metadata_t {
+ parser TestParser(packet_in b, out headers_t headers, inout metadata_t meta, inout standard_metadata_t standard_metadata) {
+     state start {
+         b.extract(headers.test.next);
+-        bit<32> test_f = 2 * headers.test.lastIndex;
++        bit<32> test_f = 32w2 * headers.test.lastIndex;
+         transition select(test_f) {
+-            0: f;
++            32w0: f;
+             default: a;
+         }
+     }

@@ -1,0 +1,15 @@
+--- before_pass
++++ after_pass
+@@ -39,10 +39,10 @@ control deparser(packet_out b, in Header
+     }
+ }
+ control ingress(inout Headers h, inout Meta m, inout standard_metadata_t sm) {
+-    @name("set_port") action set_port() {
++    @name("ingress.set_port") action set_port() {
+         sm.egress_spec = (bit<9>)m.v;
+     }
+-    @name("t") table t_0 {
++    @name("ingress.t") table t_0 {
+         actions = {
+             set_port();
+         }

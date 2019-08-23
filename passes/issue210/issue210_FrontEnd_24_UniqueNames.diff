@@ -1,0 +1,24 @@
+--- before_pass
++++ after_pass
+@@ -1,16 +1,16 @@
+ #include <core.p4>
+ control Ing(out bit<32> a) {
+-    bool b;
+-    action cond() {
+-        if (b) {
++    bool b_0;
++    @name("cond") action cond_0() {
++        if (b_0) {
+             a = 32w5;
+         } else {
+             a = 32w10;
+         }
+     }
+     apply {
+-        b = true;
+-        cond();
++        b_0 = true;
++        cond_0();
+     }
+ }
+ control s(out bit<32> a);

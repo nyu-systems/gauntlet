@@ -1,0 +1,13 @@
+--- before_pass
++++ after_pass
+@@ -136,9 +136,7 @@ control TopPipe(inout Parsed_packet head
+         bool hasReturned = false;
+         if (parseError != error.NoError) {
+             Drop_action_0();
+-            {
+-                hasReturned = true;
+-            }
++            hasReturned = true;
+         }
+         if (!hasReturned) {
+             ipv4_match_0.apply();

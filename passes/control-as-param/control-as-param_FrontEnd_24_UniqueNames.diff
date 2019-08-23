@@ -1,0 +1,22 @@
+--- before_pass
++++ after_pass
+@@ -16,13 +16,13 @@ control C(out bit<1> b)(E d) {
+     }
+ }
+ control Ingress(out bit<1> b) {
+-    D() d;
+-    F() f;
+-    C(d) c0;
+-    C(f) c1;
++    @name("d") D() d_0;
++    @name("f") F() f_0;
++    @name("c0") C(d_0) c0_0;
++    @name("c1") C(f_0) c1_0;
+     apply {
+-        c0.apply(b);
+-        c1.apply(b);
++        c0_0.apply(b);
++        c1_0.apply(b);
+     }
+ }
+ package top(E _e);

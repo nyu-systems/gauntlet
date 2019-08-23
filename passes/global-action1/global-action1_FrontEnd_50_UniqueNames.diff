@@ -1,0 +1,22 @@
+--- before_pass
++++ after_pass
+@@ -1,14 +1,14 @@
+ control c() {
+-    @name(".Global") action Global_1() {
++    @name(".Global") action Global() {
+     }
+-    @name("t") table t {
++    @name("t") table t_0 {
+         actions = {
+-            Global_1();
++            Global();
+         }
+-        default_action = Global_1();
++        default_action = Global();
+     }
+     apply {
+-        t.apply();
++        t_0.apply();
+     }
+ }
+ control none();

@@ -1,0 +1,26 @@
+--- before_pass
++++ after_pass
+@@ -12,18 +12,18 @@ control e(in H h, out bool valid) {
+     }
+ }
+ control d(out bool b) {
++    H h_0;
++    H[2] h3_0;
++    S s_0;
++    S s1_0;
++    bool eout_0;
+     @name("einst") e() einst_0;
+     apply {
+-        H h_0;
+-        H[2] h3_0;
+         h_0 = H {x = 32w0};
+-        S s_0;
+-        S s1_0;
+         s_0 = S {h = H {x = 32w0}};
+         s1_0.h = H {x = 32w0};
+         h3_0[0] = H {x = 32w0};
+         h3_0[1] = H {x = 32w1};
+-        bool eout_0;
+         einst_0.apply(H {x = 32w0}, eout_0);
+         b = h_0.isValid() && eout_0 && h3_0[1].isValid() && s1_0.h.isValid();
+     }

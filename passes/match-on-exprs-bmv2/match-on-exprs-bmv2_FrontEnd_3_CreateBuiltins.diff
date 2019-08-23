@@ -1,0 +1,18 @@
+--- before_pass
++++ after_pass
+@@ -36,11 +36,11 @@ control ingressImpl(inout headers_t hdr,
+             hdr.ethernet.etherType - 10         : exact @name("etherType_less_10") ;
+         }
+         actions = {
+-            foo;
+-            my_drop;
+-            NoAction;
++            foo();
++            my_drop();
++            NoAction();
+         }
+-        const default_action = NoAction;
++        const default_action = NoAction();
+     }
+     apply {
+         t1.apply();

@@ -1,0 +1,11 @@
+--- before_pass
++++ after_pass
+@@ -5,7 +5,7 @@ package top(empty e);
+ control Ing() {
+     bool b_0;
+     bit<32> a_0;
+-    @name("cond") action cond() {
++    @name("Ing.cond") action cond() {
+         b_0 = true;
+     }
+     apply {

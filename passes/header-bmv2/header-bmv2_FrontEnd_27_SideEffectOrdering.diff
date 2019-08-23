@@ -1,0 +1,52 @@
+--- before_pass
++++ after_pass
+@@ -6,8 +6,12 @@ header hdr {
+ control compute(inout hdr h) {
+     hdr tmp_0;
+     apply {
+-        tmp_0.f = h.f + 32w1;
+-        h.f = tmp_0.f;
++        {
++            tmp_0.f = h.f + 32w1;
++        }
++        {
++            h.f = tmp_0.f;
++        }
+     }
+ }
+ struct Headers {
+@@ -17,7 +21,9 @@ struct Meta {
+ }
+ parser p(packet_in b, out Headers h, inout Meta m, inout standard_metadata_t sm) {
+     state start {
+-        b.extract<hdr>(h.h);
++        {
++            b.extract<hdr>(h.h);
++        }
+         transition accept;
+     }
+ }
+@@ -35,14 +41,20 @@ control egress(inout Headers h, inout Me
+ }
+ control deparser(packet_out b, in Headers h) {
+     apply {
+-        b.emit<hdr>(h.h);
++        {
++            b.emit<hdr>(h.h);
++        }
+     }
+ }
+ control ingress(inout Headers h, inout Meta m, inout standard_metadata_t sm) {
+     @name("c") compute() c_0;
+     apply {
+-        c_0.apply(h.h);
+-        sm.egress_spec = 9w0;
++        {
++            c_0.apply(h.h);
++        }
++        {
++            sm.egress_spec = 9w0;
++        }
+     }
+ }
+ V1Switch<Headers, Meta>(p(), vrfy(), ingress(), egress(), update(), deparser()) main;

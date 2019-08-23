@@ -1,0 +1,16 @@
+--- before_pass
++++ after_pass
+@@ -13,10 +13,10 @@ control compute(inout hdr h) {
+             h.a + h.a: exact @name("e") ;
+         }
+         actions = {
+-            a;
+-            NoAction;
++            a();
++            NoAction();
+         }
+-        default_action = NoAction;
++        default_action = NoAction();
+     }
+     apply {
+         t.apply();

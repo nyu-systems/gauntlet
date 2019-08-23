@@ -1,0 +1,13 @@
+--- before_pass
++++ after_pass
+@@ -32,7 +32,9 @@ control EgressI(inout H hdr, inout M met
+                 return;
+             }
+             default: {
+-                do_0.apply(hdr, meta, std_meta);
++                {
++                    do_0.apply(hdr, meta, std_meta);
++                }
+             }
+         }
+     }

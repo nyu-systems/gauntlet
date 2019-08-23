@@ -1,0 +1,21 @@
+--- before_pass
++++ after_pass
+@@ -6,12 +6,15 @@ header hdr {
+ control compute(inout hdr h) {
+     bit<8> n_0;
+     apply {
++        bool hasReturned = false;
+         n_0 = 8w0;
+         if (!h.isValid()) {
+-            return;
++            hasReturned = true;
+         }
+-        if (n_0 > 8w0) {
+-            h.setValid();
++        if (!hasReturned) {
++            if (n_0 > 8w0) {
++                h.setValid();
++            }
+         }
+     }
+ }

@@ -1,0 +1,28 @@
+--- before_pass
++++ after_pass
+@@ -17,10 +17,8 @@ control IngressImpl(inout headers hdr, i
+         {
+             bool hasReturned = false;
+             bit<32> retval;
+-            {
+-                hasReturned = true;
+-                retval = 32w1;
+-            }
++            hasReturned = true;
++            retval = 32w1;
+             tmp = retval;
+         }
+         value_1 = tmp;
+@@ -29,10 +27,8 @@ control IngressImpl(inout headers hdr, i
+         {
+             bool hasReturned = false;
+             bit<32> retval;
+-            {
+-                hasReturned = true;
+-                retval = 32w1;
+-            }
++            hasReturned = true;
++            retval = 32w1;
+             tmp_0 = retval;
+         }
+         update_value_0(value_0);

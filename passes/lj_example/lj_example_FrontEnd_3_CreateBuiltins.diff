@@ -1,0 +1,16 @@
+--- before_pass
++++ after_pass
+@@ -52,10 +52,10 @@ control LjPipe(inout Parsed_rep p, in er
+         }
+         actions = {
+             Drop_action(outCtrl.outputPort);
+-            Drop_1;
+-            Forward;
++            Drop_1();
++            Forward();
+         }
+-        default_action = Drop_1;
++        default_action = Drop_1();
+     }
+     apply {
+         outCtrl.outputPort = DROP_PORT;

@@ -1,0 +1,11 @@
+--- before_pass
++++ after_pass
+@@ -70,7 +70,7 @@ control cIngress(inout headers hdr, inou
+     }
+     apply {
+         if (hdr.ipv4.isValid()) {
+-            meta.mystruct1.hash_drop = false;
++            ;
+             guh_0.apply();
+             debug_table_0.apply();
+             if (meta.mystruct1.hash_drop) {

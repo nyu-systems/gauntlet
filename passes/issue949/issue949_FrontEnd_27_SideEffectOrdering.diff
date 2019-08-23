@@ -1,0 +1,60 @@
+--- before_pass
++++ after_pass
+@@ -22,14 +22,18 @@ struct headers {
+ }
+ parser ParserImpl(packet_in packet, out headers hdr, inout metadata meta, inout standard_metadata_t standard_metadata) {
+     state start {
+-        packet.extract<ethernet_t>(hdr.ethernet);
++        {
++            packet.extract<ethernet_t>(hdr.ethernet);
++        }
+         transition select(hdr.ethernet.etherType) {
+             16w0x800: parse_ipv4;
+             default: accept;
+         }
+     }
+     state parse_ipv4 {
+-        packet.extract<ipv4_t>(hdr.ipv4);
++        {
++            packet.extract<ipv4_t>(hdr.ipv4);
++        }
+         transition accept;
+     }
+ }
+@@ -40,7 +44,9 @@ control egress(inout headers hdr, inout
+ control ingress(inout headers hdr, inout metadata meta, inout standard_metadata_t standard_metadata) {
+     bool didHit_0;
+     @name("setDest") action setDest_0() {
+-        hdr.ethernet.dstAddr = 48w0x6af3400426d3;
++        {
++            hdr.ethernet.dstAddr = 48w0x6af3400426d3;
++        }
+     }
+     @name("someTable") table someTable_0 {
+         key = {
+@@ -52,14 +58,22 @@ control ingress(inout headers hdr, inout
+         }
+         default_action = NoAction();
+     }
++    bool tmp;
+     apply {
+-        didHit_0 = someTable_0.apply().hit;
++        {
++            tmp = someTable_0.apply().hit;
++            didHit_0 = tmp;
++        }
+     }
+ }
+ control DeparserImpl(packet_out packet, in headers hdr) {
+     apply {
+-        packet.emit<ethernet_t>(hdr.ethernet);
+-        packet.emit<ipv4_t>(hdr.ipv4);
++        {
++            packet.emit<ethernet_t>(hdr.ethernet);
++        }
++        {
++            packet.emit<ipv4_t>(hdr.ipv4);
++        }
+     }
+ }
+ control verifyChecksum(inout headers hdr, inout metadata meta) {

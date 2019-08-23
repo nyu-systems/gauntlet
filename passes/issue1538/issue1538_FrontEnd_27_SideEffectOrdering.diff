@@ -1,0 +1,102 @@
+--- before_pass
++++ after_pass
+@@ -4,7 +4,13 @@ bit<16> incr(in bit<16> x) {
+     return x + 16w1;
+ }
+ bit<16> twoxplus1(in bit<16> x) {
+-    return x + incr(x);
++    bit<16> tmp;
++    bit<16> tmp_0;
++    {
++        tmp = incr(x);
++        tmp_0 = x + tmp;
++        return tmp_0;
++    }
+ }
+ struct metadata {
+     bit<16> tmp_port;
+@@ -18,21 +24,37 @@ struct headers {
+     ethernet_t ethernet;
+ }
+ action my_drop(inout standard_metadata_t smeta) {
+-    mark_to_drop(smeta);
++    {
++        mark_to_drop(smeta);
++    }
+ }
+ parser ParserImpl(packet_in packet, out headers hdr, inout metadata meta, inout standard_metadata_t standard_metadata) {
+     bit<16> tmp_port_0;
++    bit<16> tmp_1;
++    bit<16> tmp_2;
+     state start {
+-        tmp_port_0 = incr((bit<16>)standard_metadata.ingress_port);
+-        packet.extract<ethernet_t>(hdr.ethernet);
+-        hdr.ethernet.etherType = incr(hdr.ethernet.etherType);
+-        meta.tmp_port = tmp_port_0;
++        {
++            tmp_1 = incr((bit<16>)standard_metadata.ingress_port);
++            tmp_port_0 = tmp_1;
++        }
++        {
++            packet.extract<ethernet_t>(hdr.ethernet);
++        }
++        {
++            tmp_2 = incr(hdr.ethernet.etherType);
++            hdr.ethernet.etherType = tmp_2;
++        }
++        {
++            meta.tmp_port = tmp_port_0;
++        }
+         transition accept;
+     }
+ }
+ control ingress(inout headers hdr, inout metadata meta, inout standard_metadata_t standard_metadata) {
+     @name("set_port") action set_port_0(bit<9> output_port) {
+-        standard_metadata.egress_spec = output_port;
++        {
++            standard_metadata.egress_spec = output_port;
++        }
+     }
+     @name("mac_da") table mac_da_0 {
+         key = {
+@@ -44,11 +66,25 @@ control ingress(inout headers hdr, inout
+         }
+         default_action = my_drop(standard_metadata);
+     }
++    bit<16> tmp_3;
++    bit<16> tmp_4;
++    bit<16> tmp_5;
+     apply {
+-        mac_da_0.apply();
+-        hdr.ethernet.srcAddr[15:0] = twoxplus1(hdr.ethernet.srcAddr[15:0]);
+-        hdr.ethernet.srcAddr[15:0] = incr(hdr.ethernet.srcAddr[15:0]);
+-        hdr.ethernet.etherType = incr(hdr.ethernet.etherType);
++        {
++            mac_da_0.apply();
++        }
++        {
++            tmp_3 = twoxplus1(hdr.ethernet.srcAddr[15:0]);
++            hdr.ethernet.srcAddr[15:0] = tmp_3;
++        }
++        {
++            tmp_4 = incr(hdr.ethernet.srcAddr[15:0]);
++            hdr.ethernet.srcAddr[15:0] = tmp_4;
++        }
++        {
++            tmp_5 = incr(hdr.ethernet.etherType);
++            hdr.ethernet.etherType = tmp_5;
++        }
+     }
+ }
+ control egress(inout headers hdr, inout metadata meta, inout standard_metadata_t standard_metadata) {
+@@ -57,7 +93,9 @@ control egress(inout headers hdr, inout
+ }
+ control DeparserImpl(packet_out packet, in headers hdr) {
+     apply {
+-        packet.emit<ethernet_t>(hdr.ethernet);
++        {
++            packet.emit<ethernet_t>(hdr.ethernet);
++        }
+     }
+ }
+ control verifyChecksum(inout headers hdr, inout metadata meta) {

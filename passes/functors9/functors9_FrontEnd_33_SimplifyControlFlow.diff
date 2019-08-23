@@ -1,0 +1,10 @@
+--- before_pass
++++ after_pass
+@@ -9,7 +9,6 @@ parser p1<T>(in T a) {
+     @name("ei") e<T>() ei_0;
+     state start {
+         tmp = ei_0.get();
+-        ;
+         transition accept;
+     }
+ }

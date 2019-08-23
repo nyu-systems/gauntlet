@@ -1,0 +1,11 @@
+--- before_pass
++++ after_pass
+@@ -46,7 +46,7 @@ control ingress(inout Header_t h, inout
+             m.my_err: exact;
+         }
+         actions = {
+-            set_error_idx;
++            set_error_idx();
+         }
+         default_action = set_error_idx(0);
+         const entries = {

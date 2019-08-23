@@ -1,0 +1,80 @@
+--- before_pass
++++ after_pass
+@@ -51,29 +51,41 @@ struct metadata {
+ }
+ parser parserI(packet_in pkt, out headers hdr, inout metadata meta, inout standard_metadata_t stdmeta) {
+     state start {
+-        pkt.extract<ethernet_t>(hdr.ethernet);
++        {
++            pkt.extract<ethernet_t>(hdr.ethernet);
++        }
+         transition select(hdr.ethernet.etherType) {
+             16w0x800: parse_ipv4;
+             default: accept;
+         }
+     }
+     state parse_ipv4 {
+-        pkt.extract<ipv4_t>(hdr.ipv4);
+-        verify(hdr.ipv4.version == 4w4, error.IPv4IncorrectVersion);
+-        verify(hdr.ipv4.ihl >= 4w5, error.IPv4HeaderTooShort);
++        {
++            pkt.extract<ipv4_t>(hdr.ipv4);
++        }
++        {
++            verify(hdr.ipv4.version == 4w4, error.IPv4IncorrectVersion);
++        }
++        {
++            verify(hdr.ipv4.ihl >= 4w5, error.IPv4HeaderTooShort);
++        }
+         transition select(hdr.ipv4.protocol) {
+             8w6: parse_tcp;
+             default: accept;
+         }
+     }
+     state parse_tcp {
+-        pkt.extract<tcp_t>(hdr.tcp);
++        {
++            pkt.extract<tcp_t>(hdr.tcp);
++        }
+         transition accept;
+     }
+ }
+ control cIngress(inout headers hdr, inout metadata meta, inout standard_metadata_t stdmeta) {
+     apply {
+-        stdmeta.egress_spec = 9w0;
++        {
++            stdmeta.egress_spec = 9w0;
++        }
+         if (stdmeta.checksum_error == 1w1) {
+             hdr.ethernet.srcAddr = 48w0xbad;
+         }
+@@ -91,7 +103,9 @@ control cEgress(inout headers hdr, inout
+ }
+ control vc(inout headers hdr, inout metadata meta) {
+     apply {
+-        verify_checksum<tuple<bit<4>, bit<4>, bit<8>, bit<16>, bit<16>, bit<3>, bit<13>, bit<8>, bit<8>, bit<32>, bit<32>>, bit<16>>(hdr.ipv4.isValid(), { hdr.ipv4.version, hdr.ipv4.ihl, hdr.ipv4.diffserv, hdr.ipv4.totalLen, hdr.ipv4.identification, hdr.ipv4.flags, hdr.ipv4.fragOffset, hdr.ipv4.ttl, hdr.ipv4.protocol, hdr.ipv4.srcAddr, hdr.ipv4.dstAddr }, hdr.ipv4.hdrChecksum, HashAlgorithm.csum16);
++        {
++            verify_checksum<tuple<bit<4>, bit<4>, bit<8>, bit<16>, bit<16>, bit<3>, bit<13>, bit<8>, bit<8>, bit<32>, bit<32>>, bit<16>>(hdr.ipv4.isValid(), { hdr.ipv4.version, hdr.ipv4.ihl, hdr.ipv4.diffserv, hdr.ipv4.totalLen, hdr.ipv4.identification, hdr.ipv4.flags, hdr.ipv4.fragOffset, hdr.ipv4.ttl, hdr.ipv4.protocol, hdr.ipv4.srcAddr, hdr.ipv4.dstAddr }, hdr.ipv4.hdrChecksum, HashAlgorithm.csum16);
++        }
+     }
+ }
+ control uc(inout headers hdr, inout metadata meta) {
+@@ -100,9 +114,15 @@ control uc(inout headers hdr, inout meta
+ }
+ control DeparserI(packet_out packet, in headers hdr) {
+     apply {
+-        packet.emit<ethernet_t>(hdr.ethernet);
+-        packet.emit<ipv4_t>(hdr.ipv4);
+-        packet.emit<tcp_t>(hdr.tcp);
++        {
++            packet.emit<ethernet_t>(hdr.ethernet);
++        }
++        {
++            packet.emit<ipv4_t>(hdr.ipv4);
++        }
++        {
++            packet.emit<tcp_t>(hdr.tcp);
++        }
+     }
+ }
+ V1Switch<headers, metadata>(parserI(), vc(), cIngress(), cEgress(), uc(), DeparserI()) main;

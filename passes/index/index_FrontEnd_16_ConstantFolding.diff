@@ -1,0 +1,16 @@
+--- before_pass
++++ after_pass
+@@ -13,11 +13,11 @@ parser P(packet_in p, out H[2] h) {
+         }
+     }
+     state n1 {
+-        x = (bit<32>)32w1;
++        x = 32w1;
+         transition n3;
+     }
+     state n2 {
+-        x = (bit<32>)32w2;
++        x = 32w2;
+         transition n3;
+     }
+     state n3 {

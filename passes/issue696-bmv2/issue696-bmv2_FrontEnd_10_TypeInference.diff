@@ -1,0 +1,37 @@
+--- before_pass
++++ after_pass
+@@ -36,7 +36,7 @@ parser P(packet_in b, out Headers p, ino
+     state start {
+         b.extract(p.ethernet);
+         transition select(p.ethernet.etherType) {
+-            0x800: parse_ipv4;
++            16w0x800: parse_ipv4;
+         }
+     }
+     state parse_ipv4 {
+@@ -46,18 +46,18 @@ parser P(packet_in b, out Headers p, ino
+ }
+ control Ing(inout Headers headers, inout Metadata meta, inout standard_metadata_t standard_meta) {
+     apply {
+-        standard_meta.egress_spec = 1;
++        standard_meta.egress_spec = (bit<9>)9w1;
+     }
+ }
+ control Eg(inout Headers hdrs, inout Metadata meta, inout standard_metadata_t standard_meta) {
+     action test() {
+-        Value val = { 0 };
+-        bool _pred = val.field1 != 0;
+-        bit<32> inc = (_pred ? 32w1 : 0);
+-        debug.write(0, (_pred ? 32w1 : 32w0));
+-        debug.write(1, inc);
++        Value val = { 32w0 };
++        bool _pred = val.field1 != 32w0;
++        bit<32> inc = (_pred ? 32w1 : 32w0);
++        debug.write(32w0, (_pred ? 32w1 : 32w0));
++        debug.write(32w1, inc);
+         val.field1 = 32w1;
+-        debug.write(2, inc);
++        debug.write(32w2, inc);
+         reg.write(32w0, val.field1);
+     }
+     apply {

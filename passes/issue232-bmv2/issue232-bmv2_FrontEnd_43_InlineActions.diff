@@ -1,0 +1,23 @@
+--- before_pass
++++ after_pass
+@@ -26,9 +26,6 @@ control Eg(inout Headers hdrs, inout Met
+     Value val_0;
+     bool done_0;
+     bool ok_0;
+-    @name("update") action update_0(inout Value val_1) {
+-        val_1.field1 = 32w8;
+-    }
+     @name("test") action test_0() {
+         inKey_0 = { 32w1 };
+         defaultKey_0 = { 32w0 };
+@@ -37,7 +34,9 @@ control Eg(inout Headers hdrs, inout Met
+         done_0 = false;
+         ok_0 = !done_0 && same_0;
+         if (ok_0) {
+-            update_0(val_0);
++            Value val = val_0;
++            val.field1 = 32w8;
++            val_0 = val;
+         }
+     }
+     apply {

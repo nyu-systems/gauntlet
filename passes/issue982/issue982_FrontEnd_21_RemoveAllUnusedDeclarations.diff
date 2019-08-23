@@ -1,0 +1,48 @@
+--- before_pass
++++ after_pass
+@@ -21,7 +21,6 @@ typedef bit<14> PacketLength_t;
+ typedef bit<16> EgressInstance_t;
+ typedef bit<48> Timestamp_t;
+ typedef error ParserError_t;
+-const PortId_t PORT_CPU = 10w255;
+ enum InstanceType_t {
+     NORMAL,
+     CLONE,
+@@ -84,29 +83,6 @@ match_kind {
+     range,
+     selector
+ }
+-action send_to_port(inout psa_ingress_output_metadata_t meta, in PortId_t egress_port) {
+-    meta.drop = false;
+-    meta.multicast_group = 10w0;
+-    meta.egress_port = egress_port;
+-}
+-action multicast(inout psa_ingress_output_metadata_t meta, in MulticastGroup_t multicast_group) {
+-    meta.drop = false;
+-    meta.multicast_group = multicast_group;
+-}
+-action ingress_drop(inout psa_ingress_output_metadata_t meta) {
+-    meta.drop = true;
+-}
+-action ingress_truncate(inout psa_ingress_output_metadata_t meta, in PacketLength_t payload_bytes) {
+-    meta.truncate = true;
+-    meta.truncate_payload_bytes = payload_bytes;
+-}
+-action egress_drop(inout psa_egress_output_metadata_t meta) {
+-    meta.drop = true;
+-}
+-action egress_truncate(inout psa_ingress_output_metadata_t meta, in PacketLength_t payload_bytes) {
+-    meta.truncate = true;
+-    meta.truncate_payload_bytes = payload_bytes;
+-}
+ extern PacketReplicationEngine {
+ }
+ extern BufferingQueueingEngine {
+@@ -206,7 +182,6 @@ parser IngressParser<H, M>(packet_in buf
+ control Ingress<H, M>(inout H hdr, inout M user_meta, in psa_ingress_input_metadata_t istd, inout psa_ingress_output_metadata_t ostd);
+ parser EgressParser<H, M>(packet_in buffer, out H parsed_hdr, inout M user_meta, in psa_egress_parser_input_metadata_t istd, out psa_parser_output_metadata_t ostd);
+ control Egress<H, M>(inout H hdr, inout M user_meta, in psa_egress_input_metadata_t istd, inout psa_egress_output_metadata_t ostd);
+-control Deparser<H, M>(packet_out buffer, inout H hdr, in M user_meta);
+ control IngressDeparser<H, M>(packet_out buffer, inout H hdr, in M user_meta, in psa_ingress_output_metadata_t istd, out psa_ingress_deparser_output_metadata_t ostd);
+ control EgressDeparser<H, M>(packet_out buffer, inout H hdr, in M user_meta, in psa_egress_output_metadata_t istd, out psa_egress_deparser_output_metadata_t ostd);
+ package PSA_Switch<IH, IM, EH, EM>(IngressParser<IH, IM> ip, Ingress<IH, IM> ig, IngressDeparser<IH, IM> id, EgressParser<EH, EM> ep, Egress<EH, EM> eg, EgressDeparser<EH, EM> ed);

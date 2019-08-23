@@ -1,0 +1,14 @@
+--- before_pass
++++ after_pass
+@@ -26,9 +26,9 @@ control cIngress(inout headers_t hdr, in
+     }
+     table tbl {
+         actions = {
+-            execute;
++            execute();
+         }
+-        default_action = execute;
++        default_action = execute();
+     }
+     apply {
+         send_to_port(ostd, (PortId_t)(PortIdUint_t)hdr.ethernet.dstAddr);

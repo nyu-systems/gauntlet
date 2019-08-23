@@ -1,0 +1,11 @@
+--- before_pass
++++ after_pass
+@@ -58,7 +58,7 @@ control pipe(inout Headers_t headers, ou
+             invalidate();
+             drop();
+         }
+-        implementation = hash_table(10);
++        implementation = hash_table(32w10);
+         default_action = drop();
+     }
+     apply {

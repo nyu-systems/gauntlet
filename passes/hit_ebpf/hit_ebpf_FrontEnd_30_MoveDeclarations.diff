@@ -1,0 +1,18 @@
+--- before_pass
++++ after_pass
+@@ -39,6 +39,7 @@ parser prs(packet_in p, out Headers_t he
+     }
+ }
+ control pipe(inout Headers_t headers, out bool pass) {
++    bool tmp;
+     @name("Reject") action Reject_0(IPv4Address add) {
+         pass = false;
+         headers.ipv4.srcAddr = add;
+@@ -54,7 +55,6 @@ control pipe(inout Headers_t headers, ou
+         implementation = hash_table(32w1024);
+         const default_action = NoAction();
+     }
+-    bool tmp;
+     apply {
+         pass = true;
+         if (!headers.ipv4.isValid()) {

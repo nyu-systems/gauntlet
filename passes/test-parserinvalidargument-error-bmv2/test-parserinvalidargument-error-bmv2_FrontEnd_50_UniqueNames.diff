@@ -1,0 +1,40 @@
+--- before_pass
++++ after_pass
+@@ -27,27 +27,27 @@ control verifyChecksum(inout headers_t h
+     }
+ }
+ control ingressImpl(inout headers_t hdr, inout metadata_t meta, inout standard_metadata_t stdmeta) {
+-    bit<8> error_as_int;
++    bit<8> error_as_int_0;
+     apply {
+         stdmeta.egress_spec = 9w1;
+         if (stdmeta.parser_error == error.NoError) {
+-            error_as_int = 8w0;
++            error_as_int_0 = 8w0;
+         } else if (stdmeta.parser_error == error.PacketTooShort) {
+-            error_as_int = 8w1;
++            error_as_int_0 = 8w1;
+         } else if (stdmeta.parser_error == error.NoMatch) {
+-            error_as_int = 8w2;
++            error_as_int_0 = 8w2;
+         } else if (stdmeta.parser_error == error.StackOutOfBounds) {
+-            error_as_int = 8w3;
++            error_as_int_0 = 8w3;
+         } else if (stdmeta.parser_error == error.HeaderTooShort) {
+-            error_as_int = 8w4;
++            error_as_int_0 = 8w4;
+         } else if (stdmeta.parser_error == error.ParserTimeout) {
+-            error_as_int = 8w5;
++            error_as_int_0 = 8w5;
+         } else if (stdmeta.parser_error == error.ParserInvalidArgument) {
+-            error_as_int = 8w6;
++            error_as_int_0 = 8w6;
+         } else {
+-            error_as_int = 8w7;
++            error_as_int_0 = 8w7;
+         }
+-        hdr.ethernet.dstAddr[7:0] = error_as_int;
++        hdr.ethernet.dstAddr[7:0] = error_as_int_0;
+     }
+ }
+ control egressImpl(inout headers_t hdr, inout metadata_t meta, inout standard_metadata_t stdmeta) {

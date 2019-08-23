@@ -1,0 +1,20 @@
+--- before_pass
++++ after_pass
+@@ -15,7 +15,7 @@ struct mystruct1 {
+ }
+ control DeparserI(packet_out packet, in Parsed_packet hdr) {
+     apply {
+-        packet.emit(hdr.ethernet);
++        packet.emit<Ethernet_h>(hdr.ethernet);
+     }
+ }
+ control cBar(inout mystruct1 meta) {
+@@ -27,7 +27,7 @@ parser parserI(packet_in pkt, out Parsed
+     const bit<32> c1d = 32w0xcafebabe;
+     bit<8> b1a;
+     state start {
+-        pkt.extract(hdr.ethernet);
++        pkt.extract<Ethernet_h>(hdr.ethernet);
+         transition accept;
+     }
+ }

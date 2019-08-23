@@ -1,0 +1,14 @@
+--- before_pass
++++ after_pass
+@@ -3,9 +3,9 @@ extern E {
+     bit<32> f(in bit<32> x);
+ }
+ control c(inout bit<32> r) {
+-    E() e;
++    @name("e") E() e_0;
+     apply {
+-        r = e.f(32w4) + e.f(32w5);
++        r = e_0.f(32w4) + e_0.f(32w5);
+     }
+ }
+ control simple(inout bit<32> r);

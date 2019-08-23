@@ -1,0 +1,30 @@
+--- before_pass
++++ after_pass
+@@ -44,8 +44,12 @@ control MyVerifyChecksum(inout headers h
+     }
+ }
+ control MyIngress(inout headers hdr, inout metadata meta, inout standard_metadata_t standard_metadata) {
++    bit<48> tmp_0;
++    bit<32> nbase_0;
++    bit<64> ncount_0;
++    bit<32> nselect_0;
++    bit<32> ninput_0;
+     @name("send_back") action send_back_0(bit<32> result) {
+-        bit<48> tmp_0;
+         hdr.p4calc.res = result;
+         tmp_0 = hdr.ethernet.dstAddr;
+         hdr.ethernet.dstAddr = hdr.ethernet.srcAddr;
+@@ -68,10 +72,9 @@ control MyIngress(inout headers hdr, ino
+         send_back_0(hdr.p4calc.operand_a ^ hdr.p4calc.operand_b);
+     }
+     @name("operation_crc") action operation_crc_0() {
+-        bit<32> nbase_0 = hdr.p4calc.operand_b;
+-        bit<64> ncount_0 = 64w8589934592;
+-        bit<32> nselect_0;
+-        bit<32> ninput_0 = hdr.p4calc.operand_a;
++        nbase_0 = hdr.p4calc.operand_b;
++        ncount_0 = 64w8589934592;
++        ninput_0 = hdr.p4calc.operand_a;
+         hash<bit<32>, bit<32>, tuple<bit<32>>, bit<64>>(nselect_0, HashAlgorithm.crc32, nbase_0, { ninput_0 }, ncount_0);
+         send_back_0(nselect_0);
+     }

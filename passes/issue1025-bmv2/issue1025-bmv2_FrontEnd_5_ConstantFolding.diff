@@ -1,0 +1,11 @@
+--- before_pass
++++ after_pass
+@@ -79,7 +79,7 @@ control cIngress(inout headers hdr, inou
+         eth_valid = (bit<1>)hdr.ethernet.isValid();
+         ipv4_valid = (bit<1>)hdr.ipv4.isValid();
+         tcp_valid = (bit<1>)hdr.tcp.isValid();
+-        hdr.ethernet.dstAddr = 24w0 ++ 7w0 ++ eth_valid ++ 7w0 ++ ipv4_valid ++ 7w0 ++ tcp_valid;
++        hdr.ethernet.dstAddr = 31w0 ++ eth_valid ++ 7w0 ++ ipv4_valid ++ 7w0 ++ tcp_valid;
+     }
+ }
+ control cEgress(inout headers hdr, inout metadata meta, inout standard_metadata_t stdmeta) {

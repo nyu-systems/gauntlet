@@ -1,0 +1,59 @@
+--- before_pass
++++ after_pass
+@@ -7,9 +7,7 @@ header hdr {
+ }
+ control compute(inout hdr h) {
+     @name("add") action add_0() {
+-        {
+-            h.c = (bit<64>)(h.a + h.b);
+-        }
++        h.c = (bit<64>)(h.a + h.b);
+     }
+     @name("t") table t_0 {
+         actions = {
+@@ -18,9 +16,7 @@ control compute(inout hdr h) {
+         const default_action = add_0();
+     }
+     apply {
+-        {
+-            t_0.apply();
+-        }
++        t_0.apply();
+     }
+ }
+ struct Headers {
+@@ -30,9 +26,7 @@ struct Meta {
+ }
+ parser p(packet_in b, out Headers h, inout Meta m, inout standard_metadata_t sm) {
+     state start {
+-        {
+-            b.extract<hdr>(h.h);
+-        }
++        b.extract<hdr>(h.h);
+         transition accept;
+     }
+ }
+@@ -50,20 +44,14 @@ control egress(inout Headers h, inout Me
+ }
+ control deparser(packet_out b, in Headers h) {
+     apply {
+-        {
+-            b.emit<hdr>(h.h);
+-        }
++        b.emit<hdr>(h.h);
+     }
+ }
+ control ingress(inout Headers h, inout Meta m, inout standard_metadata_t sm) {
+     @name("c") compute() c_0;
+     apply {
+-        {
+-            c_0.apply(h.h);
+-        }
+-        {
+-            sm.egress_spec = 9w0;
+-        }
++        c_0.apply(h.h);
++        sm.egress_spec = 9w0;
+     }
+ }
+ V1Switch<Headers, Meta>(p(), vrfy(), ingress(), egress(), update(), deparser()) main;

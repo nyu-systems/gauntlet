@@ -1,0 +1,50 @@
+--- before_pass
++++ after_pass
+@@ -17,12 +17,8 @@ struct metadata_t {
+ }
+ parser parserImpl(packet_in packet, out headers_t hdr, inout metadata_t meta, inout standard_metadata_t stdmeta) {
+     state start {
+-        {
+-            packet.extract<ethernet_t>(hdr.ethernet);
+-        }
+-        {
+-            packet.extract<custom_var_len_t>(hdr.custom_var_len, (bit<32>)hdr.ethernet.etherType[7:0]);
+-        }
++        packet.extract<ethernet_t>(hdr.ethernet);
++        packet.extract<custom_var_len_t>(hdr.custom_var_len, (bit<32>)hdr.ethernet.etherType[7:0]);
+         transition accept;
+     }
+ }
+@@ -33,9 +29,7 @@ control verifyChecksum(inout headers_t h
+ control ingressImpl(inout headers_t hdr, inout metadata_t meta, inout standard_metadata_t stdmeta) {
+     bit<8> error_as_int_0;
+     apply {
+-        {
+-            stdmeta.egress_spec = 9w1;
+-        }
++        stdmeta.egress_spec = 9w1;
+         if (stdmeta.parser_error == error.NoError) {
+             error_as_int_0 = 8w0;
+         } else if (stdmeta.parser_error == error.PacketTooShort) {
+@@ -53,9 +47,7 @@ control ingressImpl(inout headers_t hdr,
+         } else {
+             error_as_int_0 = 8w7;
+         }
+-        {
+-            hdr.ethernet.dstAddr[7:0] = error_as_int_0;
+-        }
++        hdr.ethernet.dstAddr[7:0] = error_as_int_0;
+     }
+ }
+ control egressImpl(inout headers_t hdr, inout metadata_t meta, inout standard_metadata_t stdmeta) {
+@@ -68,9 +60,7 @@ control updateChecksum(inout headers_t h
+ }
+ control deparserImpl(packet_out packet, in headers_t hdr) {
+     apply {
+-        {
+-            packet.emit<ethernet_t>(hdr.ethernet);
+-        }
++        packet.emit<ethernet_t>(hdr.ethernet);
+     }
+ }
+ V1Switch<headers_t, metadata_t>(parserImpl(), verifyChecksum(), ingressImpl(), egressImpl(), updateChecksum(), deparserImpl()) main;

@@ -1,0 +1,31 @@
+--- before_pass
++++ after_pass
+@@ -23,22 +23,22 @@ parser MyEP(packet_in buffer, out EMPTY
+     }
+ }
+ control MyIC(inout ethernet_t a, inout user_meta_t b, in psa_ingress_input_metadata_t c, inout psa_ingress_output_metadata_t d) {
+-    Register<bit<16>, bit<10>>(32w512) reg;
+-    action execute_register(bit<10> idx) {
+-        reg.write(idx, b.data);
++    @name("reg") Register<bit<16>, bit<10>>(32w512) reg_0;
++    @name("execute_register") action execute_register_0(bit<10> idx) {
++        reg_0.write(idx, b.data);
+     }
+-    table tbl {
++    @name("tbl") table tbl_0 {
+         key = {
+             a.srcAddr: exact @name("a.srcAddr") ;
+         }
+         actions = {
+             NoAction();
+-            execute_register();
++            execute_register_0();
+         }
+         default_action = NoAction();
+     }
+     apply {
+-        tbl.apply();
++        tbl_0.apply();
+     }
+ }
+ control MyEC(inout EMPTY a, inout EMPTY b, in psa_egress_input_metadata_t c, inout psa_egress_output_metadata_t d) {

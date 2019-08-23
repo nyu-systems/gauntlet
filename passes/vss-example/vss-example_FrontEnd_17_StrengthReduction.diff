@@ -1,0 +1,11 @@
+--- before_pass
++++ after_pass
+@@ -77,7 +77,7 @@ control TopPipe(inout Parsed_packet head
+     IPv4Address nextHop;
+     action Set_nhop(IPv4Address ipv4_dest, PortId port) {
+         nextHop = ipv4_dest;
+-        headers.ip.ttl = headers.ip.ttl - 8w1;
++        headers.ip.ttl = headers.ip.ttl + 8w255;
+         outCtrl.outputPort = port;
+     }
+     table ipv4_match {

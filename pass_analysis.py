@@ -56,7 +56,7 @@ def prune_files(p4_dmp_dir):
 
 def diff_files(passes, pass_dir, p4_prune_dir, p4_file):
 
-    p4_name = Path(p4_file).stem
+    p4_name = Path(os.path.basename(p4_file)).stem
     for index, p4_pass in enumerate(passes[1:]):
         pass_before = glob.glob(f"{p4_prune_dir}/*{passes[index]}*.p4")
         pass_after = glob.glob(f"{p4_prune_dir}/*{passes[index+1]}*.p4")
@@ -68,7 +68,9 @@ def diff_files(passes, pass_dir, p4_prune_dir, p4_file):
         # pass_after = f"{p4_prune_dir}/{p4_base}-{passes[index+1]}.p4"
         pass_before = pass_before[0]
         pass_after = pass_after[0]
-        diff_file = f"{pass_dir}/{p4_name}_{p4_pass}_diff.p4"
+        diff_dir = f"{pass_dir}/{p4_name}"
+        check_dir(diff_dir)
+        diff_file = f"{diff_dir}/{p4_name}_{p4_pass}.diff"
         diff_cmd = "diff -rupP "
         diff_cmd += "--label=\"before_pass\" --label=\"after_pass\" "
         diff_cmd += f"{pass_before} {pass_after}"
@@ -80,7 +82,9 @@ def diff_files(passes, pass_dir, p4_prune_dir, p4_file):
             os.remove(diff_file)
         else:
             shutil.copyfile(pass_after,
-             f"{pass_dir}/{p4_name}_{p4_pass}_full.p4")
+                            f"{diff_dir}/{p4_name}_{p4_pass}.p4")
+            shutil.copyfile(p4_file,
+                            f"{diff_dir}/{p4_name}_original.p4")
     return SUCCESS
 
 
@@ -111,21 +115,21 @@ def analyse_p4_file(p4_file, pass_dir):
     p4_dmp_dir = f"dumps"
     check_dir(p4_dmp_dir)
     p4_pass_cmd = f"{P4_BIN} -v "
-    p4_pass_cmd += f"{p4_file} 2>&1 | "
-    p4_pass_cmd += "sed -e \'/FrontEndLast/,$!d\' | "
+    p4_pass_cmd += f"{p4_file} 2>&1 "
+    p4_pass_cmd += "| sed -e \'/FrontEnd_0_/,$!d\' | "
     p4_pass_cmd += "sed -e \'/MidEndLast/q\' "
     log.debug(f"Grabbing passes with command {p4_pass_cmd}")
     output = subprocess.check_output(p4_pass_cmd, shell=True)
     passes = output.decode('ascii').strip().split('\n')
 
     p4_cmd = f"{P4_BIN} "
-    p4_cmd += "--top4 FrontEndLast,MidEnd "
+    p4_cmd += "--top4 FrontEnd,MidEnd "
     p4_cmd += f"--dump {p4_dmp_dir} "
     p4_cmd += p4_file
     log.debug(f"Running dumps with command {p4_cmd}")
     os.system(p4_cmd)
     prune_dir = prune_files(p4_dmp_dir)
-    err = diff_files(passes, pass_dir, prune_dir, os.path.basename(p4_file))
+    err = diff_files(passes, pass_dir, prune_dir, p4_file)
     shutil.rmtree(p4_dmp_dir)
 
 

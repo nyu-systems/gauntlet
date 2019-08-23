@@ -1,0 +1,22 @@
+--- before_pass
++++ after_pass
+@@ -11,16 +11,16 @@ struct headers {
+ }
+ parser p(packet_in b, out headers hdr, inout metadata meta, inout standard_metadata_t stdmeta) {
+     state start {
+-        b.extract(hdr.h, 32);
++        b.extract(hdr.h, 32w32);
+         transition accept;
+     }
+ }
+ control ingress(inout headers hdr, inout metadata meta, inout standard_metadata_t stdmeta) {
+     apply {
+-        stdmeta.egress_spec = 0;
++        stdmeta.egress_spec = (bit<9>)9w0;
+         H h = hdr.h;
+         if (hdr.h.v == h.v) {
+-            stdmeta.egress_spec = 1;
++            stdmeta.egress_spec = (bit<9>)9w1;
+         }
+     }
+ }

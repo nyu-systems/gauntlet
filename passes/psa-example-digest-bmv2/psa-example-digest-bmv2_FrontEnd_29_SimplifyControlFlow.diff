@@ -1,0 +1,135 @@
+--- before_pass
++++ after_pass
+@@ -46,50 +46,36 @@ struct metadata {
+ }
+ parser CommonParser(packet_in buffer, out headers parsed_hdr, inout metadata meta) {
+     state start {
+-        {
+-            buffer.extract<ethernet_t>(parsed_hdr.ethernet);
+-        }
++        buffer.extract<ethernet_t>(parsed_hdr.ethernet);
+         transition select(parsed_hdr.ethernet.etherType) {
+             16w0x800: parse_ipv4;
+             default: accept;
+         }
+     }
+     state parse_ipv4 {
+-        {
+-            buffer.extract<ipv4_t>(parsed_hdr.ipv4);
+-        }
++        buffer.extract<ipv4_t>(parsed_hdr.ipv4);
+         transition accept;
+     }
+ }
+ parser IngressParserImpl(packet_in buffer, out headers parsed_hdr, inout metadata meta, in psa_ingress_parser_input_metadata_t istd, in empty_metadata_t resubmit_meta, in empty_metadata_t recirculate_meta) {
+     @name("p") CommonParser() p_0;
+     state start {
+-        {
+-            p_0.apply(buffer, parsed_hdr, meta);
+-        }
++        p_0.apply(buffer, parsed_hdr, meta);
+         transition accept;
+     }
+ }
+ parser EgressParserImpl(packet_in buffer, out headers parsed_hdr, inout metadata meta, in psa_egress_parser_input_metadata_t istd, in empty_metadata_t normal_meta, in empty_metadata_t clone_i2e_meta, in empty_metadata_t clone_e2e_meta) {
+     @name("p") CommonParser() p_1;
+     state start {
+-        {
+-            p_1.apply(buffer, parsed_hdr, meta);
+-        }
++        p_1.apply(buffer, parsed_hdr, meta);
+         transition accept;
+     }
+ }
+ control ingress(inout headers hdr, inout metadata meta, in psa_ingress_input_metadata_t istd, inout psa_ingress_output_metadata_t ostd) {
+     @name("unknown_source") action unknown_source_0() {
+-        {
+-            meta.send_mac_learn_msg = true;
+-        }
+-        {
+-            meta.mac_learn_msg.srcAddr = hdr.ethernet.srcAddr;
+-        }
+-        {
+-            meta.mac_learn_msg.ingress_port = istd.ingress_port;
+-        }
++        meta.send_mac_learn_msg = true;
++        meta.mac_learn_msg.srcAddr = hdr.ethernet.srcAddr;
++        meta.mac_learn_msg.ingress_port = istd.ingress_port;
+     }
+     @name("learned_sources") table learned_sources_0 {
+         key = {
+@@ -102,14 +88,10 @@ control ingress(inout headers hdr, inout
+         default_action = unknown_source_0();
+     }
+     @name("do_L2_forward") action do_L2_forward_0(PortId_t egress_port) {
+-        {
+-            send_to_port(ostd, egress_port);
+-        }
++        send_to_port(ostd, egress_port);
+     }
+     @name("do_tst") action do_tst_0(PortId_t egress_port, EthTypes serEnumT) {
+-        {
+-            send_to_port(ostd, egress_port);
+-        }
++        send_to_port(ostd, egress_port);
+     }
+     @name("l2_tbl") table l2_tbl_0 {
+         key = {
+@@ -132,18 +114,10 @@ control ingress(inout headers hdr, inout
+         default_action = NoAction();
+     }
+     apply {
+-        {
+-            meta.send_mac_learn_msg = false;
+-        }
+-        {
+-            learned_sources_0.apply();
+-        }
+-        {
+-            l2_tbl_0.apply();
+-        }
+-        {
+-            tst_tbl_0.apply();
+-        }
++        meta.send_mac_learn_msg = false;
++        learned_sources_0.apply();
++        l2_tbl_0.apply();
++        tst_tbl_0.apply();
+     }
+ }
+ control egress(inout headers hdr, inout metadata meta, in psa_egress_input_metadata_t istd, inout psa_egress_output_metadata_t ostd) {
+@@ -152,12 +126,8 @@ control egress(inout headers hdr, inout
+ }
+ control CommonDeparserImpl(packet_out packet, inout headers hdr) {
+     apply {
+-        {
+-            packet.emit<ethernet_t>(hdr.ethernet);
+-        }
+-        {
+-            packet.emit<ipv4_t>(hdr.ipv4);
+-        }
++        packet.emit<ethernet_t>(hdr.ethernet);
++        packet.emit<ipv4_t>(hdr.ipv4);
+     }
+ }
+ control IngressDeparserImpl(packet_out packet, out empty_metadata_t clone_i2e_meta, out empty_metadata_t resubmit_meta, out empty_metadata_t normal_meta, inout headers hdr, in metadata meta, in psa_ingress_output_metadata_t istd) {
+@@ -167,17 +137,13 @@ control IngressDeparserImpl(packet_out p
+         if (meta.send_mac_learn_msg) {
+             mac_learn_digest_0.pack(meta.mac_learn_msg);
+         }
+-        {
+-            common_deparser_0.apply(packet, hdr);
+-        }
++        common_deparser_0.apply(packet, hdr);
+     }
+ }
+ control EgressDeparserImpl(packet_out packet, out empty_metadata_t clone_e2e_meta, out empty_metadata_t recirculate_meta, inout headers hdr, in metadata meta, in psa_egress_output_metadata_t istd, in psa_egress_deparser_input_metadata_t edstd) {
+     @name("common_deparser") CommonDeparserImpl() common_deparser_1;
+     apply {
+-        {
+-            common_deparser_1.apply(packet, hdr);
+-        }
++        common_deparser_1.apply(packet, hdr);
+     }
+ }
+ IngressPipeline<headers, metadata, empty_metadata_t, empty_metadata_t, empty_metadata_t, empty_metadata_t>(IngressParserImpl(), ingress(), IngressDeparserImpl()) ip;

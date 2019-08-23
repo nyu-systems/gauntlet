@@ -1,0 +1,50 @@
+--- before_pass
++++ after_pass
+@@ -6,11 +6,11 @@ parser adder(in bit<32> y, out bit<32> x
+     }
+ }
+ parser par(out bool b) {
+-    adder(ignore = false, add = 32w6) p;
++    @name("p") adder(ignore = false, add = 32w6) p_0;
+     state start {
+-        bit<32> x;
+-        p.apply(x = x, y = 32w0);
+-        b = x == 32w0;
++        bit<32> x_0;
++        p_0.apply(x = x_0, y = 32w0);
++        b = x_0 == 32w0;
+         transition accept;
+     }
+ }
+@@ -20,20 +20,20 @@ control comp(inout bit<16> x, out bool b
+     }
+ }
+ control c(out bool b) {
+-    comp(ignore = 2w1, compare = 16w0) c0;
+-    comp(ignore = 2w2, compare = 16w1) c1;
+-    action a(in bit<16> bi, out bit<16> mb) {
++    @name("c0") comp(ignore = 2w1, compare = 16w0) c0_0;
++    @name("c1") comp(ignore = 2w2, compare = 16w1) c1_0;
++    @name("a") action a_0(in bit<16> bi, out bit<16> mb) {
+         mb = -bi;
+     }
+     apply {
+-        bit<16> xv = 16w0;
+-        a(bi = 16w3, mb = xv);
+-        a(mb = xv, bi = 16w0);
+-        c0.apply(b = b, x = xv);
+-        c1.apply(xv, b);
+-        xv = 16w1;
+-        c0.apply(x = xv, b = b);
+-        c1.apply(b = b, x = xv);
++        bit<16> xv_0 = 16w0;
++        a_0(bi = 16w3, mb = xv_0);
++        a_0(mb = xv_0, bi = 16w0);
++        c0_0.apply(b = b, x = xv_0);
++        c1_0.apply(xv_0, b);
++        xv_0 = 16w1;
++        c0_0.apply(x = xv_0, b = b);
++        c1_0.apply(b = b, x = xv_0);
+     }
+ }
+ control ce(out bool b);

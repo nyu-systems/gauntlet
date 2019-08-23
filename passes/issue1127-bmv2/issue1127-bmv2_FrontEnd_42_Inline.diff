@@ -1,0 +1,54 @@
+--- before_pass
++++ after_pass
+@@ -16,29 +16,39 @@ parser parserI(packet_in pkt, out header
+         transition accept;
+     }
+ }
+-control cDoOneOp(inout headers hdr, in bit<8> op) {
+-    apply {
+-        if (op == 8w0x0) {
+-            ;
+-        } else if (op[7:4] == 4w1) {
+-            hdr.h1.out1 = 8w4;
+-        }
+-    }
+-}
+ control cIngress(inout headers hdr, inout metadata meta, inout standard_metadata_t stdmeta) {
+     headers tmp;
+     bit<8> tmp_0;
+     headers tmp_1;
+     bit<8> tmp_2;
+-    @name("do_one_op") cDoOneOp() do_one_op_0;
++    headers hdr_0;
++    bit<8> op_0;
+     apply {
+         tmp = hdr;
+         tmp_0 = hdr.h1.op1;
+-        do_one_op_0.apply(tmp, tmp_0);
++        {
++            hdr_0 = tmp;
++            op_0 = tmp_0;
++            if (op_0 == 8w0x0) {
++                ;
++            } else if (op_0[7:4] == 4w1) {
++                hdr_0.h1.out1 = 8w4;
++            }
++            tmp = hdr_0;
++        }
+         hdr = tmp;
+         tmp_1 = hdr;
+         tmp_2 = hdr.h1.op2;
+-        do_one_op_0.apply(tmp_1, tmp_2);
++        {
++            hdr_0 = tmp_1;
++            op_0 = tmp_2;
++            if (op_0 == 8w0x0) {
++                ;
++            } else if (op_0[7:4] == 4w1) {
++                hdr_0.h1.out1 = 8w4;
++            }
++            tmp_1 = hdr_0;
++        }
+         hdr = tmp_1;
+     }
+ }

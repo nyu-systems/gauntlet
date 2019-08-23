@@ -1,6 +1,0 @@
-BMV2::SimpleSwitchMidEnd_20_SimplifySelectList ###########
-https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_nested_select.p4
-BMV2::SimpleSwitchMidEnd_27_LocalCopyPropagation ###########
-https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_nested_select.p4
-BMV2::SimpleSwitchMidEnd_28_ConstantFolding ###########
-https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_nested_select.p4

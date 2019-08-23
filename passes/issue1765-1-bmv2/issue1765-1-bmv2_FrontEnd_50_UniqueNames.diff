@@ -1,0 +1,132 @@
+--- before_pass
++++ after_pass
+@@ -161,94 +161,94 @@ control MyComputeChecksum(inout headers
+     }
+ }
+ control MyIngress(inout headers hdr, inout metadata meta, inout standard_metadata_t standard_metadata) {
+-    @name(".NoAction") action NoAction_1() {
++    @name(".NoAction") action NoAction_0() {
+     }
+-    @name(".NoAction") action NoAction_2() {
++    @name(".NoAction") action NoAction_4() {
+     }
+-    @name(".NoAction") action NoAction_3() {
++    @name(".NoAction") action NoAction_5() {
+     }
+-    mac_addr_t mac_tmp;
+-    ipv6_addr_t addr_tmp;
+-    @name("set_egress_port") action set_egress_port_0(port_t out_port) {
++    mac_addr_t mac_tmp_0;
++    ipv6_addr_t addr_tmp_0;
++    @name("set_egress_port") action set_egress_port(port_t out_port) {
+         standard_metadata.egress_spec = out_port;
+     }
+-    @name("set_egress_port") action set_egress_port_1(port_t out_port) {
++    @name("set_egress_port") action set_egress_port_2(port_t out_port) {
+         standard_metadata.egress_spec = out_port;
+     }
+-    @name("controller_debug") action controller_debug_0() {
++    @name("controller_debug") action controller_debug() {
+         meta.task = 16w3;
+         meta.ingress_port = standard_metadata.ingress_port;
+         clone3<metadata>(CloneType.I2E, 32w100, meta);
+     }
+-    @name("controller_debug") action controller_debug_1() {
++    @name("controller_debug") action controller_debug_2() {
+         meta.task = 16w3;
+         meta.ingress_port = standard_metadata.ingress_port;
+         clone3<metadata>(CloneType.I2E, 32w100, meta);
+     }
+-    @name("controller_reply") action controller_reply_0(task_t task) {
++    @name("controller_reply") action controller_reply(task_t task) {
+         meta.task = task;
+         meta.ingress_port = standard_metadata.ingress_port;
+         clone3<metadata>(CloneType.I2E, 32w100, meta);
+     }
+-    @name("controller_reply") action controller_reply_1(task_t task) {
++    @name("controller_reply") action controller_reply_2(task_t task) {
+         meta.task = task;
+         meta.ingress_port = standard_metadata.ingress_port;
+         clone3<metadata>(CloneType.I2E, 32w100, meta);
+     }
+-    @name("icmp6_echo_reply") action icmp6_echo_reply_0() {
+-        mac_tmp = hdr.ethernet.dst_addr;
++    @name("icmp6_echo_reply") action icmp6_echo_reply() {
++        mac_tmp_0 = hdr.ethernet.dst_addr;
+         hdr.ethernet.dst_addr = hdr.ethernet.src_addr;
+-        hdr.ethernet.src_addr = mac_tmp;
+-        addr_tmp = hdr.ipv6.dst_addr;
++        hdr.ethernet.src_addr = mac_tmp_0;
++        addr_tmp_0 = hdr.ipv6.dst_addr;
+         hdr.ipv6.dst_addr = hdr.ipv6.src_addr;
+-        hdr.ipv6.src_addr = addr_tmp;
++        hdr.ipv6.src_addr = addr_tmp_0;
+         hdr.icmp6.type = 8w129;
+         meta.do_cksum = 1w1;
+     }
+-    @name("v6_addresses") table v6_addresses {
++    @name("v6_addresses") table v6_addresses_0 {
+         key = {
+             hdr.ipv6.dst_addr: exact @name("hdr.ipv6.dst_addr") ;
+         }
+         actions = {
+-            controller_debug_0();
+-            controller_reply_0();
+-            icmp6_echo_reply_0();
+-            NoAction_1();
++            controller_debug();
++            controller_reply();
++            icmp6_echo_reply();
++            NoAction_0();
+         }
+         size = 64;
+-        default_action = NoAction_1();
++        default_action = NoAction_0();
+     }
+-    @name("v6_networks") table v6_networks {
++    @name("v6_networks") table v6_networks_0 {
+         key = {
+             hdr.ipv6.dst_addr: lpm @name("hdr.ipv6.dst_addr") ;
+         }
+         actions = {
+-            set_egress_port_0();
+-            controller_debug_1();
+-            controller_reply_1();
+-            NoAction_2();
++            set_egress_port();
++            controller_debug_2();
++            controller_reply_2();
++            NoAction_4();
+         }
+         size = 64;
+-        default_action = NoAction_2();
++        default_action = NoAction_4();
+     }
+-    @name("v4_networks") table v4_networks {
++    @name("v4_networks") table v4_networks_0 {
+         key = {
+             hdr.ipv4.dst_addr: lpm @name("hdr.ipv4.dst_addr") ;
+         }
+         actions = {
+-            set_egress_port_1();
+-            NoAction_3();
++            set_egress_port_2();
++            NoAction_5();
+         }
+         size = 64;
+-        default_action = NoAction_3();
++        default_action = NoAction_5();
+     }
+     apply {
+         if (hdr.ipv6.isValid()) {
+-            v6_addresses.apply();
+-            v6_networks.apply();
++            v6_addresses_0.apply();
++            v6_networks_0.apply();
+         }
+         if (hdr.ipv4.isValid()) {
+-            v4_networks.apply();
++            v4_networks_0.apply();
+         }
+     }
+ }

@@ -1,0 +1,11 @@
+--- before_pass
++++ after_pass
+@@ -20,7 +20,7 @@ control cDoOneOp(inout headers hdr, in b
+     apply {
+         if (op == 8w0x0) {
+         } else if (op[7:4] == 4w1) {
+-            hdr.h1.out1 = (bit<8>)8w4;
++            hdr.h1.out1 = 8w4;
+         }
+     }
+ }

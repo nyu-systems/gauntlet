@@ -1,0 +1,10 @@
+--- before_pass
++++ after_pass
+@@ -14,7 +14,6 @@ control my(out H[2] s) {
+     bit<1> tmp_4;
+     bit<32> tmp_5;
+     bit<1> tmp_6;
+-    bit<1> tmp_7;
+     bit<1> tmp_8;
+     bit<1> tmp_9;
+     @name("act") action act_0() {

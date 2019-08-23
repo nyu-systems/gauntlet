@@ -1,0 +1,11 @@
+--- before_pass
++++ after_pass
+@@ -77,7 +77,7 @@ parser PROTParser(packet_in packet, out
+     }
+     state parse_prot_host_addr_dst_ipv4 {
+         packet.extract<prot_host_addr_ipv4_t>(hdr.prot_host_addr_dst.ipv4);
+-        meta.addrLen = (bit<9>)9w32;
++        meta.addrLen = 9w32;
+         transition parse_prot_host_addr_src_select;
+     }
+     state parse_prot_host_addr_src_select {

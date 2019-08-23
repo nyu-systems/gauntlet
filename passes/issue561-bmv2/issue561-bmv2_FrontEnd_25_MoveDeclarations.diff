@@ -1,0 +1,19 @@
+--- before_pass
++++ after_pass
+@@ -88,6 +88,7 @@ struct Tcp_option_sack_top {
+ }
+ parser Tcp_option_parser(packet_in b, in bit<4> tcp_hdr_data_offset, out Tcp_option_stack vec, out Tcp_option_padding_h padding) {
+     bit<7> tcp_hdr_bytes_left_0;
++    bit<8> n_sack_bytes_0;
+     state start {
+         verify(tcp_hdr_data_offset >= 4w5, error.TcpDataOffsetTooSmall);
+         tcp_hdr_bytes_left_0 = (bit<7>)(tcp_hdr_data_offset + 4w11) << 2;
+@@ -132,7 +133,7 @@ parser Tcp_option_parser(packet_in b, in
+         transition next_option;
+     }
+     state parse_tcp_option_sack {
+-        bit<8> n_sack_bytes_0 = (b.lookahead<Tcp_option_sack_top>()).length;
++        n_sack_bytes_0 = (b.lookahead<Tcp_option_sack_top>()).length;
+         verify(n_sack_bytes_0 == 8w10 || n_sack_bytes_0 == 8w18 || n_sack_bytes_0 == 8w26 || n_sack_bytes_0 == 8w34, error.TcpBadSackOptionLength);
+         verify(tcp_hdr_bytes_left_0 >= (bit<7>)n_sack_bytes_0, error.TcpOptionTooLongForHeader);
+         tcp_hdr_bytes_left_0 = tcp_hdr_bytes_left_0 - (bit<7>)n_sack_bytes_0;

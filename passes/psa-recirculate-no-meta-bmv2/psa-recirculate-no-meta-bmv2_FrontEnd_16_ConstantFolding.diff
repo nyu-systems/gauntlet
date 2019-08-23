@@ -1,0 +1,11 @@
+--- before_pass
++++ after_pass
+@@ -24,7 +24,7 @@ control cIngress(inout headers_t hdr, in
+         if (hdr.ethernet.dstAddr[3:0] >= 4w4) {
+             send_to_port(ostd, (PortId_t)(PortIdUint_t)hdr.ethernet.dstAddr);
+         } else {
+-            send_to_port(ostd, (PortId_t)(bit<32>)32w0xfffffffa);
++            send_to_port(ostd, (PortId_t)32w0xfffffffa);
+         }
+     }
+ }

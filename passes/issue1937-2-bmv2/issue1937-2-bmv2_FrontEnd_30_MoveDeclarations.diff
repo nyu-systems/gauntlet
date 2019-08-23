@@ -1,0 +1,15 @@
+--- before_pass
++++ after_pass
+@@ -16,10 +16,10 @@ parser foo(out bit<8> x, in bit<8> y=5)
+     }
+ }
+ parser parserImpl(packet_in packet, out headers_t hdr, inout metadata_t meta, inout standard_metadata_t stdmeta) {
+-    @name("foo") foo() foo_inst_1;
+-    @name("foo") foo() foo_inst_2;
+     bit<8> tmp;
+     bit<8> tmp_0;
++    @name("foo") foo() foo_inst_1;
++    @name("foo") foo() foo_inst_2;
+     state start {
+         tmp_0 = hdr.h1.f1;
+         foo_inst_1.apply(tmp, tmp_0);

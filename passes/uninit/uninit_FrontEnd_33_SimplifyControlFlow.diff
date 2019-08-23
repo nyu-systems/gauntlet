@@ -1,0 +1,45 @@
+--- before_pass
++++ after_pass
+@@ -25,7 +25,6 @@ parser p1(packet_in p, out Header h) {
+         tmp_2 = tmp_1;
+         g(h.data2, tmp_2);
+         h.data2 = h.data3 + 32w1;
+-        ;
+         stack_0[1].isValid();
+         transition select(h.isValid()) {
+             true: next1;
+@@ -42,8 +41,6 @@ parser p1(packet_in p, out Header h) {
+         transition next3;
+     }
+     state next3 {
+-        ;
+-        ;
+         transition accept;
+     }
+ }
+@@ -69,11 +66,8 @@ control c(out bit<32> v) {
+     }
+     apply {
+         d_1 = 32w1;
+-        ;
+-        ;
+         if (e_0 > 32w0) {
+             e_0 = 32w1;
+-            ;
+         } else {
+             ;
+         }
+@@ -83,13 +77,11 @@ control c(out bit<32> v) {
+                 touched_0 = true;
+             }
+         }
+-        ;
+         if (e_0 > 32w0) {
+             t_0.apply();
+         } else {
+             a1_0();
+         }
+-        ;
+     }
+ }
+ parser proto(packet_in p, out Header h);

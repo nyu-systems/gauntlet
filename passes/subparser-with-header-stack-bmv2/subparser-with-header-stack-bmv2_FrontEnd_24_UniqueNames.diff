@@ -1,0 +1,24 @@
+--- before_pass
++++ after_pass
+@@ -37,8 +37,8 @@ parser subParserImpl(packet_in pkt, inou
+     }
+ }
+ parser parserI(packet_in pkt, out headers hdr, inout metadata meta, inout standard_metadata_t stdmeta) {
+-    subParserImpl() subp;
+-    bit<8> my_next_hdr_type;
++    @name("subp") subParserImpl() subp_0;
++    bit<8> my_next_hdr_type_0;
+     state start {
+         pkt.extract<h1_t>(hdr.h1);
+         verify(hdr.h1.hdr_type == 8w1, error.BadHeaderType);
+@@ -49,8 +49,8 @@ parser parserI(packet_in pkt, out header
+         }
+     }
+     state parse_first_h2 {
+-        subp.apply(pkt, hdr, my_next_hdr_type);
+-        transition select(my_next_hdr_type) {
++        subp_0.apply(pkt, hdr, my_next_hdr_type_0);
++        transition select(my_next_hdr_type_0) {
+             8w2: parse_other_h2;
+             8w3: parse_h3;
+             default: accept;

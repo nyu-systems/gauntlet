@@ -1,0 +1,16 @@
+--- before_pass
++++ after_pass
+@@ -27,9 +27,12 @@ control EgressI(inout H hdr, inout M met
+     }
+     @name("do") IngressI() do_0;
+     apply {
++        bool hasReturned = false;
+         switch (t_0.apply().action_run) {
+             a_0: {
+-                return;
++                {
++                    hasReturned = true;
++                }
+             }
+             default: {
+                 do_0.apply(hdr, meta, std_meta);

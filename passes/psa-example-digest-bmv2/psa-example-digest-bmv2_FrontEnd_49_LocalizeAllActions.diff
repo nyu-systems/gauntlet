@@ -1,0 +1,70 @@
+--- before_pass
++++ after_pass
+@@ -87,7 +87,13 @@ parser EgressParserImpl(packet_in buffer
+     }
+ }
+ control ingress(inout headers hdr, inout metadata meta, in psa_ingress_input_metadata_t istd, inout psa_ingress_output_metadata_t ostd) {
+-    @name("unknown_source") action unknown_source() {
++    @name(".NoAction") action NoAction_1() {
++    }
++    @name(".NoAction") action NoAction_2() {
++    }
++    @name(".NoAction") action NoAction_3() {
++    }
++    @name("unknown_source") action unknown_source_0() {
+         meta.send_mac_learn_msg = true;
+         meta.mac_learn_msg.srcAddr = hdr.ethernet.srcAddr;
+         meta.mac_learn_msg.ingress_port = istd.ingress_port;
+@@ -97,12 +103,12 @@ control ingress(inout headers hdr, inout
+             hdr.ethernet.srcAddr: exact @name("hdr.ethernet.srcAddr") ;
+         }
+         actions = {
+-            NoAction();
+-            unknown_source();
++            NoAction_1();
++            unknown_source_0();
+         }
+-        default_action = unknown_source();
++        default_action = unknown_source_0();
+     }
+-    @name("do_L2_forward") action do_L2_forward(PortId_t egress_port) {
++    @name("do_L2_forward") action do_L2_forward_0(PortId_t egress_port) {
+         {
+             psa_ingress_output_metadata_t meta_0 = ostd;
+             PortId_t egress_port_0 = egress_port;
+@@ -112,7 +118,7 @@ control ingress(inout headers hdr, inout
+             ostd = meta_0;
+         }
+     }
+-    @name("do_tst") action do_tst(PortId_t egress_port, EthTypes serEnumT) {
++    @name("do_tst") action do_tst_0(PortId_t egress_port, EthTypes serEnumT) {
+         {
+             psa_ingress_output_metadata_t meta_3 = ostd;
+             PortId_t egress_port_3 = egress_port;
+@@ -127,20 +133,20 @@ control ingress(inout headers hdr, inout
+             hdr.ethernet.dstAddr: exact @name("hdr.ethernet.dstAddr") ;
+         }
+         actions = {
+-            do_L2_forward();
+-            NoAction();
++            do_L2_forward_0();
++            NoAction_2();
+         }
+-        default_action = NoAction();
++        default_action = NoAction_2();
+     }
+     @name("tst_tbl") table tst_tbl {
+         key = {
+             meta.mac_learn_msg.ingress_port: exact @name("meta.mac_learn_msg.ingress_port") ;
+         }
+         actions = {
+-            do_tst();
+-            NoAction();
++            do_tst_0();
++            NoAction_3();
+         }
+-        default_action = NoAction();
++        default_action = NoAction_3();
+     }
+     apply {
+         meta.send_mac_learn_msg = false;

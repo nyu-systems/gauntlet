@@ -1,0 +1,13 @@
+--- before_pass
++++ after_pass
+@@ -2,8 +2,8 @@
+ #include <v1model.p4>
+ control C(bit<1> meta) {
+     apply {
+-        if (meta & 0x0 == 0) {
+-            digest(0, meta);
++        if (meta & 1w0x0 == 1w0) {
++            digest(32w0, meta);
+         }
+     }
+ }

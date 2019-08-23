@@ -1,0 +1,18 @@
+--- before_pass
++++ after_pass
+@@ -36,11 +36,12 @@ control MyIC(inout ethernet_t a, inout u
+             b.data2  : selector;
+         }
+         actions = {
+-            NoAction;
+-            a1;
+-            a2;
++            NoAction();
++            a1();
++            a2();
+         }
+         psa_implementation = as;
++        default_action = NoAction();
+     }
+     apply {
+         tbl.apply();

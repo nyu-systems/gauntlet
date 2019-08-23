@@ -1,0 +1,13 @@
+--- before_pass
++++ after_pass
+@@ -6,9 +6,7 @@ control p() {
+ control q() {
+     @name("p1") p() p1_0;
+     apply {
+-        {
+-            p1_0.apply();
+-        }
++        p1_0.apply();
+     }
+ }
+ package m(noargs n);

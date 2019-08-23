@@ -1,0 +1,27 @@
+--- before_pass
++++ after_pass
+@@ -18,15 +18,21 @@ control MyVerifyChecksum(inout headers h
+     apply {
+     }
+ }
+-control C(inout headers hdr, inout metadata meta)(bool b) {
++control C_0(inout headers hdr, inout metadata meta) {
++    @name("r") register<bit<16>>(32w8) r_0;
++    apply {
++        r_0.read(hdr.h.x, 32w0);
++    }
++}
++control C_1(inout headers hdr, inout metadata meta) {
+     @name("r") register<bit<16>>(32w8) r_0;
+     apply {
+         r_0.read(hdr.h.x, 32w0);
+     }
+ }
+ control H(inout headers hdr, inout metadata meta) {
+-    @name("c1") C(true) c1_0;
+-    @name("c2") C(false) c2_0;
++    @name("c1") C_0() c1_0;
++    @name("c2") C_1() c2_0;
+     apply {
+         c1_0.apply(hdr, meta);
+         c2_0.apply(hdr, meta);

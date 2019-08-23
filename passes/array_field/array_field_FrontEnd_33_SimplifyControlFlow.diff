@@ -1,0 +1,10 @@
+--- before_pass
++++ after_pass
+@@ -15,7 +15,6 @@ control my(out H[2] s) {
+         tmp = f(s[a_0].z, 1w0);
+         a_0 = tmp;
+         tmp_0 = f(s[a_0].z, 1w1);
+-        ;
+     }
+ }
+ top(my()) main;

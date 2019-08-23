@@ -1,0 +1,27 @@
+--- before_pass
++++ after_pass
+@@ -13,19 +13,19 @@ struct Meta {
+     bit<8> y;
+ }
+ control ingress(inout Headers h, inout Meta m, inout standard_metadata_t sm) {
+-    @name("case0") action case0() {
++    @name("ingress.case0") action case0() {
+         h.h.c = ((bit<12>)h.h.a)[11:4];
+     }
+-    @name("case1") action case1() {
++    @name("ingress.case1") action case1() {
+         h.h.c = (bit<8>)h.h.a[14:3][8:4];
+     }
+-    @name("case2") action case2() {
++    @name("ingress.case2") action case2() {
+         h.h.c = (bit<8>)(16w0 ++ h.h.a[15:8]);
+     }
+-    @name("case3") action case3() {
++    @name("ingress.case3") action case3() {
+         h.h.c = ((int<32>)(int<16>)h.h.a)[14:2][10:3];
+     }
+-    @name("t") table t_0 {
++    @name("ingress.t") table t_0 {
+         actions = {
+             case0();
+             case1();

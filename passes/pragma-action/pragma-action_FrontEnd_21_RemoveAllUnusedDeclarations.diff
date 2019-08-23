@@ -1,0 +1,18 @@
+--- before_pass
++++ after_pass
+@@ -1,15 +0,0 @@
+-control test() {
+-    action Set_dmac() {
+-    }
+-    action drop() {
+-    }
+-    table unit {
+-        actions = {
+-            @tableOnly Set_dmac();
+-            @defaultOnly drop();
+-        }
+-        default_action = drop();
+-    }
+-    apply {
+-    }
+-}

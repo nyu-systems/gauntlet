@@ -1,0 +1,12 @@
+--- before_pass
++++ after_pass
+@@ -5,8 +5,8 @@ extern e<T> {
+ }
+ parser p1<T>(in T a) {
+     T w_0;
+-    @name("ei") e<T>() ei_0;
+     T tmp;
++    @name("ei") e<T>() ei_0;
+     state start {
+         tmp = ei_0.get();
+         w_0 = tmp;

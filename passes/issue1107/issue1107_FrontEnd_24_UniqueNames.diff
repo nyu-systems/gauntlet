@@ -1,0 +1,43 @@
+--- before_pass
++++ after_pass
+@@ -12,32 +12,32 @@ parser ParserI(packet_in pk, out H hdr,
+     }
+ }
+ control myc(inout H hdr, inout M meta, inout standard_metadata_t smeta) {
+-    action set_eg(bit<9> eg) {
++    @name("set_eg") action set_eg_0(bit<9> eg) {
+         smeta.egress_spec = eg;
+     }
+-    table myt {
++    @name("myt") table myt_0 {
+         key = {
+             meta.f1: exact @name("meta.f1") ;
+             meta.f2: exact @name("meta.f2") ;
+         }
+         actions = {
+-            set_eg();
++            set_eg_0();
+             @defaultonly NoAction();
+         }
+         const entries = {
+-                        (32w1, 32w0xffffffff) : set_eg(9w1);
+-                        (32w2, 32w0xffffffff) : set_eg(9w2);
++                        (32w1, 32w0xffffffff) : set_eg_0(9w1);
++                        (32w2, 32w0xffffffff) : set_eg_0(9w2);
+         }
+         default_action = NoAction();
+     }
+     apply {
+-        myt.apply();
++        myt_0.apply();
+     }
+ }
+ control IngressI(inout H hdr, inout M meta, inout standard_metadata_t smeta) {
+-    @name("myc") myc() myc_inst;
++    @name("myc") myc() myc_inst_0;
+     apply {
+-        myc_inst.apply(hdr, meta, smeta);
++        myc_inst_0.apply(hdr, meta, smeta);
+     }
+ }
+ control EgressI(inout H hdr, inout M meta, inout standard_metadata_t smeta) {

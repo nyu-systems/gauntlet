@@ -1,0 +1,13 @@
+--- before_pass
++++ after_pass
+@@ -2,8 +2,8 @@
+ #include <v1model.p4>
+ parser p() {
+     state start {
+-        bit<32> x;
+-        transition select(x) {
++        bit<32> x_0;
++        transition select(x_0) {
+             32w0: reject;
+         }
+     }

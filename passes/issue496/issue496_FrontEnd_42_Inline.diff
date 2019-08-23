@@ -1,0 +1,28 @@
+--- before_pass
++++ after_pass
+@@ -17,21 +17,12 @@ control MyVerifyChecksum(inout my_packet
+     apply {
+     }
+ }
+-control E();
+-control D() {
+-    apply {
+-    }
+-}
+-control C()(E d) {
+-    apply {
+-        d.apply();
+-    }
+-}
+ control MyIngress(inout my_packet p, inout my_metadata m, inout standard_metadata_t s) {
+-    @name("d") D() d_0;
+-    @name("c") C(d_0) c_0;
+     apply {
+-        c_0.apply();
++        {
++            {
++            }
++        }
+     }
+ }
+ control MyEgress(inout my_packet p, inout my_metadata m, inout standard_metadata_t s) {

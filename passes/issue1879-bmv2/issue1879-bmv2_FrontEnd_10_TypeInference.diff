@@ -1,0 +1,74 @@
+--- before_pass
++++ after_pass
+@@ -62,7 +62,7 @@ parser SubParser(packet_in packet, out p
+         bool currentISelected2 = currI == meta.currPos;
+         meta.currenti.upDirection = meta.currenti.upDirection + (bit<1>)currentISelected2 * inf.upDirection;
+         meta.hLeft = inf.segLen;
+-        meta.currPos = meta.currPos + 1;
++        meta.currPos = meta.currPos + 8w1;
+         transition accept;
+     }
+ }
+@@ -77,7 +77,7 @@ parser PROTParser(packet_in packet, out
+     }
+     state parse_prot_host_addr_dst_ipv4 {
+         packet.extract(hdr.prot_host_addr_dst.ipv4);
+-        meta.addrLen = 32;
++        meta.addrLen = (bit<9>)9w32;
+         transition parse_prot_host_addr_src_select;
+     }
+     state parse_prot_host_addr_src_select {
+@@ -87,37 +87,37 @@ parser PROTParser(packet_in packet, out
+     }
+     state parse_prot_host_addr_src_ipv4 {
+         packet.extract(hdr.prot_host_addr_src.ipv4);
+-        meta.addrLen = meta.addrLen + 32;
++        meta.addrLen = meta.addrLen + 9w32;
+         transition parse_prot_addr_padding;
+     }
+     state parse_prot_addr_padding {
+-        bit<9> paddingLen = (64 - meta.addrLen % 64) % 64;
++        bit<9> paddingLen = (9w64 - meta.addrLen % 9w64) % 9w64;
+         packet.extract(hdr.prot_host_addr_padding, (bit<32>)paddingLen);
+         meta.addrLen = meta.addrLen + paddingLen;
+         transition parse_prot_inf_0;
+     }
+     state parse_prot_inf_0 {
+-        meta.currPos = (bit<8>)(3 + meta.addrLen / 64);
++        meta.currPos = (bit<8>)(9w3 + meta.addrLen / 9w64);
+         bool currentISelected = hdr.prot_common.curri == meta.currPos;
+         subParser.apply(packet, hdr.prot_inf_0, meta, currentISelected, hdr.prot_common.curri);
+         transition parse_prot_h_0_pre;
+     }
+     state parse_prot_h_0_pre {
+         transition select(meta.hLeft) {
+-            0: parse_prot_1;
++            8w0: parse_prot_1;
+             default: parse_prot_h_0;
+         }
+     }
+     state parse_prot_h_0 {
+         packet.extract(hdr.prot_h_0.next);
+-        meta.hLeft = meta.hLeft - 1;
+-        meta.currPos = meta.currPos + 1;
++        meta.hLeft = meta.hLeft - 8w1;
++        meta.currPos = meta.currPos + 8w1;
+         transition parse_prot_h_0_pre;
+     }
+     state parse_prot_1 {
+         bit<8> hdrLeft = meta.headerLen - meta.currPos;
+         transition select(hdrLeft) {
+-            0: accept;
++            8w0: accept;
+             default: parse_prot_inf_1;
+         }
+     }
+@@ -133,7 +133,7 @@ control PROTVerifyChecksum(inout headers
+ }
+ control PROTIngress(inout headers hdr, inout metadata meta, inout standard_metadata_t standard_metadata) {
+     apply {
+-        if (meta.currenti.upDirection == 0) {
++        if (meta.currenti.upDirection == 1w0) {
+             mark_to_drop(standard_metadata);
+         }
+     }

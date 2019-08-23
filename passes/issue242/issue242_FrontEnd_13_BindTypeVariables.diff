@@ -1,0 +1,35 @@
+--- before_pass
++++ after_pass
+@@ -32,13 +32,13 @@ struct Metadata {
+ }
+ parser P(packet_in b, out Headers p, inout Metadata meta, inout standard_metadata_t standard_meta) {
+     state start {
+-        b.extract(p.ethernet);
++        b.extract<ethernet_t>(p.ethernet);
+         transition select(p.ethernet.etherType) {
+             16w0x800: parse_ipv4;
+         }
+     }
+     state parse_ipv4 {
+-        b.extract(p.ip);
++        b.extract<ipv4_t>(p.ip);
+         transition accept;
+     }
+ }
+@@ -66,8 +66,8 @@ control Eg(inout Headers hdrs, inout Met
+ }
+ control DP(packet_out b, in Headers p) {
+     apply {
+-        b.emit(p.ethernet);
+-        b.emit(p.ip);
++        b.emit<ethernet_t>(p.ethernet);
++        b.emit<ipv4_t>(p.ip);
+     }
+ }
+ control Verify(inout Headers hdrs, inout Metadata meta) {
+@@ -78,4 +78,4 @@ control Compute(inout Headers hdr, inout
+     apply {
+     }
+ }
+-V1Switch(P(), Verify(), Ing(), Eg(), Compute(), DP()) main;
++V1Switch<Headers, Metadata>(P(), Verify(), Ing(), Eg(), Compute(), DP()) main;

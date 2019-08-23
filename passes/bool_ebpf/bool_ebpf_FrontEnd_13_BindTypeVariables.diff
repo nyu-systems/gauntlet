@@ -1,0 +1,8 @@
+--- before_pass
++++ after_pass
+@@ -13,4 +13,4 @@ control pipe(inout Headers_t headers, ou
+         pass = x != false;
+     }
+ }
+-ebpfFilter(prs(), pipe()) main;
++ebpfFilter<Headers_t>(prs(), pipe()) main;

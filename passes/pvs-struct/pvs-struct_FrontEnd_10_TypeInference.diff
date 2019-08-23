@@ -1,0 +1,11 @@
+--- before_pass
++++ after_pass
+@@ -19,7 +19,7 @@ parser MyParser(packet_in b, out my_pack
+         b.extract(p.data);
+         transition select(p.data.da) {
+             pvs: accept;
+-            0x810: foo;
++            32w0x810: foo;
+         }
+     }
+     state foo {

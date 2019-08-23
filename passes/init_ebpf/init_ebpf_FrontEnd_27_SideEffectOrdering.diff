@@ -1,0 +1,37 @@
+--- before_pass
++++ after_pass
+@@ -10,13 +10,17 @@ struct Headers_t {
+ }
+ parser prs(packet_in p, out Headers_t headers) {
+     state start {
+-        p.extract<Ethernet>(headers.ethernet);
++        {
++            p.extract<Ethernet>(headers.ethernet);
++        }
+         transition accept;
+     }
+ }
+ control pipe(inout Headers_t headers, out bool pass) {
+     @name("match") action match_0(bool act) {
+-        pass = act;
++        {
++            pass = act;
++        }
+     }
+     @name("tbl") table tbl_0 {
+         key = {
+@@ -34,8 +38,12 @@ control pipe(inout Headers_t headers, ou
+         default_action = NoAction();
+     }
+     apply {
+-        pass = true;
+-        tbl_0.apply();
++        {
++            pass = true;
++        }
++        {
++            tbl_0.apply();
++        }
+     }
+ }
+ ebpfFilter<Headers_t>(prs(), pipe()) main;

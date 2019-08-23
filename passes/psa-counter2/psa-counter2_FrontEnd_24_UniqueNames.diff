@@ -1,0 +1,35 @@
+--- before_pass
++++ after_pass
+@@ -20,24 +20,24 @@ parser MyEP(packet_in buffer, out EMPTY
+     }
+ }
+ control MyIC(inout ethernet_t a, inout EMPTY b, in psa_ingress_input_metadata_t c, inout psa_ingress_output_metadata_t d) {
+-    Counter<bit<10>, bit<12>>(32w1024, PSA_CounterType_t.PACKETS) counter0;
+-    Counter<bit<10>, bit<12>>(32w1024, PSA_CounterType_t.PACKETS) counter1;
+-    action execute() {
+-        counter0.count(12w1024);
+-        counter1.count(12w1024);
++    @name("counter0") Counter<bit<10>, bit<12>>(32w1024, PSA_CounterType_t.PACKETS) counter0_0;
++    @name("counter1") Counter<bit<10>, bit<12>>(32w1024, PSA_CounterType_t.PACKETS) counter1_0;
++    @name("execute") action execute_0() {
++        counter0_0.count(12w1024);
++        counter1_0.count(12w1024);
+     }
+-    table tbl {
++    @name("tbl") table tbl_0 {
+         key = {
+             a.srcAddr: exact @name("a.srcAddr") ;
+         }
+         actions = {
+             NoAction();
+-            execute();
++            execute_0();
+         }
+         default_action = NoAction();
+     }
+     apply {
+-        tbl.apply();
++        tbl_0.apply();
+     }
+ }
+ control MyEC(inout EMPTY a, inout EMPTY b, in psa_egress_input_metadata_t c, inout psa_egress_output_metadata_t d) {

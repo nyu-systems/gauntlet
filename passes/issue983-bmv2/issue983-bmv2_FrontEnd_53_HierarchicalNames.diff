@@ -1,0 +1,11 @@
+--- before_pass
++++ after_pass
+@@ -36,7 +36,7 @@ control ingress(inout headers hdr, inout
+     bit<16> tmp_0;
+     bit<32> x1_0;
+     bit<16> x2_0;
+-    @name("debug_table_cksum1") table debug_table_cksum1_0 {
++    @name("ingress.debug_table_cksum1") table debug_table_cksum1_0 {
+         key = {
+             hdr.ethernet.srcAddr            : exact @name("hdr.ethernet.srcAddr") ;
+             hdr.ethernet.dstAddr            : exact @name("hdr.ethernet.dstAddr") ;

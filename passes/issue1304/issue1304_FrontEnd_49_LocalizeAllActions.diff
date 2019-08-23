@@ -1,0 +1,26 @@
+--- before_pass
++++ after_pass
+@@ -22,17 +22,19 @@ parser MyParser(packet_in b, out my_pack
+     }
+ }
+ control MyIngress(inout my_packet p, inout my_metadata meta, inout standard_metadata_t s) {
+-    @name("set_data") action set_data() {
++    @name(".NoAction") action NoAction_1() {
++    }
++    @name("set_data") action set_data_0() {
+     }
+     @name("t") table t {
+         actions = {
+-            set_data();
+-            @defaultonly NoAction();
++            set_data_0();
++            @defaultonly NoAction_1();
+         }
+         key = {
+             meta.err: exact @name("meta.err") ;
+         }
+-        default_action = NoAction();
++        default_action = NoAction_1();
+     }
+     apply {
+         t.apply();

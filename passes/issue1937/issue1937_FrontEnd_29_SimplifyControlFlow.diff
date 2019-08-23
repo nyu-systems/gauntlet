@@ -1,0 +1,32 @@
+--- before_pass
++++ after_pass
+@@ -5,9 +5,7 @@ header h1_t {
+ }
+ parser foo(out bit<8> x, in bit<8> y=5) {
+     state start {
+-        {
+-            x = y >> 2;
+-        }
++        x = y >> 2;
+         transition accept;
+     }
+ }
+@@ -17,14 +15,10 @@ parser parserImpl(out h1_t hdr) {
+     bit<8> tmp;
+     bit<8> tmp_0;
+     state start {
+-        {
+-            tmp_0 = hdr.f1;
+-            foo_inst_1.apply(tmp, tmp_0);
+-            hdr.f1 = tmp;
+-        }
+-        {
+-            foo_inst_2.apply(x = hdr.f2, y = 8w5);
+-        }
++        tmp_0 = hdr.f1;
++        foo_inst_1.apply(tmp, tmp_0);
++        hdr.f1 = tmp;
++        foo_inst_2.apply(x = hdr.f2, y = 8w5);
+         transition accept;
+     }
+ }

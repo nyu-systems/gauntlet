@@ -1,0 +1,11 @@
+--- before_pass
++++ after_pass
+@@ -64,7 +64,7 @@ control ingress(inout headers hdr, inout
+         meta.fwd_metadata.out_bd = bd;
+         hdr.ethernet.dstAddr = dmac;
+         standard_metadata.egress_spec = intf;
+-        hdr.ipv4.ttl = hdr.ipv4.ttl - 1;
++        hdr.ipv4.ttl = hdr.ipv4.ttl - 8w1;
+     }
+     table ipv4_da_lpm {
+         actions = {

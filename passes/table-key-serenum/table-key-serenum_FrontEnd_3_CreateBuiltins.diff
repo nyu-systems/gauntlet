@@ -1,0 +1,18 @@
+--- before_pass
++++ after_pass
+@@ -37,12 +37,14 @@ control c(inout Headers h, inout standar
+             h.eth.type: exact;
+         }
+         actions = {
+-            do_act;
++            do_act();
++            @defaultonly NoAction();
+         }
+         const entries = {
+                         EthTypes.IPv4 : do_act(0x800);
+                         EthTypes.VLAN : do_act(0x8100);
+         }
++        default_action = NoAction();
+     }
+     apply {
+         tns.apply();

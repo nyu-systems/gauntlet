@@ -1,0 +1,37 @@
+--- before_pass
++++ after_pass
+@@ -25,23 +25,24 @@ struct headers_t {
+     eth_h  eth;
+     ipv4_h ipv4;
+ }
+-parser InnerParser(packet_in pkt, out headers_t hdr) {
++parser OuterParser(packet_in pkt, out headers_t hdr, inout meta_t m, inout standard_metadata_t meta) {
+     state start {
++        hdr.eth.setInvalid();
++        hdr.ipv4.setInvalid();
++        transition InnerParser_start;
++    }
++    state InnerParser_start {
+         pkt.extract<eth_h>(hdr.eth);
+         transition select(hdr.eth.type) {
+-            16w0x800: parse_ipv4;
+-            default: accept;
++            16w0x800: InnerParser_parse_ipv4;
++            default: start_0;
+         }
+     }
+-    state parse_ipv4 {
++    state InnerParser_parse_ipv4 {
+         pkt.extract<ipv4_h>(hdr.ipv4);
+-        transition accept;
++        transition start_0;
+     }
+-}
+-parser OuterParser(packet_in pkt, out headers_t hdr, inout meta_t m, inout standard_metadata_t meta) {
+-    @name("InnerParser") InnerParser() InnerParser_inst_0;
+-    state start {
+-        InnerParser_inst_0.apply(pkt, hdr);
++    state start_0 {
+         transition accept;
+     }
+ }

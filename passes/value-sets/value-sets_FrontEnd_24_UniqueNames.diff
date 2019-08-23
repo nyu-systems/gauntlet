@@ -1,0 +1,22 @@
+--- before_pass
++++ after_pass
+@@ -12,7 +12,7 @@ extern ValueSet {
+     bit<8> index(in bit<16> proto);
+ }
+ parser TopParser(packet_in b, out Parsed_packet p) {
+-    ValueSet(32w5) ethtype_kinds;
++    @name("ethtype_kinds") ValueSet(32w5) ethtype_kinds_0;
+     state start {
+         b.extract<Ethernet_h>(p.ethernet);
+         transition select(p.ethernet.etherType) {
+@@ -23,8 +23,8 @@ parser TopParser(packet_in b, out Parsed
+         }
+     }
+     state dispatch_value_sets {
+-        bit<8> setIndex = ethtype_kinds.index(p.ethernet.etherType);
+-        transition select(setIndex) {
++        bit<8> setIndex_0 = ethtype_kinds_0.index(p.ethernet.etherType);
++        transition select(setIndex_0) {
+             8w1: parse_trill;
+             8w2: parse_vlan_tag;
+         }

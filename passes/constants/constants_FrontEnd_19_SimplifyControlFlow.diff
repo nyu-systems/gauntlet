@@ -1,0 +1,10 @@
+--- before_pass
++++ after_pass
+@@ -4,7 +4,6 @@ control p() {
+         bit<1> z;
+         const bit<1> c = 1w0;
+         x = 1w0;
+-        ;
+         z = 1w0;
+     }
+ }

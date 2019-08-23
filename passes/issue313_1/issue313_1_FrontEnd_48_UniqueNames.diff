@@ -1,0 +1,26 @@
+--- before_pass
++++ after_pass
+@@ -5,16 +5,16 @@ struct struct_t {
+     header_h[4] stack;
+ }
+ control ctrl(inout struct_t input, out header_h output) {
+-    header_h tmp0_0;
+-    header_h tmp1_0;
+-    @name("act") action act_0() {
+-        tmp0_0 = input.stack[0];
++    header_h tmp0;
++    header_h tmp1;
++    @name("act") action act() {
++        tmp0 = input.stack[0];
+         input.stack.pop_front(1);
+-        tmp1_0 = tmp0_0;
++        tmp1 = tmp0;
+     }
+     apply {
+-        act_0();
+-        output = tmp1_0;
++        act();
++        output = tmp1;
+     }
+ }
+ control MyControl<S, H>(inout S data, out H output);

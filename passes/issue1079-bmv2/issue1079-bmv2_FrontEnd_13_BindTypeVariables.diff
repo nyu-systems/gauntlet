@@ -1,0 +1,29 @@
+--- before_pass
++++ after_pass
+@@ -19,7 +19,7 @@ parser EmptyParser(packet_in b, out head
+ }
+ control EmptyVerifyChecksum(inout headers_t hdr, inout metadata_t meta) {
+     apply {
+-        verify_checksum(false, { 16w0 }, meta.cksum.result, HashAlgorithm.csum16);
++        verify_checksum<tuple<bit<16>>, bit<16>>(false, { 16w0 }, meta.cksum.result, HashAlgorithm.csum16);
+     }
+ }
+ control EmptyIngress(inout headers_t headers, inout metadata_t meta, inout standard_metadata_t standard_metadata) {
+@@ -33,13 +33,13 @@ control EmptyEgress(inout headers_t hdr,
+ }
+ control EmptyComputeChecksum(inout headers_t hdr, inout metadata_t meta) {
+     apply {
+-        update_checksum(false, { 16w0 }, meta.cksum.result, HashAlgorithm.csum16);
+-        update_checksum(hdr.e.isValid(), { 16w0 }, meta.cksum.result, HashAlgorithm.csum16);
+-        update_checksum(meta.b == 1w0, { 16w0 }, meta.cksum.result, HashAlgorithm.csum16);
++        update_checksum<tuple<bit<16>>, bit<16>>(false, { 16w0 }, meta.cksum.result, HashAlgorithm.csum16);
++        update_checksum<tuple<bit<16>>, bit<16>>(hdr.e.isValid(), { 16w0 }, meta.cksum.result, HashAlgorithm.csum16);
++        update_checksum<tuple<bit<16>>, bit<16>>(meta.b == 1w0, { 16w0 }, meta.cksum.result, HashAlgorithm.csum16);
+     }
+ }
+ control EmptyDeparser(packet_out b, in headers_t hdr) {
+     apply {
+     }
+ }
+-V1Switch(EmptyParser(), EmptyVerifyChecksum(), EmptyIngress(), EmptyEgress(), EmptyComputeChecksum(), EmptyDeparser()) main;
++V1Switch<headers_t, metadata_t>(EmptyParser(), EmptyVerifyChecksum(), EmptyIngress(), EmptyEgress(), EmptyComputeChecksum(), EmptyDeparser()) main;

@@ -1,0 +1,22 @@
+--- before_pass
++++ after_pass
+@@ -43,15 +43,15 @@ control CommonDeparserImpl(packet_out pa
+     }
+ }
+ control IngressDeparserImpl(packet_out buffer, out empty_metadata_t clone_i2e_meta, out empty_metadata_t resubmit_meta, out empty_metadata_t normal_meta, inout headers_t hdr, in metadata_t meta, in psa_ingress_output_metadata_t istd) {
+-    CommonDeparserImpl() cp;
++    @name("cp") CommonDeparserImpl() cp_0;
+     apply {
+-        cp.apply(buffer, hdr);
++        cp_0.apply(buffer, hdr);
+     }
+ }
+ control EgressDeparserImpl(packet_out buffer, out empty_metadata_t clone_e2e_meta, out empty_metadata_t recirculate_meta, inout headers_t hdr, in metadata_t meta, in psa_egress_output_metadata_t istd, in psa_egress_deparser_input_metadata_t edstd) {
+-    CommonDeparserImpl() cp;
++    @name("cp") CommonDeparserImpl() cp_1;
+     apply {
+-        cp.apply(buffer, hdr);
++        cp_1.apply(buffer, hdr);
+     }
+ }
+ IngressPipeline<headers_t, metadata_t, empty_metadata_t, empty_metadata_t, empty_metadata_t, empty_metadata_t>(IngressParserImpl(), cIngress(), IngressDeparserImpl()) ip;

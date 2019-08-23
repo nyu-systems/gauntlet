@@ -1,0 +1,11 @@
+--- before_pass
++++ after_pass
+@@ -16,7 +16,7 @@ control ingressImpl(inout headers_t hdr,
+         tmp_0 = hdr.h1.f1;
+         tmp = tmp_0 >> 2;
+         hdr.h1.f1 = tmp;
+-        hdr.h1.f2 = 8w5 >> 2;
++        hdr.h1.f2 = 8w1;
+     }
+ }
+ parser parserImpl(packet_in packet, out headers_t hdr, inout metadata_t meta, inout standard_metadata_t stdmeta) {

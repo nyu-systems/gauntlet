@@ -1,0 +1,17 @@
+--- before_pass
++++ after_pass
+@@ -14,7 +14,7 @@ extern ValueSet {
+ parser TopParser(packet_in b, out Parsed_packet p) {
+     ValueSet(32w5) ethtype_kinds;
+     state start {
+-        b.extract(p.ethernet);
++        b.extract<Ethernet_h>(p.ethernet);
+         transition select(p.ethernet.etherType) {
+             16w0x800: parse_ipv4;
+             16w0x806: parse_arp;
+@@ -47,4 +47,4 @@ parser TopParser(packet_in b, out Parsed
+ }
+ parser proto<T>(packet_in p, out T h);
+ package top<T>(proto<T> _p);
+-top(TopParser()) main;
++top<Parsed_packet>(TopParser()) main;

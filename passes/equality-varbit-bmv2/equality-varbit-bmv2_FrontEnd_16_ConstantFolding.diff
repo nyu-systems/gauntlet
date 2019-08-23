@@ -1,0 +1,15 @@
+--- before_pass
++++ after_pass
+@@ -17,10 +17,10 @@ parser p(packet_in b, out headers hdr, i
+ }
+ control ingress(inout headers hdr, inout metadata meta, inout standard_metadata_t stdmeta) {
+     apply {
+-        stdmeta.egress_spec = (bit<9>)9w0;
++        stdmeta.egress_spec = 9w0;
+         H h = hdr.h;
+         if (hdr.h.v == h.v) {
+-            stdmeta.egress_spec = (bit<9>)9w1;
++            stdmeta.egress_spec = 9w1;
+         }
+     }
+ }

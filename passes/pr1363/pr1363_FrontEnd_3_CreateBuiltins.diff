@@ -1,0 +1,14 @@
+--- before_pass
++++ after_pass
+@@ -6,9 +6,10 @@ extern ActionProfile {
+ control c() {
+     table t {
+         actions = {
+-            NoAction;
++            NoAction();
+         }
+         implementation = ActionProfile(32);
++        default_action = NoAction();
+     }
+     apply {
+     }

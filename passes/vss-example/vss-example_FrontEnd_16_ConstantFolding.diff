@@ -1,0 +1,59 @@
+--- before_pass
++++ after_pass
+@@ -9,14 +9,14 @@ const PortId REAL_PORT_COUNT = 4w8;
+ struct InControl {
+     PortId inputPort;
+ }
+-const PortId RECIRCULATE_IN_PORT = (bit<4>)4w0xd;
+-const PortId CPU_IN_PORT = (bit<4>)4w0xe;
++const PortId RECIRCULATE_IN_PORT = 4w0xd;
++const PortId CPU_IN_PORT = 4w0xe;
+ struct OutControl {
+     PortId outputPort;
+ }
+-const PortId DROP_PORT = (bit<4>)4w0xf;
+-const PortId CPU_OUT_PORT = (bit<4>)4w0xe;
+-const PortId RECIRCULATE_OUT_PORT = (bit<4>)4w0xd;
++const PortId DROP_PORT = 4w0xf;
++const PortId CPU_OUT_PORT = 4w0xe;
++const PortId RECIRCULATE_OUT_PORT = 4w0xd;
+ parser Parser<H>(packet_in b, out H parsedHeaders);
+ control Pipe<H>(inout H headers, in error parseError, in InControl inCtrl, out OutControl outCtrl);
+ control Deparser<H>(inout H outputHeaders, packet_out b);
+@@ -72,7 +72,7 @@ parser TopParser(packet_in b, out Parsed
+ }
+ control TopPipe(inout Parsed_packet headers, in error parseError, in InControl inCtrl, out OutControl outCtrl) {
+     action Drop_action() {
+-        outCtrl.outputPort = DROP_PORT;
++        outCtrl.outputPort = 4w0xf;
+     }
+     IPv4Address nextHop;
+     action Set_nhop(IPv4Address ipv4_dest, PortId port) {
+@@ -92,7 +92,7 @@ control TopPipe(inout Parsed_packet head
+         default_action = Drop_action();
+     }
+     action Send_to_cpu() {
+-        outCtrl.outputPort = CPU_OUT_PORT;
++        outCtrl.outputPort = 4w0xe;
+     }
+     table check_ttl {
+         key = {
+@@ -138,15 +138,15 @@ control TopPipe(inout Parsed_packet head
+             return;
+         }
+         ipv4_match.apply();
+-        if (outCtrl.outputPort == DROP_PORT) {
++        if (outCtrl.outputPort == 4w0xf) {
+             return;
+         }
+         check_ttl.apply();
+-        if (outCtrl.outputPort == CPU_OUT_PORT) {
++        if (outCtrl.outputPort == 4w0xe) {
+             return;
+         }
+         dmac.apply();
+-        if (outCtrl.outputPort == DROP_PORT) {
++        if (outCtrl.outputPort == 4w0xf) {
+             return;
+         }
+         smac.apply();

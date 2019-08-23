@@ -1,0 +1,16 @@
+--- before_pass
++++ after_pass
+@@ -48,10 +48,10 @@ control ingress(inout Header_t h, inout
+             h.h.t: ternary;
+         }
+         actions = {
+-            a;
+-            a_with_control_params;
++            a();
++            a_with_control_params();
+         }
+-        default_action = a;
++        default_action = a();
+         const entries = {
+                         (0x1, 0x1111 &&& 0xf) : a_with_control_params(1);
+                         (0x2, 0x1181) : a_with_control_params(2);

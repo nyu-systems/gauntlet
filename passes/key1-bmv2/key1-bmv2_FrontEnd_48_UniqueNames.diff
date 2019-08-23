@@ -1,0 +1,28 @@
+--- before_pass
++++ after_pass
+@@ -33,21 +33,21 @@ control deparser(packet_out b, in Header
+     }
+ }
+ control ingress(inout Headers h, inout Meta m, inout standard_metadata_t sm) {
+-    @name("c.a") action c_a() {
++    @name("c.a") action c_a_0() {
+         h.h.b = h.h.a;
+     }
+-    @name("c.t") table c_t {
++    @name("c.t") table c_t_0 {
+         key = {
+             h.h.a + 32w1: exact @name("e") ;
+         }
+         actions = {
+-            c_a();
++            c_a_0();
+             NoAction();
+         }
+         default_action = NoAction();
+     }
+     apply {
+-        c_t.apply();
++        c_t_0.apply();
+         sm.egress_spec = 9w0;
+     }
+ }

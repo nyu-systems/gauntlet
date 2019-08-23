@@ -1,0 +1,13 @@
+--- before_pass
++++ after_pass
+@@ -24,8 +24,8 @@ struct headers {
+ parser ProtAddrParser(packet_in packet, in bit<8> addrType, out addr_t addr) {
+     state start {
+         transition select(addrType) {
+-            0x1: ipv4;
+-            0x2: ipv6;
++            8w0x1: ipv4;
++            8w0x2: ipv6;
+         }
+     }
+     state ipv4 {

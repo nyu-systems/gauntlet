@@ -1,0 +1,8 @@
+--- before_pass
++++ after_pass
+@@ -41,4 +41,4 @@ control DeparserI(packet_out b, in H hdr
+     apply {
+     }
+ }
+-V1Switch(ParserI(), VerifyChecksumI(), IngressI(), EgressI(), ComputeChecksumI(), DeparserI()) main;
++V1Switch<H, M>(ParserI(), VerifyChecksumI(), IngressI(), EgressI(), ComputeChecksumI(), DeparserI()) main;

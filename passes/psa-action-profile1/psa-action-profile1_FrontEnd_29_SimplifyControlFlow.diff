@@ -1,0 +1,24 @@
+--- before_pass
++++ after_pass
+@@ -10,9 +10,7 @@ header ethernet_t {
+ }
+ parser MyIP(packet_in buffer, out ethernet_t eth, inout EMPTY b, in psa_ingress_parser_input_metadata_t c, in EMPTY d, in EMPTY e) {
+     state start {
+-        {
+-            buffer.extract<ethernet_t>(eth);
+-        }
++        buffer.extract<ethernet_t>(eth);
+         transition accept;
+     }
+ }
+@@ -40,9 +38,7 @@ control MyIC(inout ethernet_t a, inout E
+         default_action = NoAction();
+     }
+     apply {
+-        {
+-            tbl_0.apply();
+-        }
++        tbl_0.apply();
+     }
+ }
+ control MyEC(inout EMPTY a, inout EMPTY b, in psa_egress_input_metadata_t c, inout psa_egress_output_metadata_t d) {

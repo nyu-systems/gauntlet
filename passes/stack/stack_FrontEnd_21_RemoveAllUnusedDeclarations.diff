@@ -1,0 +1,18 @@
+--- before_pass
++++ after_pass
+@@ -9,7 +9,6 @@ parser p() {
+         b = stack.last;
+         stack[2] = b;
+         b = stack.next;
+-        bit<32> e = stack.lastIndex;
+         transition accept;
+     }
+ }
+@@ -21,7 +20,6 @@ control c() {
+         stack[2] = b;
+         stack.push_front(2);
+         stack.pop_front(2);
+-        bit<32> sz = 32w4;
+     }
+ }
+ parser Simple();

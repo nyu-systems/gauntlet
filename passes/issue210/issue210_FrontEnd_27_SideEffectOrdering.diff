@@ -1,0 +1,17 @@
+--- before_pass
++++ after_pass
+@@ -9,8 +9,12 @@ control Ing(out bit<32> a) {
+         }
+     }
+     apply {
+-        b_0 = true;
+-        cond_0();
++        {
++            b_0 = true;
++        }
++        {
++            cond_0();
++        }
+     }
+ }
+ control s(out bit<32> a);

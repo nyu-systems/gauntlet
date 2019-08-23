@@ -1,0 +1,29 @@
+--- before_pass
++++ after_pass
+@@ -218,11 +218,11 @@ parser ParserImpl(packet_in packet, out
+     }
+ }
+ control ingress(inout headers hdr, inout metadata meta, inout standard_metadata_t standard_metadata) {
+-    @name(".my_drop") action my_drop(inout standard_metadata_t smeta_0) {
+-        mark_to_drop(smeta_0);
++    @name(".my_drop") action my_drop(inout standard_metadata_t smeta) {
++        mark_to_drop(smeta);
+     }
+-    @name(".my_drop") action my_drop_0(inout standard_metadata_t smeta_0) {
+-        mark_to_drop(smeta_0);
++    @name(".my_drop") action my_drop_0(inout standard_metadata_t smeta_1) {
++        mark_to_drop(smeta_1);
+     }
+     @name("set_l2ptr") action set_l2ptr(bit<32> l2ptr) {
+         meta.fwd_metadata.l2ptr = l2ptr;
+@@ -259,8 +259,8 @@ control ingress(inout headers hdr, inout
+     }
+ }
+ control egress(inout headers hdr, inout metadata meta, inout standard_metadata_t standard_metadata) {
+-    @name(".my_drop") action my_drop_1(inout standard_metadata_t smeta_0) {
+-        mark_to_drop(smeta_0);
++    @name(".my_drop") action my_drop_1(inout standard_metadata_t smeta_2) {
++        mark_to_drop(smeta_2);
+     }
+     @name("rewrite_mac") action rewrite_mac(bit<48> smac) {
+         hdr.ethernet.srcAddr = smac;

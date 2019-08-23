@@ -1,0 +1,16 @@
+--- before_pass
++++ after_pass
+@@ -43,12 +43,10 @@ control compute_checksum_stub(inout head
+     }
+ }
+ control ingress(inout headers hdr, inout test_metadata_t meta, inout standard_metadata_t standard_metadata) {
+-    ethernet_t tmp;
+     @name(".NoAction") action NoAction_0() {
+     }
+     @name("ingress.assign_non_const_array_index") action assign_non_const_array_index() {
+-        tmp = hdr.ethernet_stack[meta.color];
+-        hdr.ethernet_stack[1] = tmp;
++        hdr.ethernet_stack[1] = hdr.ethernet_stack[meta.color];
+     }
+     @name("ingress.acl_table") table acl_table_0 {
+         actions = {

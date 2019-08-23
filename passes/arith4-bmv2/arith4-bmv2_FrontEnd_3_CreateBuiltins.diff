@@ -1,0 +1,14 @@
+--- before_pass
++++ after_pass
+@@ -40,9 +40,9 @@ control ingress(inout Headers h, inout M
+     }
+     table t {
+         actions = {
+-            shift;
++            shift();
+         }
+-        const default_action = shift;
++        const default_action = shift();
+     }
+     apply {
+         t.apply();

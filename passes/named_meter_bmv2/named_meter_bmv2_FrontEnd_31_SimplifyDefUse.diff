@@ -1,0 +1,11 @@
+--- before_pass
++++ after_pass
+@@ -49,7 +49,7 @@ control ingress(inout headers hdr, inout
+         default_action = NoAction();
+     }
+     @name("m_action") action m_action(bit<9> meter_idx) {
+-        standard_metadata.egress_spec = meter_idx;
++        ;
+         standard_metadata.egress_spec = 9w1;
+         my_meter_0.read(meta.meta.meter_tag);
+     }

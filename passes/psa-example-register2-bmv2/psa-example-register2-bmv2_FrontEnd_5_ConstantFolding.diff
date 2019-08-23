@@ -1,0 +1,26 @@
+--- before_pass
++++ after_pass
+@@ -31,11 +31,11 @@ struct headers {
+     ethernet_t ethernet;
+     ipv4_t     ipv4;
+ }
+-const bit<32> NUM_PORTS = 512;
++const bit<32> NUM_PORTS = 32w512;
+ typedef bit<80> PacketByteCountState_t;
+ action update_pkt_ip_byte_count(inout PacketByteCountState_t s, in bit<16> ip_length_bytes) {
+-    s[80 - 1:48] = s[80 - 1:48] + 1;
+-    s[48 - 1:0] = s[48 - 1:0] + (bit<48>)ip_length_bytes;
++    s[79:48] = s[79:48] + 1;
++    s[47:0] = s[47:0] + (bit<48>)ip_length_bytes;
+ }
+ parser IngressParserImpl(packet_in buffer, out headers parsed_hdr, inout metadata user_meta, in psa_ingress_parser_input_metadata_t istd, in empty_metadata_t resubmit_meta, in empty_metadata_t recirculate_meta) {
+     state start {
+@@ -54,7 +54,7 @@ parser IngressParserImpl(packet_in buffe
+     }
+ }
+ control ingress(inout headers hdr, inout metadata user_meta, in psa_ingress_input_metadata_t istd, inout psa_ingress_output_metadata_t ostd) {
+-    Register<PacketByteCountState_t, PortId_t>(NUM_PORTS) port_pkt_ip_bytes_in;
++    Register<PacketByteCountState_t, PortId_t>(32w512) port_pkt_ip_bytes_in;
+     apply {
+         ostd.egress_port = (PortId_t)0;
+         if (hdr.ipv4.isValid()) {

@@ -1,0 +1,11 @@
+--- before_pass
++++ after_pass
+@@ -38,7 +38,7 @@ control ingress(inout headers hdr, inout
+     }
+     table mac_da {
+         key = {
+-            hdr.ethernet.dstAddr: exact;
++            hdr.ethernet.dstAddr: exact @name("hdr.ethernet.dstAddr") ;
+         }
+         actions = {
+             set_port();

@@ -1,0 +1,11 @@
+--- before_pass
++++ after_pass
+@@ -12,7 +12,7 @@ parser ParserI(packet_in pk, out H hdr,
+ }
+ control IngressI(inout H hdr, inout M meta, inout SM smeta) {
+     apply {
+-        smeta.egress_spec = 1;
++        smeta.egress_spec = (bit<9>)9w1;
+     }
+ }
+ control EgressI(inout H hdr, inout M meta, inout SM smeta) {

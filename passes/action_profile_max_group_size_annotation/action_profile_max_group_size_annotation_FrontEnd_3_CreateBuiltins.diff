@@ -1,0 +1,24 @@
+--- before_pass
++++ after_pass
+@@ -20,8 +20,8 @@ control IngressI(inout H hdr, inout M me
+         key = {
+         }
+         actions = {
+-            drop;
+-            NoAction;
++            drop();
++            NoAction();
+         }
+         const default_action = NoAction();
+         @name("ap") @max_group_size(200) implementation = action_profile(32w128);
+@@ -31,8 +31,8 @@ control IngressI(inout H hdr, inout M me
+             meta.hash1: selector;
+         }
+         actions = {
+-            drop;
+-            NoAction;
++            drop();
++            NoAction();
+         }
+         const default_action = NoAction();
+         @name("ap_ws") @max_group_size(200) implementation = action_selector(HashAlgorithm.identity, 32w1024, 32w10);

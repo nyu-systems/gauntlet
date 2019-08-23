@@ -1,0 +1,19 @@
+--- before_pass
++++ after_pass
+@@ -11,14 +11,14 @@ parser p1(packet_in p, out Header h) {
+         }
+     }
+     state chain1 {
+-        p.extract(h);
++        p.extract<Header>(h);
+         transition next1;
+     }
+     state next1 {
+         transition endchain;
+     }
+     state chain2 {
+-        p.extract(h);
++        p.extract<Header>(h);
+         transition next2;
+     }
+     state next2 {

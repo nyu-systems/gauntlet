@@ -1,0 +1,14 @@
+--- before_pass
++++ after_pass
+@@ -34,9 +34,9 @@ control ctrl(inout M meta) {
+     }
+ }
+ control IngressI(inout H hdr, inout M meta, inout std_meta_t std_meta) {
+-    ctrl() do_ctrl;
++    @name("do_ctrl") ctrl() do_ctrl_0;
+     apply {
+-        do_ctrl.apply(meta);
++        do_ctrl_0.apply(meta);
+     }
+ }
+ control EgressI(inout H hdr, inout M meta, inout std_meta_t std_meta) {

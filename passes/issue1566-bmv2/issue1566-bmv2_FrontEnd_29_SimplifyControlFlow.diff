@@ -1,0 +1,85 @@
+--- before_pass
++++ after_pass
+@@ -17,32 +17,20 @@ control my_control_type(inout bit<16> x)
+ control C1(inout bit<16> x) {
+     @name("stats") counter(32w65536, CounterType.packets) stats_0;
+     apply {
+-        {
+-            x = x + 16w1;
+-        }
+-        {
+-            stats_0.count((bit<32>)x);
+-        }
++        x = x + 16w1;
++        stats_0.count((bit<32>)x);
+     }
+ }
+ control C2(inout bit<16> x)(my_control_type c) {
+     apply {
+-        {
+-            x = x << 1;
+-        }
+-        {
+-            c.apply(x);
+-        }
++        x = x << 1;
++        c.apply(x);
+     }
+ }
+ control C3(inout bit<16> x)(my_control_type c) {
+     apply {
+-        {
+-            x = x << 3;
+-        }
+-        {
+-            c.apply(x);
+-        }
++        x = x << 3;
++        c.apply(x);
+     }
+ }
+ control E(inout bit<16> x) {
+@@ -50,28 +38,20 @@ control E(inout bit<16> x) {
+     @name("c2") C2(c1_0) c2_0;
+     @name("c3") C3(c1_0) c3_0;
+     apply {
+-        {
+-            c2_0.apply(x);
+-        }
+-        {
+-            c3_0.apply(x);
+-        }
++        c2_0.apply(x);
++        c3_0.apply(x);
+     }
+ }
+ parser parserI(packet_in pkt, out Parsed_packet hdr, inout metadata_t meta, inout standard_metadata_t stdmeta) {
+     state start {
+-        {
+-            pkt.extract<Ethernet_h>(hdr.ethernet);
+-        }
++        pkt.extract<Ethernet_h>(hdr.ethernet);
+         transition accept;
+     }
+ }
+ control cIngress(inout Parsed_packet hdr, inout metadata_t meta, inout standard_metadata_t stdmeta) {
+     @name("E") E() E_inst_0;
+     apply {
+-        {
+-            E_inst_0.apply(hdr.ethernet.etherType);
+-        }
++        E_inst_0.apply(hdr.ethernet.etherType);
+     }
+ }
+ control cEgress(inout Parsed_packet hdr, inout metadata_t meta, inout standard_metadata_t stdmeta) {
+@@ -80,9 +60,7 @@ control cEgress(inout Parsed_packet hdr,
+ }
+ control DeparserI(packet_out packet, in Parsed_packet hdr) {
+     apply {
+-        {
+-            packet.emit<Ethernet_h>(hdr.ethernet);
+-        }
++        packet.emit<Ethernet_h>(hdr.ethernet);
+     }
+ }
+ control vc(inout Parsed_packet hdr, inout metadata_t meta) {

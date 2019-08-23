@@ -1,0 +1,31 @@
+--- before_pass
++++ after_pass
+@@ -10,7 +10,9 @@ header ethernet_t {
+ }
+ parser MyIP(packet_in buffer, out ethernet_t eth, inout EMPTY b, in psa_ingress_parser_input_metadata_t c, in EMPTY d, in EMPTY e) {
+     state start {
+-        buffer.extract<ethernet_t>(eth);
++        {
++            buffer.extract<ethernet_t>(eth);
++        }
+         transition accept;
+     }
+ }
+@@ -30,9 +32,15 @@ control MyIC(inout ethernet_t a, inout E
+         }
+         default_action = NoAction();
+     }
++    PSA_MeterColor_t tmp;
++    bool tmp_0;
+     apply {
+-        if (meter0_0.execute(12w0) == PSA_MeterColor_t.GREEN) {
+-            tbl_0.apply();
++        {
++            tmp = meter0_0.execute(12w0);
++            tmp_0 = tmp == PSA_MeterColor_t.GREEN;
++            if (tmp_0) {
++                tbl_0.apply();
++            }
+         }
+     }
+ }

@@ -1,0 +1,20 @@
+--- before_pass
++++ after_pass
+@@ -1,4 +1,7 @@
+ control ctrl() {
++    bit<32> a_0;
++    bit<32> b_0;
++    bit<32> c_0;
+     @name("e") action e_0() {
+         exit;
+     }
+@@ -12,9 +15,6 @@ control ctrl() {
+         default_action = e_0();
+     }
+     apply {
+-        bit<32> a_0;
+-        bit<32> b_0;
+-        bit<32> c_0;
+         a_0 = 32w0;
+         b_0 = 32w1;
+         c_0 = 32w2;

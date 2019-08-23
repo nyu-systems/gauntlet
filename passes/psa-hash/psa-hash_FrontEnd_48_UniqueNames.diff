@@ -1,0 +1,35 @@
+--- before_pass
++++ after_pass
+@@ -23,24 +23,24 @@ parser MyEP(packet_in buffer, out EMPTY
+     }
+ }
+ control MyIC(inout ethernet_t a, inout user_meta_t b, in psa_ingress_input_metadata_t c, inout psa_ingress_output_metadata_t d) {
+-    bit<16> tmp;
+-    @name("h") Hash<bit<16>>(PSA_HashAlgorithm_t.CRC16) h_0;
+-    @name("a1") action a1_0() {
+-        tmp = h_0.get_hash<ethernet_t>(a);
+-        b.data = tmp;
++    bit<16> tmp_0;
++    @name("h") Hash<bit<16>>(PSA_HashAlgorithm_t.CRC16) h;
++    @name("a1") action a1() {
++        tmp_0 = h.get_hash<ethernet_t>(a);
++        b.data = tmp_0;
+     }
+-    @name("tbl") table tbl_0 {
++    @name("tbl") table tbl {
+         key = {
+             a.srcAddr: exact @name("a.srcAddr") ;
+         }
+         actions = {
+             NoAction();
+-            a1_0();
++            a1();
+         }
+         default_action = NoAction();
+     }
+     apply {
+-        tbl_0.apply();
++        tbl.apply();
+     }
+ }
+ control MyEC(inout EMPTY a, inout EMPTY b, in psa_egress_input_metadata_t c, inout psa_egress_output_metadata_t d) {

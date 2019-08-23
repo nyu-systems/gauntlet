@@ -1,0 +1,10 @@
+--- before_pass
++++ after_pass
+@@ -2,6 +2,6 @@ extern void random<T>(out T result, in T
+ control cIngress() {
+     bit<8> rand_val;
+     apply {
+-        random(rand_val, 8w0);
++        random<bit<8>>(rand_val, 8w0);
+     }
+ }

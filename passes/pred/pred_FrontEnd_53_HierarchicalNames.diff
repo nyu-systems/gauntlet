@@ -1,0 +1,11 @@
+--- before_pass
++++ after_pass
+@@ -4,7 +4,7 @@ control empty();
+ package top(empty e);
+ control Ing() {
+     bool b_0;
+-    @name("cond") action cond() {
++    @name("Ing.cond") action cond() {
+         b_0 = true;
+     }
+     apply {

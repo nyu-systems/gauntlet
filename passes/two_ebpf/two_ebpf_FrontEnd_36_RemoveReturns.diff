@@ -1,0 +1,24 @@
+--- before_pass
++++ after_pass
+@@ -60,13 +60,18 @@ control Check(in IPv4Address address, in
+ control pipe(inout Headers_t headers, out bool pass) {
+     @name("c1") Check() c1_0;
+     apply {
++        bool hasReturned = false;
+         pass = true;
+         if (!headers.ipv4.isValid()) {
+             pass = false;
+-            return;
++            {
++                hasReturned = true;
++            }
++        }
++        if (!hasReturned) {
++            c1_0.apply(headers.ipv4.srcAddr, pass);
++            c1_0.apply(headers.ipv4.dstAddr, pass);
+         }
+-        c1_0.apply(headers.ipv4.srcAddr, pass);
+-        c1_0.apply(headers.ipv4.dstAddr, pass);
+     }
+ }
+ ebpfFilter<Headers_t>(prs(), pipe()) main;

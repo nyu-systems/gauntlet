@@ -1,0 +1,11 @@
+--- before_pass
++++ after_pass
+@@ -7,7 +7,7 @@ parser p1(packet_in p, out Header h) {
+         transition next;
+     }
+     state next {
+-        p.extract(h);
++        p.extract<Header>(h);
+         transition accept;
+     }
+     state unreachable1 {

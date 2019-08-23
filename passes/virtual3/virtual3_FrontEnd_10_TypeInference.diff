@@ -1,0 +1,11 @@
+--- before_pass
++++ after_pass
+@@ -30,7 +30,7 @@ control c(inout bit<16> p) {
+         default_action = NoAction();
+     }
+     apply {
+-        local = 4;
++        local = (bit<16>)16w4;
+         run_ctr.apply();
+     }
+ }

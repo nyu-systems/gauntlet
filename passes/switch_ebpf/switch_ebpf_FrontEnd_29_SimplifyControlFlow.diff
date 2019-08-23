@@ -1,0 +1,53 @@
+--- before_pass
++++ after_pass
+@@ -27,29 +27,21 @@ struct Headers_t {
+ }
+ parser prs(packet_in p, out Headers_t headers) {
+     state start {
+-        {
+-            p.extract<Ethernet_h>(headers.ethernet);
+-        }
++        p.extract<Ethernet_h>(headers.ethernet);
+         transition select(headers.ethernet.etherType) {
+             16w0x800: ip;
+             default: reject;
+         }
+     }
+     state ip {
+-        {
+-            p.extract<IPv4_h>(headers.ipv4);
+-        }
++        p.extract<IPv4_h>(headers.ipv4);
+         transition accept;
+     }
+ }
+ control pipe(inout Headers_t headers, out bool pass) {
+     @name("Reject") action Reject_0(IPv4Address add) {
+-        {
+-            pass = false;
+-        }
+-        {
+-            headers.ipv4.srcAddr = add;
+-        }
++        pass = false;
++        headers.ipv4.srcAddr = add;
+     }
+     @name("Check_src_ip") table Check_src_ip_0 {
+         key = {
+@@ -63,14 +55,10 @@ control pipe(inout Headers_t headers, ou
+         const default_action = NoAction();
+     }
+     apply {
+-        {
+-            pass = true;
+-        }
++        pass = true;
+         switch (Check_src_ip_0.apply().action_run) {
+             Reject_0: {
+-                {
+-                    pass = false;
+-                }
++                pass = false;
+             }
+             NoAction: {
+             }

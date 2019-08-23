@@ -1,0 +1,19 @@
+--- before_pass
++++ after_pass
+@@ -144,6 +144,7 @@ parser Tcp_option_parser(packet_in b, in
+     }
+ }
+ parser ParserImpl(packet_in packet, out headers hdr, inout metadata meta, inout standard_metadata_t standard_metadata) {
++    @name("Tcp_option_parser") Tcp_option_parser() Tcp_option_parser_inst;
+     const bit<16> ETHERTYPE_IPV4 = 16w0x800;
+     state start {
+         transition parse_ethernet;
+@@ -164,7 +165,7 @@ parser ParserImpl(packet_in packet, out
+     }
+     state parse_tcp {
+         packet.extract(hdr.tcp);
+-        Tcp_option_parser.apply(packet, hdr.tcp.dataOffset, hdr.tcp_options_vec, hdr.tcp_options_padding);
++        Tcp_option_parser_inst.apply(packet, hdr.tcp.dataOffset, hdr.tcp_options_vec, hdr.tcp_options_padding);
+         transition accept;
+     }
+ }

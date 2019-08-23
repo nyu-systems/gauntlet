@@ -1,0 +1,11 @@
+--- before_pass
++++ after_pass
+@@ -37,7 +37,7 @@ control ingressImpl(inout headers_t hdr,
+         const default_action = do_meter();
+     }
+     apply {
+-        stdmeta.egress_spec = 1;
++        stdmeta.egress_spec = (bit<9>)9w1;
+         mac_da.apply();
+     }
+ }

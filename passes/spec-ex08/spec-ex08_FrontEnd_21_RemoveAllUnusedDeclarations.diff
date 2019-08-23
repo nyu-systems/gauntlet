@@ -1,0 +1,14 @@
+--- before_pass
++++ after_pass
+@@ -5,11 +5,6 @@ header Ethernet_h {
+     bit<48> srcAddr;
+     bit<16> etherType;
+ }
+-control p() {
+-    apply {
+-        Ethernet_h ethernetHeader;
+-    }
+-}
+ header Ipv4_h {
+     bit<4>      version;
+     bit<4>      ihl;

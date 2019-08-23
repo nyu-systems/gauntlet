@@ -1,0 +1,29 @@
+--- before_pass
++++ after_pass
+@@ -38,21 +38,21 @@ parser ParserImpl(packet_in packet, out
+     }
+ }
+ control ingress(inout headers hdr, inout metadata meta, inout standard_metadata_t standard_metadata) {
+-    @name(".NoAction") action NoAction_1() {
++    @name(".NoAction") action NoAction_0() {
+     }
+-    @name("debug_hdr") table debug_hdr {
++    @name("debug_hdr") table debug_hdr_0 {
+         key = {
+             hdr.base.t              : exact @name("hdr.base.t") ;
+             hdr.u[0].short.isValid(): exact @name("hdr.u[0].short.$valid$") ;
+             hdr.u[0].byte.isValid() : exact @name("hdr.u[0].byte.$valid$") ;
+         }
+         actions = {
+-            NoAction_1();
++            NoAction_0();
+         }
+-        const default_action = NoAction_1();
++        const default_action = NoAction_0();
+     }
+     apply {
+-        debug_hdr.apply();
++        debug_hdr_0.apply();
+         if (hdr.u[0].short.isValid()) {
+             hdr.u[0].short.setInvalid();
+         } else if (hdr.u[0].byte.isValid()) {

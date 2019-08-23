@@ -1,0 +1,19 @@
+--- before_pass
++++ after_pass
+@@ -38,6 +38,7 @@ control egress(inout headers hdr, inout
+     }
+ }
+ control ingress(inout headers hdr, inout metadata meta, inout standard_metadata_t standard_metadata) {
++    bool didHit_0;
+     @name("setDest") action setDest_0() {
+         hdr.ethernet.dstAddr = 48w0x6af3400426d3;
+     }
+@@ -52,7 +53,7 @@ control ingress(inout headers hdr, inout
+         default_action = NoAction();
+     }
+     apply {
+-        bool didHit_0 = someTable_0.apply().hit;
++        didHit_0 = someTable_0.apply().hit;
+     }
+ }
+ control DeparserImpl(packet_out packet, in headers hdr) {

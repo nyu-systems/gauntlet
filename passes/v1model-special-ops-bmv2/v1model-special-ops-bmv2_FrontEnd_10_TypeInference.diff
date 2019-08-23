@@ -1,0 +1,62 @@
+--- before_pass
++++ after_pass
+@@ -104,7 +104,7 @@ control ingress(inout headers_t hdr, ino
+         meta.fwd.out_bd = bd;
+         hdr.ethernet.dstAddr = dmac;
+         standard_metadata.egress_spec = intf;
+-        hdr.ipv4.ttl = hdr.ipv4.ttl - 1;
++        hdr.ipv4.ttl = hdr.ipv4.ttl - 8w1;
+     }
+     table mac_da {
+         key = {
+@@ -118,15 +118,15 @@ control ingress(inout headers_t hdr, ino
+     }
+     apply {
+         if (standard_metadata.instance_type == 32w6) {
+-            c_fill_ipv4_address.apply(hdr.ipv4.srcAddr, 10, 252, 129, 2);
++            c_fill_ipv4_address.apply(hdr.ipv4.srcAddr, 8w10, 8w252, 8w129, 8w2);
+             meta.fwd.l2ptr = 32w0xe50b;
+         } else if (standard_metadata.instance_type == 32w4) {
+-            c_fill_ipv4_address.apply(hdr.ipv4.srcAddr, 10, 199, 86, 99);
++            c_fill_ipv4_address.apply(hdr.ipv4.srcAddr, 8w10, 8w199, 8w86, 8w99);
+             meta.fwd.l2ptr = 32w0xec1c;
+         } else {
+             ipv4_da_lpm.apply();
+         }
+-        if (meta.fwd.l2ptr != 0) {
++        if (meta.fwd.l2ptr != 32w0) {
+             mac_da.apply();
+         }
+     }
+@@ -172,12 +172,12 @@ control egress(inout headers_t hdr, inou
+     apply {
+         if (standard_metadata.instance_type == 32w1) {
+             hdr.switch_to_cpu.setValid();
+-            hdr.switch_to_cpu.word0 = 0x12e012e;
+-            hdr.switch_to_cpu.word1 = 0x5a5a5a5a;
++            hdr.switch_to_cpu.word0 = (bit<32>)32w0x12e012e;
++            hdr.switch_to_cpu.word1 = (bit<32>)32w0x5a5a5a5a;
+         } else if (standard_metadata.instance_type == 32w2) {
+             hdr.switch_to_cpu.setValid();
+-            hdr.switch_to_cpu.word0 = 0xe2e0e2e;
+-            hdr.switch_to_cpu.word1 = 0x5a5a5a5a;
++            hdr.switch_to_cpu.word0 = (bit<32>)32w0xe2e0e2e;
++            hdr.switch_to_cpu.word1 = (bit<32>)32w0x5a5a5a5a;
+         } else {
+             if (standard_metadata.instance_type == 32w5) {
+                 get_multicast_copy_out_bd.apply();
+@@ -195,12 +195,12 @@ control DeparserImpl(packet_out packet,
+ }
+ control verifyChecksum(inout headers_t hdr, inout meta_t meta) {
+     apply {
+-        verify_checksum(hdr.ipv4.isValid() && hdr.ipv4.ihl == 5, { hdr.ipv4.version, hdr.ipv4.ihl, hdr.ipv4.diffserv, hdr.ipv4.totalLen, hdr.ipv4.identification, hdr.ipv4.flags, hdr.ipv4.fragOffset, hdr.ipv4.ttl, hdr.ipv4.protocol, hdr.ipv4.srcAddr, hdr.ipv4.dstAddr }, hdr.ipv4.hdrChecksum, HashAlgorithm.csum16);
++        verify_checksum(hdr.ipv4.isValid() && hdr.ipv4.ihl == 4w5, { hdr.ipv4.version, hdr.ipv4.ihl, hdr.ipv4.diffserv, hdr.ipv4.totalLen, hdr.ipv4.identification, hdr.ipv4.flags, hdr.ipv4.fragOffset, hdr.ipv4.ttl, hdr.ipv4.protocol, hdr.ipv4.srcAddr, hdr.ipv4.dstAddr }, hdr.ipv4.hdrChecksum, HashAlgorithm.csum16);
+     }
+ }
+ control computeChecksum(inout headers_t hdr, inout meta_t meta) {
+     apply {
+-        update_checksum(hdr.ipv4.isValid() && hdr.ipv4.ihl == 5, { hdr.ipv4.version, hdr.ipv4.ihl, hdr.ipv4.diffserv, hdr.ipv4.totalLen, hdr.ipv4.identification, hdr.ipv4.flags, hdr.ipv4.fragOffset, hdr.ipv4.ttl, hdr.ipv4.protocol, hdr.ipv4.srcAddr, hdr.ipv4.dstAddr }, hdr.ipv4.hdrChecksum, HashAlgorithm.csum16);
++        update_checksum(hdr.ipv4.isValid() && hdr.ipv4.ihl == 4w5, { hdr.ipv4.version, hdr.ipv4.ihl, hdr.ipv4.diffserv, hdr.ipv4.totalLen, hdr.ipv4.identification, hdr.ipv4.flags, hdr.ipv4.fragOffset, hdr.ipv4.ttl, hdr.ipv4.protocol, hdr.ipv4.srcAddr, hdr.ipv4.dstAddr }, hdr.ipv4.hdrChecksum, HashAlgorithm.csum16);
+     }
+ }
+ V1Switch(ParserImpl(), verifyChecksum(), ingress(), egress(), computeChecksum(), DeparserImpl()) main;

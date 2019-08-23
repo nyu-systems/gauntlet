@@ -1,0 +1,11 @@
+--- before_pass
++++ after_pass
+@@ -11,8 +11,3 @@ struct hdrs {
+     h1_t    h1;
+     bit<16> crc;
+ }
+-control test(inout hdrs hdr) {
+-    apply {
+-        hdr.crc = crc_poly<bit<16>>(16w0x801a).hash<h1_t>(hdr.h1);
+-    }
+-}

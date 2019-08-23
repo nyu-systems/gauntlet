@@ -1,0 +1,48 @@
+--- before_pass
++++ after_pass
+@@ -59,10 +59,10 @@ parser ParserImpl(packet_in packet, out
+     }
+ }
+ control ingress(inout headers_t hdr, inout meta_t meta, inout standard_metadata_t standard_metadata) {
+-    @name("set_output") action set_output_0(bit<9> out_port) {
++    @name("set_output") action set_output(bit<9> out_port) {
+         standard_metadata.egress_spec = out_port;
+     }
+-    @name("set_headers") action set_headers_0(bit<8> e, CustomD_t ed, CustomT_t et, CustomDD_t edd, CustomDT_t edt, CustomTD_t etd, CustomTT_t ett, CustomDDD_t eddd, CustomDDT_t eddt, CustomDTD_t edtd, CustomDTT_t edtt, CustomTDD_t etdd, CustomTDT_t etdt, CustomTTD_t ettd, CustomTTT_t ettt) {
++    @name("set_headers") action set_headers(bit<8> e, CustomD_t ed, CustomT_t et, CustomDD_t edd, CustomDT_t edt, CustomTD_t etd, CustomTT_t ett, CustomDDD_t eddd, CustomDDT_t eddt, CustomDTD_t edtd, CustomDTT_t edtt, CustomTDD_t etdd, CustomTDT_t etdt, CustomTTD_t ettd, CustomTTT_t ettt) {
+         hdr.custom.e = e;
+         hdr.custom.ed = ed;
+         hdr.custom.et = et;
+@@ -79,9 +79,9 @@ control ingress(inout headers_t hdr, ino
+         hdr.custom.ettd = ettd;
+         hdr.custom.ettt = ettt;
+     }
+-    @name("my_drop") action my_drop_0() {
++    @name("my_drop") action my_drop() {
+     }
+-    @name("custom_table") table custom_table {
++    @name("custom_table") table custom_table_0 {
+         key = {
+             hdr.ethernet.srcAddr: exact @name("hdr.ethernet.srcAddr") ;
+             hdr.ethernet.dstAddr: exact @name("hdr.ethernet.dstAddr") ;
+@@ -98,15 +98,15 @@ control ingress(inout headers_t hdr, ino
+             hdr.custom.ettt     : exact @name("hdr.custom.ettt") ;
+         }
+         actions = {
+-            set_output_0();
+-            set_headers_0();
+-            my_drop_0();
++            set_output();
++            set_headers();
++            my_drop();
+         }
+-        default_action = my_drop_0();
++        default_action = my_drop();
+     }
+     apply {
+         if (hdr.custom.isValid()) {
+-            custom_table.apply();
++            custom_table_0.apply();
+         }
+     }
+ }

@@ -1,0 +1,58 @@
+--- before_pass
++++ after_pass
+@@ -21,7 +21,7 @@ struct metadata {
+ }
+ parser ParserImpl(packet_in packet, out headers hdr, inout metadata meta, inout standard_metadata_t standard_metadata) {
+     state start {
+-        packet.extract(hdr.base);
++        packet.extract<S>(hdr.base);
+         transition select(hdr.base.t) {
+             8w0: parseO1O1;
+             8w1: parseO1O2;
+@@ -31,23 +31,23 @@ parser ParserImpl(packet_in packet, out
+         }
+     }
+     state parseO1O1 {
+-        packet.extract(hdr.u.next.byte);
+-        packet.extract(hdr.u.next.byte);
++        packet.extract<O1>(hdr.u.next.byte);
++        packet.extract<O1>(hdr.u.next.byte);
+         transition accept;
+     }
+     state parseO1O2 {
+-        packet.extract(hdr.u.next.byte);
+-        packet.extract(hdr.u.next.short);
++        packet.extract<O1>(hdr.u.next.byte);
++        packet.extract<O2>(hdr.u.next.short);
+         transition accept;
+     }
+     state parseO2O1 {
+-        packet.extract(hdr.u.next.short);
+-        packet.extract(hdr.u.next.byte);
++        packet.extract<O2>(hdr.u.next.short);
++        packet.extract<O1>(hdr.u.next.byte);
+         transition accept;
+     }
+     state parseO2O2 {
+-        packet.extract(hdr.u.next.short);
+-        packet.extract(hdr.u.next.short);
++        packet.extract<O2>(hdr.u.next.short);
++        packet.extract<O2>(hdr.u.next.short);
+         transition accept;
+     }
+ }
+@@ -87,7 +87,7 @@ control egress(inout headers hdr, inout
+ }
+ control DeparserImpl(packet_out packet, in headers hdr) {
+     apply {
+-        packet.emit(hdr);
++        packet.emit<headers>(hdr);
+     }
+ }
+ control verifyChecksum(inout headers hdr, inout metadata meta) {
+@@ -98,4 +98,4 @@ control computeChecksum(inout headers hd
+     apply {
+     }
+ }
+-V1Switch(ParserImpl(), verifyChecksum(), ingress(), egress(), computeChecksum(), DeparserImpl()) main;
++V1Switch<headers, metadata>(ParserImpl(), verifyChecksum(), ingress(), egress(), computeChecksum(), DeparserImpl()) main;

@@ -1,0 +1,22 @@
+--- before_pass
++++ after_pass
+@@ -1,8 +1,17 @@
+ bit<16> max(in bit<16> left, in bit<16> right) {
++    bool hasReturned = false;
++    bit<16> retval;
+     if (left > right) {
+-        return left;
++        hasReturned = true;
++        retval = left;
+     }
+-    return right;
++    if (!hasReturned) {
++        {
++            hasReturned = true;
++            retval = right;
++        }
++    }
++    return retval;
+ }
+ control c(out bit<16> b) {
+     bit<16> tmp;

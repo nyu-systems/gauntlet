@@ -1,0 +1,17 @@
+--- before_pass
++++ after_pass
+@@ -25,11 +25,11 @@ control cIngress(inout headers_t hdr, in
+         meta_1.multicast_group = (MulticastGroup_t)32w0;
+         meta_1.egress_port = egress_port_1;
+     }
+-    @name("counter") Counter<bit<10>, bit<12>>(32w1024, PSA_CounterType_t.PACKETS) counter_0;
+-    @name("execute") action execute_1() {
++    @name("cIngress.counter") Counter<bit<10>, bit<12>>(32w1024, PSA_CounterType_t.PACKETS) counter_0;
++    @name("cIngress.execute") action execute_1() {
+         counter_0.count(12w256);
+     }
+-    @name("tbl") table tbl_0 {
++    @name("cIngress.tbl") table tbl_0 {
+         actions = {
+             execute_1();
+         }

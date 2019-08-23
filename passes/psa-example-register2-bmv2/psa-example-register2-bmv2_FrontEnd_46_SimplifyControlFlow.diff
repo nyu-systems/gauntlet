@@ -1,0 +1,25 @@
+--- before_pass
++++ after_pass
+@@ -74,18 +74,14 @@ control egress(inout headers hdr, inout
+ }
+ control IngressDeparserImpl(packet_out buffer, out empty_metadata_t clone_i2e_meta, out empty_metadata_t resubmit_meta, out empty_metadata_t normal_meta, inout headers hdr, in metadata meta, in psa_ingress_output_metadata_t istd) {
+     apply {
+-        {
+-            buffer.emit<ethernet_t>(hdr.ethernet);
+-            buffer.emit<ipv4_t>(hdr.ipv4);
+-        }
++        buffer.emit<ethernet_t>(hdr.ethernet);
++        buffer.emit<ipv4_t>(hdr.ipv4);
+     }
+ }
+ control EgressDeparserImpl(packet_out buffer, out empty_metadata_t clone_e2e_meta, out empty_metadata_t recirculate_meta, inout headers hdr, in metadata meta, in psa_egress_output_metadata_t istd, in psa_egress_deparser_input_metadata_t edstd) {
+     apply {
+-        {
+-            buffer.emit<ethernet_t>(hdr.ethernet);
+-            buffer.emit<ipv4_t>(hdr.ipv4);
+-        }
++        buffer.emit<ethernet_t>(hdr.ethernet);
++        buffer.emit<ipv4_t>(hdr.ipv4);
+     }
+ }
+ IngressPipeline<headers, metadata, empty_metadata_t, empty_metadata_t, empty_metadata_t, empty_metadata_t>(IngressParserImpl(), ingress(), IngressDeparserImpl()) ip;

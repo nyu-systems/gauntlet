@@ -1,0 +1,89 @@
+--- before_pass
++++ after_pass
+@@ -34,34 +34,26 @@ struct m {
+ }
+ parser EthernetParser(packet_in b, out ethernet_t ether) {
+     state start {
+-        {
+-            b.extract<ethernet_t>(ether);
+-        }
++        b.extract<ethernet_t>(ether);
+         transition accept;
+     }
+ }
+ parser L2(packet_in b, out h hdr) {
+     @name("ep") EthernetParser() ep_0;
+     state start {
+-        {
+-            ep_0.apply(b, hdr.ether);
+-        }
++        ep_0.apply(b, hdr.ether);
+         transition accept;
+     }
+ }
+ parser Ipv4Parser(packet_in b, out ipv4_t ipv4) {
+     state start {
+-        {
+-            b.extract<ipv4_t>(ipv4);
+-        }
++        b.extract<ipv4_t>(ipv4);
+         transition accept;
+     }
+ }
+ parser VlanParser(packet_in b, out vlan_t vlan) {
+     state start {
+-        {
+-            b.extract<vlan_t>(vlan);
+-        }
++        b.extract<vlan_t>(vlan);
+         transition accept;
+     }
+ }
+@@ -70,9 +62,7 @@ parser L3(packet_in b, inout h hdr) {
+     @name("ip") Ipv4Parser() ip_0;
+     @name("vp") VlanParser() vp_0;
+     state start {
+-        {
+-            etherType_0 = hdr.ether.etherType;
+-        }
++        etherType_0 = hdr.ether.etherType;
+         transition select(etherType_0) {
+             16w0x800: ipv4;
+             16w0x8100: vlan;
+@@ -80,18 +70,12 @@ parser L3(packet_in b, inout h hdr) {
+         }
+     }
+     state ipv4 {
+-        {
+-            ip_0.apply(b, hdr.ipv4);
+-        }
++        ip_0.apply(b, hdr.ipv4);
+         transition accept;
+     }
+     state vlan {
+-        {
+-            vp_0.apply(b, hdr.vlan);
+-        }
+-        {
+-            etherType_0 = hdr.vlan.etherType;
+-        }
++        vp_0.apply(b, hdr.vlan);
++        etherType_0 = hdr.vlan.etherType;
+         transition start;
+     }
+ }
+@@ -99,12 +83,8 @@ parser MyParser(packet_in b, out h hdr,
+     @name("l2") L2() l2_0;
+     @name("l3") L3() l3_0;
+     state start {
+-        {
+-            l2_0.apply(b, hdr);
+-        }
+-        {
+-            l3_0.apply(b, hdr);
+-        }
++        l2_0.apply(b, hdr);
++        l3_0.apply(b, hdr);
+         transition accept;
+     }
+ }

@@ -1,0 +1,16 @@
+--- before_pass
++++ after_pass
+@@ -13,10 +13,10 @@ parser P(packet_in b, out Headers p, ino
+     }
+ }
+ control Ing(inout Headers headers, inout Metadata meta, inout standard_metadata_t standard_meta) {
+-    register<S>(32w100) r;
++    @name("r") register<S>(32w100) r_0;
+     apply {
+-        S s = { 32w0 };
+-        r.write(32w0, s);
++        S s_0 = { 32w0 };
++        r_0.write(32w0, s_0);
+     }
+ }
+ control Eg(inout Headers hdrs, inout Metadata meta, inout standard_metadata_t standard_meta) {

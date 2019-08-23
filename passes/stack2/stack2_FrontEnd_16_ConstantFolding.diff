@@ -1,0 +1,11 @@
+--- before_pass
++++ after_pass
+@@ -4,7 +4,7 @@ header h {
+ control c(out bit<32> x) {
+     apply {
+         h[4] stack;
+-        bit<32> sz = stack.size;
++        bit<32> sz = 32w4;
+         x = sz;
+     }
+ }

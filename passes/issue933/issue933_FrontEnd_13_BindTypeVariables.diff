@@ -1,0 +1,8 @@
+--- before_pass
++++ after_pass
+@@ -8,4 +8,4 @@ control MyDeparser(packet_out packet, in
+         packet.emit<headers>({  });
+     }
+ }
+-Switch(MyDeparser()) main;
++Switch<headers>(MyDeparser()) main;

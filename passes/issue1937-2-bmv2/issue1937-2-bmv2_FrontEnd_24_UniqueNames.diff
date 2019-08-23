@@ -1,0 +1,18 @@
+--- before_pass
++++ after_pass
+@@ -16,11 +16,11 @@ parser foo(out bit<8> x, in bit<8> y=5)
+     }
+ }
+ parser parserImpl(packet_in packet, out headers_t hdr, inout metadata_t meta, inout standard_metadata_t stdmeta) {
+-    @name("foo") foo() foo_inst;
+-    @name("foo") foo() foo_inst_0;
++    @name("foo") foo() foo_inst_1;
++    @name("foo") foo() foo_inst_2;
+     state start {
+-        foo_inst.apply(hdr.h1.f1, hdr.h1.f1);
+-        foo_inst_0.apply(x = hdr.h1.f2, y = 8w5);
++        foo_inst_1.apply(hdr.h1.f1, hdr.h1.f1);
++        foo_inst_2.apply(x = hdr.h1.f2, y = 8w5);
+         transition accept;
+     }
+ }

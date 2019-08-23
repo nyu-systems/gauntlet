@@ -1,0 +1,11 @@
+--- before_pass
++++ after_pass
+@@ -4,7 +4,7 @@ parser p() {
+     state start {
+         bit<32> x;
+         transition select(x) {
+-            0: reject;
++            32w0: reject;
+         }
+     }
+ }

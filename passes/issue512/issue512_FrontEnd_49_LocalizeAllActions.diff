@@ -1,0 +1,23 @@
+--- before_pass
++++ after_pass
+@@ -25,7 +25,7 @@ parser parserI(packet_in pkt, out Parsed
+     }
+ }
+ control cIngress(inout Parsed_packet hdr, inout mystruct1 meta, inout standard_metadata_t stdmeta) {
+-    @name("foo") action foo() {
++    @name("foo") action foo_0() {
+         bool hasReturned_0 = false;
+         meta.b = meta.b + 4w5;
+         if (meta.b > 4w10) {
+@@ -41,9 +41,9 @@ control cIngress(inout Parsed_packet hdr
+             hdr.ethernet.srcAddr: exact @name("hdr.ethernet.srcAddr") ;
+         }
+         actions = {
+-            foo();
++            foo_0();
+         }
+-        default_action = foo();
++        default_action = foo_0();
+     }
+     apply {
+         guh.apply();

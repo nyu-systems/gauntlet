@@ -1,0 +1,8 @@
+--- before_pass
++++ after_pass
+@@ -11,4 +11,4 @@ control c(out bit<1> b) {
+ }
+ control e<T>(out T t);
+ package top<T>(e<T> e);
+-top(c()) main;
++top<bit<1>>(c()) main;

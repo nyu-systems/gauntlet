@@ -1,0 +1,24 @@
+--- before_pass
++++ after_pass
+@@ -12,16 +12,16 @@ control ctrl(out bit<32> c) {
+     }
+     apply {
+         a_0 = 32w0;
+-        b_0 = 32w1;
++        ;
+         c = 32w2;
+         if (a_0 == 32w0) {
+-            b_0 = 32w2;
++            ;
+             t_0.apply();
+-            c = 32w3;
++            ;
+         } else {
+-            b_0 = 32w3;
++            ;
+             t_0.apply();
+-            c = 32w4;
++            ;
+         }
+         c = 32w5;
+     }

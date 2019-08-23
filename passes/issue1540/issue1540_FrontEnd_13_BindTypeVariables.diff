@@ -1,0 +1,12 @@
+--- before_pass
++++ after_pass
+@@ -21,6 +21,6 @@ control SwitchIngressDeparser(packet_out
+         im.apply();
+     }
+ }
+-Pipeline(SwitchIngress(), SwitchIngressDeparser()) p0;
+-Pipeline(SwitchIngress(), SwitchIngressDeparser()) p1;
+-Top(p0, p1) main;
++Pipeline<header_t, metadata_t>(SwitchIngress(), SwitchIngressDeparser()) p0;
++Pipeline<header_t, metadata_t>(SwitchIngress(), SwitchIngressDeparser()) p1;
++Top<header_t, metadata_t, header_t, metadata_t>(p0, p1) main;

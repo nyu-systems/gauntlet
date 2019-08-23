@@ -1,0 +1,24 @@
+--- before_pass
++++ after_pass
+@@ -22,8 +22,8 @@ control IngressI(inout H hdr, inout M me
+             meta.hash1: selector;
+         }
+         actions = {
+-            drop;
+-            NoAction;
++            drop();
++            NoAction();
+         }
+         const default_action = NoAction();
+         @name("ap_ws") implementation = as;
+@@ -33,8 +33,8 @@ control IngressI(inout H hdr, inout M me
+             meta.hash1: selector;
+         }
+         actions = {
+-            drop;
+-            NoAction;
++            drop();
++            NoAction();
+         }
+         const default_action = NoAction();
+         @name("ap_ws") implementation = as;

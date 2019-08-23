@@ -1,0 +1,26 @@
+--- before_pass
++++ after_pass
+@@ -23,8 +23,8 @@ parser ParserImpl(packet_in packet, out
+     state start {
+         packet.extract(hdr.base);
+         transition select(hdr.base.t) {
+-            0: parseO1;
+-            1: parseO2;
++            8w0: parseO1;
++            8w1: parseO2;
+             default: accept;
+         }
+     }
+@@ -52,10 +52,10 @@ control ingress(inout headers hdr, inout
+     apply {
+         debug_hdr.apply();
+         if (hdr.u[0].short.isValid()) {
+-            hdr.u[0].short.data = 0xffff;
++            hdr.u[0].short.data = (bit<16>)16w0xffff;
+             hdr.u[0].short.setInvalid();
+         } else if (hdr.u[0].byte.isValid()) {
+-            hdr.u[0].byte.data = 0xff;
++            hdr.u[0].byte.data = (bit<8>)8w0xff;
+             hdr.u[0].byte.setInvalid();
+         }
+     }

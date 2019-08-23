@@ -1,0 +1,17 @@
+--- before_pass
++++ after_pass
+@@ -17,8 +17,12 @@ control c() {
+         default_action = a_0();
+     }
+     apply {
+-        t1_0.apply();
+-        t2_0.apply();
++        {
++            t1_0.apply();
++        }
++        {
++            t2_0.apply();
++        }
+     }
+ }
+ control empty();

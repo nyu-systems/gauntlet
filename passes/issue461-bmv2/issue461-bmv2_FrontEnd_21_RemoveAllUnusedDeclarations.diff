@@ -1,0 +1,10 @@
+--- before_pass
++++ after_pass
+@@ -34,7 +34,6 @@ action my_drop(inout standard_metadata_t
+     mark_to_drop(smeta);
+ }
+ parser ParserImpl(packet_in packet, out headers hdr, inout metadata meta, inout standard_metadata_t standard_metadata) {
+-    const bit<16> ETHERTYPE_IPV4 = 16w0x800;
+     state parse_ethernet {
+         packet.extract<ethernet_t>(hdr.ethernet);
+         transition select(hdr.ethernet.etherType) {

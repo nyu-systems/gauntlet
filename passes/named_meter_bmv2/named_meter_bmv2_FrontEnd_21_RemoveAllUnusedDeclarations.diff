@@ -1,0 +1,13 @@
+--- before_pass
++++ after_pass
+@@ -36,10 +36,6 @@ control ingress(inout headers hdr, inout
+     }
+     @name("_nop") action _nop() {
+     }
+-    @name("m_action") action m_action(bit<9> meter_idx) {
+-        standard_metadata.egress_spec = meter_idx;
+-        standard_metadata.egress_spec = 9w1;
+-    }
+     @name("m_filter") table m_filter {
+         actions = {
+             _drop();

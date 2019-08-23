@@ -1,0 +1,15 @@
+--- before_pass
++++ after_pass
+@@ -4,9 +4,9 @@ typedef bit<32> Wide_t;
+ type Wide_t Wide;
+ control c(out bool b) {
+     apply {
+-        Wide x = (Wide)32w3;
+-        Narrow y = (Narrow)(Narrow_t)(Wide_t)x;
+-        b = y == (Narrow)9w10;
++        Wide x_0 = (Wide)32w3;
++        Narrow y_0 = (Narrow)(Narrow_t)(Wide_t)x_0;
++        b = y_0 == (Narrow)9w10;
+     }
+ }
+ control ctrl(out bool b);

@@ -1,0 +1,69 @@
+--- before_pass
++++ after_pass
+@@ -216,8 +216,8 @@ control MyIngress(inout headers hdr, ino
+     }
+     table ndp_answer {
+         key = {
+-            hdr.ipv6.dst_addr: exact;
+-            hdr.icmp6.type   : exact;
++            hdr.ipv6.dst_addr: exact @name("hdr.ipv6.dst_addr") ;
++            hdr.icmp6.type   : exact @name("hdr.icmp6.type") ;
+         }
+         actions = {
+             controller_debug();
+@@ -229,7 +229,7 @@ control MyIngress(inout headers hdr, ino
+     }
+     table port2mcast {
+         key = {
+-            standard_metadata.ingress_port: exact;
++            standard_metadata.ingress_port: exact @name("standard_metadata.ingress_port") ;
+         }
+         actions = {
+             multicast_pkg();
+@@ -241,7 +241,7 @@ control MyIngress(inout headers hdr, ino
+     }
+     table addr2mcast {
+         key = {
+-            hdr.ipv6.dst_addr: exact;
++            hdr.ipv6.dst_addr: exact @name("hdr.ipv6.dst_addr") ;
+         }
+         actions = {
+             multicast_pkg();
+@@ -253,8 +253,8 @@ control MyIngress(inout headers hdr, ino
+     }
+     table ndp {
+         key = {
+-            hdr.ipv6.dst_addr             : lpm;
+-            standard_metadata.ingress_port: exact;
++            hdr.ipv6.dst_addr             : lpm @name("hdr.ipv6.dst_addr") ;
++            standard_metadata.ingress_port: exact @name("standard_metadata.ingress_port") ;
+         }
+         actions = {
+             multicast_pkg();
+@@ -276,7 +276,7 @@ control MyIngress(inout headers hdr, ino
+     }
+     table v6_addresses {
+         key = {
+-            hdr.ipv6.dst_addr: exact;
++            hdr.ipv6.dst_addr: exact @name("hdr.ipv6.dst_addr") ;
+         }
+         actions = {
+             controller_debug();
+@@ -289,7 +289,7 @@ control MyIngress(inout headers hdr, ino
+     }
+     table v6_networks {
+         key = {
+-            hdr.ipv6.dst_addr: lpm;
++            hdr.ipv6.dst_addr: lpm @name("hdr.ipv6.dst_addr") ;
+         }
+         actions = {
+             set_egress_port();
+@@ -302,7 +302,7 @@ control MyIngress(inout headers hdr, ino
+     }
+     table v4_networks {
+         key = {
+-            hdr.ipv4.dst_addr: lpm;
++            hdr.ipv4.dst_addr: lpm @name("hdr.ipv4.dst_addr") ;
+         }
+         actions = {
+             set_egress_port();

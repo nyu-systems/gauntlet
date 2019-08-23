@@ -1,0 +1,43 @@
+--- before_pass
++++ after_pass
+@@ -1,11 +1,11 @@
+ #include <core.p4>
+ #include <v1model.p4>
+ bit<16> sometimes_dec(in bit<16> x) {
+-    bit<16> tmp = x;
++    bit<16> tmp_0 = x;
+     if (x > 16w5) {
+-        tmp = x + 16w65535;
++        tmp_0 = x + 16w65535;
+     }
+-    return tmp;
++    return tmp_0;
+ }
+ struct metadata {
+ }
+@@ -27,21 +27,21 @@ parser ParserImpl(packet_in packet, out
+     }
+ }
+ control ingress(inout headers hdr, inout metadata meta, inout standard_metadata_t standard_metadata) {
+-    action set_port(bit<9> output_port) {
++    @name("set_port") action set_port_0(bit<9> output_port) {
+         standard_metadata.egress_spec = output_port;
+     }
+-    table mac_da {
++    @name("mac_da") table mac_da_0 {
+         key = {
+             hdr.ethernet.dstAddr: exact @name("hdr.ethernet.dstAddr") ;
+         }
+         actions = {
+-            set_port();
++            set_port_0();
+             my_drop(standard_metadata);
+         }
+         default_action = my_drop(standard_metadata);
+     }
+     apply {
+-        mac_da.apply();
++        mac_da_0.apply();
+         hdr.ethernet.srcAddr[15:0] = sometimes_dec(hdr.ethernet.srcAddr[15:0]);
+     }
+ }

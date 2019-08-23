@@ -1,0 +1,9 @@
+--- before_pass
++++ after_pass
+@@ -1,6 +1,5 @@
+ #include <core.p4>
+ #include <v1model.p4>
+-const bit<6> TYPE_ADDR_IPV4 = 6w0x1;
+ header preamble_t {
+     bit<336> data;
+ }

@@ -1,0 +1,28 @@
+--- before_pass
++++ after_pass
+@@ -12,7 +12,9 @@ parser ParserI(packet_in pk, out H hdr,
+ }
+ control IngressI(inout H hdr, inout M meta, inout standard_metadata_t smeta) {
+     @name("drop") action drop_0() {
+-        mark_to_drop(smeta);
++        {
++            mark_to_drop(smeta);
++        }
+     }
+     @name("indirect") table indirect_0 {
+         key = {
+@@ -36,8 +38,12 @@ control IngressI(inout H hdr, inout M me
+         @name("ap_ws") implementation = action_selector(HashAlgorithm.identity, 32w1024, 32w10);
+     }
+     apply {
+-        indirect_0.apply();
+-        indirect_ws_0.apply();
++        {
++            indirect_0.apply();
++        }
++        {
++            indirect_ws_0.apply();
++        }
+     }
+ }
+ control EgressI(inout H hdr, inout M meta, inout standard_metadata_t smeta) {

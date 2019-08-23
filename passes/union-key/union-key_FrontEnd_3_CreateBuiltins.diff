@@ -1,0 +1,14 @@
+--- before_pass
++++ after_pass
+@@ -20,8 +20,10 @@ control c(in Headers h) {
+             h.u.h1.x: exact;
+         }
+         actions = {
+-            a;
++            a();
++            @defaultonly NoAction();
+         }
++        default_action = NoAction();
+     }
+     apply {
+         t.apply();

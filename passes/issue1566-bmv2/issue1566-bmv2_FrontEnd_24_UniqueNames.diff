@@ -1,0 +1,45 @@
+--- before_pass
++++ after_pass
+@@ -15,10 +15,10 @@ struct metadata_t {
+ }
+ control my_control_type(inout bit<16> x);
+ control C1(inout bit<16> x) {
+-    counter(32w65536, CounterType.packets) stats;
++    @name("stats") counter(32w65536, CounterType.packets) stats_0;
+     apply {
+         x = x + 16w1;
+-        stats.count((bit<32>)x);
++        stats_0.count((bit<32>)x);
+     }
+ }
+ control C2(inout bit<16> x)(my_control_type c) {
+@@ -34,12 +34,12 @@ control C3(inout bit<16> x)(my_control_t
+     }
+ }
+ control E(inout bit<16> x) {
+-    C1() c1;
+-    C2(c1) c2;
+-    C3(c1) c3;
++    @name("c1") C1() c1_0;
++    @name("c2") C2(c1_0) c2_0;
++    @name("c3") C3(c1_0) c3_0;
+     apply {
+-        c2.apply(x);
+-        c3.apply(x);
++        c2_0.apply(x);
++        c3_0.apply(x);
+     }
+ }
+ parser parserI(packet_in pkt, out Parsed_packet hdr, inout metadata_t meta, inout standard_metadata_t stdmeta) {
+@@ -49,9 +49,9 @@ parser parserI(packet_in pkt, out Parsed
+     }
+ }
+ control cIngress(inout Parsed_packet hdr, inout metadata_t meta, inout standard_metadata_t stdmeta) {
+-    @name("E") E() E_inst;
++    @name("E") E() E_inst_0;
+     apply {
+-        E_inst.apply(hdr.ethernet.etherType);
++        E_inst_0.apply(hdr.ethernet.etherType);
+     }
+ }
+ control cEgress(inout Parsed_packet hdr, inout metadata_t meta, inout standard_metadata_t stdmeta) {

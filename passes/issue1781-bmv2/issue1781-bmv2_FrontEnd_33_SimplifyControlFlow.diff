@@ -1,0 +1,10 @@
+--- before_pass
++++ after_pass
+@@ -22,7 +22,6 @@ control IngressImpl(inout headers hdr, i
+     }
+     apply {
+         tmp_0 = test_func();
+-        ;
+         update_value_0(value_0);
+     }
+ }

@@ -1,0 +1,32 @@
+--- before_pass
++++ after_pass
+@@ -1,21 +1,23 @@
+ #include <core.p4>
+ parser Parser();
+ package Package(Parser p1, Parser p2);
+-parser Parser1()(Parser p) {
++parser Inside() {
+     state start {
+-        p.apply();
+         transition accept;
+     }
+ }
+-parser Parser2()(Parser p) {
++parser Parser1_0() {
++    Inside() p_0;
+     state start {
+-        p.apply();
++        p_0.apply();
+         transition accept;
+     }
+ }
+-parser Inside() {
++parser Parser2_0() {
++    Inside() p_1;
+     state start {
++        p_1.apply();
+         transition accept;
+     }
+ }
+-Package(Parser1(Inside()), Parser2(Inside())) main;
++Package(Parser1_0(), Parser2_0()) main;

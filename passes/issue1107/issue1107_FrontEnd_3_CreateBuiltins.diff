@@ -1,0 +1,18 @@
+--- before_pass
++++ after_pass
+@@ -25,12 +25,14 @@ control myc(inout H hdr, inout M meta, i
+             meta.f2: exact;
+         }
+         actions = {
+-            set_eg;
++            set_eg();
++            @defaultonly NoAction();
+         }
+         const entries = {
+                         (32w1, MyIP) : set_eg(9w1);
+                         (32w2, MyIP) : set_eg(9w2);
+         }
++        default_action = NoAction();
+     }
+     apply {
+         myt.apply();

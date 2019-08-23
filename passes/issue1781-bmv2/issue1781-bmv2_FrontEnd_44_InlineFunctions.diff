@@ -1,0 +1,46 @@
+--- before_pass
++++ after_pass
+@@ -9,25 +9,32 @@ parser ParserImpl(packet_in packet, out
+         transition accept;
+     }
+ }
+-bit<32> test_func() {
+-    bool hasReturned = false;
+-    bit<32> retval;
+-    {
+-        hasReturned = true;
+-        retval = 32w1;
+-    }
+-    return retval;
+-}
+ control IngressImpl(inout headers hdr, inout metadata meta, inout standard_metadata_t standard_metadata) {
+     bit<32> value_0;
+     bit<32> tmp;
+     bit<32> tmp_0;
+     @name("update_value") action update_value_0(out bit<32> value_1) {
+-        tmp = test_func();
++        {
++            bool hasReturned = false;
++            bit<32> retval;
++            {
++                hasReturned = true;
++                retval = 32w1;
++            }
++            tmp = retval;
++        }
+         value_1 = tmp;
+     }
+     apply {
+-        tmp_0 = test_func();
++        {
++            bool hasReturned = false;
++            bit<32> retval;
++            {
++                hasReturned = true;
++                retval = 32w1;
++            }
++            tmp_0 = retval;
++        }
+         update_value_0(value_0);
+     }
+ }

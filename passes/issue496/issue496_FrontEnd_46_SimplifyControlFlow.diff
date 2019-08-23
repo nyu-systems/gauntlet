@@ -1,0 +1,13 @@
+--- before_pass
++++ after_pass
+@@ -19,10 +19,6 @@ control MyVerifyChecksum(inout my_packet
+ }
+ control MyIngress(inout my_packet p, inout my_metadata m, inout standard_metadata_t s) {
+     apply {
+-        {
+-            {
+-            }
+-        }
+     }
+ }
+ control MyEgress(inout my_packet p, inout my_metadata m, inout standard_metadata_t s) {

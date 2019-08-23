@@ -1,0 +1,11 @@
+--- before_pass
++++ after_pass
+@@ -20,7 +20,7 @@ control MyVerifyChecksum(inout my_packet
+ control MyIngress(inout my_packet p, inout my_metadata m, inout standard_metadata_t s) {
+     apply {
+         bit<32> x;
+-        hash(x, HashAlgorithm.crc32, 32w0, { p.h.f ^ 0xffff }, 32w65536);
++        hash(x, HashAlgorithm.crc32, 32w0, { p.h.f ^ 32w0xffff }, 32w65536);
+     }
+ }
+ control MyEgress(inout my_packet p, inout my_metadata m, inout standard_metadata_t s) {

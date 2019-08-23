@@ -1,0 +1,17 @@
+--- before_pass
++++ after_pass
+@@ -29,13 +29,9 @@ control EgressI(inout H hdr, inout M met
+         bool hasReturned = false;
+         switch (t_0.apply().action_run) {
+             a_0: {
+-                {
+-                    hasReturned = true;
+-                }
++                hasReturned = true;
+             }
+             default: {
+-                {
+-                }
+             }
+         }
+     }

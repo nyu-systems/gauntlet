@@ -1,0 +1,41 @@
+--- before_pass
++++ after_pass
+@@ -55,7 +55,7 @@ parser parserI(packet_in pkt, out header
+     state start {
+         pkt.extract(hdr.ethernet);
+         transition select(hdr.ethernet.etherType) {
+-            0x800: parse_ipv4;
++            16w0x800: parse_ipv4;
+             default: accept;
+         }
+     }
+@@ -64,7 +64,7 @@ parser parserI(packet_in pkt, out header
+         verify(hdr.ipv4.version == 4w4, error.IPv4IncorrectVersion);
+         verify(hdr.ipv4.ihl >= 4w5, error.IPv4HeaderTooShort);
+         transition select(hdr.ipv4.protocol) {
+-            6: parse_tcp;
++            8w6: parse_tcp;
+             default: accept;
+         }
+     }
+@@ -75,15 +75,15 @@ parser parserI(packet_in pkt, out header
+ }
+ control cIngress(inout headers hdr, inout metadata meta, inout standard_metadata_t stdmeta) {
+     apply {
+-        stdmeta.egress_spec = 0;
+-        if (stdmeta.checksum_error == 1) {
+-            hdr.ethernet.srcAddr = 0xbad;
++        stdmeta.egress_spec = (bit<9>)9w0;
++        if (stdmeta.checksum_error == 1w1) {
++            hdr.ethernet.srcAddr = (bit<48>)48w0xbad;
+         }
+         if (stdmeta.parser_error != error.NoError) {
+-            hdr.ethernet.dstAddr = 0xbad;
++            hdr.ethernet.dstAddr = (bit<48>)48w0xbad;
+         }
+         if (hdr.ipv4.isValid()) {
+-            hdr.ipv4.ttl = hdr.ipv4.ttl |-| 1;
++            hdr.ipv4.ttl = hdr.ipv4.ttl |-| 8w1;
+         }
+     }
+ }

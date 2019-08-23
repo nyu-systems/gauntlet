@@ -1,0 +1,22 @@
+--- before_pass
++++ after_pass
+@@ -29,8 +29,8 @@ type Custom00200_t Custom002001_t;
+ typedef Custom002001_t Custom0020010_t;
+ typedef Custom002002_t Custom0020020_t;
+ enum bit<8> serenum_t {
+-    A = 1,
+-    B = 3
++    A = 8w1,
++    B = 8w3
+ }
+ typedef serenum_t serenum0_t;
+ header ethernet_t {
+@@ -121,7 +121,7 @@ parser ParserImpl(packet_in packet, out
+     value_set<valueset1_t>(4) valueset1;
+     state start {
+         transition select(stdmeta.ingress_port) {
+-            0: parse_packet_out_header;
++            9w0: parse_packet_out_header;
+             default: parse_ethernet;
+         }
+     }

@@ -1,0 +1,11 @@
+--- before_pass
++++ after_pass
+@@ -5,7 +5,7 @@ struct S {
+ }
+ parser p() {
+     state start {
+-        bit<8> x = (bit<8>)8w5;
++        bit<8> x = 8w5;
+         S s = { 8w0, 8w0 };
+         tuple<bit<8>, bit<8>> t = { 8w0, 8w0 };
+         transition select(x, x, { x, x }, x) {

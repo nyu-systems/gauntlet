@@ -1,0 +1,11 @@
+--- before_pass
++++ after_pass
+@@ -44,7 +44,7 @@ control ingress(inout Header_t h, inout
+     }
+     table t_lpm {
+         key = {
+-            h.h.l: lpm;
++            h.h.l: lpm @name("h.h.l") ;
+         }
+         actions = {
+             a();

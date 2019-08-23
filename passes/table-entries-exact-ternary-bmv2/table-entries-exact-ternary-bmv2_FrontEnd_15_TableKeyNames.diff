@@ -1,0 +1,13 @@
+--- before_pass
++++ after_pass
+@@ -44,8 +44,8 @@ control ingress(inout Header_t h, inout
+     }
+     table t_exact_ternary {
+         key = {
+-            h.h.e: exact;
+-            h.h.t: ternary;
++            h.h.e: exact @name("h.h.e") ;
++            h.h.t: ternary @name("h.h.t") ;
+         }
+         actions = {
+             a();

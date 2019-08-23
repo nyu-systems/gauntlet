@@ -1,0 +1,28 @@
+--- before_pass
++++ after_pass
+@@ -22,7 +22,7 @@ control ComputeChecksumI(inout H hdr, in
+     }
+ }
+ control aux(inout M meta, in H hdr) {
+-    table adjust_lkp_fields {
++    @name("adjust_lkp_fields") table adjust_lkp_fields_0 {
+         key = {
+             hdr.ipv4.isValid(): exact @name("hdr.ipv4.$valid$") ;
+         }
+@@ -32,13 +32,13 @@ control aux(inout M meta, in H hdr) {
+         default_action = NoAction();
+     }
+     apply {
+-        adjust_lkp_fields.apply();
++        adjust_lkp_fields_0.apply();
+     }
+ }
+ control IngressI(inout H hdr, inout M meta, inout std_meta_t std_meta) {
+-    aux() do_aux;
++    @name("do_aux") aux() do_aux_0;
+     apply {
+-        do_aux.apply(meta, hdr);
++        do_aux_0.apply(meta, hdr);
+     }
+ }
+ control EgressI(inout H hdr, inout M meta, inout std_meta_t std_meta) {

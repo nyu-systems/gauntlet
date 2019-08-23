@@ -1,0 +1,10 @@
+--- before_pass
++++ after_pass
+@@ -22,7 +22,6 @@ header Ethernet_h {
+     bit<16>         etherType;
+ }
+ typedef tuple<bit<8>, bit<16>> myTuple0;
+-typedef tuple<bit<7>, int<33>, EthernetAddress, MySignedInt, varbit<56>, varbit<104>, error, bool, myenum1, Ethernet_h, Ethernet_h[4], mystruct1, mystruct2, myTuple0> myTuple1;
+ struct myStruct1 {
+     bit<7>          x1;
+     int<33>         x2;

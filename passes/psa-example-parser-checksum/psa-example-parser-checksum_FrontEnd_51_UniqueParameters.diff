@@ -1,0 +1,13 @@
+--- before_pass
++++ after_pass
+@@ -83,8 +83,8 @@ parser IngressParserImpl(packet_in buffe
+     }
+ }
+ control ingress(inout headers hdr, inout metadata user_meta, in psa_ingress_input_metadata_t istd, inout psa_ingress_output_metadata_t ostd) {
+-    @name(".ingress_drop") action ingress_drop(inout psa_ingress_output_metadata_t meta_0) {
+-        meta_0.drop = true;
++    @name(".ingress_drop") action ingress_drop(inout psa_ingress_output_metadata_t meta_1) {
++        meta_1.drop = true;
+     }
+     @name("parser_error_counts") DirectCounter<PacketCounter_t>(PSA_CounterType_t.PACKETS) parser_error_counts_0;
+     @name("set_error_idx") action set_error_idx(ErrorIndex_t idx) {

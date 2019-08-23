@@ -1,0 +1,44 @@
+--- before_pass
++++ after_pass
+@@ -20,11 +20,21 @@ parser IngressParserImpl(packet_in pkt,
+     }
+ }
+ control cIngress(inout headers_t hdr, inout metadata_t user_meta, in psa_ingress_input_metadata_t istd, inout psa_ingress_output_metadata_t ostd) {
++    @name(".send_to_port") action send_to_port_1(inout psa_ingress_output_metadata_t meta_0, in PortId_t egress_port_0) {
++        meta_0.drop = false;
++        meta_0.multicast_group = (MulticastGroup_t)32w0;
++        meta_0.egress_port = egress_port_0;
++    }
++    @name(".send_to_port") action send_to_port_2(inout psa_ingress_output_metadata_t meta_0, in PortId_t egress_port_0) {
++        meta_0.drop = false;
++        meta_0.multicast_group = (MulticastGroup_t)32w0;
++        meta_0.egress_port = egress_port_0;
++    }
+     apply {
+         if (hdr.ethernet.dstAddr[3:0] >= 4w4) {
+-            send_to_port(ostd, (PortId_t)(PortIdUint_t)hdr.ethernet.dstAddr);
++            send_to_port_1(ostd, (PortId_t)(PortIdUint_t)hdr.ethernet.dstAddr);
+         } else {
+-            send_to_port(ostd, (PortId_t)32w0xfffffffa);
++            send_to_port_2(ostd, (PortId_t)32w0xfffffffa);
+         }
+     }
+ }
+@@ -35,14 +45,14 @@ parser EgressParserImpl(packet_in buffer
+     }
+ }
+ control cEgress(inout headers_t hdr, inout metadata_t user_meta, in psa_egress_input_metadata_t istd, inout psa_egress_output_metadata_t ostd) {
+-    @name("add") action add_1() {
++    @name("add") action add_0() {
+         hdr.ethernet.dstAddr = hdr.ethernet.dstAddr + hdr.ethernet.srcAddr;
+     }
+     @name("e") table e {
+         actions = {
+-            add_1();
++            add_0();
+         }
+-        default_action = add_1();
++        default_action = add_0();
+     }
+     apply {
+         e.apply();

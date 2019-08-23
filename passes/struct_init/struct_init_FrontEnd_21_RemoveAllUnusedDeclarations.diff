@@ -1,0 +1,10 @@
+--- before_pass
++++ after_pass
+@@ -1,7 +1,6 @@
+ struct PortId_t {
+     bit<9> _v;
+ }
+-const PortId_t PSA_CPU_PORT = { 9w192 };
+ struct metadata_t {
+     PortId_t foo;
+ }

@@ -1,0 +1,28 @@
+--- before_pass
++++ after_pass
+@@ -11,12 +11,8 @@ struct my_metadata_t {
+ }
+ parser MyParser(packet_in packet, out my_headers_t hdr, inout my_metadata_t meta, inout standard_metadata_t standard_metadata) {
+     state start {
+-        {
+-            packet.extract<simple>(hdr.s);
+-        }
+-        {
+-            meta.parser_error = error.NoMatch;
+-        }
++        packet.extract<simple>(hdr.s);
++        meta.parser_error = error.NoMatch;
+         transition accept;
+     }
+ }
+@@ -41,9 +37,7 @@ control MyComputeChecksum(inout my_heade
+ }
+ control MyDeparser(packet_out packet, in my_headers_t hdr) {
+     apply {
+-        {
+-            packet.emit<simple>(hdr.s);
+-        }
++        packet.emit<simple>(hdr.s);
+     }
+ }
+ V1Switch<my_headers_t, my_metadata_t>(MyParser(), MyVerifyChecksum(), MyIngress(), MyEgress(), MyComputeChecksum(), MyDeparser()) main;

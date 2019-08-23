@@ -1,0 +1,40 @@
+--- before_pass
++++ after_pass
+@@ -198,8 +198,10 @@ control ingress(inout headers hdr, inout
+             hdr.ipv6.dstAddr[127:120] == 8w0xff: exact @name("mcast_key") ;
+         }
+         actions = {
+-            set_mcast_grp;
++            set_mcast_grp();
++            @defaultonly NoAction();
+         }
++        default_action = NoAction();
+     }
+     apply {
+         if (hdr.ipv6.isValid()) {
+@@ -217,8 +219,10 @@ control egress(inout headers hdr, inout
+             standard_metadata.egress_rid: exact;
+         }
+         actions = {
+-            set_out_bd;
++            set_out_bd();
++            @defaultonly NoAction();
+         }
++        default_action = NoAction();
+     }
+     action drop() {
+         mark_to_drop(standard_metadata);
+@@ -231,10 +235,10 @@ control egress(inout headers hdr, inout
+             meta.fwd.out_bd: exact;
+         }
+         actions = {
+-            rewrite_mac;
+-            drop;
++            rewrite_mac();
++            drop();
+         }
+-        default_action = drop;
++        default_action = drop();
+     }
+     apply {
+         if (standard_metadata.instance_type == BMV2_V1MODEL_INSTANCE_TYPE_REPLICATION) {

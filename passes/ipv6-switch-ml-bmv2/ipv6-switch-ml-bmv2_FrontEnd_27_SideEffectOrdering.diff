@@ -1,0 +1,118 @@
+--- before_pass
++++ after_pass
+@@ -156,14 +156,18 @@ struct metadata_t {
+ }
+ parser MyParser(packet_in packet, out headers hdr, inout metadata_t meta, inout standard_metadata_t standard_metadata) {
+     state start {
+-        packet.extract<ethernet_t>(hdr.ethernet);
++        {
++            packet.extract<ethernet_t>(hdr.ethernet);
++        }
+         transition select(hdr.ethernet.etherType) {
+             16w0x86dd: ipv6;
+             default: accept;
+         }
+     }
+     state ipv6 {
+-        packet.extract<ipv6_t>(hdr.ipv6);
++        {
++            packet.extract<ipv6_t>(hdr.ipv6);
++        }
+         transition select(hdr.ipv6.nextHdr) {
+             8w17: parse_udp;
+             8w58: icmp6;
+@@ -171,18 +175,26 @@ parser MyParser(packet_in packet, out he
+         }
+     }
+     state icmp6 {
+-        packet.extract<icmp6_t>(hdr.icmp6);
++        {
++            packet.extract<icmp6_t>(hdr.icmp6);
++        }
+         transition accept;
+     }
+     state parse_udp {
+-        packet.extract<udp_t>(hdr.udp);
++        {
++            packet.extract<udp_t>(hdr.udp);
++        }
+         transition accept;
+     }
+ }
+ control ingress(inout headers hdr, inout metadata_t meta, inout standard_metadata_t standard_metadata) {
+     @name("set_mcast_grp") action set_mcast_grp_0(bit<16> mcast_grp, bit<9> port) {
+-        standard_metadata.mcast_grp = mcast_grp;
+-        meta.egress_port = port;
++        {
++            standard_metadata.mcast_grp = mcast_grp;
++        }
++        {
++            meta.egress_port = port;
++        }
+     }
+     @name("ipv6_tbl") table ipv6_tbl_0 {
+         key = {
+@@ -202,7 +214,9 @@ control ingress(inout headers hdr, inout
+ }
+ control egress(inout headers hdr, inout metadata_t meta, inout standard_metadata_t standard_metadata) {
+     @name("set_out_bd") action set_out_bd_0(bit<24> bd) {
+-        meta.fwd.out_bd = bd;
++        {
++            meta.fwd.out_bd = bd;
++        }
+     }
+     @name("get_multicast_copy_out_bd") table get_multicast_copy_out_bd_0 {
+         key = {
+@@ -216,10 +230,14 @@ control egress(inout headers hdr, inout
+         default_action = NoAction();
+     }
+     @name("drop") action drop_0() {
+-        mark_to_drop(standard_metadata);
++        {
++            mark_to_drop(standard_metadata);
++        }
+     }
+     @name("rewrite_mac") action rewrite_mac_0(bit<48> smac) {
+-        hdr.ethernet.srcAddr = smac;
++        {
++            hdr.ethernet.srcAddr = smac;
++        }
+     }
+     @name("send_frame") table send_frame_0 {
+         key = {
+@@ -233,17 +251,29 @@ control egress(inout headers hdr, inout
+     }
+     apply {
+         if (standard_metadata.instance_type == 32w5) {
+-            get_multicast_copy_out_bd_0.apply();
+-            send_frame_0.apply();
++            {
++                get_multicast_copy_out_bd_0.apply();
++            }
++            {
++                send_frame_0.apply();
++            }
+         }
+     }
+ }
+ control MyDeparser(packet_out packet, in headers hdr) {
+     apply {
+-        packet.emit<ethernet_t>(hdr.ethernet);
+-        packet.emit<ipv6_t>(hdr.ipv6);
+-        packet.emit<icmp6_t>(hdr.icmp6);
+-        packet.emit<udp_t>(hdr.udp);
++        {
++            packet.emit<ethernet_t>(hdr.ethernet);
++        }
++        {
++            packet.emit<ipv6_t>(hdr.ipv6);
++        }
++        {
++            packet.emit<icmp6_t>(hdr.icmp6);
++        }
++        {
++            packet.emit<udp_t>(hdr.udp);
++        }
+     }
+ }
+ control MyVerifyChecksum(inout headers hdr, inout metadata_t meta) {

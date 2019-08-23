@@ -1,0 +1,11 @@
+--- before_pass
++++ after_pass
+@@ -23,7 +23,7 @@ control MyIC(inout ethernet_t a, inout E
+     DirectCounter<bit<12>>(PSA_CounterType_t.PACKETS) counter0;
+     table tbl {
+         key = {
+-            a.srcAddr: exact;
++            a.srcAddr: exact @name("a.srcAddr") ;
+         }
+         actions = {
+             NoAction();

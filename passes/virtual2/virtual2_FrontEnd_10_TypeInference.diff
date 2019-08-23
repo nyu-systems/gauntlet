@@ -1,0 +1,18 @@
+--- before_pass
++++ after_pass
+@@ -9,13 +9,13 @@ extern State {
+ }
+ control c(inout bit<16> p) {
+     Virtual() cntr = {
+-        State(1024) state;
++        State(16s1024) state;
+         bit<16> f(in bit<16> ix) {
+             return state.get(ix);
+         }
+     };
+     apply {
+-        cntr.run(6);
++        cntr.run(16w6);
+     }
+ }
+ control ctr(inout bit<16> x);

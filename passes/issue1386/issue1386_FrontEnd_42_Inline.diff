@@ -1,0 +1,47 @@
+--- before_pass
++++ after_pass
+@@ -3,21 +3,6 @@
+ header hdr {
+     bit<32> a;
+ }
+-control compute(inout hdr h) {
+-    bit<8> n_0;
+-    apply {
+-        bool hasReturned = false;
+-        n_0 = 8w0;
+-        if (!h.isValid()) {
+-            hasReturned = true;
+-        }
+-        if (!hasReturned) {
+-            if (n_0 > 8w0) {
+-                h.setValid();
+-            }
+-        }
+-    }
+-}
+ struct Headers {
+     hdr h;
+ }
+@@ -47,9 +32,20 @@ control deparser(packet_out b, in Header
+     }
+ }
+ control ingress(inout Headers h, inout Meta m, inout standard_metadata_t sm) {
+-    @name("c") compute() c_0;
++    bit<8> c_n;
+     apply {
+-        c_0.apply(h.h);
++        {
++            bool c_hasReturned = false;
++            c_n = 8w0;
++            if (!h.h.isValid()) {
++                c_hasReturned = true;
++            }
++            if (!c_hasReturned) {
++                if (c_n > 8w0) {
++                    h.h.setValid();
++                }
++            }
++        }
+         sm.egress_spec = 9w0;
+     }
+ }

@@ -1,0 +1,16 @@
+--- before_pass
++++ after_pass
+@@ -25,11 +25,11 @@ control cIngress(inout headers_t hdr, in
+         meta_1.multicast_group = (MulticastGroup_t)32w0;
+         meta_1.egress_port = egress_port_1;
+     }
+-    @name("resubmit") action resubmit_1() {
++    @name("cIngress.resubmit") action resubmit_1() {
+         hdr.ethernet.srcAddr = 48w256;
+         ostd.resubmit = true;
+     }
+-    @name("pkt_write") action pkt_write() {
++    @name("cIngress.pkt_write") action pkt_write() {
+         ostd.drop = false;
+         hdr.ethernet.dstAddr = 48w4;
+     }

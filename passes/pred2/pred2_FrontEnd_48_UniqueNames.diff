@@ -1,0 +1,28 @@
+--- before_pass
++++ after_pass
+@@ -3,18 +3,18 @@
+ control empty();
+ package top(empty e);
+ control Ing() {
+-    bool tmp;
+-    @name("cond") action cond() {
+-        tmp = tmp;
++    bool tmp_0;
++    @name("cond") action cond_0() {
++        tmp_0 = tmp_0;
+     }
+-    @name("tbl_cond") table tbl_cond_0 {
++    @name("tbl_cond") table tbl_cond {
+         actions = {
+-            cond();
++            cond_0();
+         }
+-        const default_action = cond();
++        const default_action = cond_0();
+     }
+     apply {
+-        tbl_cond_0.apply();
++        tbl_cond.apply();
+     }
+ }
+ top(Ing()) main;

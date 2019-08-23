@@ -1,0 +1,13 @@
+--- before_pass
++++ after_pass
+@@ -58,9 +58,9 @@ parser VlanParser(packet_in b, out vlan_
+     }
+ }
+ parser L3(packet_in b, inout h hdr) {
++    bit<16> etherType_0 = hdr.ether.etherType;
+     @name("ip") Ipv4Parser() ip_0;
+     @name("vp") VlanParser() vp_0;
+-    bit<16> etherType_0 = hdr.ether.etherType;
+     state start {
+         transition select(etherType_0) {
+             16w0x800: ipv4;

@@ -1,0 +1,13 @@
+--- before_pass
++++ after_pass
+@@ -27,7 +27,9 @@ control c(inout Headers h, inout standar
+         default_action = NoAction();
+     }
+     apply {
+-        tns_0.apply();
++        {
++            tns_0.apply();
++        }
+     }
+ }
+ parser p<H>(packet_in _p, out H h);

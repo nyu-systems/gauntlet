@@ -1,0 +1,28 @@
+--- before_pass
++++ after_pass
+@@ -19,7 +19,9 @@ control DeparserI(packet_out packet, in
+ }
+ parser parserI(packet_in pkt, out Parsed_packet hdr, inout metadata m, inout standard_metadata_t stdmeta) {
+     state start {
+-        pkt.extract<X>(hdr.x);
++        {
++            pkt.extract<X>(hdr.x);
++        }
+         transition accept;
+     }
+ }
+@@ -40,8 +42,12 @@ control cIngress(inout Parsed_packet hdr
+         default_action = foo_0();
+     }
+     apply {
+-        z_0 = 32w5;
+-        t_0.apply();
++        {
++            z_0 = 32w5;
++        }
++        {
++            t_0.apply();
++        }
+     }
+ }
+ control cEgress(inout Parsed_packet hdr, inout metadata m, inout standard_metadata_t stdmeta) {

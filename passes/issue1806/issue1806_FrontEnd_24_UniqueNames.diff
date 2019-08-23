@@ -1,0 +1,27 @@
+--- before_pass
++++ after_pass
+@@ -14,20 +14,20 @@ parser prs(packet_in p, out Headers h) {
+     }
+ }
+ control c(inout Headers h, inout standard_metadata_t sm) {
+-    action do_act() {
++    @name("do_act") action do_act_0() {
+     }
+-    table tns {
++    @name("tns") table tns_0 {
+         key = {
+             h.eth.tst[13:4]: exact @name("h.eth.tst[13:4]") ;
+         }
+         actions = {
+-            do_act();
++            do_act_0();
+             @defaultonly NoAction();
+         }
+         default_action = NoAction();
+     }
+     apply {
+-        tns.apply();
++        tns_0.apply();
+     }
+ }
+ parser p<H>(packet_in _p, out H h);

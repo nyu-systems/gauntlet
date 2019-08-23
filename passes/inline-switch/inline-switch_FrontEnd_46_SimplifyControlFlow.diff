@@ -1,0 +1,23 @@
+--- before_pass
++++ after_pass
+@@ -16,18 +16,12 @@ control d(out bit<32> x) {
+             switch (cinst_t.apply().action_run) {
+                 cinst_a1: 
+                 cinst_a2: {
+-                    {
+-                        cinst_hasReturned = true;
+-                    }
++                    cinst_hasReturned = true;
+                 }
+                 default: {
+-                    {
+-                        cinst_hasReturned = true;
+-                    }
++                    cinst_hasReturned = true;
+                 }
+             }
+-            if (!cinst_hasReturned) {
+-            }
+         }
+     }
+ }

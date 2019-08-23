@@ -1,0 +1,85 @@
+--- before_pass
++++ after_pass
+@@ -14,44 +14,28 @@ struct Meta {
+ }
+ control ingress(inout Headers h, inout Meta m, inout standard_metadata_t sm) {
+     @name("case0") action case0_0() {
+-        {
+-            h.h.c = (bit<8>)((16w0 ++ h.h.a)[15:0] ++ 16w0[15:0]);
+-        }
++        h.h.c = (bit<8>)((16w0 ++ h.h.a)[15:0] ++ 16w0[15:0]);
+     }
+     @name("case1") action case1_0() {
+-        {
+-            h.h.c = (bit<8>)h.h.a[15:0];
+-        }
++        h.h.c = (bit<8>)h.h.a[15:0];
+     }
+     @name("case2") action case2_0() {
+-        {
+-            h.h.c = (bit<8>)16w0[15:0];
+-        }
++        h.h.c = (bit<8>)16w0[15:0];
+     }
+     @name("case3") action case3_0() {
+-        {
+-            h.h.c = h.h.a[7:0];
+-        }
++        h.h.c = h.h.a[7:0];
+     }
+     @name("case4") action case4_0() {
+-        {
+-            h.h.c = (bit<8>)(16w0[7:0] ++ h.h.a[15:0]);
+-        }
++        h.h.c = (bit<8>)(16w0[7:0] ++ h.h.a[15:0]);
+     }
+     @name("case5") action case5_0() {
+-        {
+-            h.h.c = (bit<8>)(16w0[7:0] ++ h.h.a[15:8]);
+-        }
++        h.h.c = (bit<8>)(16w0[7:0] ++ h.h.a[15:8]);
+     }
+     @name("case6") action case6_0() {
+-        {
+-            h.h.c = (bit<8>)(16w0[15:0] ++ h.h.a[15:8]);
+-        }
++        h.h.c = (bit<8>)(16w0[15:0] ++ h.h.a[15:8]);
+     }
+     @name("case7") action case7_0() {
+-        {
+-            h.h.c = (bit<8>)(16w0 ++ h.h.a >> 3)[31:8];
+-        }
++        h.h.c = (bit<8>)(16w0 ++ h.h.a >> 3)[31:8];
+     }
+     @name("t") table t_0 {
+         actions = {
+@@ -67,16 +51,12 @@ control ingress(inout Headers h, inout M
+         const default_action = case0_0();
+     }
+     apply {
+-        {
+-            t_0.apply();
+-        }
++        t_0.apply();
+     }
+ }
+ parser p(packet_in b, out Headers h, inout Meta m, inout standard_metadata_t sm) {
+     state start {
+-        {
+-            b.extract<hdr>(h.h);
+-        }
++        b.extract<hdr>(h.h);
+         transition accept;
+     }
+ }
+@@ -94,9 +74,7 @@ control egress(inout Headers h, inout Me
+ }
+ control deparser(packet_out b, in Headers h) {
+     apply {
+-        {
+-            b.emit<hdr>(h.h);
+-        }
++        b.emit<hdr>(h.h);
+     }
+ }
+ V1Switch<Headers, Meta>(p(), vrfy(), ingress(), egress(), update(), deparser()) main;

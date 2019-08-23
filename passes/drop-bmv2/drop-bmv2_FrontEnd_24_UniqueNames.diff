@@ -1,0 +1,20 @@
+--- before_pass
++++ after_pass
+@@ -13,7 +13,7 @@ action drop(inout standard_metadata_t sm
+     mark_to_drop(smeta);
+ }
+ control IngressI(inout H hdr, inout M meta, inout standard_metadata_t smeta) {
+-    table forward {
++    @name("forward") table forward_0 {
+         key = {
+         }
+         actions = {
+@@ -22,7 +22,7 @@ control IngressI(inout H hdr, inout M me
+         const default_action = drop(smeta);
+     }
+     apply {
+-        forward.apply();
++        forward_0.apply();
+     }
+ }
+ control EgressI(inout H hdr, inout M meta, inout standard_metadata_t smeta) {

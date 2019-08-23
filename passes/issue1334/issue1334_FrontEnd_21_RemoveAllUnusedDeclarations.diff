@@ -1,0 +1,20 @@
+--- before_pass
++++ after_pass
+@@ -9,11 +9,6 @@ extern Overloaded {
+     void f(bit<16> b);
+     void f(bit<32> a, bit<16> b);
+ }
+-control d(out bit<32> x)(bit<32> a) {
+-    apply {
+-        x = a;
+-    }
+-}
+ control d(out bit<32> x)(bit<32> b) {
+     apply {
+         x = -b;
+@@ -39,5 +34,4 @@ control c() {
+ }
+ control proto();
+ package top(proto p);
+-package top(proto p1, proto p2);
+ top(p = c()) main;

@@ -1,0 +1,11 @@
+--- before_pass
++++ after_pass
+@@ -26,7 +26,7 @@ control Eg(inout Headers hdrs, inout Met
+     Value val;
+     bool done_0;
+     bool ok_0;
+-    @name("test") action test() {
++    @name("Eg.test") action test() {
+         inKey_0 = { 32w1 };
+         defaultKey_0 = { 32w0 };
+         same_0 = inKey_0 == defaultKey_0;

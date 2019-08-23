@@ -1,0 +1,13 @@
+--- before_pass
++++ after_pass
+@@ -16,9 +16,7 @@ parser MyP2(packet_in pkt, out headers_t
+ parser MyP1(packet_in pkt, out headers_t hdr) {
+     @name("subp") MyP2() subp_0;
+     state start {
+-        {
+-            subp_0.apply(pkt, hdr);
+-        }
++        subp_0.apply(pkt, hdr);
+         transition accept;
+     }
+ }

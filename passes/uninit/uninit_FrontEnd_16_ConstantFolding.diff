@@ -1,0 +1,42 @@
+--- before_pass
++++ after_pass
+@@ -12,7 +12,7 @@ parser p1(packet_in p, out Header h) {
+     bool c;
+     bool d;
+     state start {
+-        h.data1 = (bit<32>)32w0;
++        h.data1 = 32w0;
+         func(h);
+         g(h.data2, g(h.data2, h.data2));
+         transition next;
+@@ -43,13 +43,13 @@ parser p1(packet_in p, out Header h) {
+ }
+ control c(out bit<32> v) {
+     bit<32> b;
+-    bit<32> d = (bit<32>)32w1;
++    bit<32> d = 32w1;
+     bit<32> setByAction;
+     action a1() {
+-        setByAction = (bit<32>)32w1;
++        setByAction = 32w1;
+     }
+     action a2() {
+-        setByAction = (bit<32>)32w1;
++        setByAction = 32w1;
+     }
+     table t {
+         actions = {
+@@ -64,10 +64,10 @@ control c(out bit<32> v) {
+         bit<32> e;
+         bit<32> f;
+         if (e > 32w0) {
+-            e = (bit<32>)32w1;
+-            f = (bit<32>)32w2;
++            e = 32w1;
++            f = 32w2;
+         } else {
+-            f = (bit<32>)32w3;
++            f = 32w3;
+         }
+         e = e + 32w1;
+         bool touched;

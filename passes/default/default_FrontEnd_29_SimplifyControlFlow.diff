@@ -1,0 +1,27 @@
+--- before_pass
++++ after_pass
+@@ -5,21 +5,15 @@ header Header {
+ parser p0(packet_in p, out Header h) {
+     bool b_0;
+     state start {
+-        {
+-            b_0 = true;
+-        }
+-        {
+-            p.extract<Header>(h);
+-        }
++        b_0 = true;
++        p.extract<Header>(h);
+         transition select(h.data, b_0) {
+             (default, true): next;
+             (default, default): reject;
+         }
+     }
+     state next {
+-        {
+-            p.extract<Header>(h);
+-        }
++        p.extract<Header>(h);
+         transition select(h.data, b_0) {
+             (default, true): accept;
+             (default, default): reject;

@@ -1,0 +1,17 @@
+--- before_pass
++++ after_pass
+@@ -17,7 +17,7 @@ parser MyParser(packet_in b, out my_pack
+         }
+     }
+     state next {
+-        b.extract(p.h);
++        b.extract<H>(p.h);
+         transition accept;
+     }
+ }
+@@ -45,4 +45,4 @@ control MyDeparser(packet_out b, in my_p
+     apply {
+     }
+ }
+-V1Switch(MyParser(), MyVerifyChecksum(), MyIngress(), MyEgress(), MyComputeChecksum(), MyDeparser()) main;
++V1Switch<my_packet, my_metadata>(MyParser(), MyVerifyChecksum(), MyIngress(), MyEgress(), MyComputeChecksum(), MyDeparser()) main;

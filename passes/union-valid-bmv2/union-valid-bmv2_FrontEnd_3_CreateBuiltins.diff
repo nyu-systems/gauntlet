@@ -1,0 +1,14 @@
+--- before_pass
++++ after_pass
+@@ -59,9 +59,9 @@ control ingress(inout Headers h, inout M
+             h.u.isValid(): exact;
+         }
+         actions = {
+-            a;
++            a();
+         }
+-        default_action = a;
++        default_action = a();
+     }
+     apply {
+         t.apply();

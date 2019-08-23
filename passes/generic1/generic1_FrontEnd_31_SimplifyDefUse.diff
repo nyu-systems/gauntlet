@@ -1,0 +1,11 @@
+--- before_pass
++++ after_pass
+@@ -12,7 +12,7 @@ control c<T>()(T size) {
+     @name("x") Generic<T>(size) x_0;
+     apply {
+         tmp = x_0.get<bit<32>>();
+-        a_0 = tmp;
++        ;
+         tmp_0 = x_0.get1<bit<5>, bit<10>>(10w0, 5w0);
+         b_0 = tmp_0;
+         f<bit<5>>(b_0);

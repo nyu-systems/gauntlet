@@ -1,0 +1,11 @@
+--- before_pass
++++ after_pass
+@@ -73,7 +73,7 @@ control egress(inout headers hdr, inout
+ }
+ control ingress(inout headers hdr, inout metadata meta, inout standard_metadata_t standard_metadata) {
+     @name(".bcast") action bcast() {
+-        standard_metadata.mcast_grp = 1;
++        standard_metadata.mcast_grp = (bit<16>)16w1;
+     }
+     @name(".set_dmac") action set_dmac(bit<48> dmac) {
+         hdr.ethernet.dstAddr = dmac;

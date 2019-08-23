@@ -1,0 +1,13 @@
+--- before_pass
++++ after_pass
+@@ -7,10 +7,7 @@ control Ing() {
+     bool tmp;
+     bool tmp_0;
+     @name("cond") action cond() {
+-        ;
+         tmp = tmp;
+-        ;
+-        ;
+     }
+     @name("tbl_cond") table tbl_cond_0 {
+         actions = {

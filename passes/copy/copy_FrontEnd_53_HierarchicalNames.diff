@@ -1,0 +1,11 @@
+--- before_pass
++++ after_pass
+@@ -4,7 +4,7 @@ struct S {
+ control c(inout bit<32> b) {
+     S s1_0;
+     S s2_0;
+-    @name("a") action a() {
++    @name("c.a") action a() {
+         s2_0 = S {x = 32w0};
+         s1_0 = s2_0;
+         s2_0 = s1_0;

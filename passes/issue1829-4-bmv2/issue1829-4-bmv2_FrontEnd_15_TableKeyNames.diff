@@ -1,0 +1,11 @@
+--- before_pass
++++ after_pass
+@@ -29,7 +29,7 @@ control ingressImpl(inout headers_t hdr,
+     }
+     table mac_da {
+         key = {
+-            hdr.ethernet.dstAddr: exact;
++            hdr.ethernet.dstAddr: exact @name("hdr.ethernet.dstAddr") ;
+         }
+         actions = {
+             do_meter();

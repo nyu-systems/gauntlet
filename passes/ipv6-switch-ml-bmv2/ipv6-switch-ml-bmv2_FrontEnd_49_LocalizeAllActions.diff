@@ -1,0 +1,73 @@
+--- before_pass
++++ after_pass
+@@ -180,7 +180,9 @@ parser MyParser(packet_in packet, out he
+     }
+ }
+ control ingress(inout headers hdr, inout metadata_t meta, inout standard_metadata_t standard_metadata) {
+-    @name("set_mcast_grp") action set_mcast_grp(bit<16> mcast_grp, bit<9> port) {
++    @name(".NoAction") action NoAction_2() {
++    }
++    @name("set_mcast_grp") action set_mcast_grp_0(bit<16> mcast_grp, bit<9> port) {
+         standard_metadata.mcast_grp = mcast_grp;
+         meta.egress_port = port;
+     }
+@@ -189,10 +191,10 @@ control ingress(inout headers hdr, inout
+             hdr.ipv6.dstAddr[127:120] == 8w0xff: exact @name("mcast_key") ;
+         }
+         actions = {
+-            set_mcast_grp();
+-            @defaultonly NoAction();
++            set_mcast_grp_0();
++            @defaultonly NoAction_2();
+         }
+-        default_action = NoAction();
++        default_action = NoAction_2();
+     }
+     apply {
+         if (hdr.ipv6.isValid()) {
+@@ -201,7 +203,9 @@ control ingress(inout headers hdr, inout
+     }
+ }
+ control egress(inout headers hdr, inout metadata_t meta, inout standard_metadata_t standard_metadata) {
+-    @name("set_out_bd") action set_out_bd(bit<24> bd) {
++    @name(".NoAction") action NoAction_3() {
++    }
++    @name("set_out_bd") action set_out_bd_0(bit<24> bd) {
+         meta.fwd.out_bd = bd;
+     }
+     @name("get_multicast_copy_out_bd") table get_multicast_copy_out_bd {
+@@ -210,15 +214,15 @@ control egress(inout headers hdr, inout
+             standard_metadata.egress_rid: exact @name("standard_metadata.egress_rid") ;
+         }
+         actions = {
+-            set_out_bd();
+-            @defaultonly NoAction();
++            set_out_bd_0();
++            @defaultonly NoAction_3();
+         }
+-        default_action = NoAction();
++        default_action = NoAction_3();
+     }
+-    @name("drop") action drop() {
++    @name("drop") action drop_0() {
+         mark_to_drop(standard_metadata);
+     }
+-    @name("rewrite_mac") action rewrite_mac(bit<48> smac) {
++    @name("rewrite_mac") action rewrite_mac_0(bit<48> smac) {
+         hdr.ethernet.srcAddr = smac;
+     }
+     @name("send_frame") table send_frame {
+@@ -226,10 +230,10 @@ control egress(inout headers hdr, inout
+             meta.fwd.out_bd: exact @name("meta.fwd.out_bd") ;
+         }
+         actions = {
+-            rewrite_mac();
+-            drop();
++            rewrite_mac_0();
++            drop_0();
+         }
+-        default_action = drop();
++        default_action = drop_0();
+     }
+     apply {
+         if (standard_metadata.instance_type == 32w5) {

@@ -1,0 +1,17 @@
+--- before_pass
++++ after_pass
+@@ -1,11 +1,12 @@
+ control ctrl() {
+     bit<32> a_0;
+     apply {
++        bool hasReturned = false;
+         a_0 = 32w0;
+         if (a_0 == 32w0) {
+-            return;
++            hasReturned = true;
+         } else {
+-            return;
++            hasReturned = true;
+         }
+     }
+ }

@@ -1,0 +1,13 @@
+--- before_pass
++++ after_pass
+@@ -1,8 +1,8 @@
+ control c(inout bit<32> b) {
+-    @name("a") action a() {
++    @name("c.a") action a() {
+         b = 32w1;
+     }
+-    @name("t") table t_0 {
++    @name("c.t") table t_0 {
+         actions = {
+             a();
+         }

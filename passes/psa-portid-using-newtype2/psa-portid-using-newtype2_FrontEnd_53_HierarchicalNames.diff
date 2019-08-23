@@ -1,0 +1,24 @@
+--- before_pass
++++ after_pass
+@@ -146,7 +146,7 @@ control FabricIngress(inout parsed_heade
+     }
+     @name(".NoAction") action NoAction_3() {
+     }
+-    @name("filtering.t") table filtering_t {
++    @name("FabricIngress.filtering.t") table filtering_t {
+         key = {
+             standard_metadata.ingress_port: exact @name("standard_metadata.ingress_port") ;
+         }
+@@ -158,10 +158,10 @@ control FabricIngress(inout parsed_heade
+         default_action = NoAction_0();
+     }
+     PortId_t forwarding_mask;
+-    @name("forwarding.fwd") action forwarding_fwd_0(PortId_t next_port) {
++    @name("FabricIngress.forwarding.fwd") action forwarding_fwd_0(PortId_t next_port) {
+         standard_metadata.egress_spec = next_port;
+     }
+-    @name("forwarding.t") table forwarding_t {
++    @name("FabricIngress.forwarding.t") table forwarding_t {
+         key = {
+             hdr.ipv4.dstAddr: exact @name("hdr.ipv4.dstAddr") ;
+         }

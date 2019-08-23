@@ -1,0 +1,13 @@
+--- before_pass
++++ after_pass
+@@ -1,10 +0,0 @@
+-enum X {
+-    Field,
+-    Field1,
+-    Field2
+-}
+-control c() {
+-    apply {
+-        X v = X.Field;
+-    }
+-}

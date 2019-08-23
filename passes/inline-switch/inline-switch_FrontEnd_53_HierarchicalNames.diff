@@ -1,0 +1,15 @@
+--- before_pass
++++ after_pass
+@@ -1,9 +1,9 @@
+ control d(out bit<32> x) {
+-    @name("cinst.a1") action cinst_a1_0() {
++    @name("d.cinst.a1") action cinst_a1_0() {
+     }
+-    @name("cinst.a2") action cinst_a2_0() {
++    @name("d.cinst.a2") action cinst_a2_0() {
+     }
+-    @name("cinst.t") table cinst_t {
++    @name("d.cinst.t") table cinst_t {
+         actions = {
+             cinst_a1_0();
+             cinst_a2_0();

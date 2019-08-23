@@ -1,0 +1,30 @@
+--- before_pass
++++ after_pass
+@@ -177,9 +177,11 @@ control Filtering(inout parsed_headers_t
+             standard_metadata.ingress_port: exact;
+         }
+         actions = {
+-            drop;
+-            nop;
++            drop();
++            nop();
++            @defaultonly NoAction();
+         }
++        default_action = NoAction();
+     }
+     apply {
+         t.apply();
+@@ -194,9 +196,11 @@ control Forwarding(inout parsed_headers_
+             hdr.ipv4.dstAddr: exact;
+         }
+         actions = {
+-            drop;
+-            fwd;
++            drop();
++            fwd();
++            @defaultonly NoAction();
+         }
++        default_action = NoAction();
+     }
+     apply {
+         t.apply();

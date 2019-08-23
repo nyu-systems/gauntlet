@@ -1,0 +1,12 @@
+--- before_pass
++++ after_pass
+@@ -15,9 +15,3 @@ struct str {
+     your_union  unn;
+     bit<32>     dt;
+ }
+-control p() {
+-    apply {
+-        your_header[5] stack;
+-    }
+-}
+-typedef your_header[5] your_stack;

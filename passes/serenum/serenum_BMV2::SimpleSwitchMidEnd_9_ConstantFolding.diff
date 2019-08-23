@@ -1,0 +1,11 @@
+--- before_pass
++++ after_pass
+@@ -29,7 +29,7 @@ control c(inout Headers h) {
+             if (h.eth.type == 16w0x800) {
+                 h.eth.setInvalid();
+             } else {
+-                h.eth.type = (bit<16>)16w0;
++                h.eth.type = 16w0;
+             }
+         }
+     }

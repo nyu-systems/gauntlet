@@ -1,0 +1,13 @@
+--- before_pass
++++ after_pass
+@@ -28,7 +28,9 @@ control ComputeChecksumI(inout H hdr, in
+ }
+ control IngressI(inout H hdr, inout M meta, inout std_meta_t std_meta) {
+     apply {
+-        meta.some_meta.flag = true;
++        {
++            meta.some_meta.flag = true;
++        }
+     }
+ }
+ control EgressI(inout H hdr, inout M meta, inout std_meta_t std_meta) {

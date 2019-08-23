@@ -1,0 +1,26 @@
+--- before_pass
++++ after_pass
+@@ -9,6 +9,8 @@ header H {
+     N32 field;
+ }
+ control c(out B32 x) {
++    @name(".NoAction") action NoAction_1() {
++    }
+     N32 k;
+     bit<32> b_1;
+     N32 n_1;
+@@ -16,12 +18,12 @@ control c(out B32 x) {
+     S s;
+     @name("t") table t {
+         actions = {
+-            NoAction();
++            NoAction_1();
+         }
+         key = {
+             k: exact @name("k") ;
+         }
+-        default_action = NoAction();
++        default_action = NoAction_1();
+     }
+     apply {
+         b_1 = 32w0;

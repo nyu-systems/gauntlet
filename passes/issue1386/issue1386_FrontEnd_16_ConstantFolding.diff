@@ -1,0 +1,20 @@
+--- before_pass
++++ after_pass
+@@ -4,7 +4,7 @@ header hdr {
+     bit<32> a;
+ }
+ control compute(inout hdr h) {
+-    bit<8> n = (bit<8>)8w0;
++    bit<8> n = 8w0;
+     apply {
+         if (!h.isValid()) {
+             return;
+@@ -46,7 +46,7 @@ control ingress(inout Headers h, inout M
+     compute() c;
+     apply {
+         c.apply(h.h);
+-        sm.egress_spec = (bit<9>)9w0;
++        sm.egress_spec = 9w0;
+     }
+ }
+ V1Switch<Headers, Meta>(p(), vrfy(), ingress(), egress(), update(), deparser()) main;

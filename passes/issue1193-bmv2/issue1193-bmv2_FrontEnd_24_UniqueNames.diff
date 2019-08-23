@@ -1,0 +1,28 @@
+--- before_pass
++++ after_pass
+@@ -18,19 +18,19 @@ control MyVerifyChecksum(inout headers h
+     }
+ }
+ control MyIngress(inout headers hdr, inout metadata meta, inout standard_metadata_t standard_metadata) {
+-    jnf_counter(CounterType.packets) c;
+-    action a() {
+-        c.count();
++    @name("c") jnf_counter(CounterType.packets) c_0;
++    @name("a") action a_0() {
++        c_0.count();
+     }
+-    table t {
++    @name("t") table t_0 {
+         actions = {
+-            a();
++            a_0();
+             @defaultonly NoAction();
+         }
+         default_action = NoAction();
+     }
+     apply {
+-        t.apply();
++        t_0.apply();
+     }
+ }
+ control MyEgress(inout headers hdr, inout metadata meta, inout standard_metadata_t standard_metadata) {

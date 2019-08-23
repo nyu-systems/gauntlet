@@ -1,0 +1,19 @@
+--- before_pass
++++ after_pass
+@@ -9,12 +9,12 @@ struct metadata_t {
+ }
+ control I(inout metadata_t meta) {
+     apply {
+-        H h = H {b = 32w1};
++        H h_0 = H {b = 32w1};
+         if (meta.foo == PortId_t {_v = 9w192}) {
+             meta.foo._v = meta.foo._v + 9w1;
+-            h = H {b = 32w2};
+-            if (h == H {b = 32w1}) {
+-                h = H {b = 32w2};
++            h_0 = H {b = 32w2};
++            if (h_0 == H {b = 32w1}) {
++                h_0 = H {b = 32w2};
+             }
+         }
+     }

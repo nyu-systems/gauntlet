@@ -1,0 +1,111 @@
+--- before_pass
++++ after_pass
+@@ -218,53 +218,53 @@ struct headers {
+     ethernet_t ethernet;
+     ipv4_t     ipv4;
+ }
+-parser CommonParser(packet_in buffer, out headers parsed_hdr, inout metadata user_meta) {
++parser EgressParserImpl(packet_in buffer, out headers parsed_hdr, inout metadata user_meta, in psa_egress_parser_input_metadata_t istd, out psa_parser_output_metadata_t ostd) {
+     state start {
++        transition select(istd.instance_type) {
++            InstanceType_t.CLONE: parse_clone_header;
++            InstanceType_t.NORMAL: parse_ethernet;
++        }
++    }
++    state parse_ethernet {
++        parsed_hdr.ethernet.setInvalid();
++        parsed_hdr.ipv4.setInvalid();
++        transition CommonParser_start;
++    }
++    state CommonParser_start {
+         buffer.extract<ethernet_t>(parsed_hdr.ethernet);
+         transition select(parsed_hdr.ethernet.etherType) {
+-            16w0x800: parse_ipv4;
+-            default: accept;
++            16w0x800: CommonParser_parse_ipv4;
++            default: parse_ethernet_0;
+         }
+     }
+-    state parse_ipv4 {
++    state CommonParser_parse_ipv4 {
+         buffer.extract<ipv4_t>(parsed_hdr.ipv4);
++        transition parse_ethernet_0;
++    }
++    state parse_ethernet_0 {
+         transition accept;
+     }
+-}
+-parser CloneParser(in psa_egress_parser_input_metadata_t istd, inout metadata user_meta) {
+-    state start {
++    state parse_clone_header {
++        transition CloneParser_start;
++    }
++    state CloneParser_start {
+         transition select(istd.clone_metadata.type) {
+-            3w0: parse_clone_header_0;
+-            3w1: parse_clone_header_1;
++            3w0: CloneParser_parse_clone_header;
++            3w1: CloneParser_parse_clone_header_0;
+             default: reject;
+         }
+     }
+-    state parse_clone_header_0 {
++    state CloneParser_parse_clone_header {
+         user_meta.custom_clone_id = istd.clone_metadata.type;
+         user_meta.clone_0 = istd.clone_metadata.data.h0;
+-        transition accept;
++        transition parse_clone_header_2;
+     }
+-    state parse_clone_header_1 {
++    state CloneParser_parse_clone_header_0 {
+         user_meta.custom_clone_id = istd.clone_metadata.type;
+         user_meta.clone_1 = istd.clone_metadata.data.h1;
+-        transition accept;
+-    }
+-}
+-parser EgressParserImpl(packet_in buffer, out headers parsed_hdr, inout metadata user_meta, in psa_egress_parser_input_metadata_t istd, out psa_parser_output_metadata_t ostd) {
+-    @name("p") CommonParser() p_0;
+-    @name("cp") CloneParser() cp_0;
+-    state start {
+-        transition select(istd.instance_type) {
+-            InstanceType_t.CLONE: parse_clone_header;
+-            InstanceType_t.NORMAL: parse_ethernet;
+-        }
+-    }
+-    state parse_ethernet {
+-        p_0.apply(buffer, parsed_hdr, user_meta);
+-        transition accept;
++        transition parse_clone_header_2;
+     }
+-    state parse_clone_header {
+-        cp_0.apply(istd, user_meta);
++    state parse_clone_header_2 {
+         transition parse_ethernet;
+     }
+ }
+@@ -291,9 +291,23 @@ control egress(inout headers hdr, inout
+     }
+ }
+ parser IngressParserImpl(packet_in buffer, out headers parsed_hdr, inout metadata user_meta, in psa_ingress_parser_input_metadata_t istd, out psa_parser_output_metadata_t ostd) {
+-    @name("p") CommonParser() p_1;
+     state start {
+-        p_1.apply(buffer, parsed_hdr, user_meta);
++        parsed_hdr.ethernet.setInvalid();
++        parsed_hdr.ipv4.setInvalid();
++        transition CommonParser_start_0;
++    }
++    state CommonParser_start_0 {
++        buffer.extract<ethernet_t>(parsed_hdr.ethernet);
++        transition select(parsed_hdr.ethernet.etherType) {
++            16w0x800: CommonParser_parse_ipv4_0;
++            default: start_0;
++        }
++    }
++    state CommonParser_parse_ipv4_0 {
++        buffer.extract<ipv4_t>(parsed_hdr.ipv4);
++        transition start_0;
++    }
++    state start_0 {
+         transition accept;
+     }
+ }

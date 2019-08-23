@@ -1,0 +1,16 @@
+--- before_pass
++++ after_pass
+@@ -27,10 +27,10 @@ control pipe(inout Headers_t headers, ou
+             NoAction();
+         }
+         const entries = {
+-                        0x800 : match(true);
+-                        0xd000 : match(false);
++                        16w0x800 : match(true);
++                        16w0xd000 : match(false);
+         }
+-        implementation = hash_table(64);
++        implementation = hash_table(32w64);
+         default_action = NoAction();
+     }
+     apply {

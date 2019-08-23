@@ -1,0 +1,98 @@
+--- before_pass
++++ after_pass
+@@ -26,9 +26,7 @@ struct headers {
+ }
+ parser IngressParserImpl(packet_in buffer, out headers hdr, inout metadata user_meta, inout standard_metadata_t standard_metadata) {
+     state start {
+-        {
+-            buffer.extract<ethernet_t>(hdr.ethernet);
+-        }
++        buffer.extract<ethernet_t>(hdr.ethernet);
+         transition accept;
+     }
+ }
+@@ -58,48 +56,20 @@ control ingress(inout headers hdr, inout
+         default_action = NoAction();
+     }
+     apply {
+-        {
+-            tmp_0 = ~hdr.ethernet.etherType;
+-        }
+-        {
+-            x1_0 = (bit<32>)tmp_0;
+-        }
+-        {
+-            x2_0 = x1_0[31:16] + x1_0[15:0];
+-        }
+-        {
+-            user_meta.fwd_meta.tmp = tmp_0;
+-        }
+-        {
+-            user_meta.fwd_meta.x1 = x1_0;
+-        }
+-        {
+-            user_meta.fwd_meta.x2 = x2_0;
+-        }
+-        {
+-            user_meta.fwd_meta.x3 = (bit<32>)~hdr.ethernet.etherType;
+-        }
+-        {
+-            user_meta.fwd_meta.x4 = ~(bit<32>)hdr.ethernet.etherType;
+-        }
+-        {
+-            user_meta.fwd_meta.exp_etherType = 16w0x800;
+-        }
+-        {
+-            user_meta.fwd_meta.exp_x1 = 32w0xf7ff;
+-        }
+-        {
+-            user_meta.fwd_meta.exp_x2 = 16w0xf7ff;
+-        }
+-        {
+-            user_meta.fwd_meta.exp_x3 = 32w0xf7ff;
+-        }
+-        {
+-            user_meta.fwd_meta.exp_x4 = 32w0xfffff7ff;
+-        }
+-        {
+-            hdr.ethernet.dstAddr = 48w0;
+-        }
++        tmp_0 = ~hdr.ethernet.etherType;
++        x1_0 = (bit<32>)tmp_0;
++        x2_0 = x1_0[31:16] + x1_0[15:0];
++        user_meta.fwd_meta.tmp = tmp_0;
++        user_meta.fwd_meta.x1 = x1_0;
++        user_meta.fwd_meta.x2 = x2_0;
++        user_meta.fwd_meta.x3 = (bit<32>)~hdr.ethernet.etherType;
++        user_meta.fwd_meta.x4 = ~(bit<32>)hdr.ethernet.etherType;
++        user_meta.fwd_meta.exp_etherType = 16w0x800;
++        user_meta.fwd_meta.exp_x1 = 32w0xf7ff;
++        user_meta.fwd_meta.exp_x2 = 16w0xf7ff;
++        user_meta.fwd_meta.exp_x3 = 32w0xf7ff;
++        user_meta.fwd_meta.exp_x4 = 32w0xfffff7ff;
++        hdr.ethernet.dstAddr = 48w0;
+         if (hdr.ethernet.etherType != user_meta.fwd_meta.exp_etherType) {
+             hdr.ethernet.dstAddr[47:40] = 8w1;
+         }
+@@ -115,9 +85,7 @@ control ingress(inout headers hdr, inout
+         if (user_meta.fwd_meta.x4 != user_meta.fwd_meta.exp_x4) {
+             hdr.ethernet.dstAddr[15:8] = 8w1;
+         }
+-        {
+-            debug_table_cksum1_0.apply();
+-        }
++        debug_table_cksum1_0.apply();
+     }
+ }
+ control egress(inout headers hdr, inout metadata user_meta, inout standard_metadata_t standard_metadata) {
+@@ -126,9 +94,7 @@ control egress(inout headers hdr, inout
+ }
+ control DeparserImpl(packet_out packet, in headers hdr) {
+     apply {
+-        {
+-            packet.emit<ethernet_t>(hdr.ethernet);
+-        }
++        packet.emit<ethernet_t>(hdr.ethernet);
+     }
+ }
+ control verifyChecksum(inout headers hdr, inout metadata meta) {

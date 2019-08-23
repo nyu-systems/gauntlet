@@ -1,0 +1,33 @@
+--- before_pass
++++ after_pass
+@@ -22,24 +22,24 @@ control c(out B32 x) {
+         default_action = NoAction();
+     }
+     apply {
+-        bit<32> b = (bit<32>)32w0;
+-        N32 n = (N32)(bit<32>)32w1;
++        bit<32> b = 32w0;
++        N32 n = (N32)32w1;
+         N32 n1;
+         S s;
+-        NN32 n5 = (NN32)(N32)(bit<32>)32w5;
++        NN32 n5 = (NN32)(N32)32w5;
+         n = (N32)b;
+         nn = (NN32)n;
+         k = n;
+         x = (B32)n;
+-        n1 = (N32)(B32)1;
++        n1 = (N32)32w1;
+         if (n == n1) {
+-            x = (bit<32>)32w2;
++            x = 32w2;
+         }
+         s.b = b;
+         s.n = n;
+         t.apply();
+         if (s.b == (B32)s.n) {
+-            x = (bit<32>)32w3;
++            x = 32w3;
+         }
+     }
+ }

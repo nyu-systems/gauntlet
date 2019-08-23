@@ -1,0 +1,11 @@
+--- before_pass
++++ after_pass
+@@ -14,7 +14,7 @@ parser MyParser(packet_in b, out h hdrs,
+         transition q0;
+     }
+     state q0 {
+-        meta.counter = meta.counter - 3w1;
++        meta.counter = meta.counter + 3w7;
+         transition accept;
+     }
+ }

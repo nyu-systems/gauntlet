@@ -1,0 +1,27 @@
+--- before_pass
++++ after_pass
+@@ -13,20 +13,20 @@ struct Headers {
+     U u;
+ }
+ control c(in Headers h) {
+-    @name("a") action a_0() {
++    @name("a") action a() {
+     }
+-    @name("t") table t_0 {
++    @name("t") table t {
+         key = {
+             h.u.h1.x: exact @name("h.u.h1.x") ;
+         }
+         actions = {
+-            a_0();
++            a();
+             @defaultonly NoAction();
+         }
+         default_action = NoAction();
+     }
+     apply {
+-        t_0.apply();
++        t.apply();
+     }
+ }
+ control _c(in Headers h);

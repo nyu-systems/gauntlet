@@ -1,0 +1,18 @@
+--- before_pass
++++ after_pass
+@@ -34,12 +34,12 @@ control ingress(inout Headers h, inout M
+         default_action = NoAction();
+     }
+     apply {
+-        if (m.b == 0) {
++        if (m.b == 1w0) {
+             t1.apply();
+-            sm.egress_spec = 1;
++            sm.egress_spec = (bit<9>)9w1;
+         } else {
+             t1.apply();
+-            sm.egress_spec = 2;
++            sm.egress_spec = (bit<9>)9w2;
+         }
+     }
+ }

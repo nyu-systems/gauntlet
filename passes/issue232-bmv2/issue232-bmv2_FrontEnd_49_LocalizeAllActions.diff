@@ -1,0 +1,20 @@
+--- before_pass
++++ after_pass
+@@ -26,7 +26,7 @@ control Eg(inout Headers hdrs, inout Met
+     Value val_1;
+     bool done;
+     bool ok;
+-    @name("test") action test() {
++    @name("test") action test_0() {
+         inKey = { 32w1 };
+         defaultKey = { 32w0 };
+         same = inKey == defaultKey;
+@@ -40,7 +40,7 @@ control Eg(inout Headers hdrs, inout Met
+         }
+     }
+     apply {
+-        test();
++        test_0();
+     }
+ }
+ control DP(packet_out b, in Headers p) {

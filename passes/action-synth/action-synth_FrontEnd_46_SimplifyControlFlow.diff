@@ -1,0 +1,13 @@
+--- before_pass
++++ after_pass
+@@ -13,9 +13,7 @@ control IngressI(inout H hdr, inout M me
+     @name("aux.a") action aux_a() {
+     }
+     apply {
+-        {
+-            aux_a();
+-        }
++        aux_a();
+     }
+ }
+ control EgressI(inout H hdr, inout M meta, inout standard_metadata_t smeta) {

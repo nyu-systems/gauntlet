@@ -1,0 +1,70 @@
+--- before_pass
++++ after_pass
+@@ -63,10 +63,10 @@ control ingress(inout packet_t hdrs, ino
+             hdrs.data.f1: ternary;
+         }
+         actions = {
+-            setb1;
+-            noop;
++            setb1();
++            noop();
+         }
+-        default_action = noop;
++        default_action = noop();
+     }
+     table ex1 {
+         key = {
+@@ -74,12 +74,12 @@ control ingress(inout packet_t hdrs, ino
+         }
+         actions = {
+             setbyte(hdrs.extra[0].b1);
+-            act1;
+-            act2;
+-            act3;
+-            noop;
++            act1();
++            act2();
++            act3();
++            noop();
+         }
+-        default_action = noop;
++        default_action = noop();
+     }
+     table tbl1 {
+         key = {
+@@ -87,9 +87,9 @@ control ingress(inout packet_t hdrs, ino
+         }
+         actions = {
+             setbyte(hdrs.data.b2);
+-            noop;
++            noop();
+         }
+-        default_action = noop;
++        default_action = noop();
+     }
+     table tbl2 {
+         key = {
+@@ -97,9 +97,9 @@ control ingress(inout packet_t hdrs, ino
+         }
+         actions = {
+             setbyte(hdrs.extra[1].b1);
+-            noop;
++            noop();
+         }
+-        default_action = noop;
++        default_action = noop();
+     }
+     table tbl3 {
+         key = {
+@@ -107,9 +107,9 @@ control ingress(inout packet_t hdrs, ino
+         }
+         actions = {
+             setbyte(hdrs.extra[2].b2);
+-            noop;
++            noop();
+         }
+-        default_action = noop;
++        default_action = noop();
+     }
+     apply {
+         test1.apply();

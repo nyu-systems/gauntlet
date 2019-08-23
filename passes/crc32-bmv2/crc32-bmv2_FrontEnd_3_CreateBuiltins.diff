@@ -1,0 +1,23 @@
+--- before_pass
++++ after_pass
+@@ -93,13 +93,13 @@ control MyIngress(inout headers hdr, ino
+             hdr.p4calc.op: exact;
+         }
+         actions = {
+-            operation_add;
+-            operation_sub;
+-            operation_and;
+-            operation_or;
+-            operation_xor;
+-            operation_crc;
+-            operation_drop;
++            operation_add();
++            operation_sub();
++            operation_and();
++            operation_or();
++            operation_xor();
++            operation_crc();
++            operation_drop();
+         }
+         const default_action = operation_drop();
+         const entries = {

@@ -1,0 +1,13 @@
+--- before_pass
++++ after_pass
+@@ -28,9 +28,7 @@ control IngressImpl(inout headers hdr, i
+         default_action = NoAction();
+     }
+     apply {
+-        {
+-            test_table_0.apply();
+-        }
++        test_table_0.apply();
+     }
+ }
+ control VerifyChecksumImpl(inout headers hdr, inout metadata meta) {

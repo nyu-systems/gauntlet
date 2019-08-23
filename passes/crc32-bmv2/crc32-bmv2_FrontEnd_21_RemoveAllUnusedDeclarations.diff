@@ -1,0 +1,19 @@
+--- before_pass
++++ after_pass
+@@ -5,16 +5,6 @@ header ethernet_t {
+     bit<48> srcAddr;
+     bit<16> etherType;
+ }
+-const bit<16> P4CALC_ETYPE = 16w0x1234;
+-const bit<8> P4CALC_P = 8w0x50;
+-const bit<8> P4CALC_4 = 8w0x34;
+-const bit<8> P4CALC_VER = 8w0x1;
+-const bit<8> P4CALC_PLUS = 8w0x2b;
+-const bit<8> P4CALC_MINUS = 8w0x2d;
+-const bit<8> P4CALC_AND = 8w0x26;
+-const bit<8> P4CALC_OR = 8w0x7c;
+-const bit<8> P4CALC_CARET = 8w0x5e;
+-const bit<8> P4CALC_CRC = 8w0x3e;
+ header p4calc_t {
+     bit<8>  p;
+     bit<8>  four;

@@ -1,0 +1,15 @@
+--- before_pass
++++ after_pass
+@@ -19,10 +19,10 @@ control c(out bool b) {
+     bool b_0;
+     bit<16> x_2;
+     bool b_1;
+-    @name("a") action a(in bit<16> bi, out bit<16> mb) {
++    @name("c.a") action a(in bit<16> bi, out bit<16> mb) {
+         mb = -bi;
+     }
+-    @name("a") action a_2(in bit<16> bi_1, out bit<16> mb_1) {
++    @name("c.a") action a_2(in bit<16> bi_1, out bit<16> mb_1) {
+         mb_1 = -bi_1;
+     }
+     apply {

@@ -1,0 +1,8 @@
+--- before_pass
++++ after_pass
+@@ -31,4 +31,4 @@ const int<8> o0 = 8s0;
+ const int<1> zz0 = 1s0;
+ const int<1> zz1 = -1s1;
+ const int<2> zz2 = -2s2;
+-const int<1> zz3 = (int<1>)-2s2[0:0];
++const int<1> zz3 = 1s0;

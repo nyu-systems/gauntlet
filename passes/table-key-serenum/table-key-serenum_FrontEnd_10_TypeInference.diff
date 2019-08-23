@@ -1,0 +1,34 @@
+--- before_pass
++++ after_pass
+@@ -1,13 +1,13 @@
+ #include <core.p4>
+ #include <v1model.p4>
+ enum bit<16> EthTypes {
+-    IPv4 = 0x800,
+-    ARP = 0x806,
+-    RARP = 0x8035,
+-    EtherTalk = 0x809b,
+-    VLAN = 0x8100,
+-    IPX = 0x8137,
+-    IPv6 = 0x86dd
++    IPv4 = 16w0x800,
++    ARP = 16w0x806,
++    RARP = 16w0x8035,
++    EtherTalk = 16w0x809b,
++    VLAN = 16w0x8100,
++    IPX = 16w0x8137,
++    IPv6 = 16w0x86dd
+ }
+ header Ethernet {
+     bit<48>  src;
+@@ -41,8 +41,8 @@ control c(inout Headers h, inout standar
+             @defaultonly NoAction();
+         }
+         const entries = {
+-                        EthTypes.IPv4 : do_act(0x800);
+-                        EthTypes.VLAN : do_act(0x8100);
++                        EthTypes.IPv4 : do_act(32w0x800);
++                        EthTypes.VLAN : do_act(32w0x8100);
+         }
+         default_action = NoAction();
+     }

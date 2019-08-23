@@ -1,0 +1,5 @@
+--- before_pass
++++ after_pass
+@@ -1,2 +1 @@
+ #include <core.p4>
+-const bit<1> x = 1w1;

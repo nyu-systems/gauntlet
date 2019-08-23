@@ -1,0 +1,15 @@
+--- before_pass
++++ after_pass
+@@ -45,10 +45,8 @@ control ingress(inout headers hdr, inout
+             if (x_0 > 16w5) {
+                 tmp_0 = x_0 + 16w65535;
+             }
+-            {
+-                hasReturned = true;
+-                retval = tmp_0;
+-            }
++            hasReturned = true;
++            retval = tmp_0;
+             tmp = retval;
+         }
+         hdr.ethernet.srcAddr[15:0] = tmp;

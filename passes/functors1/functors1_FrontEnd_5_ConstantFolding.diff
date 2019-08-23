@@ -1,0 +1,11 @@
+--- before_pass
++++ after_pass
+@@ -1,7 +1,7 @@
+ #include <core.p4>
+ parser p00() {
+     state start {
+-        bit<1> z = 1w0 & 1w1;
++        bit<1> z = 1w0;
+         transition accept;
+     }
+ }

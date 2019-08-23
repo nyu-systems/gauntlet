@@ -1,0 +1,8 @@
+--- before_pass
++++ after_pass
+@@ -2,4 +2,4 @@ enum X {
+     a,
+     b
+ }
+-const bool a = X.a == X.b;
++const bool a = false;

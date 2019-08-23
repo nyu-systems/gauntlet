@@ -1,0 +1,18 @@
+--- before_pass
++++ after_pass
+@@ -26,12 +26,12 @@ control MyIC(inout ethernet_t a, inout u
+     @name(".NoAction") action NoAction_0() {
+     }
+     bit<16> tmp;
+-    @name("h") Hash<bit<16>>(PSA_HashAlgorithm_t.CRC16) h_0;
+-    @name("a1") action a1() {
++    @name("MyIC.h") Hash<bit<16>>(PSA_HashAlgorithm_t.CRC16) h_0;
++    @name("MyIC.a1") action a1() {
+         tmp = h_0.get_hash<ethernet_t>(a);
+         b.data = tmp;
+     }
+-    @name("tbl") table tbl_0 {
++    @name("MyIC.tbl") table tbl_0 {
+         key = {
+             a.srcAddr: exact @name("a.srcAddr") ;
+         }

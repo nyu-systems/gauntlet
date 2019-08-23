@@ -1,0 +1,11 @@
+--- before_pass
++++ after_pass
+@@ -1,8 +1,6 @@
+ control noargs();
+ control q() {
+     apply {
+-        {
+-        }
+     }
+ }
+ package m(noargs n);

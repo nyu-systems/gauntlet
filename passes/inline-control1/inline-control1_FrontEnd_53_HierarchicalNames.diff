@@ -1,0 +1,11 @@
+--- before_pass
++++ after_pass
+@@ -5,7 +5,7 @@ extern Y {
+ control d(out bit<32> x) {
+     bit<32> y_0;
+     bit<32> x_0;
+-    @name("cinst.y") Y(32w16) cinst_y;
++    @name("d.cinst.y") Y(32w16) cinst_y;
+     bit<32> cinst_tmp;
+     apply {
+         cinst_tmp = cinst_y.get();

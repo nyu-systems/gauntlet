@@ -1,0 +1,12 @@
+--- before_pass
++++ after_pass
+@@ -15,9 +15,6 @@ parser p1(packet_in p, out Header h) {
+         h.data1 = 32w0;
+         func(h);
+         g(h.data2, g(h.data2, h.data2));
+-        transition next;
+-    }
+-    state next {
+         h.data2 = h.data3 + 32w1;
+         stack[0] = stack[1];
+         b = stack[1].isValid();

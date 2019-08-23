@@ -1,0 +1,47 @@
+--- before_pass
++++ after_pass
+@@ -32,7 +32,7 @@ struct metadata {
+ }
+ parser MyParser(packet_in packet, out headers hdr, inout metadata meta, inout standard_metadata_t standard_metadata) {
+     state start {
+-        packet.extract(hdr.ethernet);
++        packet.extract<ethernet_t>(hdr.ethernet);
+         transition select(hdr.ethernet.etherType) {
+             16w0x1234: check_p4calc;
+             default: accept;
+@@ -45,7 +45,7 @@ parser MyParser(packet_in packet, out he
+         }
+     }
+     state parse_p4calc {
+-        packet.extract(hdr.p4calc);
++        packet.extract<p4calc_t>(hdr.p4calc);
+         transition accept;
+     }
+ }
+@@ -82,7 +82,7 @@ control MyIngress(inout headers hdr, ino
+         bit<64> ncount = (bit<64>)64w8589934592;
+         bit<32> nselect;
+         bit<32> ninput = hdr.p4calc.operand_a;
+-        hash(nselect, HashAlgorithm.crc32, nbase, { ninput }, ncount);
++        hash<bit<32>, bit<32>, tuple<bit<32>>, bit<64>>(nselect, HashAlgorithm.crc32, nbase, { ninput }, ncount);
+         send_back(nselect);
+     }
+     action operation_drop() {
+@@ -125,13 +125,13 @@ control MyEgress(inout headers hdr, inou
+ }
+ control MyComputeChecksum(inout headers hdr, inout metadata meta) {
+     apply {
+-        update_checksum(hdr.p4calc.isValid(), { hdr.p4calc.operand_a }, hdr.p4calc.res, HashAlgorithm.crc32);
++        update_checksum<tuple<bit<32>>, bit<32>>(hdr.p4calc.isValid(), { hdr.p4calc.operand_a }, hdr.p4calc.res, HashAlgorithm.crc32);
+     }
+ }
+ control MyDeparser(packet_out packet, in headers hdr) {
+     apply {
+-        packet.emit(hdr.ethernet);
+-        packet.emit(hdr.p4calc);
++        packet.emit<ethernet_t>(hdr.ethernet);
++        packet.emit<p4calc_t>(hdr.p4calc);
+     }
+ }
+-V1Switch(MyParser(), MyVerifyChecksum(), MyIngress(), MyEgress(), MyComputeChecksum(), MyDeparser()) main;
++V1Switch<headers, metadata>(MyParser(), MyVerifyChecksum(), MyIngress(), MyEgress(), MyComputeChecksum(), MyDeparser()) main;

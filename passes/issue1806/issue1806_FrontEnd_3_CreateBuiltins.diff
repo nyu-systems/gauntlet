@@ -1,0 +1,14 @@
+--- before_pass
++++ after_pass
+@@ -21,8 +21,10 @@ control c(inout Headers h, inout standar
+             h.eth.tst[13:4]: exact;
+         }
+         actions = {
+-            do_act;
++            do_act();
++            @defaultonly NoAction();
+         }
++        default_action = NoAction();
+     }
+     apply {
+         tns.apply();

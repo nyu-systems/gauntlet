@@ -1,0 +1,36 @@
+--- before_pass
++++ after_pass
+@@ -42,26 +42,26 @@ parser parse(packet_in pk, out parsed_pa
+     }
+ }
+ control ingress(inout parsed_packet_t h, inout local_metadata_t local_metadata, inout standard_metadata_t standard_metadata) {
+-    bitvec_hdr bh_0;
+-    @name("do_act") action do_act_0() {
++    bitvec_hdr bh;
++    @name("do_act") action do_act() {
+         h.bvh1.row.alt1.valid = 1w0;
+         local_metadata.row0.alt0.valid = 1w0;
+     }
+-    @name("tns") table tns_0 {
++    @name("tns") table tns {
+         key = {
+             h.bvh1.row.alt1.valid         : exact @name("h.bvh1.row.alt1.valid") ;
+             local_metadata.row0.alt0.valid: exact @name("local_metadata.row0.alt0.valid") ;
+         }
+         actions = {
+-            do_act_0();
++            do_act();
+             @defaultonly NoAction();
+         }
+         default_action = NoAction();
+     }
+     apply {
+-        tns_0.apply();
+-        bh_0.row.alt1.type = EthTypes.IPv4;
+-        h.bvh0.row.alt1.type = bh_0.row.alt1.type;
++        tns.apply();
++        bh.row.alt1.type = EthTypes.IPv4;
++        h.bvh0.row.alt1.type = bh.row.alt1.type;
+         local_metadata.row0.alt0.useHash = true;
+         clone3<row_t>(CloneType.I2E, 32w0, local_metadata.row0);
+     }

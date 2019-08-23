@@ -1,0 +1,13 @@
+--- before_pass
++++ after_pass
+@@ -28,10 +28,6 @@ parser p(packet_in b, out Headers h, ino
+         b.extract<Hdr1>(h.u.h1);
+         transition accept;
+     }
+-    state getH2 {
+-        b.extract<Hdr2>(h.u.h2);
+-        transition accept;
+-    }
+ }
+ control vrfy(inout Headers h, inout Meta m) {
+     apply {

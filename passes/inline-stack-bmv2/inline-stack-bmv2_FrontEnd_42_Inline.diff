@@ -1,0 +1,22 @@
+--- before_pass
++++ after_pass
+@@ -22,15 +22,12 @@ control ComputeChecksumI(inout H hdr, in
+     apply {
+     }
+ }
+-control Aux(inout H hdr) {
+-    apply {
+-    }
+-}
+ control IngressI(inout H hdr, inout M meta, inout std_meta_t std_meta) {
+-    @name("aux") Aux() aux_0;
+     apply {
+-        aux_0.apply(hdr);
+-        aux_0.apply(hdr);
++        {
++        }
++        {
++        }
+     }
+ }
+ control EgressI(inout H hdr, inout M meta, inout std_meta_t std_meta) {

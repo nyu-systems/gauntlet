@@ -1,0 +1,22 @@
+--- before_pass
++++ after_pass
+@@ -35,8 +35,8 @@ control T_host(inout TArg1 tArg1, in TAr
+     }
+     table T {
+         key = {
+-            tArg1.field1: ternary;
+-            aArg2.field2: exact;
++            tArg1.field1: ternary @name("tArg1.field1") ;
++            aArg2.field2: exact @name("aArg2.field2") ;
+         }
+         actions = {
+             B_action(tArg1.field1);
+@@ -56,7 +56,7 @@ control P_pipe(inout TArg1 pArg1, inout
+     }
+     table Tinner {
+         key = {
+-            pArg1.field1: ternary;
++            pArg1.field1: ternary @name("pArg1.field1") ;
+         }
+         actions = {
+             Drop();

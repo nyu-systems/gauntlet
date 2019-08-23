@@ -1,0 +1,16 @@
+--- before_pass
++++ after_pass
+@@ -47,10 +47,10 @@ control ingress(inout Header_t h, inout
+             h.h.r: range;
+         }
+         actions = {
+-            a;
+-            a_with_control_params;
++            a();
++            a_with_control_params();
+         }
+-        default_action = a;
++        default_action = a();
+         const entries = {
+                         1 .. 8 : a_with_control_params(21);
+                         6 .. 12 : a_with_control_params(22);

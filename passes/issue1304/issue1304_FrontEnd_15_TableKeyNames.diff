@@ -1,0 +1,11 @@
+--- before_pass
++++ after_pass
+@@ -35,7 +35,7 @@ control MyIngress(inout my_packet p, ino
+             @defaultonly NoAction();
+         }
+         key = {
+-            meta.err: exact;
++            meta.err: exact @name("meta.err") ;
+         }
+         default_action = NoAction();
+     }

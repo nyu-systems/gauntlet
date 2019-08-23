@@ -1,0 +1,14 @@
+--- before_pass
++++ after_pass
+@@ -3,9 +3,9 @@ control Ing(out bit<32> a) {
+     bool b;
+     action cond() {
+         if (b) {
+-            a = (bit<32>)32w5;
++            a = 32w5;
+         } else {
+-            a = (bit<32>)32w10;
++            a = 32w10;
+         }
+     }
+     apply {

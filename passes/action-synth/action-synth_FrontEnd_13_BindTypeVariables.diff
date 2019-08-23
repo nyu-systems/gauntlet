@@ -1,0 +1,8 @@
+--- before_pass
++++ after_pass
+@@ -38,4 +38,4 @@ control ComputeChecksumI(inout H hdr, in
+     apply {
+     }
+ }
+-V1Switch(ParserI(), VerifyChecksumI(), IngressI(), EgressI(), ComputeChecksumI(), DeparserI()) main;
++V1Switch<H, M>(ParserI(), VerifyChecksumI(), IngressI(), EgressI(), ComputeChecksumI(), DeparserI()) main;

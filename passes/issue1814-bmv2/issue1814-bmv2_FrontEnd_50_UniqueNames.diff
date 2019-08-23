@@ -1,0 +1,35 @@
+--- before_pass
++++ after_pass
+@@ -11,23 +11,23 @@ parser ParserImpl(packet_in packet, out
+     }
+ }
+ control IngressImpl(inout headers hdr, inout metadata meta, inout standard_metadata_t standard_metadata) {
+-    @name(".NoAction") action NoAction_1() {
++    @name(".NoAction") action NoAction_0() {
+     }
+-    bit<1> registerData;
+-    @name("testRegister") register<bit<1>>(32w1) testRegister;
+-    @name("debug_table") table debug_table {
++    bit<1> registerData_0;
++    @name("testRegister") register<bit<1>>(32w1) testRegister_0;
++    @name("debug_table") table debug_table_0 {
+         key = {
+             meta.test: exact @name("meta.test") ;
+         }
+         actions = {
+-            NoAction_1();
++            NoAction_0();
+         }
+-        default_action = NoAction_1();
++        default_action = NoAction_0();
+     }
+     apply {
+-        testRegister.read(registerData, 32w0);
+-        meta.test = (bool)registerData;
+-        debug_table.apply();
++        testRegister_0.read(registerData_0, 32w0);
++        meta.test = (bool)registerData_0;
++        debug_table_0.apply();
+     }
+ }
+ control VerifyChecksumImpl(inout headers hdr, inout metadata meta) {

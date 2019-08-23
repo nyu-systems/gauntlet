@@ -1,0 +1,16 @@
+--- before_pass
++++ after_pass
+@@ -9,10 +9,10 @@ parser p0(packet_in p, out Header h) {
+     }
+ }
+ parser p1(packet_in p, out Header[2] h) {
+-    p0() p0inst;
++    @name("p0inst") p0() p0inst_0;
+     state start {
+-        p0inst.apply(p, h[0]);
+-        p0inst.apply(p, h[1]);
++        p0inst_0.apply(p, h[0]);
++        p0inst_0.apply(p, h[1]);
+         transition accept;
+     }
+ }

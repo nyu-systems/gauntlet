@@ -1,0 +1,36 @@
+--- before_pass
++++ after_pass
+@@ -13,10 +13,16 @@ control c(inout bit<16> p) {
+         }
+     };
+     @name("final_ctr") action final_ctr_0() {
+-        p = cntr_0.total();
++        bit<16> tmp;
++        {
++            tmp = cntr_0.total();
++            p = tmp;
++        }
+     }
+     @name("add_ctr") action add_ctr_0() {
+-        cntr_0.increment();
++        {
++            cntr_0.increment();
++        }
+     }
+     @name("run_ctr") table run_ctr_0 {
+         key = {
+@@ -30,8 +36,12 @@ control c(inout bit<16> p) {
+         default_action = NoAction();
+     }
+     apply {
+-        local_0 = 16w4;
+-        run_ctr_0.apply();
++        {
++            local_0 = 16w4;
++        }
++        {
++            run_ctr_0.apply();
++        }
+     }
+ }
+ control ctr(inout bit<16> x);

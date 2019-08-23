@@ -1,0 +1,23 @@
+--- before_pass
++++ after_pass
+@@ -49,16 +49,16 @@ control verifyChecksum(inout headers hdr
+ control ingress(inout headers hdr, inout metadata meta, inout standard_metadata_t standard_metadata) {
+     @name(".NoAction") action NoAction_0() {
+     }
+-    @name("drop") action drop() {
++    @name("ingress.drop") action drop() {
+         mark_to_drop(standard_metadata);
+     }
+-    @name("drop") action drop_2() {
++    @name("ingress.drop") action drop_2() {
+         mark_to_drop(standard_metadata);
+     }
+-    @name("ipv4_forward") action ipv4_forward(macAddr_t dstAddr, egressSpec_t port) {
++    @name("ingress.ipv4_forward") action ipv4_forward(macAddr_t dstAddr, egressSpec_t port) {
+         meta.test_bool = true;
+     }
+-    @name("ipv4_lpm") table ipv4_lpm_0 {
++    @name("ingress.ipv4_lpm") table ipv4_lpm_0 {
+         key = {
+             hdr.ipv4.dstAddr: lpm @name("hdr.ipv4.dstAddr") ;
+         }

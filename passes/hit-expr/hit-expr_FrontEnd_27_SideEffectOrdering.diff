@@ -1,0 +1,18 @@
+--- before_pass
++++ after_pass
+@@ -18,9 +18,13 @@ control IngressI(inout H hdr, inout M me
+         }
+         default_action = NoAction();
+     }
++    bool tmp;
+     apply {
+-        if (!t_0.apply().hit) {
+-            ;
++        {
++            tmp = t_0.apply().hit;
++            if (!tmp) {
++                ;
++            }
+         }
+     }
+ }

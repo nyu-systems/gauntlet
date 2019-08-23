@@ -1,0 +1,22 @@
+--- before_pass
++++ after_pass
+@@ -55,12 +55,17 @@ control pipe(inout Headers_t headers, ou
+         const default_action = NoAction();
+     }
+     apply {
++        bool hasReturned = false;
+         pass = true;
+         if (!headers.ipv4.isValid()) {
+             pass = false;
+-            return;
++            {
++                hasReturned = true;
++            }
++        }
++        if (!hasReturned) {
++            Check_src_ip_0.apply();
+         }
+-        Check_src_ip_0.apply();
+     }
+ }
+ ebpfFilter<Headers_t>(prs(), pipe()) main;

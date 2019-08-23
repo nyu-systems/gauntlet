@@ -1,0 +1,15 @@
+--- before_pass
++++ after_pass
+@@ -5,10 +5,10 @@ extern E {
+     void f(in bit<16> z=2);
+ }
+ control c()(bit<32> binit=4) {
+-    E(x = 32w0) e;
++    @name("e") E(x = 32w0) e_0;
+     apply {
+         f(a = 32w0, b = binit);
+-        e.f(z = 16w2);
++        e_0.f(z = 16w2);
+     }
+ }
+ control ctrl();

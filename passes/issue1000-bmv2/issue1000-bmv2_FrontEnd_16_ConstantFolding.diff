@@ -1,0 +1,46 @@
+--- before_pass
++++ after_pass
+@@ -29,35 +29,35 @@ parser ParserImpl(packet_in packet, out
+         }
+     }
+     state a0 {
+-        meta.transition_taken = (bit<16>)16w0xa0;
++        meta.transition_taken = 16w0xa0;
+         transition accept;
+     }
+     state a1 {
+-        meta.transition_taken = (bit<16>)16w0xa1;
++        meta.transition_taken = 16w0xa1;
+         transition accept;
+     }
+     state a2 {
+-        meta.transition_taken = (bit<16>)16w0xa2;
++        meta.transition_taken = 16w0xa2;
+         transition accept;
+     }
+     state a3 {
+-        meta.transition_taken = (bit<16>)16w0xa3;
++        meta.transition_taken = 16w0xa3;
+         transition accept;
+     }
+     state a4 {
+-        meta.transition_taken = (bit<16>)16w0xa4;
++        meta.transition_taken = 16w0xa4;
+         transition accept;
+     }
+     state a5 {
+-        meta.transition_taken = (bit<16>)16w0xa5;
++        meta.transition_taken = 16w0xa5;
+         transition accept;
+     }
+     state a6 {
+-        meta.transition_taken = (bit<16>)16w0xa6;
++        meta.transition_taken = 16w0xa6;
+         transition accept;
+     }
+     state a7 {
+-        meta.transition_taken = (bit<16>)16w0xa7;
++        meta.transition_taken = 16w0xa7;
+         transition accept;
+     }
+ }

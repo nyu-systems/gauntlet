@@ -1,0 +1,11 @@
+--- before_pass
++++ after_pass
+@@ -56,7 +56,7 @@ parser IngressParserImpl(packet_in buffe
+ control ingress(inout headers hdr, inout metadata user_meta, in psa_ingress_input_metadata_t istd, inout psa_ingress_output_metadata_t ostd) {
+     Register<PacketByteCountState_t, PortId_t>(32w512) port_pkt_ip_bytes_in;
+     apply {
+-        ostd.egress_port = (PortId_t)(bit<32>)32w0;
++        ostd.egress_port = (PortId_t)32w0;
+         if (hdr.ipv4.isValid()) {
+             @atomic {
+                 PacketByteCountState_t tmp;

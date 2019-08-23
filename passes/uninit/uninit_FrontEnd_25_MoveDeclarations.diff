@@ -1,0 +1,29 @@
+--- before_pass
++++ after_pass
+@@ -42,6 +42,9 @@ control c(out bit<32> v) {
+     bit<32> b_1;
+     bit<32> d_1 = 32w1;
+     bit<32> setByAction_0;
++    bit<32> e_0;
++    bit<32> f_0;
++    bool touched_0;
+     @name("a1") action a1_0() {
+         setByAction_0 = 32w1;
+     }
+@@ -58,8 +61,6 @@ control c(out bit<32> v) {
+     apply {
+         b_1 = b_1 + 32w1;
+         d_1 = d_1 + 32w1;
+-        bit<32> e_0;
+-        bit<32> f_0;
+         if (e_0 > 32w0) {
+             e_0 = 32w1;
+             f_0 = 32w2;
+@@ -67,7 +68,6 @@ control c(out bit<32> v) {
+             f_0 = 32w3;
+         }
+         e_0 = e_0 + 32w1;
+-        bool touched_0;
+         switch (t_0.apply().action_run) {
+             a1_0: {
+                 touched_0 = true;

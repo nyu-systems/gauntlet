@@ -1,0 +1,24 @@
+--- before_pass
++++ after_pass
+@@ -29,13 +29,16 @@ parser prs(packet_in p, out Headers h) {
+ }
+ control c(inout Headers h) {
+     apply {
++        bool hasReturned = false;
+         if (!h.eth.isValid()) {
+-            return;
++            hasReturned = true;
+         }
+-        if (h.eth.type == EthTypes.IPv4) {
+-            h.eth.setInvalid();
+-        } else {
+-            h.eth.type = (EthTypes)16w0;
++        if (!hasReturned) {
++            if (h.eth.type == EthTypes.IPv4) {
++                h.eth.setInvalid();
++            } else {
++                h.eth.type = (EthTypes)16w0;
++            }
+         }
+     }
+ }

@@ -1,0 +1,10 @@
+--- before_pass
++++ after_pass
+@@ -42,7 +42,6 @@ control my() {
+         tmp_10 = g(a_0[0:0]);
+         a_0[0:0] = tmp_10;
+         tmp_11 = g(a_0);
+-        ;
+     }
+ }
+ top(my()) main;

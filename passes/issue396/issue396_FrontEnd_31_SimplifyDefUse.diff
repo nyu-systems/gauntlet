@@ -1,0 +1,16 @@
+--- before_pass
++++ after_pass
+@@ -23,11 +23,11 @@ control d(out bool b) {
+         h_0.setValid();
+         h_0 = H {x = 32w0};
+         s_0.h.setValid();
+-        s_0 = S {h = H {x = 32w0}};
++        ;
+         s1_0.h.setValid();
+         s1_0.h = H {x = 32w0};
+         h3_0[0].setValid();
+-        h3_0[0] = H {x = 32w0};
++        ;
+         h3_0[1].setValid();
+         h3_0[1] = H {x = 32w1};
+         tmp.setValid();

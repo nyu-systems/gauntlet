@@ -1,0 +1,43 @@
+--- before_pass
++++ after_pass
+@@ -16,31 +16,31 @@ struct headers {
+ }
+ parser p(packet_in b, out headers hdr, inout metadata meta, inout standard_metadata_t stdmeta) {
+     state start {
+-        b.extract(hdr.h, 32);
+-        b.extract(hdr.a.next, 32);
+-        b.extract(hdr.a.next, 32);
++        b.extract(hdr.h, 32w32);
++        b.extract(hdr.a.next, 32w32);
++        b.extract(hdr.a.next, 32w32);
+         transition accept;
+     }
+ }
+ control ingress(inout headers hdr, inout metadata meta, inout standard_metadata_t stdmeta) {
+     apply {
+         hdr.same.setValid();
+-        hdr.same.same = 0;
+-        stdmeta.egress_spec = 0;
++        hdr.same.same = (bit<8>)8w0;
++        stdmeta.egress_spec = (bit<9>)9w0;
+         if (hdr.h.s == hdr.a[0].s) {
+-            hdr.same.same = hdr.same.same | 1;
++            hdr.same.same = hdr.same.same | 8w1;
+         }
+         if (hdr.h.v == hdr.a[0].v) {
+-            hdr.same.same = hdr.same.same | 2;
++            hdr.same.same = hdr.same.same | 8w2;
+         }
+         if (hdr.h == hdr.a[0]) {
+-            hdr.same.same = hdr.same.same | 4;
++            hdr.same.same = hdr.same.same | 8w4;
+         }
+         H[2] tmp;
+         tmp[0] = hdr.h;
+         tmp[1] = hdr.a[0];
+         if (tmp == hdr.a) {
+-            hdr.same.same = hdr.same.same | 8;
++            hdr.same.same = hdr.same.same | 8w8;
+         }
+     }
+ }

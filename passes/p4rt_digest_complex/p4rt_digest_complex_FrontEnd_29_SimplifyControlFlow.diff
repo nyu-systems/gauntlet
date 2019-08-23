@@ -1,0 +1,37 @@
+--- before_pass
++++ after_pass
+@@ -15,9 +15,7 @@ struct headers {
+ }
+ parser MyIP(packet_in buffer, out headers hdr, inout EMPTY b, in psa_ingress_parser_input_metadata_t c, in EMPTY d, in EMPTY e) {
+     state start {
+-        {
+-            buffer.extract<h_t>(hdr.h);
+-        }
++        buffer.extract<h_t>(hdr.h);
+         transition accept;
+     }
+ }
+@@ -28,9 +26,7 @@ parser MyEP(packet_in buffer, out EMPTY
+ }
+ control MyIC(inout headers hdr, inout EMPTY b, in psa_ingress_input_metadata_t c, inout psa_ingress_output_metadata_t d) {
+     apply {
+-        {
+-            d.egress_port = c.ingress_port;
+-        }
++        d.egress_port = c.ingress_port;
+     }
+ }
+ control MyEC(inout EMPTY a, inout EMPTY b, in psa_egress_input_metadata_t c, inout psa_egress_output_metadata_t d) {
+@@ -45,10 +41,8 @@ control MyID(packet_out buffer, out EMPT
+     @name("digest") Digest<digest_t>() digest_0;
+     digest_t tmp;
+     apply {
+-        {
+-            tmp = digest_t {h = hdr.h,port = f.egress_port};
+-            digest_0.pack(tmp);
+-        }
++        tmp = digest_t {h = hdr.h,port = f.egress_port};
++        digest_0.pack(tmp);
+     }
+ }
+ control MyED(packet_out buffer, out EMPTY a, out EMPTY b, inout EMPTY c, in EMPTY d, in psa_egress_output_metadata_t e, in psa_egress_deparser_input_metadata_t f) {

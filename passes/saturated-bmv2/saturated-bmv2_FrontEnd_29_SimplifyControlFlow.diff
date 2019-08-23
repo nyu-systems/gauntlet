@@ -1,0 +1,83 @@
+--- before_pass
++++ after_pass
+@@ -18,9 +18,7 @@ struct Meta_t {
+ }
+ parser p(packet_in b, out Header_t h, inout Meta_t m, inout standard_metadata_t sm) {
+     state start {
+-        {
+-            b.extract<hdr>(h.h);
+-        }
++        b.extract<hdr>(h.h);
+         transition accept;
+     }
+ }
+@@ -38,48 +36,28 @@ control egress(inout Header_t h, inout M
+ }
+ control deparser(packet_out b, in Header_t h) {
+     apply {
+-        {
+-            b.emit<hdr>(h.h);
+-        }
++        b.emit<hdr>(h.h);
+     }
+ }
+ control ingress(inout Header_t h, inout Meta_t m, inout standard_metadata_t standard_meta) {
+     @name("usat_plus") action usat_plus_0() {
+-        {
+-            standard_meta.egress_spec = 9w0;
+-        }
+-        {
+-            h.h.res_8 = h.h.opr1_8 |+| h.h.opr2_8;
+-        }
++        standard_meta.egress_spec = 9w0;
++        h.h.res_8 = h.h.opr1_8 |+| h.h.opr2_8;
+     }
+     @name("usat_minus") action usat_minus_0() {
+-        {
+-            standard_meta.egress_spec = 9w0;
+-        }
+-        {
+-            h.h.res_8 = h.h.opr1_8 |-| h.h.opr2_8;
+-        }
++        standard_meta.egress_spec = 9w0;
++        h.h.res_8 = h.h.opr1_8 |-| h.h.opr2_8;
+     }
+     @name("sat_plus") action sat_plus_0() {
+-        {
+-            standard_meta.egress_spec = 9w0;
+-        }
+-        {
+-            h.h.res_16 = h.h.opr1_16 |+| h.h.opr2_16;
+-        }
++        standard_meta.egress_spec = 9w0;
++        h.h.res_16 = h.h.opr1_16 |+| h.h.opr2_16;
+     }
+     @name("sat_minus") action sat_minus_0() {
+-        {
+-            standard_meta.egress_spec = 9w0;
+-        }
+-        {
+-            h.h.res_16 = h.h.opr1_16 |-| h.h.opr2_16;
+-        }
++        standard_meta.egress_spec = 9w0;
++        h.h.res_16 = h.h.opr1_16 |-| h.h.opr2_16;
+     }
+     @name("drop") action drop_0() {
+-        {
+-            mark_to_drop(standard_meta);
+-        }
++        mark_to_drop(standard_meta);
+     }
+     @name("t") table t_0 {
+         key = {
+@@ -101,9 +79,7 @@ control ingress(inout Header_t h, inout
+         }
+     }
+     apply {
+-        {
+-            t_0.apply();
+-        }
++        t_0.apply();
+     }
+ }
+ V1Switch<Header_t, Meta_t>(p(), vrfy(), ingress(), egress(), update(), deparser()) main;

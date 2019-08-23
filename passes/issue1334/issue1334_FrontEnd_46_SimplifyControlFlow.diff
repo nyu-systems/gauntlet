@@ -1,0 +1,13 @@
+--- before_pass
++++ after_pass
+@@ -23,9 +23,7 @@ control c() {
+         o_0.f(b = 16w1);
+         o_0.f(a = 32w1, b = 16w2);
+         o_0.f(b = 16w2, a = 32w1);
+-        {
+-            z_0 = 32w4294967294;
+-        }
++        z_0 = 32w4294967294;
+     }
+ }
+ control proto();

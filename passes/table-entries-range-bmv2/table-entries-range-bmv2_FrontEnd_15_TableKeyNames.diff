@@ -1,0 +1,11 @@
+--- before_pass
++++ after_pass
+@@ -44,7 +44,7 @@ control ingress(inout Header_t h, inout
+     }
+     table t_range {
+         key = {
+-            h.h.r: range;
++            h.h.r: range @name("h.h.r") ;
+         }
+         actions = {
+             a();

@@ -1,0 +1,8 @@
+--- before_pass
++++ after_pass
+@@ -238,4 +238,4 @@ control FabricComputeChecksum(inout pars
+     apply {
+     }
+ }
+-V1Switch(FabricParser(), FabricVerifyChecksum(), FabricIngress(), FabricEgress(), FabricComputeChecksum(), FabricDeparser()) main;
++V1Switch<parsed_headers_t, fabric_metadata_t>(FabricParser(), FabricVerifyChecksum(), FabricIngress(), FabricEgress(), FabricComputeChecksum(), FabricDeparser()) main;

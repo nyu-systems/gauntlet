@@ -1,0 +1,35 @@
+--- before_pass
++++ after_pass
+@@ -15,24 +15,24 @@ control IngressI(inout H hdr, inout M me
+     }
+ }
+ control EgressI(inout H hdr, inout M meta, inout std_meta_t std_meta) {
+-    action a() {
++    @name("a") action a_0() {
+     }
+-    table t {
++    @name("t") table t_0 {
+         key = {
+         }
+         actions = {
+-            a();
++            a_0();
+         }
+-        default_action = a();
++        default_action = a_0();
+     }
+-    IngressI() do;
++    @name("do") IngressI() do_0;
+     apply {
+-        switch (t.apply().action_run) {
+-            a: {
++        switch (t_0.apply().action_run) {
++            a_0: {
+                 return;
+             }
+             default: {
+-                do.apply(hdr, meta, std_meta);
++                do_0.apply(hdr, meta, std_meta);
+             }
+         }
+     }

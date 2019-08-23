@@ -1,0 +1,24 @@
+--- before_pass
++++ after_pass
+@@ -161,6 +161,8 @@ control MyComputeChecksum(inout headers
+     }
+ }
+ control MyIngress(inout headers hdr, inout metadata meta, inout standard_metadata_t standard_metadata) {
++    mac_addr_t mac_tmp_0;
++    ipv6_addr_t addr_tmp_0;
+     @name("set_egress_port") action set_egress_port_0(port_t out_port) {
+         standard_metadata.egress_spec = out_port;
+     }
+@@ -175,10 +177,10 @@ control MyIngress(inout headers hdr, ino
+         clone3<metadata>(CloneType.I2E, 32w100, meta);
+     }
+     @name("icmp6_echo_reply") action icmp6_echo_reply_0() {
+-        mac_addr_t mac_tmp_0 = hdr.ethernet.dst_addr;
++        mac_tmp_0 = hdr.ethernet.dst_addr;
+         hdr.ethernet.dst_addr = hdr.ethernet.src_addr;
+         hdr.ethernet.src_addr = mac_tmp_0;
+-        ipv6_addr_t addr_tmp_0 = hdr.ipv6.dst_addr;
++        addr_tmp_0 = hdr.ipv6.dst_addr;
+         hdr.ipv6.dst_addr = hdr.ipv6.src_addr;
+         hdr.ipv6.src_addr = addr_tmp_0;
+         hdr.icmp6.type = 8w129;

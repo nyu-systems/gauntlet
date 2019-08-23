@@ -1,0 +1,26 @@
+--- before_pass
++++ after_pass
+@@ -56,14 +56,19 @@ control pipe(inout Headers_t headers, ou
+         const default_action = NoAction();
+     }
+     apply {
++        bool hasReturned = false;
+         pass = true;
+         if (!headers.ipv4.isValid()) {
+             pass = false;
+-            return;
++            {
++                hasReturned = true;
++            }
+         }
+-        tmp = Check_src_ip_0.apply().hit;
+-        if (tmp) {
+-            pass = pass;
++        if (!hasReturned) {
++            tmp = Check_src_ip_0.apply().hit;
++            if (tmp) {
++                pass = pass;
++            }
+         }
+     }
+ }

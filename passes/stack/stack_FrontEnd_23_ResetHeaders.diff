@@ -1,0 +1,13 @@
+--- before_pass
++++ after_pass
+@@ -4,6 +4,10 @@ header h {
+ parser p() {
+     state start {
+         h[4] stack;
++        stack[0].setInvalid();
++        stack[1].setInvalid();
++        stack[2].setInvalid();
++        stack[3].setInvalid();
+         stack[3].setValid();
+         h b = stack[3];
+         b = stack.last;

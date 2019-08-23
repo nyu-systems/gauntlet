@@ -1,0 +1,10 @@
+--- before_pass
++++ after_pass
+@@ -9,6 +9,7 @@ control x() {
+     }
+     apply {
+         if (t.apply().hit) {
++            ;
+         }
+         switch (t.apply().action_run) {
+             nop: {

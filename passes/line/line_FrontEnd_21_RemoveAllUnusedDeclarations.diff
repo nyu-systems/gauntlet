@@ -1,0 +1,11 @@
+--- before_pass
++++ after_pass
+@@ -1,8 +0,0 @@
+-control x() {
+-    apply {
+-    }
+-}
+-control y() {
+-    apply {
+-    }
+-}

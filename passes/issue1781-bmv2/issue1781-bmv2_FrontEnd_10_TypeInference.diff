@@ -1,0 +1,11 @@
+--- before_pass
++++ after_pass
+@@ -10,7 +10,7 @@ parser ParserImpl(packet_in packet, out
+     }
+ }
+ bit<32> test_func() {
+-    return 1;
++    return (bit<32>)32w1;
+ }
+ control IngressImpl(inout headers hdr, inout metadata meta, inout standard_metadata_t standard_metadata) {
+     action update_value(out bit<32> value) {

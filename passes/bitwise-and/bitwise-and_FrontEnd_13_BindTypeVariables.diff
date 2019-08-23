@@ -1,0 +1,11 @@
+--- before_pass
++++ after_pass
+@@ -3,7 +3,7 @@
+ control C(bit<1> meta) {
+     apply {
+         if (meta & 1w0x0 == 1w0) {
+-            digest(32w0, meta);
++            digest<bit<1>>(32w0, meta);
+         }
+     }
+ }

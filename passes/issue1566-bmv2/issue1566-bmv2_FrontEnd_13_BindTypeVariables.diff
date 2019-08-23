@@ -1,0 +1,26 @@
+--- before_pass
++++ after_pass
+@@ -44,7 +44,7 @@ control E(inout bit<16> x) {
+ }
+ parser parserI(packet_in pkt, out Parsed_packet hdr, inout metadata_t meta, inout standard_metadata_t stdmeta) {
+     state start {
+-        pkt.extract(hdr.ethernet);
++        pkt.extract<Ethernet_h>(hdr.ethernet);
+         transition accept;
+     }
+ }
+@@ -60,7 +60,7 @@ control cEgress(inout Parsed_packet hdr,
+ }
+ control DeparserI(packet_out packet, in Parsed_packet hdr) {
+     apply {
+-        packet.emit(hdr.ethernet);
++        packet.emit<Ethernet_h>(hdr.ethernet);
+     }
+ }
+ control vc(inout Parsed_packet hdr, inout metadata_t meta) {
+@@ -71,4 +71,4 @@ control uc(inout Parsed_packet hdr, inou
+     apply {
+     }
+ }
+-V1Switch(parserI(), vc(), cIngress(), cEgress(), uc(), DeparserI()) main;
++V1Switch<Parsed_packet, metadata_t>(parserI(), vc(), cIngress(), cEgress(), uc(), DeparserI()) main;

@@ -1,0 +1,14 @@
+--- before_pass
++++ after_pass
+@@ -30,8 +30,10 @@ control EgressImpl(inout headers_t hdr,
+             ostd.egress_spec: exact;
+         }
+         actions = {
+-            set_true;
++            set_true();
++            @defaultonly NoAction();
+         }
++        default_action = NoAction();
+     }
+     apply {
+         change_cond.apply();

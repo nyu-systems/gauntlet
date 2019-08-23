@@ -1,0 +1,28 @@
+--- before_pass
++++ after_pass
+@@ -10,12 +10,22 @@ struct headers_t {
+ struct metadata_t {
+ }
+ action foo(out bit<8> x, in bit<8> y=5) {
+-    x = y >> 2;
++    {
++        x = y >> 2;
++    }
+ }
+ control ingressImpl(inout headers_t hdr, inout metadata_t meta, inout standard_metadata_t stdmeta) {
++    bit<8> tmp;
++    bit<8> tmp_0;
+     apply {
+-        foo(hdr.h1.f1, hdr.h1.f1);
+-        foo(x = hdr.h1.f2, y = 8w5);
++        {
++            tmp_0 = hdr.h1.f1;
++            foo(tmp, tmp_0);
++            hdr.h1.f1 = tmp;
++        }
++        {
++            foo(x = hdr.h1.f2, y = 8w5);
++        }
+     }
+ }
+ parser parserImpl(packet_in packet, out headers_t hdr, inout metadata_t meta, inout standard_metadata_t stdmeta) {

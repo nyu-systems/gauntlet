@@ -1,0 +1,28 @@
+--- before_pass
++++ after_pass
+@@ -16,20 +16,14 @@ control IngressImpl(inout headers hdr, i
+     bit<32> value_0;
+     @name("update_value") action update_value_0(out bit<32> value) {
+         bit<32> tmp;
+-        {
+-            tmp = test_func();
+-            value = tmp;
+-        }
++        tmp = test_func();
++        value = tmp;
+     }
+     bit<32> tmp_0;
+     apply {
+-        {
+-            tmp_0 = test_func();
+-            value_0 = tmp_0;
+-        }
+-        {
+-            update_value_0(value_0);
+-        }
++        tmp_0 = test_func();
++        value_0 = tmp_0;
++        update_value_0(value_0);
+     }
+ }
+ control VerifyChecksumImpl(inout headers hdr, inout metadata meta) {

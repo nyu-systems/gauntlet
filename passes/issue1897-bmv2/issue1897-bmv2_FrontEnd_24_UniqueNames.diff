@@ -1,0 +1,17 @@
+--- before_pass
++++ after_pass
+@@ -38,11 +38,11 @@ parser ProtAddrParser(packet_in packet,
+     }
+ }
+ parser ProtParser(packet_in packet, out headers hdr, inout metadata meta, inout standard_metadata_t standard_metadata) {
+-    ProtAddrParser() addrParser;
++    @name("addrParser") ProtAddrParser() addrParser_0;
+     state start {
+         packet.extract<addr_type_t>(hdr.addr_type);
+-        addrParser.apply(packet, hdr.addr_type.dstType, hdr.addr_dst);
+-        addrParser.apply(packet, hdr.addr_type.srcType, hdr.addr_src);
++        addrParser_0.apply(packet, hdr.addr_type.dstType, hdr.addr_dst);
++        addrParser_0.apply(packet, hdr.addr_type.srcType, hdr.addr_src);
+         transition accept;
+     }
+ }

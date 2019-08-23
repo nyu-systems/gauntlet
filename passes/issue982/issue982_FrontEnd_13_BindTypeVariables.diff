@@ -1,0 +1,39 @@
+--- before_pass
++++ after_pass
+@@ -248,14 +248,14 @@ parser CommonParser(packet_in buffer, ou
+         transition parse_ethernet;
+     }
+     state parse_ethernet {
+-        buffer.extract(parsed_hdr.ethernet);
++        buffer.extract<ethernet_t>(parsed_hdr.ethernet);
+         transition select(parsed_hdr.ethernet.etherType) {
+             16w0x800: parse_ipv4;
+             default: accept;
+         }
+     }
+     state parse_ipv4 {
+-        buffer.extract(parsed_hdr.ipv4);
++        buffer.extract<ipv4_t>(parsed_hdr.ipv4);
+         transition accept;
+     }
+ }
+@@ -353,14 +353,14 @@ control IngressDeparserImpl(packet_out p
+         if (meta.custom_clone_id == 3w1) {
+             ostd.clone_metadata = clone_md;
+         }
+-        packet.emit(hdr.ethernet);
+-        packet.emit(hdr.ipv4);
++        packet.emit<ethernet_t>(hdr.ethernet);
++        packet.emit<ipv4_t>(hdr.ipv4);
+     }
+ }
+ control EgressDeparserImpl(packet_out packet, inout headers hdr, in metadata meta, in psa_egress_output_metadata_t istd, out psa_egress_deparser_output_metadata_t ostd) {
+     apply {
+-        packet.emit(hdr.ethernet);
+-        packet.emit(hdr.ipv4);
++        packet.emit<ethernet_t>(hdr.ethernet);
++        packet.emit<ipv4_t>(hdr.ipv4);
+     }
+ }
+-PSA_Switch(IngressParserImpl(), ingress(), IngressDeparserImpl(), EgressParserImpl(), egress(), EgressDeparserImpl()) main;
++PSA_Switch<headers, metadata, headers, metadata>(IngressParserImpl(), ingress(), IngressDeparserImpl(), EgressParserImpl(), egress(), EgressDeparserImpl()) main;

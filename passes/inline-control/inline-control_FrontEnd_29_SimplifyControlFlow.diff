@@ -1,0 +1,24 @@
+--- before_pass
++++ after_pass
+@@ -5,18 +5,14 @@ extern Y {
+ control c(out bit<32> x)(Y y) {
+     bit<32> tmp;
+     apply {
+-        {
+-            tmp = y.get();
+-            x = tmp;
+-        }
++        tmp = y.get();
++        x = tmp;
+     }
+ }
+ control d(out bit<32> x) {
+     @name("cinst") c(Y(32w16)) cinst_0;
+     apply {
+-        {
+-            cinst_0.apply(x);
+-        }
++        cinst_0.apply(x);
+     }
+ }
+ control dproto(out bit<32> x);

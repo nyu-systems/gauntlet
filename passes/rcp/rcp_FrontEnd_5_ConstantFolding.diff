@@ -1,0 +1,20 @@
+--- before_pass
++++ after_pass
+@@ -12,7 +12,7 @@ header H {
+ struct Metadata {
+     bit<32> pkt_len;
+ }
+-const bit<32> MAX_ALLOWABLE_RTT = 2500;
++const bit<32> MAX_ALLOWABLE_RTT = 32w2500;
+ control ingress(inout H pkt_hdr, in Metadata metadata) {
+     Register<bit<32>>(1) input_traffic_bytes;
+     Register<bit<32>>(1) sum_rtt_Tr;
+@@ -23,7 +23,7 @@ control ingress(inout H pkt_hdr, in Meta
+             input_traffic_bytes.read(0, input_traffic_bytes_tmp);
+             input_traffic_bytes_tmp = input_traffic_bytes_tmp + metadata.pkt_len;
+             input_traffic_bytes.write(input_traffic_bytes_tmp, 0);
+-            if (pkt_hdr.rtt < MAX_ALLOWABLE_RTT) {
++            if (pkt_hdr.rtt < 32w2500) {
+                 bit<32> sum_rtt_Tr_tmp;
+                 sum_rtt_Tr.read(0, sum_rtt_Tr_tmp);
+                 sum_rtt_Tr_tmp = sum_rtt_Tr_tmp + pkt_hdr.rtt;

@@ -1,0 +1,16 @@
+--- before_pass
++++ after_pass
+@@ -28,10 +28,10 @@ control c(in hdr h, inout standard_metad
+             h.e: exact;
+         }
+         actions = {
+-            a;
+-            b;
++            a();
++            b();
+         }
+-        default_action = a;
++        default_action = a();
+         const entries = {
+                         0x1 : a();
+                         0x2 : b();

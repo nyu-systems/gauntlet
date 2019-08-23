@@ -1,0 +1,11 @@
+--- before_pass
++++ after_pass
+@@ -12,7 +12,7 @@ control d(out bit<32> x) {
+     const bit<32> arg = 32w16;
+     c(Y(32w16)) cinst;
+     apply {
+-        y = 5;
++        y = (bit<32>)32w5;
+         cinst.apply(x);
+         cinst.apply(y);
+     }

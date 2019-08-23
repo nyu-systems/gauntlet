@@ -1,0 +1,31 @@
+--- before_pass
++++ after_pass
+@@ -11,19 +11,19 @@ control ctrl(out bit<32> c) {
+     apply {
+         bit<32> a;
+         bit<32> b;
+-        a = 0;
+-        b = 1;
+-        c = 2;
+-        if (a == 0) {
+-            b = 2;
++        a = (bit<32>)32w0;
++        b = (bit<32>)32w1;
++        c = (bit<32>)32w2;
++        if (a == 32w0) {
++            b = (bit<32>)32w2;
+             t.apply();
+-            c = 3;
++            c = (bit<32>)32w3;
+         } else {
+-            b = 3;
++            b = (bit<32>)32w3;
+             t.apply();
+-            c = 4;
++            c = (bit<32>)32w4;
+         }
+-        c = 5;
++        c = (bit<32>)32w5;
+     }
+ }
+ control noop(out bit<32> c);

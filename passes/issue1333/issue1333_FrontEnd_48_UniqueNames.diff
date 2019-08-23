@@ -1,0 +1,15 @@
+--- before_pass
++++ after_pass
+@@ -7,10 +7,10 @@ extern E {
+ control ctrl();
+ package top(ctrl _c);
+ control c_0() {
+-    @name("e") E(x = 32w0) e_0;
++    @name("e") E(x = 32w0) e;
+     apply {
+         f(a = 32w0, b = 32w4);
+-        e_0.f(z = 16w2);
++        e.f(z = 16w2);
+     }
+ }
+ top(c_0()) main;

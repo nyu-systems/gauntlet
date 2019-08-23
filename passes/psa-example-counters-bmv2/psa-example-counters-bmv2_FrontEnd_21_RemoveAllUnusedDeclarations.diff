@@ -1,0 +1,12 @@
+--- before_pass
++++ after_pass
+@@ -28,9 +28,7 @@ struct metadata {
+     fwd_metadata_t fwd_metadata;
+ }
+ typedef bit<48> ByteCounter_t;
+-typedef bit<32> PacketCounter_t;
+ typedef bit<80> PacketByteCounter_t;
+-const bit<32> NUM_PORTS = 32w512;
+ struct headers {
+     ethernet_t ethernet;
+     ipv4_t     ipv4;

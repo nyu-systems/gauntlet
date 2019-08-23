@@ -1,0 +1,27 @@
+--- before_pass
++++ after_pass
+@@ -10,20 +10,20 @@ extern Virtual {
+ control c(inout bit<16> p) {
+     Virtual() cntr = {
+         bit<16> f(in bit<16> ix) {
+-            return ix + 1;
++            return ix + 16w1;
+         }
+         void g(inout data x) {
+             data ix = x;
+             if (ix.a < ix.b) {
+-                x.a = ix.a + 1;
++                x.a = ix.a + 16w1;
+             }
+             if (ix.a > ix.b) {
+-                x.a = ix.a - 1;
++                x.a = ix.a - 16w1;
+             }
+         }
+     };
+     apply {
+-        p = cntr.f(6);
++        p = cntr.f(16w6);
+     }
+ }
+ control ctr(inout bit<16> x);

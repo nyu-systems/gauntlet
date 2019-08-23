@@ -1,0 +1,11 @@
+--- before_pass
++++ after_pass
+@@ -37,7 +37,7 @@ parser Top(packet_in b, out Parsed_heade
+         transition parse_ipv4_options;
+     }
+     state parse_ipv4_options {
+-        b.extract<Ipv4_options_h>(headers.ipv4options, (bit<32>)(8w8 * ((bit<8>)headers.ipv4.ihl * 8w4 - 8w20)));
++        b.extract<Ipv4_options_h>(headers.ipv4options, (bit<32>)(((bit<8>)headers.ipv4.ihl << 2) + 8w236 << 3));
+         transition select(headers.ipv4.protocol) {
+             8w6: parse_tcp;
+             8w17: parse_udp;

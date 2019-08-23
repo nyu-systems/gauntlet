@@ -1,0 +1,14 @@
+--- before_pass
++++ after_pass
+@@ -4,9 +4,9 @@ extern e<T> {
+     T get();
+ }
+ parser p1<T>(out T a) {
+-    e<T>() ei;
++    @name("ei") e<T>() ei_0;
+     state start {
+-        a = ei.get();
++        a = ei_0.get();
+         transition accept;
+     }
+ }

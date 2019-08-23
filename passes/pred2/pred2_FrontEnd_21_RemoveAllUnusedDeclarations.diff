@@ -1,0 +1,10 @@
+--- before_pass
++++ after_pass
+@@ -4,7 +4,6 @@ control empty();
+ package top(empty e);
+ control Ing() {
+     bool b;
+-    bit<32> a;
+     bool tmp_1;
+     bool tmp_2;
+     @name("cond") action cond_0() {

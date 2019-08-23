@@ -1,0 +1,11 @@
+--- before_pass
++++ after_pass
+@@ -20,7 +20,7 @@ control pipe(inout Headers_t headers, ou
+     }
+     table tbl {
+         key = {
+-            headers.ethernet.protocol: exact;
++            headers.ethernet.protocol: exact @name("headers.ethernet.protocol") ;
+         }
+         actions = {
+             match();

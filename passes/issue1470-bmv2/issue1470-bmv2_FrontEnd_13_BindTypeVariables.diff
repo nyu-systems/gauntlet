@@ -1,0 +1,31 @@
+--- before_pass
++++ after_pass
+@@ -30,14 +30,14 @@ parser InnerParser(packet_in pkt, out he
+         transition parse_eth;
+     }
+     state parse_eth {
+-        pkt.extract(hdr.eth);
++        pkt.extract<eth_h>(hdr.eth);
+         transition select(hdr.eth.type) {
+             16w0x800: parse_ipv4;
+             default: accept;
+         }
+     }
+     state parse_ipv4 {
+-        pkt.extract(hdr.ipv4);
++        pkt.extract<ipv4_h>(hdr.ipv4);
+         transition accept;
+     }
+ }
+@@ -66,8 +66,8 @@ control NoEgress(inout headers_t hdr, in
+ }
+ control SimpleDeparser(packet_out pkt, in headers_t hdr) {
+     apply {
+-        pkt.emit(hdr.eth);
+-        pkt.emit(hdr.ipv4);
++        pkt.emit<eth_h>(hdr.eth);
++        pkt.emit<ipv4_h>(hdr.ipv4);
+     }
+ }
+-V1Switch(OuterParser(), NoVerify(), NoIngress(), NoEgress(), NoCheck(), SimpleDeparser()) main;
++V1Switch<headers_t, meta_t>(OuterParser(), NoVerify(), NoIngress(), NoEgress(), NoCheck(), SimpleDeparser()) main;

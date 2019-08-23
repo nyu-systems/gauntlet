@@ -1,0 +1,38 @@
+--- before_pass
++++ after_pass
+@@ -47,20 +47,20 @@ parser ParserImpl(packet_in packet, out
+     }
+ }
+ control ingress(inout headers_t hdr, inout meta_t meta, inout standard_metadata_t standard_metadata) {
+-    action set_output(bit<9> out_port) {
++    @name("set_output") action set_output_0(bit<9> out_port) {
+         standard_metadata.egress_spec = out_port;
+     }
+-    table ipv4_da_lpm {
++    @name("ipv4_da_lpm") table ipv4_da_lpm_0 {
+         key = {
+             hdr.ipv4.dstAddr: lpm @name("hdr.ipv4.dstAddr") ;
+         }
+         actions = {
+-            set_output();
++            set_output_0();
+             my_drop(standard_metadata);
+         }
+         default_action = my_drop(standard_metadata);
+     }
+-    table ipv4_sa_filter {
++    @name("ipv4_sa_filter") table ipv4_sa_filter_0 {
+         key = {
+             hdr.ipv4.srcAddr: ternary @name("hdr.ipv4.srcAddr") ;
+         }
+@@ -72,8 +72,8 @@ control ingress(inout headers_t hdr, ino
+     }
+     apply {
+         if (hdr.ipv4.isValid()) {
+-            ipv4_sa_filter.apply();
+-            ipv4_da_lpm.apply();
++            ipv4_sa_filter_0.apply();
++            ipv4_da_lpm_0.apply();
+         }
+     }
+ }

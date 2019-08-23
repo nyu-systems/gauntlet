@@ -1,0 +1,46 @@
+--- before_pass
++++ after_pass
+@@ -12,17 +12,27 @@ struct local_metadata_t {
+ }
+ parser parse(packet_in pk, out parsed_packet_t hdr, inout local_metadata_t local_metadata, inout standard_metadata_t standard_metadata) {
+     state start {
+-        pk.extract<Ethernet>(hdr.eth);
++        {
++            pk.extract<Ethernet>(hdr.eth);
++        }
+         transition accept;
+     }
+ }
+ control ingress(inout parsed_packet_t hdr, inout local_metadata_t local_metadata, inout standard_metadata_t standard_metadata) {
+     apply {
+         if (standard_metadata.parser_error == error.PacketTooShort) {
+-            hdr.eth.setValid();
+-            hdr.eth.type = 16w0;
+-            hdr.eth.src = 48w0;
+-            hdr.eth.dst = 48w0;
++            {
++                hdr.eth.setValid();
++            }
++            {
++                hdr.eth.type = 16w0;
++            }
++            {
++                hdr.eth.src = 48w0;
++            }
++            {
++                hdr.eth.dst = 48w0;
++            }
+         }
+     }
+ }
+@@ -32,7 +42,9 @@ control egress(inout parsed_packet_t hdr
+ }
+ control deparser(packet_out b, in parsed_packet_t hdr) {
+     apply {
+-        b.emit<parsed_packet_t>(hdr);
++        {
++            b.emit<parsed_packet_t>(hdr);
++        }
+     }
+ }
+ control verify_checks(inout parsed_packet_t hdr, inout local_metadata_t local_metadata) {

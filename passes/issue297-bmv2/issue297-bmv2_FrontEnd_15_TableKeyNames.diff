@@ -1,0 +1,11 @@
+--- before_pass
++++ after_pass
+@@ -29,7 +29,7 @@ control IngressI(inout H hdr, inout M me
+     }
+     table indirect_ws {
+         key = {
+-            meta.hash1: selector;
++            meta.hash1: selector @name("meta.hash1") ;
+         }
+         actions = {
+             drop();

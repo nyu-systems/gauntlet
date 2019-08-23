@@ -1,0 +1,34 @@
+--- before_pass
++++ after_pass
+@@ -1,16 +1,8 @@
+ #include <core.p4>
+ #include <v1model.p4>
+-enum bit<8> MyEnum1B {
+-    MBR1 = 8w0,
+-    MBR2 = 8w0xff
+-}
+-enum bit<16> MyEnum2B {
+-    MBR1 = 16w10,
+-    MBR2 = 16w0xab00
+-}
+ header hdr {
+-    MyEnum1B f1;
+-    MyEnum2B f2;
++    bit<8>  f1;
++    bit<16> f2;
+ }
+ struct Header_t {
+     hdr h;
+@@ -58,9 +50,9 @@ control ingress(inout Header_t h, inout
+         }
+         const default_action = a();
+         const entries = {
+-                        (MyEnum1B.MBR1, default) : a_with_control_params(9w1);
+-                        (MyEnum1B.MBR2, (bit<16>)MyEnum2B.MBR2 &&& 16w0xff00) : a_with_control_params(9w2);
+-                        (MyEnum1B.MBR2, default) : a_with_control_params(9w3);
++                        (8w0, default) : a_with_control_params(9w1);
++                        (8w0xff, (bit<16>)16w0xab00 &&& 16w0xff00) : a_with_control_params(9w2);
++                        (8w0xff, default) : a_with_control_params(9w3);
+         }
+     }
+     apply {

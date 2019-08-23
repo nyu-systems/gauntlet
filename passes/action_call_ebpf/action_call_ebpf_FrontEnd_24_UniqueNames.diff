@@ -1,0 +1,18 @@
+--- before_pass
++++ after_pass
+@@ -8,12 +8,12 @@ parser prs(packet_in p, out Headers_t he
+     }
+ }
+ control pipe(inout Headers_t headers, out bool pass) {
+-    action Reject(bool rej) {
++    @name("Reject") action Reject_0(bool rej) {
+         pass = rej;
+     }
+     apply {
+-        bool x = true;
+-        Reject(x);
++        bool x_0 = true;
++        Reject_0(x_0);
+     }
+ }
+ ebpfFilter<Headers_t>(prs(), pipe()) main;

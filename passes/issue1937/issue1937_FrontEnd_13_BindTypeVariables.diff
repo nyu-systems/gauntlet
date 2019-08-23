@@ -1,0 +1,15 @@
+--- before_pass
++++ after_pass
+@@ -14,10 +14,10 @@ parser parserImpl(out h1_t hdr) {
+     @name("foo") foo() foo_inst_0;
+     state start {
+         foo_inst.apply(hdr.f1, hdr.f1);
+-        foo_inst_0.apply(x = hdr.f2, y = 5);
++        foo_inst_0.apply(x = hdr.f2, y = 8w5);
+         transition accept;
+     }
+ }
+ parser p<T>(out T h);
+ package top<T>(p<T> p);
+-top(parserImpl()) main;
++top<h1_t>(parserImpl()) main;

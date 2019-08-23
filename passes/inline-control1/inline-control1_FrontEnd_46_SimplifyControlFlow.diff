@@ -1,0 +1,25 @@
+--- before_pass
++++ after_pass
+@@ -8,16 +8,12 @@ control d(out bit<32> x) {
+     @name("cinst.y") Y(32w16) cinst_y;
+     bit<32> cinst_tmp;
+     apply {
+-        {
+-            cinst_tmp = cinst_y.get();
+-            x_0 = cinst_tmp;
+-            x = x_0;
+-        }
+-        {
+-            cinst_tmp = cinst_y.get();
+-            x_0 = cinst_tmp;
+-            y_0 = x_0;
+-        }
++        cinst_tmp = cinst_y.get();
++        x_0 = cinst_tmp;
++        x = x_0;
++        cinst_tmp = cinst_y.get();
++        x_0 = cinst_tmp;
++        y_0 = x_0;
+     }
+ }
+ control dproto(out bit<32> x);

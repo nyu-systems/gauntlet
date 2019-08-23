@@ -1,0 +1,95 @@
+--- before_pass
++++ after_pass
+@@ -89,57 +89,57 @@ struct Tcp_option_sack_top {
+ parser Tcp_option_parser(packet_in b, in bit<4> tcp_hdr_data_offset, out Tcp_option_stack vec, out Tcp_option_padding_h padding) {
+     bit<7> tcp_hdr_bytes_left;
+     state start {
+-        verify(tcp_hdr_data_offset >= 5, error.TcpDataOffsetTooSmall);
+-        tcp_hdr_bytes_left = 4 * (bit<7>)(tcp_hdr_data_offset - 5);
++        verify(tcp_hdr_data_offset >= 4w5, error.TcpDataOffsetTooSmall);
++        tcp_hdr_bytes_left = 7w4 * (bit<7>)(tcp_hdr_data_offset - 4w5);
+         transition next_option;
+     }
+     state next_option {
+         transition select(tcp_hdr_bytes_left) {
+-            0: accept;
++            7w0: accept;
+             default: next_option_part2;
+         }
+     }
+     state next_option_part2 {
+         transition select(b.lookahead<bit<8>>()) {
+-            0: parse_tcp_option_end;
+-            1: parse_tcp_option_nop;
+-            2: parse_tcp_option_ss;
+-            3: parse_tcp_option_s;
+-            5: parse_tcp_option_sack;
++            8w0: parse_tcp_option_end;
++            8w1: parse_tcp_option_nop;
++            8w2: parse_tcp_option_ss;
++            8w3: parse_tcp_option_s;
++            8w5: parse_tcp_option_sack;
+         }
+     }
+     state parse_tcp_option_end {
+         b.extract(vec.next.end);
+-        tcp_hdr_bytes_left = tcp_hdr_bytes_left - 1;
++        tcp_hdr_bytes_left = tcp_hdr_bytes_left - 7w1;
+         transition consume_remaining_tcp_hdr_and_accept;
+     }
+     state consume_remaining_tcp_hdr_and_accept {
+-        b.extract(padding, (bit<32>)(8 * (bit<9>)tcp_hdr_bytes_left));
++        b.extract(padding, (bit<32>)(9w8 * (bit<9>)tcp_hdr_bytes_left));
+         transition accept;
+     }
+     state parse_tcp_option_nop {
+         b.extract(vec.next.nop);
+-        tcp_hdr_bytes_left = tcp_hdr_bytes_left - 1;
++        tcp_hdr_bytes_left = tcp_hdr_bytes_left - 7w1;
+         transition next_option;
+     }
+     state parse_tcp_option_ss {
+-        verify(tcp_hdr_bytes_left >= 5, error.TcpOptionTooLongForHeader);
+-        tcp_hdr_bytes_left = tcp_hdr_bytes_left - 5;
++        verify(tcp_hdr_bytes_left >= 7w5, error.TcpOptionTooLongForHeader);
++        tcp_hdr_bytes_left = tcp_hdr_bytes_left - 7w5;
+         b.extract(vec.next.ss);
+         transition next_option;
+     }
+     state parse_tcp_option_s {
+-        verify(tcp_hdr_bytes_left >= 4, error.TcpOptionTooLongForHeader);
+-        tcp_hdr_bytes_left = tcp_hdr_bytes_left - 4;
++        verify(tcp_hdr_bytes_left >= 7w4, error.TcpOptionTooLongForHeader);
++        tcp_hdr_bytes_left = tcp_hdr_bytes_left - 7w4;
+         b.extract(vec.next.s);
+         transition next_option;
+     }
+     state parse_tcp_option_sack {
+         bit<8> n_sack_bytes = (b.lookahead<Tcp_option_sack_top>()).length;
+-        verify(n_sack_bytes == 10 || n_sack_bytes == 18 || n_sack_bytes == 26 || n_sack_bytes == 34, error.TcpBadSackOptionLength);
++        verify(n_sack_bytes == 8w10 || n_sack_bytes == 8w18 || n_sack_bytes == 8w26 || n_sack_bytes == 8w34, error.TcpBadSackOptionLength);
+         verify(tcp_hdr_bytes_left >= (bit<7>)n_sack_bytes, error.TcpOptionTooLongForHeader);
+         tcp_hdr_bytes_left = tcp_hdr_bytes_left - (bit<7>)n_sack_bytes;
+-        b.extract(vec.next.sack, (bit<32>)(8 * n_sack_bytes - 16));
++        b.extract(vec.next.sack, (bit<32>)(8w8 * n_sack_bytes - 8w16));
+         transition next_option;
+     }
+ }
+@@ -159,7 +159,7 @@ parser ParserImpl(packet_in packet, out
+     state parse_ipv4 {
+         packet.extract(hdr.ipv4);
+         transition select(hdr.ipv4.protocol) {
+-            6: parse_tcp;
++            8w6: parse_tcp;
+             default: accept;
+         }
+     }
+@@ -190,7 +190,7 @@ control ingress(inout headers hdr, inout
+         meta.fwd_metadata.out_bd = bd;
+         hdr.ethernet.dstAddr = dmac;
+         standard_metadata.egress_spec = intf;
+-        hdr.ipv4.ttl = hdr.ipv4.ttl - 1;
++        hdr.ipv4.ttl = hdr.ipv4.ttl - 8w1;
+     }
+     table mac_da {
+         key = {

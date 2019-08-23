@@ -1,0 +1,18 @@
+--- before_pass
++++ after_pass
+@@ -1,5 +1,5 @@
+ control p(inout bit<1> bt) {
+-    @name("b") action b() {
++    @name("p.b") action b() {
+         {
+             bit<1> y0 = bt;
+             y0 = y0 | 1w1;
+@@ -11,7 +11,7 @@ control p(inout bit<1> bt) {
+             bt = y0_1;
+         }
+     }
+-    @name("t") table t_0 {
++    @name("p.t") table t_0 {
+         actions = {
+             b();
+         }

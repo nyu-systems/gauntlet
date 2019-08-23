@@ -1,0 +1,30 @@
+--- before_pass
++++ after_pass
+@@ -21,18 +21,18 @@ control d(out bit<32> x)(bit<32> b) {
+ }
+ control c() {
+     Overloaded() o;
+-    d(b = 2) dinst;
++    d(b = 32w2) dinst;
+     apply {
+         f();
+-        f(a = 2);
+-        f(b = 1);
+-        f(a = 1, b = 2);
+-        f(b = 2, a = 1);
++        f(a = 32w2);
++        f(b = 16w1);
++        f(a = 32w1, b = 16w2);
++        f(b = 16w2, a = 32w1);
+         o.f();
+-        o.f(a = 2);
+-        o.f(b = 1);
+-        o.f(a = 1, b = 2);
+-        o.f(b = 2, a = 1);
++        o.f(a = 32w2);
++        o.f(b = 16w1);
++        o.f(a = 32w1, b = 16w2);
++        o.f(b = 16w2, a = 32w1);
+         bit<32> z;
+         dinst.apply(z);
+     }

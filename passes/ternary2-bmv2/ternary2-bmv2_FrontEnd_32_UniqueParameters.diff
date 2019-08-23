@@ -1,0 +1,13 @@
+--- before_pass
++++ after_pass
+@@ -46,8 +46,8 @@ control ingress(inout packet_t hdrs, ino
+     }
+     @name("noop") action noop_0() {
+     }
+-    @name("setbyte") action setbyte_0(out bit<8> reg, bit<8> val) {
+-        reg = val;
++    @name("setbyte") action setbyte_0(out bit<8> reg_0, bit<8> val) {
++        reg_0 = val;
+     }
+     @name("act1") action act1_0(bit<8> val) {
+         hdrs.extra[0].b1 = val;

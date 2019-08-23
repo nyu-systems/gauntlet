@@ -1,6 +1,0 @@
-BMV2::SimpleSwitchMidEnd_27_LocalCopyPropagation ###########
-https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_issue1452-1.p4
-https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_issue1452.p4
-BMV2::SimpleSwitchMidEnd_3_RemoveActionParameters ###########
-https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_issue1452-1.p4
-https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_issue1452.p4

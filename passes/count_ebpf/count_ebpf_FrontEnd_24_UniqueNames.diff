@@ -1,0 +1,15 @@
+--- before_pass
++++ after_pass
+@@ -39,10 +39,10 @@ parser prs(packet_in p, out Headers_t he
+     }
+ }
+ control pipe(inout Headers_t headers, out bool pass) {
+-    CounterArray(32w10, true) counters;
++    @name("counters") CounterArray(32w10, true) counters_0;
+     apply {
+         if (headers.ipv4.isValid()) {
+-            counters.increment(headers.ipv4.dstAddr);
++            counters_0.increment(headers.ipv4.dstAddr);
+             pass = true;
+         } else {
+             pass = false;

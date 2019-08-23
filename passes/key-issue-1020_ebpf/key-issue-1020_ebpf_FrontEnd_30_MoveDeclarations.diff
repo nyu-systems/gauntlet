@@ -1,0 +1,18 @@
+--- before_pass
++++ after_pass
+@@ -40,6 +40,7 @@ parser prs(packet_in p, out Headers_t he
+ }
+ control pipe(inout Headers_t headers, out bool pass) {
+     bool hit_0;
++    bool tmp;
+     @name("invalidate") action invalidate_0() {
+         headers.ipv4.setInvalid();
+         headers.ethernet.setInvalid();
+@@ -62,7 +63,6 @@ control pipe(inout Headers_t headers, ou
+         implementation = hash_table(32w10);
+         default_action = drop_0();
+     }
+-    bool tmp;
+     apply {
+         tmp = t_0.apply().hit;
+         hit_0 = tmp;

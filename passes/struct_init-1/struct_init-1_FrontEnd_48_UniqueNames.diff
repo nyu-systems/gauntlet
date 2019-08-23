@@ -1,0 +1,24 @@
+--- before_pass
++++ after_pass
+@@ -8,15 +8,15 @@ struct metadata_t {
+     PortId_t foo;
+ }
+ control I(inout metadata_t meta) {
+-    H h_0;
++    H h;
+     apply {
+-        h_0.setValid();
++        h.setValid();
+         if (meta.foo == PortId_t {_v = 9w192}) {
+             meta.foo._v = meta.foo._v + 9w1;
+-            h_0.setValid();
+-            h_0 = H {b = 32w2};
+-            if (h_0 == H {b = 32w1}) {
+-                h_0.setValid();
++            h.setValid();
++            h = H {b = 32w2};
++            if (h == H {b = 32w1}) {
++                h.setValid();
+             }
+         }
+     }

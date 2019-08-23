@@ -1,0 +1,11 @@
+--- before_pass
++++ after_pass
+@@ -55,7 +55,7 @@ control Eg(inout Headers hdrs, inout Met
+     bit<32> inc_0;
+     bit<32> tmp;
+     bit<32> tmp_0;
+-    @name("test") action test() {
++    @name("Eg.test") action test() {
+         val_0 = { 32w0 };
+         _pred_0 = val_0.field1 != 32w0;
+         if (_pred_0) {

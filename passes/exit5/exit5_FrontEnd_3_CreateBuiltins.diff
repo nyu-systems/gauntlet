@@ -1,0 +1,13 @@
+--- before_pass
++++ after_pass
+@@ -6,8 +6,8 @@ control ctrl() {
+     }
+     table t {
+         actions = {
+-            e;
+-            f;
++            e();
++            f();
+         }
+         default_action = e();
+     }

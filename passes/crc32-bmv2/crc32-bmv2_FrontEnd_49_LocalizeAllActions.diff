@@ -1,0 +1,108 @@
+--- before_pass
++++ after_pass
+@@ -55,42 +55,42 @@ control MyIngress(inout headers hdr, ino
+     bit<64> ncount;
+     bit<32> nselect;
+     bit<32> ninput;
+-    @name("operation_add") action operation_add() {
++    @name("operation_add") action operation_add_0() {
+         hdr.p4calc.res = hdr.p4calc.operand_a + hdr.p4calc.operand_b;
+         tmp_6 = hdr.ethernet.dstAddr;
+         hdr.ethernet.dstAddr = hdr.ethernet.srcAddr;
+         hdr.ethernet.srcAddr = tmp_6;
+         standard_metadata.egress_spec = standard_metadata.ingress_port;
+     }
+-    @name("operation_sub") action operation_sub() {
++    @name("operation_sub") action operation_sub_0() {
+         hdr.p4calc.res = hdr.p4calc.operand_a - hdr.p4calc.operand_b;
+         tmp_6 = hdr.ethernet.dstAddr;
+         hdr.ethernet.dstAddr = hdr.ethernet.srcAddr;
+         hdr.ethernet.srcAddr = tmp_6;
+         standard_metadata.egress_spec = standard_metadata.ingress_port;
+     }
+-    @name("operation_and") action operation_and() {
++    @name("operation_and") action operation_and_0() {
+         hdr.p4calc.res = hdr.p4calc.operand_a & hdr.p4calc.operand_b;
+         tmp_6 = hdr.ethernet.dstAddr;
+         hdr.ethernet.dstAddr = hdr.ethernet.srcAddr;
+         hdr.ethernet.srcAddr = tmp_6;
+         standard_metadata.egress_spec = standard_metadata.ingress_port;
+     }
+-    @name("operation_or") action operation_or() {
++    @name("operation_or") action operation_or_0() {
+         hdr.p4calc.res = hdr.p4calc.operand_a | hdr.p4calc.operand_b;
+         tmp_6 = hdr.ethernet.dstAddr;
+         hdr.ethernet.dstAddr = hdr.ethernet.srcAddr;
+         hdr.ethernet.srcAddr = tmp_6;
+         standard_metadata.egress_spec = standard_metadata.ingress_port;
+     }
+-    @name("operation_xor") action operation_xor() {
++    @name("operation_xor") action operation_xor_0() {
+         hdr.p4calc.res = hdr.p4calc.operand_a ^ hdr.p4calc.operand_b;
+         tmp_6 = hdr.ethernet.dstAddr;
+         hdr.ethernet.dstAddr = hdr.ethernet.srcAddr;
+         hdr.ethernet.srcAddr = tmp_6;
+         standard_metadata.egress_spec = standard_metadata.ingress_port;
+     }
+-    @name("operation_crc") action operation_crc() {
++    @name("operation_crc") action operation_crc_0() {
+         nbase = hdr.p4calc.operand_b;
+         ncount = 64w8589934592;
+         ninput = hdr.p4calc.operand_a;
+@@ -101,7 +101,10 @@ control MyIngress(inout headers hdr, ino
+         hdr.ethernet.srcAddr = tmp_6;
+         standard_metadata.egress_spec = standard_metadata.ingress_port;
+     }
+-    @name("operation_drop") action operation_drop() {
++    @name("operation_drop") action operation_drop_0() {
++        mark_to_drop(standard_metadata);
++    }
++    @name("operation_drop") action operation_drop_1() {
+         mark_to_drop(standard_metadata);
+     }
+     @name("calculate") table calculate {
+@@ -109,29 +112,29 @@ control MyIngress(inout headers hdr, ino
+             hdr.p4calc.op: exact @name("hdr.p4calc.op") ;
+         }
+         actions = {
+-            operation_add();
+-            operation_sub();
+-            operation_and();
+-            operation_or();
+-            operation_xor();
+-            operation_crc();
+-            operation_drop();
++            operation_add_0();
++            operation_sub_0();
++            operation_and_0();
++            operation_or_0();
++            operation_xor_0();
++            operation_crc_0();
++            operation_drop_0();
+         }
+-        const default_action = operation_drop();
++        const default_action = operation_drop_0();
+         const entries = {
+-                        8w0x2b : operation_add();
+-                        8w0x2d : operation_sub();
+-                        8w0x26 : operation_and();
+-                        8w0x7c : operation_or();
+-                        8w0x5e : operation_xor();
+-                        8w0x3e : operation_crc();
++                        8w0x2b : operation_add_0();
++                        8w0x2d : operation_sub_0();
++                        8w0x26 : operation_and_0();
++                        8w0x7c : operation_or_0();
++                        8w0x5e : operation_xor_0();
++                        8w0x3e : operation_crc_0();
+         }
+     }
+     apply {
+         if (hdr.p4calc.isValid()) {
+             calculate.apply();
+         } else {
+-            operation_drop();
++            operation_drop_1();
+         }
+     }
+ }

@@ -1,0 +1,15 @@
+--- before_pass
++++ after_pass
+@@ -31,9 +31,9 @@ control ingressImpl(inout headers_t hdr,
+     }
+     table t1 {
+         key = {
+-            hdr.ethernet.srcAddr[22:18]         : exact @name("ethernet.srcAddr.slice") ;
+-            hdr.ethernet.dstAddr & 0x10101010101: exact @name("dstAddr_lsbs") ;
+-            hdr.ethernet.etherType - 10         : exact @name("etherType_less_10") ;
++            hdr.ethernet.srcAddr[22:18]            : exact @name("ethernet.srcAddr.slice") ;
++            hdr.ethernet.dstAddr & 48w0x10101010101: exact @name("dstAddr_lsbs") ;
++            hdr.ethernet.etherType - 16w10         : exact @name("etherType_less_10") ;
+         }
+         actions = {
+             foo();

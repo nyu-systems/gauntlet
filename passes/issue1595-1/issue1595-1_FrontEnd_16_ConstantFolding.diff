@@ -1,0 +1,19 @@
+--- before_pass
++++ after_pass
+@@ -1,6 +1,6 @@
+ control c(inout bit<32> b) {
+     action a() {
+-        b = (bit<32>)32w1;
++        b = 32w1;
+     }
+     table t {
+         actions = {
+@@ -11,7 +11,7 @@ control c(inout bit<32> b) {
+     apply {
+         switch (t.apply().action_run) {
+             a: {
+-                b[6:3] = (bit<4>)4w1;
++                b[6:3] = 4w1;
+             }
+         }
+     }

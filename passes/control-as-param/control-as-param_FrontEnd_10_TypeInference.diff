@@ -1,0 +1,17 @@
+--- before_pass
++++ after_pass
+@@ -2,12 +2,12 @@
+ control E(out bit<1> b);
+ control D(out bit<1> b) {
+     apply {
+-        b = 1;
++        b = (bit<1>)1w1;
+     }
+ }
+ control F(out bit<1> b) {
+     apply {
+-        b = 0;
++        b = (bit<1>)1w0;
+     }
+ }
+ control C(out bit<1> b)(E d) {

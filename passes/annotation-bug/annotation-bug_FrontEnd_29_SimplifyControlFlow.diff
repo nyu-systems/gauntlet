@@ -1,0 +1,15 @@
+--- before_pass
++++ after_pass
+@@ -17,10 +17,8 @@ control cc() {
+     headers hdr_0;
+     headers tmp;
+     apply {
+-        {
+-            tmp = headers {ipv4_option_timestamp = hdr_0.ipv4_option_timestamp};
+-            get<headers>(tmp);
+-        }
++        tmp = headers {ipv4_option_timestamp = hdr_0.ipv4_option_timestamp};
++        get<headers>(tmp);
+     }
+ }
+ control C();

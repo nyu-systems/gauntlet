@@ -1,0 +1,24 @@
+--- before_pass
++++ after_pass
+@@ -4,16 +4,16 @@ control empty();
+ package top(empty e);
+ control Ing() {
+     bool b;
+-    bit<32> a = 2;
++    bit<32> a = (bit<32>)32w2;
+     action cond() {
+         b = true;
+         if (b) {
+-            a = 5;
++            a = (bit<32>)32w5;
+         } else {
+-            if (b && a == 5) {
+-                a = 10;
++            if (b && a == 32w5) {
++                a = (bit<32>)32w10;
+             } else {
+-                a = 20;
++                a = (bit<32>)32w20;
+             }
+         }
+     }

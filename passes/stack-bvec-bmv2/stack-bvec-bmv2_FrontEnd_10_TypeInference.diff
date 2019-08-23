@@ -1,0 +1,25 @@
+--- before_pass
++++ after_pass
+@@ -15,10 +15,10 @@ header hdr {
+ control compute(inout hdr h) {
+     apply {
+         hdr[1] tmp;
+-        tmp[0].row.alt1.valid = 1;
+-        tmp[0].f = h.f + 1;
++        tmp[0].row.alt1.valid = (bit<1>)1w1;
++        tmp[0].f = h.f + 32w1;
+         h.f = tmp[0].f;
+-        tmp[0].row.alt0.port = h.row.alt0.port + 1;
++        tmp[0].row.alt0.port = h.row.alt0.port + 7w1;
+         h.row.alt1.valid = tmp[0].row.alt1.valid;
+     }
+ }
+@@ -54,7 +54,7 @@ control ingress(inout Headers h, inout M
+     compute() c;
+     apply {
+         c.apply(h.h);
+-        sm.egress_spec = 0;
++        sm.egress_spec = (bit<9>)9w0;
+     }
+ }
+ V1Switch(p(), vrfy(), ingress(), egress(), update(), deparser()) main;

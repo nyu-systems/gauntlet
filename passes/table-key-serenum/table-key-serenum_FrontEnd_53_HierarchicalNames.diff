@@ -1,0 +1,15 @@
+--- before_pass
++++ after_pass
+@@ -31,10 +31,10 @@ parser prs(packet_in p, out Headers h) {
+ control c(inout Headers h, inout standard_metadata_t sm) {
+     @name(".NoAction") action NoAction_0() {
+     }
+-    @name("do_act") action do_act(bit<32> type) {
++    @name("c.do_act") action do_act(bit<32> type) {
+         sm.instance_type = type;
+     }
+-    @name("tns") table tns_0 {
++    @name("c.tns") table tns_0 {
+         key = {
+             h.eth.type: exact @name("h.eth.type") ;
+         }

@@ -1,0 +1,13 @@
+--- before_pass
++++ after_pass
+@@ -20,7 +20,9 @@ control IngressI(inout H hdr, inout M me
+         junk = 1;
+     }
+     apply {
+-        t_0.apply();
++        {
++            t_0.apply();
++        }
+     }
+ }
+ control EgressI(inout H hdr, inout M meta, inout standard_metadata_t smeta) {

@@ -1,0 +1,26 @@
+--- before_pass
++++ after_pass
+@@ -24,11 +24,11 @@ control MyIC(inout ethernet_t a, inout E
+     }
+     @name(".NoAction") action NoAction_3() {
+     }
+-    @name("meter0") DirectMeter(PSA_MeterType_t.PACKETS) meter0_0;
+-    @name("execute_meter") action execute_meter() {
++    @name("MyIC.meter0") DirectMeter(PSA_MeterType_t.PACKETS) meter0_0;
++    @name("MyIC.execute_meter") action execute_meter() {
+         meter0_0.execute();
+     }
+-    @name("tbl") table tbl_0 {
++    @name("MyIC.tbl") table tbl_0 {
+         key = {
+             a.srcAddr: exact @name("a.srcAddr") ;
+         }
+@@ -38,7 +38,7 @@ control MyIC(inout ethernet_t a, inout E
+         psa_direct_meter = meter0_0;
+         default_action = NoAction_0();
+     }
+-    @name("tbl2") table tbl2_0 {
++    @name("MyIC.tbl2") table tbl2_0 {
+         key = {
+             a.srcAddr: exact @name("a.srcAddr") ;
+         }

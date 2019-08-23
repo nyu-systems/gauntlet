@@ -1,0 +1,39 @@
+--- before_pass
++++ after_pass
+@@ -10,9 +10,7 @@ header ethernet_t {
+ }
+ parser MyIP(packet_in buffer, out ethernet_t eth, inout EMPTY b, in psa_ingress_parser_input_metadata_t c, in EMPTY d, in EMPTY e) {
+     state start {
+-        {
+-            buffer.extract<ethernet_t>(eth);
+-        }
++        buffer.extract<ethernet_t>(eth);
+         transition accept;
+     }
+ }
+@@ -24,9 +22,7 @@ parser MyEP(packet_in buffer, out EMPTY
+ control MyIC(inout ethernet_t a, inout EMPTY b, in psa_ingress_input_metadata_t c, inout psa_ingress_output_metadata_t d) {
+     @name("meter0") DirectMeter(PSA_MeterType_t.PACKETS) meter0_0;
+     @name("execute_meter") action execute_meter_0() {
+-        {
+-            meter0_0.execute();
+-        }
++        meter0_0.execute();
+     }
+     @name("tbl") table tbl_0 {
+         key = {
+@@ -49,12 +45,8 @@ control MyIC(inout ethernet_t a, inout E
+         default_action = NoAction();
+     }
+     apply {
+-        {
+-            tbl_0.apply();
+-        }
+-        {
+-            tbl2_0.apply();
+-        }
++        tbl_0.apply();
++        tbl2_0.apply();
+     }
+ }
+ control MyEC(inout EMPTY a, inout EMPTY b, in psa_egress_input_metadata_t c, inout psa_egress_output_metadata_t d) {

@@ -1,0 +1,11 @@
+--- before_pass
++++ after_pass
+@@ -21,7 +21,7 @@ control c() {
+         stack[2] = b;
+         stack.push_front(2);
+         stack.pop_front(2);
+-        bit<32> sz = stack.size;
++        bit<32> sz = 32w4;
+     }
+ }
+ parser Simple();

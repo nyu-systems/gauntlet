@@ -1,0 +1,41 @@
+--- before_pass
++++ after_pass
+@@ -6,6 +6,8 @@ extern Virtual {
+     bit<16> total();
+ }
+ control c(inout bit<16> p) {
++    @name(".NoAction") action NoAction_1() {
++    }
+     bit<16> local;
+     bit<16> tmp_0;
+     @name("cntr") Virtual() cntr = {
+@@ -13,11 +15,11 @@ control c(inout bit<16> p) {
+             return ix + local;
+         }
+     };
+-    @name("final_ctr") action final_ctr() {
++    @name("final_ctr") action final_ctr_0() {
+         tmp_0 = cntr.total();
+         p = tmp_0;
+     }
+-    @name("add_ctr") action add_ctr() {
++    @name("add_ctr") action add_ctr_0() {
+         cntr.increment();
+     }
+     @name("run_ctr") table run_ctr {
+@@ -25,11 +27,11 @@ control c(inout bit<16> p) {
+             p: exact @name("p") ;
+         }
+         actions = {
+-            add_ctr();
+-            final_ctr();
+-            @defaultonly NoAction();
++            add_ctr_0();
++            final_ctr_0();
++            @defaultonly NoAction_1();
+         }
+-        default_action = NoAction();
++        default_action = NoAction_1();
+     }
+     apply {
+         local = 16w4;

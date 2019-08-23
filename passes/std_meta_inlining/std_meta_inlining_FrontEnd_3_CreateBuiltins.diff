@@ -1,0 +1,12 @@
+--- before_pass
++++ after_pass
+@@ -23,7 +23,9 @@ control ingress(inout headers_t hdr, ino
+         }
+         actions = {
+             send_to_cpu(standard_metadata);
++            @defaultonly NoAction();
+         }
++        default_action = NoAction();
+     }
+     apply {
+         t0.apply();

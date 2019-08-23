@@ -1,0 +1,40 @@
+--- before_pass
++++ after_pass
+@@ -1,25 +1,25 @@
+ control d(out bit<32> x) {
+-    @name("cinst.a1") action cinst_a1() {
++    @name("cinst.a1") action cinst_a1_0() {
+     }
+-    @name("cinst.a2") action cinst_a2() {
++    @name("cinst.a2") action cinst_a2_0() {
+     }
+-    @name("cinst.t") table cinst_t_0 {
++    @name("cinst.t") table cinst_t {
+         actions = {
+-            cinst_a1();
+-            cinst_a2();
++            cinst_a1_0();
++            cinst_a2_0();
+         }
+-        default_action = cinst_a1();
++        default_action = cinst_a1_0();
+     }
+     apply {
+         {
+-            bool cinst_hasReturned_0 = false;
+-            switch (cinst_t_0.apply().action_run) {
+-                cinst_a1: 
+-                cinst_a2: {
+-                    cinst_hasReturned_0 = true;
++            bool cinst_hasReturned = false;
++            switch (cinst_t.apply().action_run) {
++                cinst_a1_0: 
++                cinst_a2_0: {
++                    cinst_hasReturned = true;
+                 }
+                 default: {
+-                    cinst_hasReturned_0 = true;
++                    cinst_hasReturned = true;
+                 }
+             }
+         }

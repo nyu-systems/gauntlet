@@ -1,0 +1,48 @@
+--- before_pass
++++ after_pass
+@@ -133,23 +133,34 @@ control TopPipe(inout Parsed_packet head
+         default_action = Drop_action_0();
+     }
+     apply {
++        bool hasReturned = false;
+         if (parseError != error.NoError) {
+             Drop_action_0();
+-            return;
++            {
++                hasReturned = true;
++            }
+         }
+-        ipv4_match_0.apply();
+-        if (outCtrl.outputPort == 4w0xf) {
+-            return;
++        if (!hasReturned) {
++            ipv4_match_0.apply();
++            if (outCtrl.outputPort == 4w0xf) {
++                hasReturned = true;
++            }
+         }
+-        check_ttl_0.apply();
+-        if (outCtrl.outputPort == 4w0xe) {
+-            return;
++        if (!hasReturned) {
++            check_ttl_0.apply();
++            if (outCtrl.outputPort == 4w0xe) {
++                hasReturned = true;
++            }
+         }
+-        dmac_0.apply();
+-        if (outCtrl.outputPort == 4w0xf) {
+-            return;
++        if (!hasReturned) {
++            dmac_0.apply();
++            if (outCtrl.outputPort == 4w0xf) {
++                hasReturned = true;
++            }
++        }
++        if (!hasReturned) {
++            smac_0.apply();
+         }
+-        smac_0.apply();
+     }
+ }
+ control TopDeparser(inout Parsed_packet p, packet_out b) {

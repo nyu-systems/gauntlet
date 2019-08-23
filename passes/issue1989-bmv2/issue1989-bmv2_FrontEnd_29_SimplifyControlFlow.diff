@@ -1,0 +1,24 @@
+--- before_pass
++++ after_pass
+@@ -44,9 +44,7 @@ control compute_checksum_stub(inout head
+ }
+ control ingress(inout headers hdr, inout test_metadata_t meta, inout standard_metadata_t standard_metadata) {
+     @name("assign_non_const_array_index") action assign_non_const_array_index_0() {
+-        {
+-            hdr.ethernet_stack[1] = hdr.ethernet_stack[meta.color];
+-        }
++        hdr.ethernet_stack[1] = hdr.ethernet_stack[meta.color];
+     }
+     @name("acl_table") table acl_table_0 {
+         actions = {
+@@ -59,9 +57,7 @@ control ingress(inout headers hdr, inout
+         default_action = NoAction();
+     }
+     apply {
+-        {
+-            acl_table_0.apply();
+-        }
++        acl_table_0.apply();
+     }
+ }
+ V1Switch<headers, test_metadata_t>(parser_stub(), verify_checksum_stub(), ingress(), egress_stub(), compute_checksum_stub(), deparser_stub()) main;

@@ -1,0 +1,13 @@
+--- before_pass
++++ after_pass
+@@ -5,8 +5,9 @@ extern bit<32> f(inout bit<1> x, in bit<
+ control c(out H[2] h);
+ package top(c _c);
+ control my(out H[2] s) {
++    bit<32> a_0;
+     apply {
+-        bit<32> a_0 = 32w0;
++        a_0 = 32w0;
+         s[a_0].z = 1w1;
+         s[a_0 + 32w1].z = 1w0;
+         a_0 = f(s[a_0].z, 1w0);

@@ -1,0 +1,92 @@
+--- before_pass
++++ after_pass
+@@ -53,10 +53,17 @@ control MyVerifyChecksum(inout headers h
+     }
+ }
+ control MyIngress(inout headers hdr, inout metadata meta, inout standard_metadata_t standard_metadata) {
+-    @name("drop") action drop() {
++    @name(".NoAction") action NoAction_2() {
++    }
++    @name(".NoAction") action NoAction_3() {
++    }
++    @name("drop") action drop_0() {
+         mark_to_drop(standard_metadata);
+     }
+-    @name("set_dmac") action set_dmac(macAddr_t dstAddr) {
++    @name("drop") action drop_1() {
++        mark_to_drop(standard_metadata);
++    }
++    @name("set_dmac") action set_dmac_0(macAddr_t dstAddr) {
+         hdr.ethernet.dstAddr = dstAddr;
+     }
+     @name("forward") table forward {
+@@ -64,14 +71,14 @@ control MyIngress(inout headers hdr, ino
+             hdr.ipv4.dstAddr: exact @name("hdr.ipv4.dstAddr") ;
+         }
+         actions = {
+-            set_dmac();
+-            drop();
+-            NoAction();
++            set_dmac_0();
++            drop_0();
++            NoAction_2();
+         }
+         size = 1024;
+-        default_action = NoAction();
++        default_action = NoAction_2();
+     }
+-    @name("set_nhop") action set_nhop(ip4Addr_t dstAddr, egressSpec_t port) {
++    @name("set_nhop") action set_nhop_0(ip4Addr_t dstAddr, egressSpec_t port) {
+         hdr.ipv4.dstAddr = dstAddr;
+         standard_metadata.egress_spec = port;
+     }
+@@ -80,25 +87,27 @@ control MyIngress(inout headers hdr, ino
+             hdr.ipv4.dstAddr: lpm @name("hdr.ipv4.dstAddr") ;
+         }
+         actions = {
+-            set_nhop();
+-            drop();
+-            NoAction();
++            set_nhop_0();
++            drop_1();
++            NoAction_3();
+         }
+         size = 1024;
+-        default_action = NoAction();
++        default_action = NoAction_3();
+     }
+-    @name("send_digest") action send_digest() {
++    @name("send_digest") action send_digest_0() {
+         meta.test_digest.in_mac_srcAddr = hdr.ethernet.srcAddr;
+         digest<test_digest_t>(32w1, meta.test_digest);
+     }
+     apply {
+         ipv4_lpm.apply();
+         forward.apply();
+-        send_digest();
++        send_digest_0();
+     }
+ }
+ control MyEgress(inout headers hdr, inout metadata meta, inout standard_metadata_t standard_metadata) {
+-    @name("rewrite_mac") action rewrite_mac(macAddr_t srcAddr) {
++    @name(".NoAction") action NoAction_4() {
++    }
++    @name("rewrite_mac") action rewrite_mac_0(macAddr_t srcAddr) {
+         hdr.ethernet.srcAddr = srcAddr;
+         hdr.ipv4.ttl = hdr.ipv4.ttl + 8w255;
+     }
+@@ -107,11 +116,11 @@ control MyEgress(inout headers hdr, inou
+             standard_metadata.egress_port: exact @name("standard_metadata.egress_port") ;
+         }
+         actions = {
+-            rewrite_mac();
+-            NoAction();
++            rewrite_mac_0();
++            NoAction_4();
+         }
+         size = 1024;
+-        default_action = NoAction();
++        default_action = NoAction_4();
+     }
+     apply {
+         send_frame.apply();

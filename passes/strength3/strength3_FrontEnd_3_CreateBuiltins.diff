@@ -1,0 +1,28 @@
+--- before_pass
++++ after_pass
+@@ -39,16 +39,16 @@ control ingress(inout Headers h, inout M
+     }
+     table t {
+         actions = {
+-            case0;
+-            case1;
+-            case2;
+-            case3;
+-            case4;
+-            case5;
+-            case6;
+-            case7;
++            case0();
++            case1();
++            case2();
++            case3();
++            case4();
++            case5();
++            case6();
++            case7();
+         }
+-        const default_action = case0;
++        const default_action = case0();
+     }
+     apply {
+         t.apply();

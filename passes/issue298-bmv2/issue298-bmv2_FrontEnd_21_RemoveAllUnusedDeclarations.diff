@@ -1,0 +1,11 @@
+--- before_pass
++++ after_pass
+@@ -2,8 +2,6 @@
+ #include <v1model.p4>
+ typedef bit<48> EthernetAddress;
+ typedef bit<32> IPv4Address;
+-typedef bit<4> PortId;
+-const PortId DROP_PORT = 4w0xf;
+ header ethernet_t {
+     EthernetAddress dstAddr;
+     EthernetAddress srcAddr;

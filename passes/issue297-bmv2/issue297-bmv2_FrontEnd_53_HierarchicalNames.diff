@@ -1,0 +1,30 @@
+--- before_pass
++++ after_pass
+@@ -15,14 +15,14 @@ control IngressI(inout H hdr, inout M me
+     }
+     @name(".NoAction") action NoAction_3() {
+     }
+-    @name("ap") action_profile(32w128) ap_0;
+-    @name("drop") action drop() {
++    @name("IngressI.ap") action_profile(32w128) ap_0;
++    @name("IngressI.drop") action drop() {
+         mark_to_drop(smeta);
+     }
+-    @name("drop") action drop_2() {
++    @name("IngressI.drop") action drop_2() {
+         mark_to_drop(smeta);
+     }
+-    @name("indirect") table indirect_0 {
++    @name("IngressI.indirect") table indirect_0 {
+         key = {
+         }
+         actions = {
+@@ -32,7 +32,7 @@ control IngressI(inout H hdr, inout M me
+         const default_action = NoAction_0();
+         implementation = ap_0;
+     }
+-    @name("indirect_ws") table indirect_ws_0 {
++    @name("IngressI.indirect_ws") table indirect_ws_0 {
+         key = {
+             meta.hash1: selector @name("meta.hash1") ;
+         }

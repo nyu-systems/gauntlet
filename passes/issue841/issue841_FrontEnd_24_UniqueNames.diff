@@ -1,0 +1,16 @@
+--- before_pass
++++ after_pass
+@@ -33,10 +33,10 @@ control MyDeparser(packet_out packet, in
+     }
+ }
+ control MyComputeChecksum(inout headers hdr, inout metadata meta) {
+-    Checksum16() checksum;
+-    h_t h = { hdr.h.src, hdr.h.dst, 16w0 };
++    @name("checksum") Checksum16() checksum_0;
++    h_t h_0 = { hdr.h.src, hdr.h.dst, 16w0 };
+     apply {
+-        hdr.h.csum = checksum.get<h_t>(h);
++        hdr.h.csum = checksum_0.get<h_t>(h_0);
+     }
+ }
+ V1Switch<headers, metadata>(MyParser(), MyVerifyChecksum(), MyIngress(), MyEgress(), MyComputeChecksum(), MyDeparser()) main;

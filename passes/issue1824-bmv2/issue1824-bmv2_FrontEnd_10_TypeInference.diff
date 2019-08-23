@@ -1,0 +1,11 @@
+--- before_pass
++++ after_pass
+@@ -31,7 +31,7 @@ parser MyParser(packet_in pkt, out heade
+ control MyIngress(inout headers hdr, inout metadata meta, inout standard_metadata_t stdmeta) {
+     apply {
+         if (stdmeta.parser_error != error.NoError) {
+-            hdr.h1.dstAddr = 0xbad;
++            hdr.h1.dstAddr = (bit<48>)48w0xbad;
+         }
+     }
+ }

@@ -1,0 +1,13 @@
+--- before_pass
++++ after_pass
+@@ -5,8 +5,8 @@ struct S {
+ }
+ const pair x = { 32w10, 32w20 };
+ const pair y = { 32w30, 32w40 };
+-const bool z = x == y;
+-const bool w = x == x;
++const bool z = false;
++const bool w = true;
+ const S s = { 32w10, 32w20 };
+ control c(out bool z);
+ package top(c _c);

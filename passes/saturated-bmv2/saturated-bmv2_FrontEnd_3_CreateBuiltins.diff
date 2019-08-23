@@ -1,0 +1,22 @@
+--- before_pass
++++ after_pass
+@@ -66,13 +66,13 @@ control ingress(inout Header_t h, inout
+             h.h.op: exact;
+         }
+         actions = {
+-            usat_plus;
+-            usat_minus;
+-            sat_plus;
+-            sat_minus;
+-            drop;
++            usat_plus();
++            usat_minus();
++            sat_plus();
++            sat_minus();
++            drop();
+         }
+-        default_action = drop;
++        default_action = drop();
+         const entries = {
+                         0x1 : usat_plus();
+                         0x2 : usat_minus();

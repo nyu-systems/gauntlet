@@ -1,0 +1,18 @@
+--- before_pass
++++ after_pass
+@@ -15,6 +15,7 @@ control d(out bit<32> x)(bit<32> b) {
+     }
+ }
+ control c() {
++    bit<32> z_0;
+     @name("o") Overloaded() o_0;
+     @name("dinst") d(b = 32w2) dinst_0;
+     apply {
+@@ -28,7 +29,6 @@ control c() {
+         o_0.f(b = 16w1);
+         o_0.f(a = 32w1, b = 16w2);
+         o_0.f(b = 16w2, a = 32w1);
+-        bit<32> z_0;
+         dinst_0.apply(z_0);
+     }
+ }

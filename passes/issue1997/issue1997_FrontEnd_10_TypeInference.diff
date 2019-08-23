@@ -1,0 +1,28 @@
+--- before_pass
++++ after_pass
+@@ -16,11 +16,11 @@ header hdr {
+ }
+ control c(in hdr h, inout standard_metadata_t standard_meta) {
+     action a() {
+-        standard_meta.egress_port = 0;
+-        standard_meta.packet_length = standard_meta.packet_length - 5;
++        standard_meta.egress_port = (bit<9>)9w0;
++        standard_meta.packet_length = standard_meta.packet_length - 16w5;
+     }
+     action b() {
+-        standard_meta.egress_port = 1;
++        standard_meta.egress_port = (bit<9>)9w1;
+         standard_meta.packet_length = standard_meta.packet_length - 16w5;
+     }
+     table t {
+@@ -33,8 +33,8 @@ control c(in hdr h, inout standard_metad
+         }
+         default_action = a();
+         const entries = {
+-                        0x1 : a();
+-                        0x2 : b();
++                        8w0x1 : a();
++                        8w0x2 : b();
+         }
+     }
+     apply {

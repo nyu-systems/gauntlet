@@ -1,0 +1,29 @@
+--- before_pass
++++ after_pass
+@@ -29,20 +29,22 @@ control MyIC(inout ethernet_t a, inout E
+             a.srcAddr: exact;
+         }
+         actions = {
+-            NoAction;
+-            execute;
++            NoAction();
++            execute();
+         }
+         psa_direct_counter = counter0;
++        default_action = NoAction();
+     }
+     table tbl2 {
+         key = {
+             a.srcAddr: exact;
+         }
+         actions = {
+-            NoAction;
+-            execute;
++            NoAction();
++            execute();
+         }
+         psa_direct_counter = counter0;
++        default_action = NoAction();
+     }
+     apply {
+         tbl.apply();

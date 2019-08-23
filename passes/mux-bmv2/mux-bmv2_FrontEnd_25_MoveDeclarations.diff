@@ -1,0 +1,20 @@
+--- before_pass
++++ after_pass
+@@ -14,13 +14,15 @@ control Ing(inout Headers headers, inout
+     }
+ }
+ control Eg(inout Headers hdrs, inout Metadata meta, inout standard_metadata_t standard_meta) {
++    bit<32> _sub_0;
++    bit<64> res_0;
+     @name("update") action update_0(in bool p, inout bit<64> val) {
+-        bit<32> _sub_0 = val[31:0];
++        _sub_0 = val[31:0];
+         _sub_0 = (p ? _sub_0 : 32w1);
+         val[31:0] = _sub_0;
+     }
+     apply {
+-        bit<64> res_0 = 64w0;
++        res_0 = 64w0;
+         update_0(true, res_0);
+     }
+ }

@@ -1,0 +1,20 @@
+--- before_pass
++++ after_pass
+@@ -1,11 +1,15 @@
+ control c() {
+     bit<32> x_0;
+     @name("a") action a_0(inout bit<32> arg) {
+-        arg = 32w1;
++        {
++            arg = 32w1;
++        }
+         return;
+     }
+     apply {
+-        a_0(x_0);
++        {
++            a_0(x_0);
++        }
+     }
+ }
+ control proto();

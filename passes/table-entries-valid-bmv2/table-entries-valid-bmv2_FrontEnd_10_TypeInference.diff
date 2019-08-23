@@ -1,0 +1,22 @@
+--- before_pass
++++ after_pass
+@@ -37,7 +37,7 @@ control deparser(packet_out b, in Header
+ }
+ control ingress(inout Header_t h, inout Meta_t m, inout standard_metadata_t standard_meta) {
+     action a() {
+-        standard_meta.egress_spec = 0;
++        standard_meta.egress_spec = (bit<9>)9w0;
+     }
+     action a_with_control_params(bit<9> x) {
+         standard_meta.egress_spec = x;
+@@ -53,8 +53,8 @@ control ingress(inout Header_t h, inout
+         }
+         default_action = a();
+         const entries = {
+-                        (true, 0x1) : a_with_control_params(1);
+-                        (false, 0x2) : a_with_control_params(2);
++                        (true, 8w0x1) : a_with_control_params(9w1);
++                        (false, 8w0x2) : a_with_control_params(9w2);
+         }
+     }
+     apply {

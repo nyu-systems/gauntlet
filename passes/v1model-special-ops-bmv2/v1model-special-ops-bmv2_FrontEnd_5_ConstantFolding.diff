@@ -1,0 +1,101 @@
+--- before_pass
++++ after_pass
+@@ -1,14 +1,14 @@
+ #include <core.p4>
+ #include <v1model.p4>
+-const bit<32> BMV2_V1MODEL_INSTANCE_TYPE_NORMAL = 0;
+-const bit<32> BMV2_V1MODEL_INSTANCE_TYPE_INGRESS_CLONE = 1;
+-const bit<32> BMV2_V1MODEL_INSTANCE_TYPE_EGRESS_CLONE = 2;
+-const bit<32> BMV2_V1MODEL_INSTANCE_TYPE_COALESCED = 3;
+-const bit<32> BMV2_V1MODEL_INSTANCE_TYPE_RECIRC = 4;
+-const bit<32> BMV2_V1MODEL_INSTANCE_TYPE_REPLICATION = 5;
+-const bit<32> BMV2_V1MODEL_INSTANCE_TYPE_RESUBMIT = 6;
+-const bit<32> I2E_CLONE_SESSION_ID = 5;
+-const bit<32> E2E_CLONE_SESSION_ID = 11;
++const bit<32> BMV2_V1MODEL_INSTANCE_TYPE_NORMAL = 32w0;
++const bit<32> BMV2_V1MODEL_INSTANCE_TYPE_INGRESS_CLONE = 32w1;
++const bit<32> BMV2_V1MODEL_INSTANCE_TYPE_EGRESS_CLONE = 32w2;
++const bit<32> BMV2_V1MODEL_INSTANCE_TYPE_COALESCED = 32w3;
++const bit<32> BMV2_V1MODEL_INSTANCE_TYPE_RECIRC = 32w4;
++const bit<32> BMV2_V1MODEL_INSTANCE_TYPE_REPLICATION = 32w5;
++const bit<32> BMV2_V1MODEL_INSTANCE_TYPE_RESUBMIT = 32w6;
++const bit<32> I2E_CLONE_SESSION_ID = 32w5;
++const bit<32> E2E_CLONE_SESSION_ID = 32w11;
+ header ethernet_t {
+     bit<48> dstAddr;
+     bit<48> srcAddr;
+@@ -55,7 +55,7 @@ parser ParserImpl(packet_in packet, out
+     state parse_ethernet {
+         packet.extract(hdr.ethernet);
+         transition select(hdr.ethernet.etherType) {
+-            ETHERTYPE_IPV4: parse_ipv4;
++            16w0x800: parse_ipv4;
+             default: accept;
+         }
+     }
+@@ -71,8 +71,8 @@ control fill_ipv4_address(out bit<32> ip
+ }
+ control ingress(inout headers_t hdr, inout meta_t meta, inout standard_metadata_t standard_metadata) {
+     fill_ipv4_address() c_fill_ipv4_address;
+-    const bit<32> RESUBMITTED_PKT_L2PTR = 0xe50b;
+-    const bit<32> RECIRCULATED_PKT_L2PTR = 0xec1c;
++    const bit<32> RESUBMITTED_PKT_L2PTR = 32w0xe50b;
++    const bit<32> RECIRCULATED_PKT_L2PTR = 32w0xec1c;
+     action set_l2ptr(bit<32> l2ptr) {
+         meta.fwd.l2ptr = l2ptr;
+     }
+@@ -84,7 +84,7 @@ control ingress(inout headers_t hdr, ino
+         resubmit({  });
+     }
+     action do_clone_i2e(bit<32> l2ptr) {
+-        clone3(CloneType.I2E, I2E_CLONE_SESSION_ID, {  });
++        clone3(CloneType.I2E, 32w5, {  });
+         meta.fwd.l2ptr = l2ptr;
+     }
+     table ipv4_da_lpm {
+@@ -117,12 +117,12 @@ control ingress(inout headers_t hdr, ino
+         default_action = my_drop(standard_metadata);
+     }
+     apply {
+-        if (standard_metadata.instance_type == BMV2_V1MODEL_INSTANCE_TYPE_RESUBMIT) {
++        if (standard_metadata.instance_type == 32w6) {
+             c_fill_ipv4_address.apply(hdr.ipv4.srcAddr, 10, 252, 129, 2);
+-            meta.fwd.l2ptr = RESUBMITTED_PKT_L2PTR;
+-        } else if (standard_metadata.instance_type == BMV2_V1MODEL_INSTANCE_TYPE_RECIRC) {
++            meta.fwd.l2ptr = 32w0xe50b;
++        } else if (standard_metadata.instance_type == 32w4) {
+             c_fill_ipv4_address.apply(hdr.ipv4.srcAddr, 10, 199, 86, 99);
+-            meta.fwd.l2ptr = RECIRCULATED_PKT_L2PTR;
++            meta.fwd.l2ptr = 32w0xec1c;
+         } else {
+             ipv4_da_lpm.apply();
+         }
+@@ -155,7 +155,7 @@ control egress(inout headers_t hdr, inou
+     }
+     action do_clone_e2e(bit<48> smac) {
+         hdr.ethernet.srcAddr = smac;
+-        clone3(CloneType.E2E, E2E_CLONE_SESSION_ID, {  });
++        clone3(CloneType.E2E, 32w11, {  });
+     }
+     table send_frame {
+         key = {
+@@ -170,16 +170,16 @@ control egress(inout headers_t hdr, inou
+         default_action = my_drop(standard_metadata);
+     }
+     apply {
+-        if (standard_metadata.instance_type == BMV2_V1MODEL_INSTANCE_TYPE_INGRESS_CLONE) {
++        if (standard_metadata.instance_type == 32w1) {
+             hdr.switch_to_cpu.setValid();
+             hdr.switch_to_cpu.word0 = 0x12e012e;
+             hdr.switch_to_cpu.word1 = 0x5a5a5a5a;
+-        } else if (standard_metadata.instance_type == BMV2_V1MODEL_INSTANCE_TYPE_EGRESS_CLONE) {
++        } else if (standard_metadata.instance_type == 32w2) {
+             hdr.switch_to_cpu.setValid();
+             hdr.switch_to_cpu.word0 = 0xe2e0e2e;
+             hdr.switch_to_cpu.word1 = 0x5a5a5a5a;
+         } else {
+-            if (standard_metadata.instance_type == BMV2_V1MODEL_INSTANCE_TYPE_REPLICATION) {
++            if (standard_metadata.instance_type == 32w5) {
+                 get_multicast_copy_out_bd.apply();
+             }
+             send_frame.apply();

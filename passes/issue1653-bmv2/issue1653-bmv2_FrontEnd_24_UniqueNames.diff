@@ -1,0 +1,14 @@
+--- before_pass
++++ after_pass
+@@ -17,9 +17,9 @@ parser parse(packet_in pk, out parsed_pa
+     }
+ }
+ control ingress(inout parsed_packet_t h, inout local_metadata_t local_metadata, inout standard_metadata_t standard_metadata) {
+-    bitvec_hdr bh;
++    bitvec_hdr bh_0;
+     apply {
+-        bh.x = h.bvh0.x;
++        bh_0.x = h.bvh0.x;
+         clone3<parsed_packet_t>(CloneType.I2E, 32w0, h);
+     }
+ }

@@ -1,0 +1,29 @@
+--- before_pass
++++ after_pass
+@@ -41,22 +41,22 @@ parser parse(packet_in pk, out parsed_pa
+     }
+ }
+ control ingress(inout parsed_packet_t h, inout local_metadata_t local_metadata, inout standard_metadata_t standard_metadata) {
+-    @name("do_act") action do_act_0() {
++    @name("do_act") action do_act() {
+         h.bvh1.row.alt1.valid = 1w0;
+     }
+-    @name("tns") table tns_0 {
++    @name("tns") table tns {
+         key = {
+             h.bvh1.row.alt1.valid                : exact @name("h.bvh1.row.alt1.valid") ;
+             local_metadata.col.bvh.row.alt0.valid: exact @name("local_metadata.col.bvh.row.alt0.valid") ;
+         }
+         actions = {
+-            do_act_0();
++            do_act();
+             @defaultonly NoAction();
+         }
+         default_action = NoAction();
+     }
+     apply {
+-        tns_0.apply();
++        tns.apply();
+         local_metadata.col.bvh.row.alt0.valid = 1w0;
+         local_metadata.row0.alt0 = local_metadata.row1.alt1;
+         local_metadata.row1.alt0.valid = 1w1;

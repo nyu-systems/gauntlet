@@ -1,0 +1,12 @@
+--- before_pass
++++ after_pass
+@@ -33,8 +33,8 @@ control MyDeparser(packet_out packet, in
+     }
+ }
+ control MyComputeChecksum(inout headers hdr, inout metadata meta) {
+-    @name("checksum") Checksum16() checksum_0;
+     h_t h_0 = { hdr.h.src, hdr.h.dst, 16w0 };
++    @name("checksum") Checksum16() checksum_0;
+     apply {
+         hdr.h.csum = checksum_0.get<h_t>(h_0);
+     }

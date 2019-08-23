@@ -1,0 +1,7 @@
+--- before_pass
++++ after_pass
+@@ -1,4 +1,3 @@
+-typedef tuple<bit<32>, bool> pair;
+ struct S {
+     bit<32> f;
+     bool    s;

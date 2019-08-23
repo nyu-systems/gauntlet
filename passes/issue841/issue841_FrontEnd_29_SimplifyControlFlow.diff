@@ -1,0 +1,32 @@
+--- before_pass
++++ after_pass
+@@ -12,9 +12,7 @@ struct headers {
+ }
+ parser MyParser(packet_in packet, out headers hdr, inout metadata meta, inout standard_metadata_t standard_metadata) {
+     state start {
+-        {
+-            packet.extract<h_t>(hdr.h);
+-        }
++        packet.extract<h_t>(hdr.h);
+         transition accept;
+     }
+ }
+@@ -39,14 +37,10 @@ control MyComputeChecksum(inout headers
+     @name("checksum") Checksum16() checksum_0;
+     bit<16> tmp;
+     apply {
+-        {
+-            h_0.setValid();
+-            h_0 = { hdr.h.src, hdr.h.dst, 16w0 };
+-        }
+-        {
+-            tmp = checksum_0.get<h_t>(h_0);
+-            hdr.h.csum = tmp;
+-        }
++        h_0.setValid();
++        h_0 = { hdr.h.src, hdr.h.dst, 16w0 };
++        tmp = checksum_0.get<h_t>(h_0);
++        hdr.h.csum = tmp;
+     }
+ }
+ V1Switch<headers, metadata>(MyParser(), MyVerifyChecksum(), MyIngress(), MyEgress(), MyComputeChecksum(), MyDeparser()) main;

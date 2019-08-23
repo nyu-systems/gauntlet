@@ -1,0 +1,20 @@
+--- before_pass
++++ after_pass
+@@ -17,7 +17,7 @@ control Eg(inout Headers hdrs, inout Met
+     bit<32> _sub;
+     bit<64> res;
+     bit<32> tmp_0;
+-    @name("update") action update(in bool p_0, inout bit<64> val_0) {
++    @name("update") action update_0(in bool p_0, inout bit<64> val_0) {
+         _sub = val_0[31:0];
+         if (p_0) {
+             tmp_0 = _sub;
+@@ -29,7 +29,7 @@ control Eg(inout Headers hdrs, inout Met
+     }
+     apply {
+         res = 64w0;
+-        update(true, res);
++        update_0(true, res);
+     }
+ }
+ control DP(packet_out b, in Headers p) {

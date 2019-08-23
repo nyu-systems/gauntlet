@@ -1,0 +1,36 @@
+--- before_pass
++++ after_pass
+@@ -7,10 +7,18 @@ control Ing() {
+     bool tmp;
+     bool tmp_0;
+     @name("cond") action cond() {
+-        b_0 = true;
+-        tmp = tmp;
+-        tmp_0 = tmp_0;
+-        tmp = tmp;
++        {
++            b_0 = true;
++        }
++        {
++            tmp = tmp;
++        }
++        {
++            tmp_0 = tmp_0;
++        }
++        {
++            tmp = tmp;
++        }
+     }
+     @name("tbl_cond") table tbl_cond_0 {
+         actions = {
+@@ -19,7 +27,9 @@ control Ing() {
+         const default_action = cond();
+     }
+     apply {
+-        tbl_cond_0.apply();
++        {
++            tbl_cond_0.apply();
++        }
+     }
+ }
+ top(Ing()) main;

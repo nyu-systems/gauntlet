@@ -1,0 +1,11 @@
+--- before_pass
++++ after_pass
+@@ -13,7 +13,7 @@ extern E {
+ }
+ control c(inout S s) {
+     bit<32> tmp;
+-    @name("e") E() e_0;
++    @name("c.e") E() e_0;
+     apply {
+         if (s.h.isValid()) {
+             s.h.data3 = 32w0;

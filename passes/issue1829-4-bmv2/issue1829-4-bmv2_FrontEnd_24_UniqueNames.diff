@@ -1,0 +1,30 @@
+--- before_pass
++++ after_pass
+@@ -22,21 +22,21 @@ control verifyChecksum(inout headers_t h
+     }
+ }
+ control ingressImpl(inout headers_t hdr, inout metadata_t meta, inout standard_metadata_t stdmeta) {
+-    direct_meter<bit<2>>(MeterType.packets) da_meter;
+-    action do_meter() {
++    @name("da_meter") direct_meter<bit<2>>(MeterType.packets) da_meter_0;
++    @name("do_meter") action do_meter_0() {
+     }
+-    table mac_da {
++    @name("mac_da") table mac_da_0 {
+         key = {
+             hdr.ethernet.dstAddr: exact @name("hdr.ethernet.dstAddr") ;
+         }
+         actions = {
+-            do_meter();
++            do_meter_0();
+         }
+-        const default_action = do_meter();
++        const default_action = do_meter_0();
+     }
+     apply {
+         stdmeta.egress_spec = 9w1;
+-        mac_da.apply();
++        mac_da_0.apply();
+     }
+ }
+ control egressImpl(inout headers_t hdr, inout metadata_t meta, inout standard_metadata_t stdmeta) {

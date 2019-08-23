@@ -1,0 +1,10 @@
+--- before_pass
++++ after_pass
+@@ -13,7 +13,6 @@ control d(out bit<32> x) {
+     bit<32> y_0;
+     @name("cinst") c(Y(32w16)) cinst_0;
+     apply {
+-        ;
+         cinst_0.apply(x);
+         cinst_0.apply(y_0);
+     }

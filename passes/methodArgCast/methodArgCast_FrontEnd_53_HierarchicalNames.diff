@@ -1,0 +1,11 @@
+--- before_pass
++++ after_pass
+@@ -3,7 +3,7 @@ extern E {
+     void setValue(in bit<32> arg);
+ }
+ control c() {
+-    @name("e") E() e_0;
++    @name("c.e") E() e_0;
+     apply {
+         e_0.setValue(32w10);
+     }

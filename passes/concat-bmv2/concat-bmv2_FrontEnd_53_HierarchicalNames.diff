@@ -1,0 +1,16 @@
+--- before_pass
++++ after_pass
+@@ -34,11 +34,11 @@ control deparser(packet_out b, in Header
+     }
+ }
+ control ingress(inout Headers h, inout Meta m, inout standard_metadata_t sm) {
+-    @name("concat") action concat() {
++    @name("ingress.concat") action concat() {
+         h.h.c = h.h.a ++ h.h.b;
+         sm.egress_spec = 9w0;
+     }
+-    @name("t") table t_0 {
++    @name("ingress.t") table t_0 {
+         actions = {
+             concat();
+         }

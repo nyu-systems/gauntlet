@@ -1,0 +1,42 @@
+--- before_pass
++++ after_pass
+@@ -39,16 +39,16 @@ parser prs(packet_in p, out Headers_t he
+     }
+ }
+ control pipe(inout Headers_t headers, out bool pass) {
+-    bool tmp;
+-    @name("invalidate") action invalidate_0() {
++    bool tmp_0;
++    @name("invalidate") action invalidate() {
+         headers.ipv4.setInvalid();
+         headers.ethernet.setInvalid();
+         pass = true;
+     }
+-    @name("drop") action drop_0() {
++    @name("drop") action drop() {
+         pass = false;
+     }
+-    @name("t") table t_0 {
++    @name("t") table t {
+         key = {
+             headers.ipv4.srcAddr + 32w1: exact @name(" headers.ipv4.srcAddr") ;
+             headers.ipv4.dstAddr + 32w1: exact @name("headers.ipv4.dstAddr") ;
+@@ -56,14 +56,14 @@ control pipe(inout Headers_t headers, ou
+             headers.ethernet.srcAddr   : exact @name("headers.ethernet.srcAddr") ;
+         }
+         actions = {
+-            invalidate_0();
+-            drop_0();
++            invalidate();
++            drop();
+         }
+         implementation = hash_table(32w10);
+-        default_action = drop_0();
++        default_action = drop();
+     }
+     apply {
+-        tmp = t_0.apply().hit;
++        tmp_0 = t.apply().hit;
+     }
+ }
+ ebpfFilter<Headers_t>(prs(), pipe()) main;

@@ -1,0 +1,14 @@
+--- before_pass
++++ after_pass
+@@ -5,9 +5,9 @@ type Wide_t Wide;
+ const Narrow PSA_CPU_PORT = (Narrow)9w192;
+ control c(out bool b) {
+     apply {
+-        Wide x = (Wide)3;
++        Wide x = (Wide)(bit<32>)32w3;
+         Narrow y = (Narrow)(Narrow_t)(Wide_t)x;
+-        b = y == (Narrow)10;
++        b = y == (Narrow)(bit<9>)9w10;
+     }
+ }
+ control ctrl(out bool b);

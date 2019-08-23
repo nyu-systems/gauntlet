@@ -1,0 +1,13 @@
+--- before_pass
++++ after_pass
+@@ -26,8 +26,9 @@ control MyIC(inout ethernet_t a, inout E
+             a.srcAddr: exact;
+         }
+         actions = {
+-            NoAction;
++            NoAction();
+         }
++        default_action = NoAction();
+     }
+     apply {
+         if (meter0.execute(0) == PSA_MeterColor_t.GREEN) {

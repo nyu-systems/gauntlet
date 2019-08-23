@@ -1,0 +1,13 @@
+--- before_pass
++++ after_pass
+@@ -2,8 +2,8 @@
+ extern bit<32> f(in bit<32> x);
+ parser p() {
+     state start {
+-        transition select(f(2)) {
+-            0: accept;
++        transition select(f(32w2)) {
++            32w0: accept;
+             default: reject;
+         }
+     }

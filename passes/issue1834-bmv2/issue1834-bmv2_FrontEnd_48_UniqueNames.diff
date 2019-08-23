@@ -1,0 +1,31 @@
+--- before_pass
++++ after_pass
+@@ -12,23 +12,23 @@ parser ParserImpl(packet_in packet, out
+     }
+ }
+ control IngressImpl(inout headers hdr, inout metadata meta, inout standard_metadata_t standard_metadata) {
+-    @name("act") action act_0(test_t a) {
++    @name("act") action act(test_t a) {
+     }
+-    @name("test_table") table test_table_0 {
++    @name("test_table") table test_table {
+         key = {
+             meta.test: exact @name("meta.test") ;
+         }
+         actions = {
+-            act_0();
++            act();
+             @defaultonly NoAction();
+         }
+         const entries = {
+-                        8w1 : act_0(8w1);
++                        8w1 : act(8w1);
+         }
+         default_action = NoAction();
+     }
+     apply {
+-        test_table_0.apply();
++        test_table.apply();
+     }
+ }
+ control VerifyChecksumImpl(inout headers hdr, inout metadata meta) {

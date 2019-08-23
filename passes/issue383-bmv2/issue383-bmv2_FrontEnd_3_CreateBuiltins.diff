@@ -1,0 +1,14 @@
+--- before_pass
++++ after_pass
+@@ -53,8 +53,10 @@ control ingress(inout parsed_packet_t h,
+             local_metadata.col.bvh.row.alt0.valid: exact;
+         }
+         actions = {
+-            do_act;
++            do_act();
++            @defaultonly NoAction();
+         }
++        default_action = NoAction();
+     }
+     apply {
+         tns.apply();

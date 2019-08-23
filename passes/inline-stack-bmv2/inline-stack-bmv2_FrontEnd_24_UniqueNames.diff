@@ -1,0 +1,16 @@
+--- before_pass
++++ after_pass
+@@ -27,10 +27,10 @@ control Aux(inout H hdr) {
+     }
+ }
+ control IngressI(inout H hdr, inout M meta, inout std_meta_t std_meta) {
+-    Aux() aux;
++    @name("aux") Aux() aux_0;
+     apply {
+-        aux.apply(hdr);
+-        aux.apply(hdr);
++        aux_0.apply(hdr);
++        aux_0.apply(hdr);
+     }
+ }
+ control EgressI(inout H hdr, inout M meta, inout std_meta_t std_meta) {

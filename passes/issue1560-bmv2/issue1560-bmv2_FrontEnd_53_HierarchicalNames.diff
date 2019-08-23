@@ -1,0 +1,53 @@
+--- before_pass
++++ after_pass
+@@ -95,25 +95,25 @@ control cIngress(inout headers hdr, inou
+     }
+     @name(".NoAction") action NoAction_5() {
+     }
+-    @name("foo1") action foo1(IPv4Address dstAddr) {
++    @name("cIngress.foo1") action foo1(IPv4Address dstAddr) {
+         hdr.ipv4.dstAddr = dstAddr;
+     }
+-    @name("foo1") action foo1_3(IPv4Address dstAddr) {
++    @name("cIngress.foo1") action foo1_3(IPv4Address dstAddr) {
+         hdr.ipv4.dstAddr = dstAddr;
+     }
+-    @name("foo1") action foo1_4(IPv4Address dstAddr) {
++    @name("cIngress.foo1") action foo1_4(IPv4Address dstAddr) {
+         hdr.ipv4.dstAddr = dstAddr;
+     }
+-    @name("foo2") action foo2(IPv4Address srcAddr) {
++    @name("cIngress.foo2") action foo2(IPv4Address srcAddr) {
+         hdr.ipv4.srcAddr = srcAddr;
+     }
+-    @name("foo2") action foo2_3(IPv4Address srcAddr) {
++    @name("cIngress.foo2") action foo2_3(IPv4Address srcAddr) {
+         hdr.ipv4.srcAddr = srcAddr;
+     }
+-    @name("foo2") action foo2_4(IPv4Address srcAddr) {
++    @name("cIngress.foo2") action foo2_4(IPv4Address srcAddr) {
+         hdr.ipv4.srcAddr = srcAddr;
+     }
+-    @name("t0") table t0_0 {
++    @name("cIngress.t0") table t0_0 {
+         key = {
+             hdr.tcp.dstPort: exact @name("hdr.tcp.dstPort") ;
+         }
+@@ -125,7 +125,7 @@ control cIngress(inout headers hdr, inou
+         size = 8;
+         default_action = NoAction_0();
+     }
+-    @name("t1") table t1_0 {
++    @name("cIngress.t1") table t1_0 {
+         key = {
+             hdr.tcp.dstPort: exact @name("hdr.tcp.dstPort") ;
+         }
+@@ -137,7 +137,7 @@ control cIngress(inout headers hdr, inou
+         size = 8;
+         default_action = NoAction_4();
+     }
+-    @name("t2") table t2_0 {
++    @name("cIngress.t2") table t2_0 {
+         actions = {
+             foo1_4();
+             foo2_4();

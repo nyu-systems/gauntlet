@@ -1,0 +1,13 @@
+--- before_pass
++++ after_pass
+@@ -25,8 +25,8 @@ parser p(packet_in b, out headers hdr, i
+ control ingress(inout headers hdr, inout metadata meta, inout standard_metadata_t stdmeta) {
+     apply {
+         hdr.same.setValid();
+-        hdr.same.same = (bit<8>)8w0;
+-        stdmeta.egress_spec = (bit<9>)9w0;
++        hdr.same.same = 8w0;
++        stdmeta.egress_spec = 9w0;
+         if (hdr.h.s == hdr.a[0].s) {
+             hdr.same.same = hdr.same.same | 8w1;
+         }

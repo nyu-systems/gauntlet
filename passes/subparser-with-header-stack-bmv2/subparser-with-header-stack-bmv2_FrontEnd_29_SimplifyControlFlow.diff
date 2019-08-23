@@ -1,0 +1,105 @@
+--- before_pass
++++ after_pass
+@@ -30,15 +30,9 @@ struct metadata {
+ }
+ parser subParserImpl(packet_in pkt, inout headers hdr, out bit<8> ret_next_hdr_type) {
+     state start {
+-        {
+-            pkt.extract<h2_t>(hdr.h2.next);
+-        }
+-        {
+-            verify(hdr.h2.last.hdr_type == 8w2, error.BadHeaderType);
+-        }
+-        {
+-            ret_next_hdr_type = hdr.h2.last.next_hdr_type;
+-        }
++        pkt.extract<h2_t>(hdr.h2.next);
++        verify(hdr.h2.last.hdr_type == 8w2, error.BadHeaderType);
++        ret_next_hdr_type = hdr.h2.last.next_hdr_type;
+         transition accept;
+     }
+ }
+@@ -46,12 +40,8 @@ parser parserI(packet_in pkt, out header
+     bit<8> my_next_hdr_type_0;
+     @name("subp") subParserImpl() subp_0;
+     state start {
+-        {
+-            pkt.extract<h1_t>(hdr.h1);
+-        }
+-        {
+-            verify(hdr.h1.hdr_type == 8w1, error.BadHeaderType);
+-        }
++        pkt.extract<h1_t>(hdr.h1);
++        verify(hdr.h1.hdr_type == 8w1, error.BadHeaderType);
+         transition select(hdr.h1.next_hdr_type) {
+             8w2: parse_first_h2;
+             8w3: parse_h3;
+@@ -59,9 +49,7 @@ parser parserI(packet_in pkt, out header
+         }
+     }
+     state parse_first_h2 {
+-        {
+-            subp_0.apply(pkt, hdr, my_next_hdr_type_0);
+-        }
++        subp_0.apply(pkt, hdr, my_next_hdr_type_0);
+         transition select(my_next_hdr_type_0) {
+             8w2: parse_other_h2;
+             8w3: parse_h3;
+@@ -69,12 +57,8 @@ parser parserI(packet_in pkt, out header
+         }
+     }
+     state parse_other_h2 {
+-        {
+-            pkt.extract<h2_t>(hdr.h2.next);
+-        }
+-        {
+-            verify(hdr.h2.last.hdr_type == 8w2, error.BadHeaderType);
+-        }
++        pkt.extract<h2_t>(hdr.h2.next);
++        verify(hdr.h2.last.hdr_type == 8w2, error.BadHeaderType);
+         transition select(hdr.h2.last.next_hdr_type) {
+             8w2: parse_other_h2;
+             8w3: parse_h3;
+@@ -82,20 +66,14 @@ parser parserI(packet_in pkt, out header
+         }
+     }
+     state parse_h3 {
+-        {
+-            pkt.extract<h3_t>(hdr.h3);
+-        }
+-        {
+-            verify(hdr.h3.hdr_type == 8w3, error.BadHeaderType);
+-        }
++        pkt.extract<h3_t>(hdr.h3);
++        verify(hdr.h3.hdr_type == 8w3, error.BadHeaderType);
+         transition accept;
+     }
+ }
+ control cIngress(inout headers hdr, inout metadata meta, inout standard_metadata_t stdmeta) {
+     apply {
+-        {
+-            hdr.h1.h2_valid_bits = 8w0;
+-        }
++        hdr.h1.h2_valid_bits = 8w0;
+         if (hdr.h2[0].isValid()) {
+             hdr.h1.h2_valid_bits[0:0] = 1w1;
+         }
+@@ -127,15 +105,9 @@ control uc(inout headers hdr, inout meta
+ }
+ control DeparserI(packet_out packet, in headers hdr) {
+     apply {
+-        {
+-            packet.emit<h1_t>(hdr.h1);
+-        }
+-        {
+-            packet.emit<h2_t[5]>(hdr.h2);
+-        }
+-        {
+-            packet.emit<h3_t>(hdr.h3);
+-        }
++        packet.emit<h1_t>(hdr.h1);
++        packet.emit<h2_t[5]>(hdr.h2);
++        packet.emit<h3_t>(hdr.h3);
+     }
+ }
+ V1Switch<headers, metadata>(parserI(), vc(), cIngress(), cEgress(), uc(), DeparserI()) main;

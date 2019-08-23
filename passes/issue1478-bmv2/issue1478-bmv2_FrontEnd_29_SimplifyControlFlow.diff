@@ -1,0 +1,17 @@
+--- before_pass
++++ after_pass
+@@ -49,12 +49,8 @@ control ingress(inout Headers h, inout M
+         default_action = NoAction();
+     }
+     apply {
+-        {
+-            t1_0.apply();
+-        }
+-        {
+-            t2_0.apply();
+-        }
++        t1_0.apply();
++        t2_0.apply();
+     }
+ }
+ V1Switch<Headers, Meta>(p(), vrfy(), ingress(), egress(), update(), deparser()) main;

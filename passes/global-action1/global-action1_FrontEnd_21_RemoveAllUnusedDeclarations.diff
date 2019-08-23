@@ -1,0 +1,11 @@
+--- before_pass
++++ after_pass
+@@ -1,8 +1,5 @@
+ action Global() {
+ }
+-action Global1() {
+-    Global();
+-}
+ control c() {
+     table t {
+         actions = {

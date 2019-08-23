@@ -1,0 +1,37 @@
+--- before_pass
++++ after_pass
+@@ -1,22 +1,22 @@
+ control ctrl(out bit<32> c) {
+-    bit<32> x;
+-    action e() {
++    bit<32> x_0;
++    @name("e") action e_0() {
+         exit;
+-        x = 32w1;
++        x_0 = 32w1;
+     }
+     apply {
+-        bit<32> a;
+-        bit<32> b;
+-        a = 32w0;
+-        b = 32w1;
++        bit<32> a_0;
++        bit<32> b_0;
++        a_0 = 32w0;
++        b_0 = 32w1;
+         c = 32w2;
+-        if (a == 32w0) {
+-            b = 32w2;
+-            e();
++        if (a_0 == 32w0) {
++            b_0 = 32w2;
++            e_0();
+             c = 32w3;
+         } else {
+-            b = 32w3;
+-            e();
++            b_0 = 32w3;
++            e_0();
+             c = 32w4;
+         }
+         c = 32w5;

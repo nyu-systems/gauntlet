@@ -1,0 +1,35 @@
+--- before_pass
++++ after_pass
+@@ -1,5 +1,9 @@
+ #include <core.p4>
+ control c(out bool x) {
++    @name(".NoAction") action NoAction_1() {
++    }
++    @name(".NoAction") action NoAction_2() {
++    }
+     bool tmp_2;
+     bool tmp_3;
+     bool tmp_4;
+@@ -8,18 +12,18 @@ control c(out bool x) {
+             x: exact @name("x") ;
+         }
+         actions = {
+-            NoAction();
++            NoAction_1();
+         }
+-        default_action = NoAction();
++        default_action = NoAction_1();
+     }
+     @name("t2") table t2 {
+         key = {
+             x: exact @name("x") ;
+         }
+         actions = {
+-            NoAction();
++            NoAction_2();
+         }
+-        default_action = NoAction();
++        default_action = NoAction_2();
+     }
+     apply {
+         x = true;

@@ -1,0 +1,23 @@
+--- before_pass
++++ after_pass
+@@ -7,18 +7,14 @@ header header_t {
+ }
+ struct metadata_t {
+ }
+-control IngressMirror() {
+-    apply {
+-    }
+-}
+ control SwitchIngress(inout header_t t, inout metadata_t m) {
+     apply {
+     }
+ }
+ control SwitchIngressDeparser(packet_out pkt, inout header_t h) {
+-    @name("im") IngressMirror() im_0;
+     apply {
+-        im_0.apply();
++        {
++        }
+     }
+ }
+ Pipeline<header_t, metadata_t>(SwitchIngress(), SwitchIngressDeparser()) p0;

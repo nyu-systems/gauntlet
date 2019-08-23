@@ -1,0 +1,17 @@
+--- before_pass
++++ after_pass
+@@ -32,7 +32,7 @@ struct Parsed_rep {
+ }
+ parser LJparse(packet_in b, out Parsed_rep p) {
+     state start {
+-        b.extract(p.arpa_pak);
++        b.extract<ARPA_hdr>(p.arpa_pak);
+         transition accept;
+     }
+ }
+@@ -69,4 +69,4 @@ control LJdeparse(inout Parsed_rep p, pa
+         b.emit<ARPA_hdr>(p.arpa_pak);
+     }
+ }
+-VSS(LJparse(), LjPipe(), LJdeparse()) main;
++VSS<Parsed_rep>(LJparse(), LjPipe(), LJdeparse()) main;

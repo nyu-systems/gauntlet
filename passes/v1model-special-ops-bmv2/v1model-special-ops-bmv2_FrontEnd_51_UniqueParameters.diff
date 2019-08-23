@@ -1,0 +1,29 @@
+--- before_pass
++++ after_pass
+@@ -49,11 +49,11 @@ parser ParserImpl(packet_in packet, out
+     }
+ }
+ control ingress(inout headers_t hdr, inout meta_t meta, inout standard_metadata_t standard_metadata) {
+-    @name(".my_drop") action my_drop(inout standard_metadata_t smeta_0) {
+-        mark_to_drop(smeta_0);
++    @name(".my_drop") action my_drop(inout standard_metadata_t smeta) {
++        mark_to_drop(smeta);
+     }
+-    @name(".my_drop") action my_drop_0(inout standard_metadata_t smeta_0) {
+-        mark_to_drop(smeta_0);
++    @name(".my_drop") action my_drop_0(inout standard_metadata_t smeta_1) {
++        mark_to_drop(smeta_1);
+     }
+     bit<32> ipv4_address_0;
+     bit<8> byte0_0;
+@@ -131,8 +131,8 @@ control ingress(inout headers_t hdr, ino
+ control egress(inout headers_t hdr, inout meta_t meta, inout standard_metadata_t standard_metadata) {
+     @name(".NoAction") action NoAction_0() {
+     }
+-    @name(".my_drop") action my_drop_1(inout standard_metadata_t smeta_0) {
+-        mark_to_drop(smeta_0);
++    @name(".my_drop") action my_drop_1(inout standard_metadata_t smeta_2) {
++        mark_to_drop(smeta_2);
+     }
+     @name("set_out_bd") action set_out_bd(bit<24> bd) {
+         meta.fwd.out_bd = bd;

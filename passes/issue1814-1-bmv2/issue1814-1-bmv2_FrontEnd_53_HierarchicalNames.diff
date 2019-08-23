@@ -1,0 +1,21 @@
+--- before_pass
++++ after_pass
+@@ -14,14 +14,14 @@ control IngressImpl(inout headers hdr, i
+     @name(".NoAction") action NoAction_0() {
+     }
+     bit<1> registerData_0;
+-    @name("testRegister") register<bit<1>>(32w1) testRegister_0;
+-    @name("drop") action drop() {
++    @name("IngressImpl.testRegister") register<bit<1>>(32w1) testRegister_0;
++    @name("IngressImpl.drop") action drop() {
+         mark_to_drop(standard_metadata);
+     }
+-    @name("forward") action forward() {
++    @name("IngressImpl.forward") action forward() {
+         standard_metadata.egress_spec = 9w1;
+     }
+-    @name("debug_table") table debug_table_0 {
++    @name("IngressImpl.debug_table") table debug_table_0 {
+         key = {
+             meta.test: exact @name("meta.test") ;
+         }

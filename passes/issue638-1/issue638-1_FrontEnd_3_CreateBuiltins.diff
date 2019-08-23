@@ -1,0 +1,12 @@
+--- before_pass
++++ after_pass
+@@ -2,7 +2,9 @@
+ control c() {
+     table t {
+         actions = {
++            @defaultonly NoAction();
+         }
++        default_action = NoAction();
+     }
+     apply {
+         t.apply();

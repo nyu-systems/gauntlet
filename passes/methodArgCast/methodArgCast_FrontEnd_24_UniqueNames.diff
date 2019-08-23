@@ -1,0 +1,14 @@
+--- before_pass
++++ after_pass
+@@ -3,9 +3,9 @@ extern E {
+     void setValue(in bit<32> arg);
+ }
+ control c() {
+-    E() e;
++    @name("e") E() e_0;
+     apply {
+-        e.setValue(32w10);
++        e_0.setValue(32w10);
+     }
+ }
+ control proto();

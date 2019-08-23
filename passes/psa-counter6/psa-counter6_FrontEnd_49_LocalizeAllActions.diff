@@ -1,0 +1,48 @@
+--- before_pass
++++ after_pass
+@@ -20,8 +20,15 @@ parser MyEP(packet_in buffer, out EMPTY
+     }
+ }
+ control MyIC(inout ethernet_t a, inout EMPTY b, in psa_ingress_input_metadata_t c, inout psa_ingress_output_metadata_t d) {
++    @name(".NoAction") action NoAction_1() {
++    }
++    @name(".NoAction") action NoAction_2() {
++    }
+     @name("counter0") DirectCounter<bit<12>>(PSA_CounterType_t.PACKETS) counter0;
+-    @name("execute") action execute_1() {
++    @name("execute") action execute_0() {
++        counter0.count();
++    }
++    @name("execute") action execute_2() {
+         counter0.count();
+     }
+     @name("tbl") table tbl {
+@@ -29,22 +36,22 @@ control MyIC(inout ethernet_t a, inout E
+             a.srcAddr: exact @name("a.srcAddr") ;
+         }
+         actions = {
+-            NoAction();
+-            execute_1();
++            NoAction_1();
++            execute_0();
+         }
+         psa_direct_counter = counter0;
+-        default_action = NoAction();
++        default_action = NoAction_1();
+     }
+     @name("tbl2") table tbl2 {
+         key = {
+             a.srcAddr: exact @name("a.srcAddr") ;
+         }
+         actions = {
+-            NoAction();
+-            execute_1();
++            NoAction_2();
++            execute_2();
+         }
+         psa_direct_counter = counter0;
+-        default_action = NoAction();
++        default_action = NoAction_2();
+     }
+     apply {
+         tbl.apply();

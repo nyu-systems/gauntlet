@@ -1,0 +1,10 @@
+--- before_pass
++++ after_pass
+@@ -5,7 +5,6 @@ struct headers {
+ extern void f(headers h);
+ control c() {
+     apply {
+-        headers h;
+         f(headers {x = 32w5});
+     }
+ }

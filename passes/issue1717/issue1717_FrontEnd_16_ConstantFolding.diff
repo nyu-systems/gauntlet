@@ -1,0 +1,16 @@
+--- before_pass
++++ after_pass
+@@ -37,9 +37,9 @@ bool v(in HU h) {
+     Empty e;
+     Nested n;
+     S s;
+-    const bool b = 80 == 32;
++    const bool b = false;
+     bool b1 = h.h2.minSizeInBits == 8w32;
+-    const bit<32> se = (bit<32>)(0 + 40 + 12);
+-    const bit<32> sz = (bit<32>)(32 + 80 + 10);
+-    return h.isValid() && h.h1.isValid == 32w0 && b && b1 && 80 < 5 + 32 && se < sz && 12 << 3 == 96;
++    const bit<32> se = 32w52;
++    const bit<32> sz = 32w122;
++    return h.isValid() && h.h1.isValid == 32w0 && false && b1 && false && true && true;
+ }

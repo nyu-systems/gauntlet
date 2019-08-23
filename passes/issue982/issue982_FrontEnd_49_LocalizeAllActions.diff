@@ -1,0 +1,58 @@
+--- before_pass
++++ after_pass
+@@ -269,10 +269,12 @@ parser EgressParserImpl(packet_in buffer
+     }
+ }
+ control egress(inout headers hdr, inout metadata user_meta, in psa_egress_input_metadata_t istd, inout psa_egress_output_metadata_t ostd) {
+-    @name("process_clone_h0") action process_clone_h0() {
++    @name(".NoAction") action NoAction_2() {
++    }
++    @name("process_clone_h0") action process_clone_h0_0() {
+         user_meta.fwd_metadata.outport = (bit<32>)user_meta.clone_0.data;
+     }
+-    @name("process_clone_h1") action process_clone_h1() {
++    @name("process_clone_h1") action process_clone_h1_0() {
+         user_meta.fwd_metadata.outport = user_meta.clone_1.data;
+     }
+     @name("t") table t {
+@@ -280,11 +282,11 @@ control egress(inout headers hdr, inout
+             user_meta.custom_clone_id: exact @name("user_meta.custom_clone_id") ;
+         }
+         actions = {
+-            process_clone_h0();
+-            process_clone_h1();
+-            NoAction();
++            process_clone_h0_0();
++            process_clone_h1_0();
++            NoAction_2();
+         }
+-        default_action = NoAction();
++        default_action = NoAction_2();
+     }
+     apply {
+         t.apply();
+@@ -312,7 +314,9 @@ parser IngressParserImpl(packet_in buffe
+     }
+ }
+ control ingress(inout headers hdr, inout metadata user_meta, in psa_ingress_input_metadata_t istd, inout psa_ingress_output_metadata_t ostd) {
+-    @name("do_clone") action do_clone(PortId_t port) {
++    @name(".NoAction") action NoAction_3() {
++    }
++    @name("do_clone") action do_clone_0(PortId_t port) {
+         ostd.clone = true;
+         ostd.clone_port = port;
+         user_meta.custom_clone_id = 3w1;
+@@ -322,10 +326,10 @@ control ingress(inout headers hdr, inout
+             user_meta.fwd_metadata.outport: exact @name("user_meta.fwd_metadata.outport") ;
+         }
+         actions = {
+-            do_clone();
+-            NoAction();
++            do_clone_0();
++            NoAction_3();
+         }
+-        default_action = NoAction();
++        default_action = NoAction_3();
+     }
+     apply {
+         t_2.apply();

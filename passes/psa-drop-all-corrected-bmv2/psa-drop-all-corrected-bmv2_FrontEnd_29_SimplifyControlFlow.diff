@@ -1,0 +1,71 @@
+--- before_pass
++++ after_pass
+@@ -33,18 +33,14 @@ struct headers_t {
+ }
+ parser IngressParserImpl(packet_in buffer, out headers_t parsed_hdr, inout metadata_t user_meta, in psa_ingress_parser_input_metadata_t istd, in empty_metadata_t resubmit_meta, in empty_metadata_t recirculate_meta) {
+     state start {
+-        {
+-            buffer.extract<ethernet_t>(parsed_hdr.ethernet);
+-        }
++        buffer.extract<ethernet_t>(parsed_hdr.ethernet);
+         transition select(parsed_hdr.ethernet.etherType) {
+             16w0x800: parse_ipv4;
+             default: accept;
+         }
+     }
+     state parse_ipv4 {
+-        {
+-            buffer.extract<ipv4_t>(parsed_hdr.ipv4);
+-        }
++        buffer.extract<ipv4_t>(parsed_hdr.ipv4);
+         transition accept;
+     }
+ }
+@@ -54,12 +50,8 @@ control ingress(inout headers_t hdr, ino
+ }
+ parser EgressParserImpl(packet_in buffer, out headers_t parsed_hdr, inout metadata_t user_meta, in psa_egress_parser_input_metadata_t istd, in empty_metadata_t normal_meta, in empty_metadata_t clone_i2e_meta, in empty_metadata_t clone_e2e_meta) {
+     state start {
+-        {
+-            buffer.extract<ethernet_t>(parsed_hdr.ethernet);
+-        }
+-        {
+-            buffer.extract<ipv4_t>(parsed_hdr.ipv4);
+-        }
++        buffer.extract<ethernet_t>(parsed_hdr.ethernet);
++        buffer.extract<ipv4_t>(parsed_hdr.ipv4);
+         transition accept;
+     }
+ }
+@@ -69,28 +61,20 @@ control egress(inout headers_t hdr, inou
+ }
+ control CommonDeparserImpl(packet_out packet, inout headers_t hdr) {
+     apply {
+-        {
+-            packet.emit<ethernet_t>(hdr.ethernet);
+-        }
+-        {
+-            packet.emit<ipv4_t>(hdr.ipv4);
+-        }
++        packet.emit<ethernet_t>(hdr.ethernet);
++        packet.emit<ipv4_t>(hdr.ipv4);
+     }
+ }
+ control IngressDeparserImpl(packet_out buffer, out empty_metadata_t clone_i2e_meta, out empty_metadata_t resubmit_meta, out empty_metadata_t normal_meta, inout headers_t hdr, in metadata_t meta, in psa_ingress_output_metadata_t istd) {
+     @name("cp") CommonDeparserImpl() cp_0;
+     apply {
+-        {
+-            cp_0.apply(buffer, hdr);
+-        }
++        cp_0.apply(buffer, hdr);
+     }
+ }
+ control EgressDeparserImpl(packet_out buffer, out empty_metadata_t clone_e2e_meta, out empty_metadata_t recirculate_meta, inout headers_t hdr, in metadata_t meta, in psa_egress_output_metadata_t istd, in psa_egress_deparser_input_metadata_t edstd) {
+     @name("cp") CommonDeparserImpl() cp_1;
+     apply {
+-        {
+-            cp_1.apply(buffer, hdr);
+-        }
++        cp_1.apply(buffer, hdr);
+     }
+ }
+ IngressPipeline<headers_t, metadata_t, empty_metadata_t, empty_metadata_t, empty_metadata_t, empty_metadata_t>(IngressParserImpl(), ingress(), IngressDeparserImpl()) ip;

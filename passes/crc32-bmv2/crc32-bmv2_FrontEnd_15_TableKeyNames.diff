@@ -1,0 +1,11 @@
+--- before_pass
++++ after_pass
+@@ -90,7 +90,7 @@ control MyIngress(inout headers hdr, ino
+     }
+     table calculate {
+         key = {
+-            hdr.p4calc.op: exact;
++            hdr.p4calc.op: exact @name("hdr.p4calc.op") ;
+         }
+         actions = {
+             operation_add();

@@ -1,0 +1,48 @@
+--- before_pass
++++ after_pass
+@@ -27,21 +27,27 @@ struct headers_t {
+ }
+ parser InnerParser(packet_in pkt, out headers_t hdr) {
+     state start {
+-        pkt.extract<eth_h>(hdr.eth);
++        {
++            pkt.extract<eth_h>(hdr.eth);
++        }
+         transition select(hdr.eth.type) {
+             16w0x800: parse_ipv4;
+             default: accept;
+         }
+     }
+     state parse_ipv4 {
+-        pkt.extract<ipv4_h>(hdr.ipv4);
++        {
++            pkt.extract<ipv4_h>(hdr.ipv4);
++        }
+         transition accept;
+     }
+ }
+ parser OuterParser(packet_in pkt, out headers_t hdr, inout meta_t m, inout standard_metadata_t meta) {
+     @name("InnerParser") InnerParser() InnerParser_inst_0;
+     state start {
+-        InnerParser_inst_0.apply(pkt, hdr);
++        {
++            InnerParser_inst_0.apply(pkt, hdr);
++        }
+         transition accept;
+     }
+ }
+@@ -63,8 +69,12 @@ control NoEgress(inout headers_t hdr, in
+ }
+ control SimpleDeparser(packet_out pkt, in headers_t hdr) {
+     apply {
+-        pkt.emit<eth_h>(hdr.eth);
+-        pkt.emit<ipv4_h>(hdr.ipv4);
++        {
++            pkt.emit<eth_h>(hdr.eth);
++        }
++        {
++            pkt.emit<ipv4_h>(hdr.ipv4);
++        }
+     }
+ }
+ V1Switch<headers_t, meta_t>(OuterParser(), NoVerify(), NoIngress(), NoEgress(), NoCheck(), SimpleDeparser()) main;

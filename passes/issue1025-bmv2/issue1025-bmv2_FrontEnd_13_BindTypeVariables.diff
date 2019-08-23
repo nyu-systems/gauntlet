@@ -1,0 +1,41 @@
+--- before_pass
++++ after_pass
+@@ -53,21 +53,21 @@ struct metadata {
+ }
+ parser parserI(packet_in pkt, out headers hdr, inout metadata meta, inout standard_metadata_t stdmeta) {
+     state start {
+-        pkt.extract(hdr.ethernet);
++        pkt.extract<ethernet_t>(hdr.ethernet);
+         transition select(hdr.ethernet.etherType) {
+             16w0x800: parse_ipv4;
+             default: accept;
+         }
+     }
+     state parse_ipv4 {
+-        pkt.extract(hdr.ipv4, (bit<32>)(9w8 * (bit<9>)(pkt.lookahead<IPv4_up_to_ihl_only_h>()).ihl));
++        pkt.extract<ipv4_t>(hdr.ipv4, (bit<32>)(9w8 * (bit<9>)(pkt.lookahead<IPv4_up_to_ihl_only_h>()).ihl));
+         transition select(hdr.ipv4.protocol) {
+             8w6: parse_tcp;
+             default: accept;
+         }
+     }
+     state parse_tcp {
+-        pkt.extract(hdr.tcp);
++        pkt.extract<tcp_t>(hdr.tcp);
+         transition accept;
+     }
+ }
+@@ -96,9 +96,9 @@ control updateChecksum(inout headers hdr
+ }
+ control DeparserI(packet_out packet, in headers hdr) {
+     apply {
+-        packet.emit(hdr.ethernet);
+-        packet.emit(hdr.ipv4);
+-        packet.emit(hdr.tcp);
++        packet.emit<ethernet_t>(hdr.ethernet);
++        packet.emit<ipv4_t>(hdr.ipv4);
++        packet.emit<tcp_t>(hdr.tcp);
+     }
+ }
+-V1Switch(parserI(), verifyChecksum(), cIngress(), cEgress(), updateChecksum(), DeparserI()) main;
++V1Switch<headers, metadata>(parserI(), verifyChecksum(), cIngress(), cEgress(), updateChecksum(), DeparserI()) main;

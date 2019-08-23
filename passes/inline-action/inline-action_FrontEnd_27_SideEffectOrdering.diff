@@ -1,0 +1,33 @@
+--- before_pass
++++ after_pass
+@@ -1,10 +1,16 @@
+ control p(inout bit<1> bt) {
+     @name("a") action a_0(inout bit<1> y0) {
+-        y0 = y0 | 1w1;
++        {
++            y0 = y0 | 1w1;
++        }
+     }
+     @name("b") action b_0() {
+-        a_0(bt);
+-        a_0(bt);
++        {
++            a_0(bt);
++        }
++        {
++            a_0(bt);
++        }
+     }
+     @name("t") table t_0 {
+         actions = {
+@@ -13,7 +19,9 @@ control p(inout bit<1> bt) {
+         default_action = b_0();
+     }
+     apply {
+-        t_0.apply();
++        {
++            t_0.apply();
++        }
+     }
+ }
+ control simple<T>(inout T arg);

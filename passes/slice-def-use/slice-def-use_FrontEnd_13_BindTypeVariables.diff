@@ -1,0 +1,19 @@
+--- before_pass
++++ after_pass
+@@ -47,8 +47,8 @@ control Eg(inout Headers hdrs, inout Met
+ }
+ control DP(packet_out b, in Headers p) {
+     apply {
+-        b.emit(p.ethernet);
+-        b.emit(p.ip);
++        b.emit<Ethernet_h>(p.ethernet);
++        b.emit<Ipv4_h>(p.ip);
+     }
+ }
+ control Verify(inout Headers hdrs, inout Metadata meta) {
+@@ -59,4 +59,4 @@ control Compute(inout Headers hdr, inout
+     apply {
+     }
+ }
+-V1Switch(P(), Verify(), Ing(), Eg(), Compute(), DP()) main;
++V1Switch<Headers, Metadata>(P(), Verify(), Ing(), Eg(), Compute(), DP()) main;

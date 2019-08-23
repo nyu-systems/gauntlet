@@ -1,0 +1,13 @@
+--- before_pass
++++ after_pass
+@@ -3,8 +3,9 @@ header Header {
+     bit<32> data;
+ }
+ parser p0(packet_in p, out Header h) {
++    Header arg;
+     state start {
+-        p.extract<Header>(_);
++        p.extract<Header>(arg);
+         p.extract<Header>(h);
+         transition accept;
+     }

@@ -1,0 +1,16 @@
+--- before_pass
++++ after_pass
+@@ -1,10 +1,10 @@
+ extern bit<32> f(in bit<32> x);
+ control c(inout bit<32> r) {
+     apply {
+-        if (f(2) > 0 && f(3) < 0) {
+-            r = 1;
++        if (f(32w2) > 32w0 && f(32w3) < 32w0) {
++            r = (bit<32>)32w1;
+         } else {
+-            r = 2;
++            r = (bit<32>)32w2;
+         }
+     }
+ }

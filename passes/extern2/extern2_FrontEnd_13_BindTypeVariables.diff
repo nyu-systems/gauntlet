@@ -1,0 +1,10 @@
+--- before_pass
++++ after_pass
+@@ -5,6 +5,6 @@ extern ext<H> {
+ control c() {
+     ext<bit<16>>(16w0) x;
+     apply {
+-        x.method(16w0, 8w0);
++        x.method<bit<8>>(16w0, 8w0);
+     }
+ }

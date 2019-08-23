@@ -1,0 +1,15 @@
+--- before_pass
++++ after_pass
+@@ -43,10 +43,10 @@ control pipe(inout Headers_t headers, ou
+     }
+     IPv4Address address_0;
+     bool pass_0;
+-    @name("c1.Reject") action c1_Reject_0() {
++    @name("pipe.c1.Reject") action c1_Reject_0() {
+         pass_0 = false;
+     }
+-    @name("c1.Check_ip") table c1_Check_ip {
++    @name("pipe.c1.Check_ip") table c1_Check_ip {
+         key = {
+             address_0: exact @name("address") ;
+         }

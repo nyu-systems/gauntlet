@@ -1,0 +1,20 @@
+--- before_pass
++++ after_pass
+@@ -5,7 +5,6 @@ error {
+ }
+ #include <core.p4>
+ #include <v1model.p4>
+-typedef bit<48> EthernetAddress;
+ typedef bit<32> IPv4Address;
+ header ethernet_t {
+     bit<48> dstAddr;
+@@ -86,9 +85,6 @@ control cIngress(inout headers hdr, inou
+     action foo2(IPv4Address srcAddr) {
+         hdr.ipv4.srcAddr = srcAddr;
+     }
+-    action foo3(bit<8> ttl) {
+-        hdr.ipv4.ttl = ttl;
+-    }
+     table t0 {
+         key = {
+             hdr.tcp.dstPort: exact @name("hdr.tcp.dstPort") ;

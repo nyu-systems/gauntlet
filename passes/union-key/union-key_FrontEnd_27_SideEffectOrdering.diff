@@ -1,0 +1,13 @@
+--- before_pass
++++ after_pass
+@@ -26,7 +26,9 @@ control c(in Headers h) {
+         default_action = NoAction();
+     }
+     apply {
+-        t_0.apply();
++        {
++            t_0.apply();
++        }
+     }
+ }
+ control _c(in Headers h);

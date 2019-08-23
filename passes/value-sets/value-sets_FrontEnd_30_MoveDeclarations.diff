@@ -1,0 +1,12 @@
+--- before_pass
++++ after_pass
+@@ -13,8 +13,8 @@ extern ValueSet {
+ }
+ parser TopParser(packet_in b, out Parsed_packet p) {
+     bit<8> setIndex_0;
+-    @name("ethtype_kinds") ValueSet(32w5) ethtype_kinds_0;
+     bit<8> tmp;
++    @name("ethtype_kinds") ValueSet(32w5) ethtype_kinds_0;
+     state start {
+         b.extract<Ethernet_h>(p.ethernet);
+         transition select(p.ethernet.etherType) {

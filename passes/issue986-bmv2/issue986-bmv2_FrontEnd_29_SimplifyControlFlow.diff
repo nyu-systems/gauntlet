@@ -1,0 +1,26 @@
+--- before_pass
++++ after_pass
+@@ -35,19 +35,11 @@ control ingress(inout Headers h, inout M
+     }
+     apply {
+         if (m.b == 1w0) {
+-            {
+-                t1_0.apply();
+-            }
+-            {
+-                sm.egress_spec = 9w1;
+-            }
++            t1_0.apply();
++            sm.egress_spec = 9w1;
+         } else {
+-            {
+-                t1_0.apply();
+-            }
+-            {
+-                sm.egress_spec = 9w2;
+-            }
++            t1_0.apply();
++            sm.egress_spec = 9w2;
+         }
+     }
+ }

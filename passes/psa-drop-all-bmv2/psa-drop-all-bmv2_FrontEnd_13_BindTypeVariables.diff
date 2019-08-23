@@ -1,0 +1,40 @@
+--- before_pass
++++ after_pass
+@@ -36,14 +36,14 @@ parser IngressParserImpl(packet_in buffe
+         transition parse_ethernet;
+     }
+     state parse_ethernet {
+-        buffer.extract(parsed_hdr.ethernet);
++        buffer.extract<ethernet_t>(parsed_hdr.ethernet);
+         transition select(parsed_hdr.ethernet.etherType) {
+             16w0x800: parse_ipv4;
+             default: accept;
+         }
+     }
+     state parse_ipv4 {
+-        buffer.extract(parsed_hdr.ipv4);
++        buffer.extract<ipv4_t>(parsed_hdr.ipv4);
+         transition accept;
+     }
+ }
+@@ -62,8 +62,8 @@ control egress(inout headers_t hdr, inou
+ }
+ control CommonDeparserImpl(packet_out packet, inout headers_t hdr) {
+     apply {
+-        packet.emit(hdr.ethernet);
+-        packet.emit(hdr.ipv4);
++        packet.emit<ethernet_t>(hdr.ethernet);
++        packet.emit<ipv4_t>(hdr.ipv4);
+     }
+ }
+ control IngressDeparserImpl(packet_out buffer, out empty_metadata_t clone_i2e_meta, out empty_metadata_t resubmit_meta, out empty_metadata_t normal_meta, inout headers_t hdr, in metadata_t meta, in psa_ingress_output_metadata_t istd) {
+@@ -78,6 +78,6 @@ control EgressDeparserImpl(packet_out bu
+         cp.apply(buffer, hdr);
+     }
+ }
+-IngressPipeline(IngressParserImpl(), ingress(), IngressDeparserImpl()) ip;
+-EgressPipeline(EgressParserImpl(), egress(), EgressDeparserImpl()) ep;
+-PSA_Switch(ip, PacketReplicationEngine(), ep, BufferingQueueingEngine()) main;
++IngressPipeline<headers_t, metadata_t, empty_metadata_t, empty_metadata_t, empty_metadata_t, empty_metadata_t>(IngressParserImpl(), ingress(), IngressDeparserImpl()) ip;
++EgressPipeline<headers_t, metadata_t, empty_metadata_t, empty_metadata_t, empty_metadata_t, empty_metadata_t>(EgressParserImpl(), egress(), EgressDeparserImpl()) ep;
++PSA_Switch<headers_t, metadata_t, headers_t, metadata_t, empty_metadata_t, empty_metadata_t, empty_metadata_t, empty_metadata_t, empty_metadata_t>(ip, PacketReplicationEngine(), ep, BufferingQueueingEngine()) main;

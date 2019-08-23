@@ -1,0 +1,43 @@
+--- before_pass
++++ after_pass
+@@ -27,29 +27,29 @@ control deparser(packet_out b, in Header
+     }
+ }
+ control ingress(inout Headers h, inout Meta m, inout standard_metadata_t sm) {
+-    @name(".NoAction") action NoAction_1() {
++    @name(".NoAction") action NoAction_0() {
+     }
+-    @name(".NoAction") action NoAction_2() {
++    @name(".NoAction") action NoAction_3() {
+     }
+-    @name("t1") table t1 {
++    @name("t1") table t1_0 {
+         actions = {
+-            NoAction_1();
++            NoAction_0();
+         }
+-        default_action = NoAction_1();
++        default_action = NoAction_0();
+     }
+-    @name("t2") table t2 {
++    @name("t2") table t2_0 {
+         actions = {
+-            NoAction_2();
++            NoAction_3();
+         }
+-        default_action = NoAction_2();
++        default_action = NoAction_3();
+     }
+     apply {
+         if (m.b == 1w0) {
+-            t1.apply();
++            t1_0.apply();
+         } else {
+-            t1.apply();
++            t1_0.apply();
+         }
+-        t2.apply();
++        t2_0.apply();
+     }
+ }
+ V1Switch<Headers, Meta>(p(), vrfy(), ingress(), egress(), update(), deparser()) main;

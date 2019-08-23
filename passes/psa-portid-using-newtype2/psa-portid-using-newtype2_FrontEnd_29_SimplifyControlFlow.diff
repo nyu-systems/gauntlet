@@ -1,0 +1,114 @@
+--- before_pass
++++ after_pass
+@@ -129,9 +129,7 @@ struct parsed_headers_t {
+ struct fabric_metadata_t {
+ }
+ action drop() {
+-    {
+-        mark_to_drop();
+-    }
++    mark_to_drop();
+ }
+ action nop() {
+ }
+@@ -143,12 +141,8 @@ parser FabricParser(packet_in packet, ou
+ control PacketIoIngress(inout parsed_headers_t hdr, inout fabric_metadata_t fabric_metadata, inout standard_metadata_t standard_metadata) {
+     apply {
+         if (hdr.packet_out.isValid()) {
+-            {
+-                standard_metadata.egress_spec = (PortId_t)(PortIdUInt_t)(bit<32>)hdr.packet_out.egress_port;
+-            }
+-            {
+-                hdr.packet_out.setInvalid();
+-            }
++            standard_metadata.egress_spec = (PortId_t)(PortIdUInt_t)(bit<32>)hdr.packet_out.egress_port;
++            hdr.packet_out.setInvalid();
+             exit;
+         }
+     }
+@@ -156,12 +150,8 @@ control PacketIoIngress(inout parsed_hea
+ control PacketIoEgress(inout parsed_headers_t hdr, inout fabric_metadata_t fabric_metadata, inout standard_metadata_t standard_metadata) {
+     apply {
+         if (standard_metadata.egress_port == (PortId_t)9w192) {
+-            {
+-                hdr.packet_in.setValid();
+-            }
+-            {
+-                hdr.packet_in.ingress_port = (PortIdInHeader_t)(bit<32>)(PortIdUInt_t)standard_metadata.ingress_port;
+-            }
++            hdr.packet_in.setValid();
++            hdr.packet_in.ingress_port = (PortIdInHeader_t)(bit<32>)(PortIdUInt_t)standard_metadata.ingress_port;
+         }
+     }
+ }
+@@ -178,17 +168,13 @@ control Filtering(inout parsed_headers_t
+         default_action = NoAction();
+     }
+     apply {
+-        {
+-            t_0.apply();
+-        }
++        t_0.apply();
+     }
+ }
+ control Forwarding(inout parsed_headers_t hdr, inout fabric_metadata_t fabric_metadata, inout standard_metadata_t standard_metadata) {
+     PortId_t mask_0;
+     @name("fwd") action fwd_0(PortId_t next_port) {
+-        {
+-            standard_metadata.egress_spec = next_port;
+-        }
++        standard_metadata.egress_spec = next_port;
+     }
+     @name("t") table t_1 {
+         key = {
+@@ -202,18 +188,10 @@ control Forwarding(inout parsed_headers_
+         default_action = NoAction();
+     }
+     apply {
+-        {
+-            t_1.apply();
+-        }
+-        {
+-            standard_metadata.egress_spec = (PortId_t)((PortIdUInt_t)standard_metadata.egress_spec + 9w1);
+-        }
+-        {
+-            mask_0 = (PortId_t)9w0xf;
+-        }
+-        {
+-            standard_metadata.egress_spec = (PortId_t)((PortIdUInt_t)standard_metadata.egress_spec & (PortIdUInt_t)mask_0);
+-        }
++        t_1.apply();
++        standard_metadata.egress_spec = (PortId_t)((PortIdUInt_t)standard_metadata.egress_spec + 9w1);
++        mask_0 = (PortId_t)9w0xf;
++        standard_metadata.egress_spec = (PortId_t)((PortIdUInt_t)standard_metadata.egress_spec & (PortIdUInt_t)mask_0);
+     }
+ }
+ control FabricIngress(inout parsed_headers_t hdr, inout fabric_metadata_t fabric_metadata, inout standard_metadata_t standard_metadata) {
+@@ -221,23 +199,15 @@ control FabricIngress(inout parsed_heade
+     @name("filtering") Filtering() filtering_0;
+     @name("forwarding") Forwarding() forwarding_0;
+     apply {
+-        {
+-            packet_io_ingress_0.apply(hdr, fabric_metadata, standard_metadata);
+-        }
+-        {
+-            filtering_0.apply(hdr, fabric_metadata, standard_metadata);
+-        }
+-        {
+-            forwarding_0.apply(hdr, fabric_metadata, standard_metadata);
+-        }
++        packet_io_ingress_0.apply(hdr, fabric_metadata, standard_metadata);
++        filtering_0.apply(hdr, fabric_metadata, standard_metadata);
++        forwarding_0.apply(hdr, fabric_metadata, standard_metadata);
+     }
+ }
+ control FabricEgress(inout parsed_headers_t hdr, inout fabric_metadata_t fabric_metadata, inout standard_metadata_t standard_metadata) {
+     @name("pkt_io_egress") PacketIoEgress() pkt_io_egress_0;
+     apply {
+-        {
+-            pkt_io_egress_0.apply(hdr, fabric_metadata, standard_metadata);
+-        }
++        pkt_io_egress_0.apply(hdr, fabric_metadata, standard_metadata);
+     }
+ }
+ control FabricDeparser(packet_out packet, in parsed_headers_t hdr) {

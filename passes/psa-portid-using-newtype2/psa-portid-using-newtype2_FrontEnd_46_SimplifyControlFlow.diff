@@ -1,0 +1,46 @@
+--- before_pass
++++ after_pass
+@@ -166,31 +166,23 @@ control FabricIngress(inout parsed_heade
+         default_action = NoAction();
+     }
+     apply {
+-        {
+-            if (hdr.packet_out.isValid()) {
+-                standard_metadata.egress_spec = (PortId_t)(PortIdUInt_t)(bit<32>)hdr.packet_out.egress_port;
+-                hdr.packet_out.setInvalid();
+-                exit;
+-            }
+-        }
+-        {
+-            filtering_t.apply();
+-        }
+-        {
+-            forwarding_t.apply();
+-            standard_metadata.egress_spec = (PortId_t)((PortIdUInt_t)standard_metadata.egress_spec + 9w1);
+-            forwarding_mask = (PortId_t)9w0xf;
+-            standard_metadata.egress_spec = (PortId_t)((PortIdUInt_t)standard_metadata.egress_spec & (PortIdUInt_t)forwarding_mask);
++        if (hdr.packet_out.isValid()) {
++            standard_metadata.egress_spec = (PortId_t)(PortIdUInt_t)(bit<32>)hdr.packet_out.egress_port;
++            hdr.packet_out.setInvalid();
++            exit;
+         }
++        filtering_t.apply();
++        forwarding_t.apply();
++        standard_metadata.egress_spec = (PortId_t)((PortIdUInt_t)standard_metadata.egress_spec + 9w1);
++        forwarding_mask = (PortId_t)9w0xf;
++        standard_metadata.egress_spec = (PortId_t)((PortIdUInt_t)standard_metadata.egress_spec & (PortIdUInt_t)forwarding_mask);
+     }
+ }
+ control FabricEgress(inout parsed_headers_t hdr, inout fabric_metadata_t fabric_metadata, inout standard_metadata_t standard_metadata) {
+     apply {
+-        {
+-            if (standard_metadata.egress_port == (PortId_t)9w192) {
+-                hdr.packet_in.setValid();
+-                hdr.packet_in.ingress_port = (PortIdInHeader_t)(bit<32>)(PortIdUInt_t)standard_metadata.ingress_port;
+-            }
++        if (standard_metadata.egress_port == (PortId_t)9w192) {
++            hdr.packet_in.setValid();
++            hdr.packet_in.ingress_port = (PortIdInHeader_t)(bit<32>)(PortIdUInt_t)standard_metadata.ingress_port;
+         }
+     }
+ }

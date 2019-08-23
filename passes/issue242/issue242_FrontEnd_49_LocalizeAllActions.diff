@@ -1,0 +1,20 @@
+--- before_pass
++++ after_pass
+@@ -55,7 +55,7 @@ control Eg(inout Headers hdrs, inout Met
+     bit<32> tmp_2;
+     @name("debug") register<bit<32>>(32w100) debug;
+     @name("reg") register<bit<32>>(32w1) reg;
+-    @name("test") action test() {
++    @name("test") action test_0() {
+         val = { 32w0 };
+         _pred = val.field1 != 32w0;
+         if (_pred) {
+@@ -76,7 +76,7 @@ control Eg(inout Headers hdrs, inout Met
+         reg.write(32w0, val.field1);
+     }
+     apply {
+-        test();
++        test_0();
+     }
+ }
+ control DP(packet_out b, in Headers p) {

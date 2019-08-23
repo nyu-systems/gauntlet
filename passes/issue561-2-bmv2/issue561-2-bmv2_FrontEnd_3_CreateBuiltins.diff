@@ -1,0 +1,11 @@
+--- before_pass
++++ after_pass
+@@ -48,7 +48,7 @@ control ingress(inout headers hdr, inout
+             hdr.u.byte.isValid() : exact;
+         }
+         actions = {
+-            NoAction;
++            NoAction();
+         }
+         const default_action = NoAction();
+     }

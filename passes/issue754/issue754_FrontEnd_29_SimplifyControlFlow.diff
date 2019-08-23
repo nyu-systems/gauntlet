@@ -1,0 +1,12 @@
+--- before_pass
++++ after_pass
+@@ -1,8 +1,6 @@
+ control c(out bit<3> x)(bit<3> v) {
+     apply {
+-        {
+-            x = v;
+-        }
++        x = v;
+     }
+ }
+ control ctrl(out bit<3> _x);

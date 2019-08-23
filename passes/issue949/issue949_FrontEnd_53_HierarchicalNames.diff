@@ -1,0 +1,15 @@
+--- before_pass
++++ after_pass
+@@ -41,10 +41,10 @@ control ingress(inout headers hdr, inout
+     @name(".NoAction") action NoAction_0() {
+     }
+     bool tmp;
+-    @name("setDest") action setDest() {
++    @name("ingress.setDest") action setDest() {
+         hdr.ethernet.dstAddr = 48w0x6af3400426d3;
+     }
+-    @name("someTable") table someTable_0 {
++    @name("ingress.someTable") table someTable_0 {
+         key = {
+             hdr.ethernet.srcAddr: exact @name("hdr.ethernet.srcAddr") ;
+         }

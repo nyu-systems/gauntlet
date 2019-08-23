@@ -1,0 +1,14 @@
+--- before_pass
++++ after_pass
+@@ -1,9 +1,9 @@
+ control ctrl(out bit<32> c) {
+     bit<32> a_0;
+-    @name("e") action e() {
++    @name("ctrl.e") action e() {
+         exit;
+     }
+-    @name("e") action e_2() {
++    @name("ctrl.e") action e_2() {
+         exit;
+     }
+     apply {

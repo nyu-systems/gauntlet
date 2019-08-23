@@ -1,0 +1,32 @@
+--- before_pass
++++ after_pass
+@@ -46,9 +46,6 @@ struct metadata {
+ }
+ parser CommonParser(packet_in buffer, out headers parsed_hdr, inout metadata meta) {
+     state start {
+-        transition parse_ethernet;
+-    }
+-    state parse_ethernet {
+         buffer.extract<ethernet_t>(parsed_hdr.ethernet);
+         transition select(parsed_hdr.ethernet.etherType) {
+             16w0x800: parse_ipv4;
+@@ -63,9 +60,6 @@ parser CommonParser(packet_in buffer, ou
+ parser IngressParserImpl(packet_in buffer, out headers parsed_hdr, inout metadata meta, in psa_ingress_parser_input_metadata_t istd, in empty_metadata_t resubmit_meta, in empty_metadata_t recirculate_meta) {
+     CommonParser() p;
+     state start {
+-        transition packet_in_parsing;
+-    }
+-    state packet_in_parsing {
+         p.apply(buffer, parsed_hdr, meta);
+         transition accept;
+     }
+@@ -73,9 +67,6 @@ parser IngressParserImpl(packet_in buffe
+ parser EgressParserImpl(packet_in buffer, out headers parsed_hdr, inout metadata meta, in psa_egress_parser_input_metadata_t istd, in empty_metadata_t normal_meta, in empty_metadata_t clone_i2e_meta, in empty_metadata_t clone_e2e_meta) {
+     CommonParser() p;
+     state start {
+-        transition packet_in_parsing;
+-    }
+-    state packet_in_parsing {
+         p.apply(buffer, parsed_hdr, meta);
+         transition accept;
+     }

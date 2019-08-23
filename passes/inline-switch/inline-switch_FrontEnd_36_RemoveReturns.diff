@@ -1,0 +1,27 @@
+--- before_pass
++++ after_pass
+@@ -11,15 +11,22 @@ control c(out bit<32> x) {
+         default_action = a1_0();
+     }
+     apply {
++        bool hasReturned = false;
+         switch (t_0.apply().action_run) {
+             a1_0: 
+             a2_0: {
+-                return;
++                {
++                    hasReturned = true;
++                }
+             }
+             default: {
+-                return;
++                {
++                    hasReturned = true;
++                }
+             }
+         }
++        if (!hasReturned) {
++        }
+     }
+ }
+ control d(out bit<32> x) {

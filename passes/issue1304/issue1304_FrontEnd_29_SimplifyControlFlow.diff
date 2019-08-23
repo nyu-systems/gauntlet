@@ -1,0 +1,24 @@
+--- before_pass
++++ after_pass
+@@ -15,9 +15,7 @@ struct my_metadata {
+ }
+ parser MyParser(packet_in b, out my_packet p, inout my_metadata m, inout standard_metadata_t s) {
+     state start {
+-        {
+-            b.extract<data_h>(p.hdr);
+-        }
++        b.extract<data_h>(p.hdr);
+         transition select(p.hdr.da) {
+             default: accept;
+         }
+@@ -37,9 +35,7 @@ control MyIngress(inout my_packet p, ino
+         default_action = NoAction();
+     }
+     apply {
+-        {
+-            t_0.apply();
+-        }
++        t_0.apply();
+     }
+ }
+ control MyEgress(inout my_packet p, inout my_metadata m, inout standard_metadata_t s) {

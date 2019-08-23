@@ -1,0 +1,11 @@
+--- before_pass
++++ after_pass
+@@ -4,7 +4,7 @@ control ctrl(out bit<32> c) {
+     }
+     table t {
+         actions = {
+-            e;
++            e();
+         }
+         default_action = e();
+     }

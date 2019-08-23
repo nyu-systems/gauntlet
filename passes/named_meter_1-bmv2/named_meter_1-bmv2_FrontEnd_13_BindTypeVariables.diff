@@ -1,0 +1,26 @@
+--- before_pass
++++ after_pass
+@@ -18,7 +18,7 @@ struct headers {
+ }
+ parser ParserImpl(packet_in packet, out headers hdr, inout metadata meta, inout standard_metadata_t standard_metadata) {
+     @name("parse_ethernet") state parse_ethernet {
+-        packet.extract(hdr.ethernet);
++        packet.extract<ethernet_t>(hdr.ethernet);
+         transition accept;
+     }
+     @name("start") state start {
+@@ -79,7 +79,7 @@ control ingress(inout headers hdr, inout
+ }
+ control DeparserImpl(packet_out packet, in headers hdr) {
+     apply {
+-        packet.emit(hdr.ethernet);
++        packet.emit<ethernet_t>(hdr.ethernet);
+     }
+ }
+ control verifyChecksum(inout headers hdr, inout metadata meta) {
+@@ -90,4 +90,4 @@ control computeChecksum(inout headers hd
+     apply {
+     }
+ }
+-V1Switch(ParserImpl(), verifyChecksum(), ingress(), egress(), computeChecksum(), DeparserImpl()) main;
++V1Switch<headers, metadata>(ParserImpl(), verifyChecksum(), ingress(), egress(), computeChecksum(), DeparserImpl()) main;

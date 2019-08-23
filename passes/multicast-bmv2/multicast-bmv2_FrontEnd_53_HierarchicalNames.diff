@@ -1,0 +1,60 @@
+--- before_pass
++++ after_pass
+@@ -33,18 +33,18 @@ struct headers {
+     ipv4_t     ipv4;
+ }
+ parser ParserImpl(packet_in packet, out headers hdr, inout metadata meta, inout standard_metadata_t standard_metadata) {
+-    @name("parse_ethernet") state parse_ethernet {
++    @name("ParserImpl.parse_ethernet") state parse_ethernet {
+         packet.extract<ethernet_t>(hdr.ethernet);
+         transition select(hdr.ethernet.etherType) {
+             16w0x800: parse_ipv4;
+             default: accept;
+         }
+     }
+-    @name("parse_ipv4") state parse_ipv4 {
++    @name("ParserImpl.parse_ipv4") state parse_ipv4 {
+         packet.extract<ipv4_t>(hdr.ipv4);
+         transition accept;
+     }
+-    @name("start") state start {
++    @name("ParserImpl.start") state start {
+         transition parse_ethernet;
+     }
+ }
+@@ -57,7 +57,7 @@ control egress(inout headers hdr, inout
+     @name("._drop") action _drop() {
+         mark_to_drop(standard_metadata);
+     }
+-    @name("send_frame") table send_frame_0 {
++    @name("egress.send_frame") table send_frame_0 {
+         actions = {
+             rewrite_mac();
+             _drop();
+@@ -97,7 +97,7 @@ control ingress(inout headers hdr, inout
+         standard_metadata.egress_spec = port;
+         hdr.ipv4.ttl = hdr.ipv4.ttl + 8w255;
+     }
+-    @name("broadcast") table broadcast_0 {
++    @name("ingress.broadcast") table broadcast_0 {
+         actions = {
+             bcast();
+             @defaultonly NoAction_1();
+@@ -105,7 +105,7 @@ control ingress(inout headers hdr, inout
+         size = 1;
+         default_action = NoAction_1();
+     }
+-    @name("forward") table forward_0 {
++    @name("ingress.forward") table forward_0 {
+         actions = {
+             set_dmac();
+             _drop_2();
+@@ -117,7 +117,7 @@ control ingress(inout headers hdr, inout
+         size = 512;
+         default_action = NoAction_6();
+     }
+-    @name("ipv4_lpm") table ipv4_lpm_0 {
++    @name("ingress.ipv4_lpm") table ipv4_lpm_0 {
+         actions = {
+             set_nhop();
+             _drop_4();

@@ -1,0 +1,64 @@
+--- before_pass
++++ after_pass
+@@ -11,9 +11,7 @@ extern Overloaded {
+ }
+ control d(out bit<32> x)(bit<32> b) {
+     apply {
+-        {
+-            x = -b;
+-        }
++        x = -b;
+     }
+ }
+ control c() {
+@@ -21,39 +19,17 @@ control c() {
+     @name("o") Overloaded() o_0;
+     @name("dinst") d(b = 32w2) dinst_0;
+     apply {
+-        {
+-            f();
+-        }
+-        {
+-            f(a = 32w2);
+-        }
+-        {
+-            f(b = 16w1);
+-        }
+-        {
+-            f(a = 32w1, b = 16w2);
+-        }
+-        {
+-            f(b = 16w2, a = 32w1);
+-        }
+-        {
+-            o_0.f();
+-        }
+-        {
+-            o_0.f(a = 32w2);
+-        }
+-        {
+-            o_0.f(b = 16w1);
+-        }
+-        {
+-            o_0.f(a = 32w1, b = 16w2);
+-        }
+-        {
+-            o_0.f(b = 16w2, a = 32w1);
+-        }
+-        {
+-            dinst_0.apply(z_0);
+-        }
++        f();
++        f(a = 32w2);
++        f(b = 16w1);
++        f(a = 32w1, b = 16w2);
++        f(b = 16w2, a = 32w1);
++        o_0.f();
++        o_0.f(a = 32w2);
++        o_0.f(b = 16w1);
++        o_0.f(a = 32w1, b = 16w2);
++        o_0.f(b = 16w2, a = 32w1);
++        dinst_0.apply(z_0);
+     }
+ }
+ control proto();

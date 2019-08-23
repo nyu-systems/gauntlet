@@ -1,0 +1,19 @@
+--- before_pass
++++ after_pass
+@@ -36,13 +36,13 @@ control deparser(packet_out b, in Header
+     }
+ }
+ control ingress(inout Header_t h, inout Meta_t m, inout standard_metadata_t standard_meta) {
+-    @name("a") action a() {
++    @name("ingress.a") action a() {
+         standard_meta.egress_spec = 9w0;
+     }
+-    @name("a_with_control_params") action a_with_control_params(bit<9> x) {
++    @name("ingress.a_with_control_params") action a_with_control_params(bit<9> x) {
+         standard_meta.egress_spec = x;
+     }
+-    @name("t_range") table t_range_0 {
++    @name("ingress.t_range") table t_range_0 {
+         key = {
+             h.h.r: range @name("h.h.r") ;
+         }

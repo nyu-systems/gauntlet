@@ -1,0 +1,11 @@
+--- before_pass
++++ after_pass
+@@ -1,7 +1,7 @@
+ control c() {
+     bit<32> x;
+     action a(inout bit<32> arg) {
+-        arg = (bit<32>)32w1;
++        arg = 32w1;
+         return;
+     }
+     apply {

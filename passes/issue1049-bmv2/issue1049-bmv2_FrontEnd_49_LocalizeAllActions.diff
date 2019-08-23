@@ -1,0 +1,37 @@
+--- before_pass
++++ after_pass
+@@ -45,7 +45,9 @@ parser parserI(packet_in pkt, out header
+     }
+ }
+ control cIngress(inout headers hdr, inout metadata meta, inout standard_metadata_t stdmeta) {
+-    @name("hash_drop_decision") action hash_drop_decision() {
++    @name(".NoAction") action NoAction_1() {
++    }
++    @name("hash_drop_decision") action hash_drop_decision_0() {
+         hash<bit<16>, bit<16>, tuple<bit<32>, bit<32>, bit<8>>, bit<32>>(meta.mystruct1.hash1, HashAlgorithm.crc16, 16w0, { hdr.ipv4.srcAddr, hdr.ipv4.dstAddr, hdr.ipv4.protocol }, 32w0xffff);
+         meta.mystruct1.hash_drop = meta.mystruct1.hash1 < 16w0x8000;
+     }
+@@ -54,9 +56,9 @@ control cIngress(inout headers hdr, inou
+             hdr.ipv4.dstAddr: exact @name("hdr.ipv4.dstAddr") ;
+         }
+         actions = {
+-            hash_drop_decision();
++            hash_drop_decision_0();
+         }
+-        default_action = hash_drop_decision();
++        default_action = hash_drop_decision_0();
+     }
+     @name("debug_table") table debug_table {
+         key = {
+@@ -64,9 +66,9 @@ control cIngress(inout headers hdr, inou
+             meta.mystruct1.hash_drop: exact @name("meta.mystruct1.hash_drop") ;
+         }
+         actions = {
+-            NoAction();
++            NoAction_1();
+         }
+-        default_action = NoAction();
++        default_action = NoAction_1();
+     }
+     apply {
+         if (hdr.ipv4.isValid()) {

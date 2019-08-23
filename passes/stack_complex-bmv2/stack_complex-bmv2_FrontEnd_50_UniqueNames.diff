@@ -1,0 +1,25 @@
+--- before_pass
++++ after_pass
+@@ -39,17 +39,17 @@ control deparser(packet_out b, in Header
+     }
+ }
+ control ingress(inout Headers h, inout Meta m, inout standard_metadata_t sm) {
+-    @name("set_port") action set_port_0() {
++    @name("set_port") action set_port() {
+         sm.egress_spec = (bit<9>)m.v;
+     }
+-    @name("t") table t {
++    @name("t") table t_0 {
+         actions = {
+-            set_port_0();
++            set_port();
+         }
+-        const default_action = set_port_0();
++        const default_action = set_port();
+     }
+     apply {
+-        t.apply();
++        t_0.apply();
+     }
+ }
+ V1Switch<Headers, Meta>(p(), vrfy(), ingress(), egress(), update(), deparser()) main;

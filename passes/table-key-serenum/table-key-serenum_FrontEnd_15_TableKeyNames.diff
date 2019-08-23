@@ -1,0 +1,11 @@
+--- before_pass
++++ after_pass
+@@ -34,7 +34,7 @@ control c(inout Headers h, inout standar
+     }
+     table tns {
+         key = {
+-            h.eth.type: exact;
++            h.eth.type: exact @name("h.eth.type") ;
+         }
+         actions = {
+             do_act();

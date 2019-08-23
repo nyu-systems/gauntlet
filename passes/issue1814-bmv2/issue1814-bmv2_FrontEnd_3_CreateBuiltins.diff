@@ -1,0 +1,13 @@
+--- before_pass
++++ after_pass
+@@ -17,8 +17,9 @@ control IngressImpl(inout headers hdr, i
+             meta.test: exact;
+         }
+         actions = {
+-            NoAction;
++            NoAction();
+         }
++        default_action = NoAction();
+     }
+     apply {
+         bit<1> registerData;

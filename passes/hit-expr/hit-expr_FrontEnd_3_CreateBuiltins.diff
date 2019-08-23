@@ -1,0 +1,11 @@
+--- before_pass
++++ after_pass
+@@ -14,7 +14,7 @@ control IngressI(inout H hdr, inout M me
+         key = {
+         }
+         actions = {
+-            NoAction;
++            NoAction();
+         }
+         default_action = NoAction();
+     }

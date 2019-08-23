@@ -1,0 +1,11 @@
+--- before_pass
++++ after_pass
+@@ -24,7 +24,7 @@ parser ParserI(packet_in b, out H parsed
+     state p0 {
+         b.extract(parsedHdr.hstack.next);
+         transition select(parsedHdr.hstack.next.y) {
+-            0: p0;
++            32w0: p0;
+             default: accept;
+         }
+     }

@@ -1,2 +1,0 @@
-BMV2::SimpleSwitchMidEnd_13_ExpandEmit ###########
-https://github.com/fruffy/p4_tv/tree/master/p4_16_samples/full_issue887.p4

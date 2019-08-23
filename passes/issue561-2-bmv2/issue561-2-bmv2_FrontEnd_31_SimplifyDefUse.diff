@@ -1,0 +1,15 @@
+--- before_pass
++++ after_pass
+@@ -55,10 +55,10 @@ control ingress(inout headers hdr, inout
+     apply {
+         debug_hdr_0.apply();
+         if (hdr.u.short.isValid()) {
+-            hdr.u.short.data = 16w0xffff;
++            ;
+             hdr.u.short.setInvalid();
+         } else if (hdr.u.byte.isValid()) {
+-            hdr.u.byte.data = 8w0xff;
++            ;
+             hdr.u.byte.setInvalid();
+         }
+     }

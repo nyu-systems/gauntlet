@@ -1,0 +1,12 @@
+--- before_pass
++++ after_pass
+@@ -52,9 +52,6 @@ struct metadata {
+ }
+ parser TopParser(packet_in b, out headers p, inout metadata meta, inout standard_metadata_t standard_metadata) {
+     state start {
+-        transition parse_ethernet;
+-    }
+-    state parse_ethernet {
+         b.extract<ethernet_t>(p.ethernet);
+         transition select(p.ethernet.etherType) {
+             16w0x800: parse_ipv4;

@@ -1,0 +1,244 @@
+--- before_pass
++++ after_pass
+@@ -89,9 +89,15 @@ struct Tcp_option_sack_top {
+ parser Tcp_option_parser(packet_in b, in bit<4> tcp_hdr_data_offset, out Tcp_option_stack vec, out Tcp_option_padding_h padding) {
+     bit<7> tcp_hdr_bytes_left_0;
+     bit<8> n_sack_bytes_0;
++    bit<8> tmp;
++    Tcp_option_sack_top tmp_0;
+     state start {
+-        verify(tcp_hdr_data_offset >= 4w5, error.TcpDataOffsetTooSmall);
+-        tcp_hdr_bytes_left_0 = (bit<7>)(tcp_hdr_data_offset + 4w11) << 2;
++        {
++            verify(tcp_hdr_data_offset >= 4w5, error.TcpDataOffsetTooSmall);
++        }
++        {
++            tcp_hdr_bytes_left_0 = (bit<7>)(tcp_hdr_data_offset + 4w11) << 2;
++        }
+         transition next_option;
+     }
+     state next_option {
+@@ -101,7 +107,8 @@ parser Tcp_option_parser(packet_in b, in
+         }
+     }
+     state next_option_part2 {
+-        transition select(b.lookahead<bit<8>>()) {
++        tmp = b.lookahead<bit<8>>();
++        transition select(tmp) {
+             8w0: parse_tcp_option_end;
+             8w1: parse_tcp_option_nop;
+             8w2: parse_tcp_option_ss;
+@@ -110,65 +117,110 @@ parser Tcp_option_parser(packet_in b, in
+         }
+     }
+     state parse_tcp_option_end {
+-        b.extract<Tcp_option_end_h>(vec.next.end);
+-        tcp_hdr_bytes_left_0 = tcp_hdr_bytes_left_0 + 7w127;
+-        b.extract<Tcp_option_padding_h>(padding, (bit<32>)((bit<9>)tcp_hdr_bytes_left_0 << 3));
++        {
++            b.extract<Tcp_option_end_h>(vec.next.end);
++        }
++        {
++            tcp_hdr_bytes_left_0 = tcp_hdr_bytes_left_0 + 7w127;
++        }
++        {
++            b.extract<Tcp_option_padding_h>(padding, (bit<32>)((bit<9>)tcp_hdr_bytes_left_0 << 3));
++        }
+         transition accept;
+     }
+     state parse_tcp_option_nop {
+-        b.extract<Tcp_option_nop_h>(vec.next.nop);
+-        tcp_hdr_bytes_left_0 = tcp_hdr_bytes_left_0 + 7w127;
++        {
++            b.extract<Tcp_option_nop_h>(vec.next.nop);
++        }
++        {
++            tcp_hdr_bytes_left_0 = tcp_hdr_bytes_left_0 + 7w127;
++        }
+         transition next_option;
+     }
+     state parse_tcp_option_ss {
+-        verify(tcp_hdr_bytes_left_0 >= 7w5, error.TcpOptionTooLongForHeader);
+-        tcp_hdr_bytes_left_0 = tcp_hdr_bytes_left_0 + 7w123;
+-        b.extract<Tcp_option_ss_h>(vec.next.ss);
++        {
++            verify(tcp_hdr_bytes_left_0 >= 7w5, error.TcpOptionTooLongForHeader);
++        }
++        {
++            tcp_hdr_bytes_left_0 = tcp_hdr_bytes_left_0 + 7w123;
++        }
++        {
++            b.extract<Tcp_option_ss_h>(vec.next.ss);
++        }
+         transition next_option;
+     }
+     state parse_tcp_option_s {
+-        verify(tcp_hdr_bytes_left_0 >= 7w4, error.TcpOptionTooLongForHeader);
+-        tcp_hdr_bytes_left_0 = tcp_hdr_bytes_left_0 + 7w124;
+-        b.extract<Tcp_option_s_h>(vec.next.s);
++        {
++            verify(tcp_hdr_bytes_left_0 >= 7w4, error.TcpOptionTooLongForHeader);
++        }
++        {
++            tcp_hdr_bytes_left_0 = tcp_hdr_bytes_left_0 + 7w124;
++        }
++        {
++            b.extract<Tcp_option_s_h>(vec.next.s);
++        }
+         transition next_option;
+     }
+     state parse_tcp_option_sack {
+-        n_sack_bytes_0 = (b.lookahead<Tcp_option_sack_top>()).length;
+-        verify(n_sack_bytes_0 == 8w10 || n_sack_bytes_0 == 8w18 || n_sack_bytes_0 == 8w26 || n_sack_bytes_0 == 8w34, error.TcpBadSackOptionLength);
+-        verify(tcp_hdr_bytes_left_0 >= (bit<7>)n_sack_bytes_0, error.TcpOptionTooLongForHeader);
+-        tcp_hdr_bytes_left_0 = tcp_hdr_bytes_left_0 - (bit<7>)n_sack_bytes_0;
+-        b.extract<Tcp_option_sack_h>(vec.next.sack, (bit<32>)((n_sack_bytes_0 << 3) + 8w240));
++        {
++            tmp_0 = b.lookahead<Tcp_option_sack_top>();
++            n_sack_bytes_0 = tmp_0.length;
++        }
++        {
++            verify(n_sack_bytes_0 == 8w10 || n_sack_bytes_0 == 8w18 || n_sack_bytes_0 == 8w26 || n_sack_bytes_0 == 8w34, error.TcpBadSackOptionLength);
++        }
++        {
++            verify(tcp_hdr_bytes_left_0 >= (bit<7>)n_sack_bytes_0, error.TcpOptionTooLongForHeader);
++        }
++        {
++            tcp_hdr_bytes_left_0 = tcp_hdr_bytes_left_0 - (bit<7>)n_sack_bytes_0;
++        }
++        {
++            b.extract<Tcp_option_sack_h>(vec.next.sack, (bit<32>)((n_sack_bytes_0 << 3) + 8w240));
++        }
+         transition next_option;
+     }
+ }
+ parser ParserImpl(packet_in packet, out headers hdr, inout metadata meta, inout standard_metadata_t standard_metadata) {
+     @name("Tcp_option_parser") Tcp_option_parser() Tcp_option_parser_inst_0;
+     state start {
+-        packet.extract<ethernet_t>(hdr.ethernet);
++        {
++            packet.extract<ethernet_t>(hdr.ethernet);
++        }
+         transition select(hdr.ethernet.etherType) {
+             16w0x800: parse_ipv4;
+             default: accept;
+         }
+     }
+     state parse_ipv4 {
+-        packet.extract<ipv4_t>(hdr.ipv4);
++        {
++            packet.extract<ipv4_t>(hdr.ipv4);
++        }
+         transition select(hdr.ipv4.protocol) {
+             8w6: parse_tcp;
+             default: accept;
+         }
+     }
+     state parse_tcp {
+-        packet.extract<tcp_t>(hdr.tcp);
+-        Tcp_option_parser_inst_0.apply(packet, hdr.tcp.dataOffset, hdr.tcp_options_vec, hdr.tcp_options_padding);
++        {
++            packet.extract<tcp_t>(hdr.tcp);
++        }
++        {
++            Tcp_option_parser_inst_0.apply(packet, hdr.tcp.dataOffset, hdr.tcp_options_vec, hdr.tcp_options_padding);
++        }
+         transition accept;
+     }
+ }
+ action my_drop(inout standard_metadata_t smeta) {
+-    mark_to_drop(smeta);
++    {
++        mark_to_drop(smeta);
++    }
+ }
+ control ingress(inout headers hdr, inout metadata meta, inout standard_metadata_t standard_metadata) {
+     @name("set_l2ptr") action set_l2ptr_0(bit<32> l2ptr) {
+-        meta.fwd_metadata.l2ptr = l2ptr;
++        {
++            meta.fwd_metadata.l2ptr = l2ptr;
++        }
+     }
+     @name("ipv4_da_lpm") table ipv4_da_lpm_0 {
+         key = {
+@@ -181,10 +233,18 @@ control ingress(inout headers hdr, inout
+         default_action = my_drop(standard_metadata);
+     }
+     @name("set_bd_dmac_intf") action set_bd_dmac_intf_0(bit<24> bd, bit<48> dmac, bit<9> intf) {
+-        meta.fwd_metadata.out_bd = bd;
+-        hdr.ethernet.dstAddr = dmac;
+-        standard_metadata.egress_spec = intf;
+-        hdr.ipv4.ttl = hdr.ipv4.ttl + 8w255;
++        {
++            meta.fwd_metadata.out_bd = bd;
++        }
++        {
++            hdr.ethernet.dstAddr = dmac;
++        }
++        {
++            standard_metadata.egress_spec = intf;
++        }
++        {
++            hdr.ipv4.ttl = hdr.ipv4.ttl + 8w255;
++        }
+     }
+     @name("mac_da") table mac_da_0 {
+         key = {
+@@ -197,13 +257,19 @@ control ingress(inout headers hdr, inout
+         default_action = my_drop(standard_metadata);
+     }
+     apply {
+-        ipv4_da_lpm_0.apply();
+-        mac_da_0.apply();
++        {
++            ipv4_da_lpm_0.apply();
++        }
++        {
++            mac_da_0.apply();
++        }
+     }
+ }
+ control egress(inout headers hdr, inout metadata meta, inout standard_metadata_t standard_metadata) {
+     @name("rewrite_mac") action rewrite_mac_0(bit<48> smac) {
+-        hdr.ethernet.srcAddr = smac;
++        {
++            hdr.ethernet.srcAddr = smac;
++        }
+     }
+     @name("send_frame") table send_frame_0 {
+         key = {
+@@ -216,16 +282,28 @@ control egress(inout headers hdr, inout
+         default_action = my_drop(standard_metadata);
+     }
+     apply {
+-        send_frame_0.apply();
++        {
++            send_frame_0.apply();
++        }
+     }
+ }
+ control DeparserImpl(packet_out packet, in headers hdr) {
+     apply {
+-        packet.emit<ethernet_t>(hdr.ethernet);
+-        packet.emit<ipv4_t>(hdr.ipv4);
+-        packet.emit<tcp_t>(hdr.tcp);
+-        packet.emit<Tcp_option_h[10]>(hdr.tcp_options_vec);
+-        packet.emit<Tcp_option_padding_h>(hdr.tcp_options_padding);
++        {
++            packet.emit<ethernet_t>(hdr.ethernet);
++        }
++        {
++            packet.emit<ipv4_t>(hdr.ipv4);
++        }
++        {
++            packet.emit<tcp_t>(hdr.tcp);
++        }
++        {
++            packet.emit<Tcp_option_h[10]>(hdr.tcp_options_vec);
++        }
++        {
++            packet.emit<Tcp_option_padding_h>(hdr.tcp_options_padding);
++        }
+     }
+ }
+ control verifyChecksum(inout headers hdr, inout metadata meta) {

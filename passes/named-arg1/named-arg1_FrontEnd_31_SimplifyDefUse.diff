@@ -1,0 +1,11 @@
+--- before_pass
++++ after_pass
+@@ -27,7 +27,7 @@ control c(out bool b) {
+         mb = -bi;
+     }
+     apply {
+-        xv_0 = 16w0;
++        ;
+         a_0(bi = 16w3, mb = xv_0);
+         a_0(mb = xv_0, bi = 16w0);
+         c0_0.apply(b = b, x = xv_0);

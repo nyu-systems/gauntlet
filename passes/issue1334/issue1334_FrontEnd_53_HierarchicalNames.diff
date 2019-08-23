@@ -1,0 +1,11 @@
+--- before_pass
++++ after_pass
+@@ -11,7 +11,7 @@ extern Overloaded {
+ }
+ control c() {
+     bit<32> z_0;
+-    @name("o") Overloaded() o_0;
++    @name("c.o") Overloaded() o_0;
+     apply {
+         f();
+         f(a = 32w2);

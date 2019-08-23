@@ -1,0 +1,58 @@
+--- before_pass
++++ after_pass
+@@ -3,14 +3,14 @@
+ typedef bit<48> mac_addr_t;
+ typedef bit<128> ipv6_addr_t;
+ typedef bit<9> port_t;
+-const bit<16> TYPE_IPV6 = 0x86dd;
++const bit<16> TYPE_IPV6 = 16w0x86dd;
+ const bit<9> TYPE_CPU = 9w192;
+-const bit<8> PROTO_TCP = 6;
+-const bit<8> PROTO_UDP = 17;
+-const bit<8> PROTO_ICMP6 = 58;
+-const bit<8> TCP_SEQ_LEN = 4;
+-const bit<8> ICMP6_ECHO_REQUEST = 128;
+-const bit<8> ICMP6_ECHO_REPLY = 129;
++const bit<8> PROTO_TCP = 8w6;
++const bit<8> PROTO_UDP = 8w17;
++const bit<8> PROTO_ICMP6 = 8w58;
++const bit<8> TCP_SEQ_LEN = 8w4;
++const bit<8> ICMP6_ECHO_REQUEST = 8w128;
++const bit<8> ICMP6_ECHO_REPLY = 8w129;
+ header ethernet_t {
+     mac_addr_t dstAddr;
+     mac_addr_t srcAddr;
+@@ -162,20 +162,20 @@ struct metadata_t {
+     tunnel_metadata_t tunnel_metadata;
+     fwd_meta_t        fwd;
+ }
+-const bit<32> BMV2_V1MODEL_INSTANCE_TYPE_REPLICATION = 5;
++const bit<32> BMV2_V1MODEL_INSTANCE_TYPE_REPLICATION = 32w5;
+ parser MyParser(packet_in packet, out headers hdr, inout metadata_t meta, inout standard_metadata_t standard_metadata) {
+     state start {
+         packet.extract(hdr.ethernet);
+         transition select(hdr.ethernet.etherType) {
+-            TYPE_IPV6: ipv6;
++            16w0x86dd: ipv6;
+             default: accept;
+         }
+     }
+     state ipv6 {
+         packet.extract(hdr.ipv6);
+         transition select(hdr.ipv6.nextHdr) {
+-            PROTO_UDP: parse_udp;
+-            PROTO_ICMP6: icmp6;
++            8w17: parse_udp;
++            8w58: icmp6;
+             default: accept;
+         }
+     }
+@@ -241,7 +241,7 @@ control egress(inout headers hdr, inout
+         default_action = drop();
+     }
+     apply {
+-        if (standard_metadata.instance_type == BMV2_V1MODEL_INSTANCE_TYPE_REPLICATION) {
++        if (standard_metadata.instance_type == 32w5) {
+             get_multicast_copy_out_bd.apply();
+             send_frame.apply();
+         }

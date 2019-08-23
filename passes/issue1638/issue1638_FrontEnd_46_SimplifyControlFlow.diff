@@ -1,0 +1,13 @@
+--- before_pass
++++ after_pass
+@@ -25,9 +25,7 @@ control MyC(inout hdr_t hdr, inout meta_
+         default_action = NoAction();
+     }
+     apply {
+-        {
+-            c2_a.apply();
+-        }
++        c2_a.apply();
+     }
+ }
+ P<hdr_t, meta_t>(MyC()) main;

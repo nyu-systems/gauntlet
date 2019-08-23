@@ -1,0 +1,14 @@
+--- before_pass
++++ after_pass
+@@ -9,8 +9,10 @@ control DeparserI(packet_out packet, in
+     }
+ }
+ parser parserI(packet_in pkt, out H hdr, inout M meta, inout standard_metadata_t stdmeta) {
++    bit<112> tmp;
+     state start {
+-        transition select((pkt.lookahead<bit<112>>())[111:96]) {
++        tmp = pkt.lookahead<bit<112>>();
++        transition select(tmp[111:96]) {
+             16w0x1000 &&& 16w0x1000: accept;
+         }
+     }

@@ -1,0 +1,102 @@
+--- before_pass
++++ after_pass
+@@ -251,8 +251,8 @@ parser CloneParser(in psa_egress_parser_
+     }
+ }
+ parser EgressParserImpl(packet_in buffer, out headers parsed_hdr, inout metadata user_meta, in psa_egress_parser_input_metadata_t istd, out psa_parser_output_metadata_t ostd) {
+-    CommonParser() p;
+-    CloneParser() cp;
++    @name("p") CommonParser() p_0;
++    @name("cp") CloneParser() cp_0;
+     state start {
+         transition select(istd.instance_type) {
+             InstanceType_t.CLONE: parse_clone_header;
+@@ -260,70 +260,70 @@ parser EgressParserImpl(packet_in buffer
+         }
+     }
+     state parse_ethernet {
+-        p.apply(buffer, parsed_hdr, user_meta);
++        p_0.apply(buffer, parsed_hdr, user_meta);
+         transition accept;
+     }
+     state parse_clone_header {
+-        cp.apply(istd, user_meta);
++        cp_0.apply(istd, user_meta);
+         transition parse_ethernet;
+     }
+ }
+ control egress(inout headers hdr, inout metadata user_meta, in psa_egress_input_metadata_t istd, inout psa_egress_output_metadata_t ostd) {
+-    action process_clone_h0() {
++    @name("process_clone_h0") action process_clone_h0_0() {
+         user_meta.fwd_metadata.outport = (bit<32>)user_meta.clone_0.data;
+     }
+-    action process_clone_h1() {
++    @name("process_clone_h1") action process_clone_h1_0() {
+         user_meta.fwd_metadata.outport = user_meta.clone_1.data;
+     }
+-    table t {
++    @name("t") table t_0 {
+         key = {
+             user_meta.custom_clone_id: exact @name("user_meta.custom_clone_id") ;
+         }
+         actions = {
+-            process_clone_h0();
+-            process_clone_h1();
++            process_clone_h0_0();
++            process_clone_h1_0();
+             NoAction();
+         }
+         default_action = NoAction();
+     }
+     apply {
+-        t.apply();
++        t_0.apply();
+     }
+ }
+ parser IngressParserImpl(packet_in buffer, out headers parsed_hdr, inout metadata user_meta, in psa_ingress_parser_input_metadata_t istd, out psa_parser_output_metadata_t ostd) {
+-    CommonParser() p;
++    @name("p") CommonParser() p_1;
+     state start {
+-        p.apply(buffer, parsed_hdr, user_meta);
++        p_1.apply(buffer, parsed_hdr, user_meta);
+         transition accept;
+     }
+ }
+ control ingress(inout headers hdr, inout metadata user_meta, in psa_ingress_input_metadata_t istd, inout psa_ingress_output_metadata_t ostd) {
+-    action do_clone(PortId_t port) {
++    @name("do_clone") action do_clone_0(PortId_t port) {
+         ostd.clone = true;
+         ostd.clone_port = port;
+         user_meta.custom_clone_id = 3w1;
+     }
+-    table t {
++    @name("t") table t_1 {
+         key = {
+             user_meta.fwd_metadata.outport: exact @name("user_meta.fwd_metadata.outport") ;
+         }
+         actions = {
+-            do_clone();
++            do_clone_0();
+             NoAction();
+         }
+         default_action = NoAction();
+     }
+     apply {
+-        t.apply();
++        t_1.apply();
+     }
+ }
+ control IngressDeparserImpl(packet_out packet, inout headers hdr, in metadata meta, in psa_ingress_output_metadata_t istd, out psa_ingress_deparser_output_metadata_t ostd) {
+     apply {
+-        clone_metadata_t clone_md;
+-        clone_md.data.h1 = clone_1_t {data = 32w0};
+-        clone_md.type = 3w0;
++        clone_metadata_t clone_md_0;
++        clone_md_0.data.h1 = clone_1_t {data = 32w0};
++        clone_md_0.type = 3w0;
+         if (meta.custom_clone_id == 3w1) {
+-            ostd.clone_metadata = clone_md;
++            ostd.clone_metadata = clone_md_0;
+         }
+         packet.emit<ethernet_t>(hdr.ethernet);
+         packet.emit<ipv4_t>(hdr.ipv4);

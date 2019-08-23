@@ -1,0 +1,16 @@
+--- before_pass
++++ after_pass
+@@ -4,12 +4,8 @@ header h1_t {
+     bit<8> f2;
+ }
+ parser parserImpl(out h1_t hdr) {
+-    bit<8> tmp;
+-    bit<8> tmp_0;
+     state start {
+-        tmp_0 = hdr.f1;
+-        tmp = tmp_0 >> 2;
+-        hdr.f1 = tmp;
++        hdr.f1 = hdr.f1 >> 2;
+         hdr.f2 = 8w1;
+         transition accept;
+     }

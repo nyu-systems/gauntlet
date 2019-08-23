@@ -1,0 +1,10 @@
+--- before_pass
++++ after_pass
+@@ -20,6 +20,7 @@ control IngressI(inout H hdr, inout M me
+     }
+     apply {
+         if (!t.apply().hit) {
++            ;
+         }
+     }
+ }

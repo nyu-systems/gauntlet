@@ -1,0 +1,35 @@
+--- before_pass
++++ after_pass
+@@ -19,10 +19,10 @@ const bit<8> ICMP6_ECHO_REQUEST = 8w128;
+ const bit<8> ICMP6_ECHO_REPLY = 8w129;
+ const bit<8> ICMP6_NS = 8w135;
+ const bit<8> ICMP6_NA = 8w136;
+-const task_t TASK_ICMP6_NS = (bit<16>)16w1;
+-const task_t TASK_ICMP6_GENERAL = (bit<16>)16w2;
+-const task_t TASK_DEBUG = (bit<16>)16w3;
+-const task_t TASK_ICMP6_REPLY = (bit<16>)16w4;
++const task_t TASK_ICMP6_NS = 16w1;
++const task_t TASK_ICMP6_GENERAL = 16w2;
++const task_t TASK_DEBUG = 16w3;
++const task_t TASK_ICMP6_REPLY = 16w4;
+ header ethernet_t {
+     mac_addr_t dst_addr;
+     mac_addr_t src_addr;
+@@ -186,7 +186,7 @@ control MyIngress(inout headers hdr, ino
+         standard_metadata.egress_spec = out_port;
+     }
+     action controller_debug() {
+-        meta.task = TASK_DEBUG;
++        meta.task = 16w3;
+         meta.ingress_port = standard_metadata.ingress_port;
+         clone3<metadata>(CloneType.I2E, 32w100, meta);
+     }
+@@ -212,7 +212,7 @@ control MyIngress(inout headers hdr, ino
+         hdr.ipv6.dst_addr = hdr.ipv6.src_addr;
+         hdr.ipv6.src_addr = addr_tmp;
+         hdr.icmp6.type = 8w129;
+-        meta.do_cksum = (bit<1>)1w1;
++        meta.do_cksum = 1w1;
+     }
+     table ndp_answer {
+         key = {

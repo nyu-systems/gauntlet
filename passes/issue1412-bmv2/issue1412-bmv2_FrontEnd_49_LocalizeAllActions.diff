@@ -1,0 +1,27 @@
+--- before_pass
++++ after_pass
+@@ -20,7 +20,9 @@ control IngressImpl(inout headers_t hdr,
+     }
+ }
+ control EgressImpl(inout headers_t hdr, inout metadata meta, inout standard_metadata_t ostd) {
+-    @name("set_true") action set_true() {
++    @name(".NoAction") action NoAction_1() {
++    }
++    @name("set_true") action set_true_0() {
+         if (meta.field == 8w0) {
+             meta.cond = true;
+         }
+@@ -30,10 +32,10 @@ control EgressImpl(inout headers_t hdr,
+             ostd.egress_spec: exact @name("ostd.egress_spec") ;
+         }
+         actions = {
+-            set_true();
+-            @defaultonly NoAction();
++            set_true_0();
++            @defaultonly NoAction_1();
+         }
+-        default_action = NoAction();
++        default_action = NoAction_1();
+     }
+     apply {
+         change_cond.apply();

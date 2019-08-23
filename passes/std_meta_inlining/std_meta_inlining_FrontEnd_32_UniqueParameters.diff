@@ -1,0 +1,13 @@
+--- before_pass
++++ after_pass
+@@ -13,8 +13,8 @@ control DeparserImpl(packet_out packet,
+     apply {
+     }
+ }
+-action send_to_cpu(inout standard_metadata_t standard_metadata) {
+-    standard_metadata.egress_spec = 9w64;
++action send_to_cpu(inout standard_metadata_t standard_metadata_0) {
++    standard_metadata_0.egress_spec = 9w64;
+ }
+ control ingress(inout headers_t hdr, inout metadata_t meta, inout standard_metadata_t standard_metadata) {
+     @name("t0") table t0_0 {

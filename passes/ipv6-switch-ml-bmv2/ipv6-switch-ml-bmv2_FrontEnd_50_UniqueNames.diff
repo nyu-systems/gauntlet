@@ -1,0 +1,89 @@
+--- before_pass
++++ after_pass
+@@ -180,65 +180,65 @@ parser MyParser(packet_in packet, out he
+     }
+ }
+ control ingress(inout headers hdr, inout metadata_t meta, inout standard_metadata_t standard_metadata) {
+-    @name(".NoAction") action NoAction_2() {
++    @name(".NoAction") action NoAction_0() {
+     }
+-    @name("set_mcast_grp") action set_mcast_grp_0(bit<16> mcast_grp, bit<9> port) {
++    @name("set_mcast_grp") action set_mcast_grp(bit<16> mcast_grp, bit<9> port) {
+         standard_metadata.mcast_grp = mcast_grp;
+         meta.egress_port = port;
+     }
+-    @name("ipv6_tbl") table ipv6_tbl {
++    @name("ipv6_tbl") table ipv6_tbl_0 {
+         key = {
+             hdr.ipv6.dstAddr[127:120] == 8w0xff: exact @name("mcast_key") ;
+         }
+         actions = {
+-            set_mcast_grp_0();
+-            @defaultonly NoAction_2();
++            set_mcast_grp();
++            @defaultonly NoAction_0();
+         }
+-        default_action = NoAction_2();
++        default_action = NoAction_0();
+     }
+     apply {
+         if (hdr.ipv6.isValid()) {
+-            ipv6_tbl.apply();
++            ipv6_tbl_0.apply();
+         }
+     }
+ }
+ control egress(inout headers hdr, inout metadata_t meta, inout standard_metadata_t standard_metadata) {
+-    @name(".NoAction") action NoAction_3() {
++    @name(".NoAction") action NoAction_1() {
+     }
+-    @name("set_out_bd") action set_out_bd_0(bit<24> bd) {
++    @name("set_out_bd") action set_out_bd(bit<24> bd) {
+         meta.fwd.out_bd = bd;
+     }
+-    @name("get_multicast_copy_out_bd") table get_multicast_copy_out_bd {
++    @name("get_multicast_copy_out_bd") table get_multicast_copy_out_bd_0 {
+         key = {
+             standard_metadata.mcast_grp : exact @name("standard_metadata.mcast_grp") ;
+             standard_metadata.egress_rid: exact @name("standard_metadata.egress_rid") ;
+         }
+         actions = {
+-            set_out_bd_0();
+-            @defaultonly NoAction_3();
++            set_out_bd();
++            @defaultonly NoAction_1();
+         }
+-        default_action = NoAction_3();
++        default_action = NoAction_1();
+     }
+-    @name("drop") action drop_0() {
++    @name("drop") action drop() {
+         mark_to_drop(standard_metadata);
+     }
+-    @name("rewrite_mac") action rewrite_mac_0(bit<48> smac) {
++    @name("rewrite_mac") action rewrite_mac(bit<48> smac) {
+         hdr.ethernet.srcAddr = smac;
+     }
+-    @name("send_frame") table send_frame {
++    @name("send_frame") table send_frame_0 {
+         key = {
+             meta.fwd.out_bd: exact @name("meta.fwd.out_bd") ;
+         }
+         actions = {
+-            rewrite_mac_0();
+-            drop_0();
++            rewrite_mac();
++            drop();
+         }
+-        default_action = drop_0();
++        default_action = drop();
+     }
+     apply {
+         if (standard_metadata.instance_type == 32w5) {
+-            get_multicast_copy_out_bd.apply();
+-            send_frame.apply();
++            get_multicast_copy_out_bd_0.apply();
++            send_frame_0.apply();
+         }
+     }
+ }

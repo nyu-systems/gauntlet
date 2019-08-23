@@ -1,0 +1,61 @@
+--- before_pass
++++ after_pass
+@@ -27,26 +27,38 @@ struct Headers_t {
+ }
+ parser prs(packet_in p, out Headers_t headers) {
+     state start {
+-        p.extract<Ethernet_h>(headers.ethernet);
++        {
++            p.extract<Ethernet_h>(headers.ethernet);
++        }
+         transition select(headers.ethernet.etherType) {
+             16w0x800: ip;
+             default: reject;
+         }
+     }
+     state ip {
+-        p.extract<IPv4_h>(headers.ipv4);
++        {
++            p.extract<IPv4_h>(headers.ipv4);
++        }
+         transition accept;
+     }
+ }
+ control pipe(inout Headers_t headers, out bool pass) {
+     bool hit_0;
+     @name("invalidate") action invalidate_0() {
+-        headers.ipv4.setInvalid();
+-        headers.ethernet.setInvalid();
+-        pass = true;
++        {
++            headers.ipv4.setInvalid();
++        }
++        {
++            headers.ethernet.setInvalid();
++        }
++        {
++            pass = true;
++        }
+     }
+     @name("drop") action drop_0() {
+-        pass = false;
++        {
++            pass = false;
++        }
+     }
+     @name("t") table t_0 {
+         key = {
+@@ -62,8 +74,12 @@ control pipe(inout Headers_t headers, ou
+         implementation = hash_table(32w10);
+         default_action = drop_0();
+     }
++    bool tmp;
+     apply {
+-        hit_0 = t_0.apply().hit;
++        {
++            tmp = t_0.apply().hit;
++            hit_0 = tmp;
++        }
+     }
+ }
+ ebpfFilter<Headers_t>(prs(), pipe()) main;
