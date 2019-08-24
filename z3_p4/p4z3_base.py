@@ -96,12 +96,13 @@ class P4State(Z3P4Class):
         else:
             setattr(self, lstring, rvalue)
 
-    def set_struct(self, args):
+    def set_struct(self, lstring, args):
         # this operation assumes that
         # args matches accessors in length
         members = []
-        for index, accessor in enumerate(self.accessors):
-            setattr(self, accessor.name(), args[index])
+        target_class = operator.attrgetter(lstring)(self)
+        for index, accessor in enumerate(target_class.accessors):
+            setattr(target_class, accessor.name(), args[index])
         # generate a new version of the z3 datatype
         # copy = self._make()
         # # update the SSA version

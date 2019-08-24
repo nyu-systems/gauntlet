@@ -42,7 +42,7 @@ def p4_program_0(z3_reg):
 
     z3_args = [('hdr', z3_reg.types["headers"]), ('meta', z3_reg.types["metadata_t"]),
                ('stdmeta', z3_reg.types["standard_metadata_t"])]
-    z3_reg.register_z3_type("inouts", Struct, z3_args)
+    z3_reg.register_z3_type("inouts", P4State, z3_args)
     ingress_args = z3_reg.instance("inouts")
 
     def ingress(p4_vars):
@@ -59,14 +59,14 @@ def p4_program_0(z3_reg):
             sub_chain.append(output_update)
 
             def struct_update(func_chain, p4_vars):
-                rvalŝ = (BitVecVal(1, 8), BitVecVal(2, 8))
-                expr = p4_vars.foo_0.set_struct(rvalŝ)
+                rval = (BitVecVal(1, 8), BitVecVal(2, 8))
+                expr = p4_vars.set_struct("foo_0", rval)
                 return step(func_chain, p4_vars, expr)
             sub_chain.append(struct_update)
 
             def struct_update(func_chain, p4_vars):
-                rvalŝ = (p4_vars.foo_0.b, p4_vars.foo_0.a)
-                expr = p4_vars.foo_0.set_struct(rvalŝ)
+                rval = (p4_vars.foo_0.b, p4_vars.foo_0.a)
+                expr = p4_vars.set_struct("foo_0", rval)
                 return step(func_chain, p4_vars, expr)
             sub_chain.append(struct_update)
 
@@ -82,8 +82,7 @@ def p4_program_0(z3_reg):
                 return step(func_chain, p4_vars, expr)
             sub_chain.append(output_update)
 
-            sub_chain.extend(func_chain)
-            return step(sub_chain, p4_vars)
+            return step(sub_chain + func_chain, p4_vars)
         return step(func_chain=[apply], p4_vars=p4_vars)
     return ((p,), (vrfy,), (ingress, ingress_args), (egress,), (update,), (deparser,))
 
@@ -129,7 +128,7 @@ def p4_program_1(z3_reg):
 
     z3_args = [('hdr', z3_reg.types["headers"]), ('meta', z3_reg.types["metadata_t"]),
                ('stdmeta', z3_reg.types["standard_metadata_t"])]
-    z3_reg.register_z3_type("inouts", Struct, z3_args)
+    z3_reg.register_z3_type("inouts", P4State, z3_args)
     ingress_args = z3_reg.instance("inouts")
 
     def ingress(p4_vars):
@@ -181,8 +180,7 @@ def p4_program_1(z3_reg):
                 return step(func_chain, p4_vars, expr)
             sub_chain.append(output_update)
 
-            sub_chain.extend(func_chain)
-            return step(sub_chain, p4_vars)
+            return step(sub_chain + func_chain, p4_vars)
         return step(func_chain=[apply], p4_vars=p4_vars)
     return ((p,), (vrfy,), (ingress, ingress_args), (egress,), (update,), (deparser,))
 
