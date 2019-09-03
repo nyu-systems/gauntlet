@@ -255,6 +255,10 @@ def z3_slice(val, slice_l, slice_r):
     return Extract(slice_l, slice_r, val)
 
 
+def z3_concat(left, right):
+    return Concat(left, right)
+
+
 def step_alt(p4_vars, expr_chain=[], expr=None):
     ''' The step function ensures that modifications are propagated to
     all subsequent operations. This is important to guarantee correctness with

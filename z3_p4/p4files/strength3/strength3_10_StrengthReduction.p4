@@ -1,17 +1,21 @@
 #include <core.p4>
 #include <v1model.p4>
+
 header hdr {
     bit<16> a;
     bit<16> b;
     bit<8>  c;
 }
+
 struct Headers {
     hdr h;
 }
+
 struct Meta {
     bit<8> x;
     bit<8> y;
 }
+
 control ingress(inout Headers h, inout Meta m, inout standard_metadata_t sm) {
     @name("ingress.case0") action case0() {
         h.h.c = (bit<8>)(h.h.a[15:0] ++ 16w0);

@@ -42,8 +42,8 @@ def p4_program_0(z3_reg):
             sub_chain = []
 
             def output_update(func_chain, p4_vars):
-                rval = Extract(7, 0, Concat(Extract(15, 0, Concat(
-                    BitVecVal(0, 16), p4_vars.h.h.a)), BitVecVal(0, 16)))
+                rval = z3_cast(z3_concat(z3_slice(z3_concat(
+                    BitVecVal(0, 16), p4_vars.h.h.a), 15, 0), BitVecVal(0, 16)), 8)
                 expr = p4_vars.set("h.h.c", rval)
                 return step(func_chain, p4_vars, expr)
             sub_chain.append(output_update)
@@ -55,7 +55,7 @@ def p4_program_0(z3_reg):
             sub_chain = []
 
             def output_update(func_chain, p4_vars):
-                rval = Extract(7, 0, Extract(15, 0, p4_vars.h.h.a))
+                rval = z3_cast(z3_slice(p4_vars.h.h.a, 15, 0), 8)
                 expr = p4_vars.set("h.h.c", rval)
                 return step(func_chain, p4_vars, expr)
             sub_chain.append(output_update)
@@ -79,7 +79,7 @@ def p4_program_0(z3_reg):
             sub_chain = []
 
             def output_update(func_chain, p4_vars):
-                rval = Extract(7, 0, p4_vars.h.h.a)
+                rval = z3_slice(p4_vars.h.h.a, 7, 0)
                 expr = p4_vars.set("h.h.c", rval)
                 return step(func_chain, p4_vars, expr)
             sub_chain.append(output_update)
@@ -91,9 +91,8 @@ def p4_program_0(z3_reg):
             sub_chain = []
 
             def output_update(func_chain, p4_vars):
-                rval = Extract(7, 0,
-                               Concat(BitVecVal(0, 8),
-                                      Extract(15, 0, p4_vars.h.h.a)))
+                rval = z3_cast(z3_concat(BitVecVal(0, 8),
+                                         z3_slice(p4_vars.h.h.a, 15, 0)), 8)
                 expr = p4_vars.set("h.h.c", rval)
                 return step(func_chain, p4_vars, expr)
             sub_chain.append(output_update)
@@ -105,9 +104,8 @@ def p4_program_0(z3_reg):
             sub_chain = []
 
             def output_update(func_chain, p4_vars):
-                rval = Extract(7, 0,
-                               Concat(BitVecVal(0, 8),
-                                      Extract(15, 8, p4_vars.h.h.a)))
+                rval = z3_cast(z3_concat(BitVecVal(0, 8),
+                                         z3_slice(p4_vars.h.h.a, 15, 8)), 8)
                 expr = p4_vars.set("h.h.c", rval)
                 return step(func_chain, p4_vars, expr)
             sub_chain.append(output_update)
@@ -119,9 +117,8 @@ def p4_program_0(z3_reg):
             sub_chain = []
 
             def output_update(func_chain, p4_vars):
-                rval = Extract(7, 0,
-                               Concat(BitVecVal(0, 16),
-                                      Extract(15, 8, p4_vars.h.h.a)))
+                rval = z3_cast(z3_concat(BitVecVal(0, 16),
+                                         z3_slice(p4_vars.h.h.a, 15, 8)), 8)
                 expr = p4_vars.set("h.h.c", rval)
                 return step(func_chain, p4_vars, expr)
             sub_chain.append(output_update)
@@ -133,9 +130,8 @@ def p4_program_0(z3_reg):
             sub_chain = []
 
             def output_update(func_chain, p4_vars):
-                rval = Extract(7, 0, Extract(31, 8,
-                                             Concat(BitVecVal(0, 16),
-                                                    p4_vars.h.h.a >> 3)))
+                rval = z3_cast(z3_slice(z3_concat(BitVecVal(0, 16),
+                                                  p4_vars.h.h.a >> 3), 31, 8), 8)
                 expr = p4_vars.set("h.h.c", rval)
                 return step(func_chain, p4_vars, expr)
             sub_chain.append(output_update)
@@ -213,8 +209,7 @@ def p4_program_1(z3_reg):
             sub_chain = []
 
             def output_update(func_chain, p4_vars):
-                rval = Extract(7, 0, Concat(
-                    Extract(15, 0, p4_vars.h.h.a), BitVecVal(0, 16)))
+                rval = z3_cast(z3_concat(z3_slice(p4_vars.h.h.a, 15, 0), BitVecVal(0, 16)), 8)
                 expr = p4_vars.set("h.h.c", rval)
                 return step(func_chain, p4_vars, expr)
             sub_chain.append(output_update)
@@ -226,7 +221,7 @@ def p4_program_1(z3_reg):
             sub_chain = []
 
             def output_update(func_chain, p4_vars):
-                rval = Extract(7, 0, Extract(15, 0, p4_vars.h.h.a))
+                rval = z3_cast(z3_slice(p4_vars.h.h.a, 15, 0), 8)
                 expr = p4_vars.set("h.h.c", rval)
                 return step(func_chain, p4_vars, expr)
             sub_chain.append(output_update)
@@ -250,7 +245,7 @@ def p4_program_1(z3_reg):
             sub_chain = []
 
             def output_update(func_chain, p4_vars):
-                rval = Extract(7, 0, p4_vars.h.h.a)
+                rval = z3_slice(p4_vars.h.h.a, 7, 0)
                 expr = p4_vars.set("h.h.c", rval)
                 return step(func_chain, p4_vars, expr)
             sub_chain.append(output_update)
@@ -262,9 +257,8 @@ def p4_program_1(z3_reg):
             sub_chain = []
 
             def output_update(func_chain, p4_vars):
-                rval = Extract(7, 0,
-                               Concat(BitVecVal(0, 8),
-                                      Extract(15, 0, p4_vars.h.h.a)))
+                rval = z3_cast(z3_concat(BitVecVal(0, 8),
+                                         z3_slice(p4_vars.h.h.a, 15, 0)), 8)
                 expr = p4_vars.set("h.h.c", rval)
                 return step(func_chain, p4_vars, expr)
             sub_chain.append(output_update)
@@ -276,9 +270,8 @@ def p4_program_1(z3_reg):
             sub_chain = []
 
             def output_update(func_chain, p4_vars):
-                rval = Extract(7, 0,
-                               Concat(BitVecVal(0, 8),
-                                      Extract(15, 8, p4_vars.h.h.a)))
+                rval = z3_cast(z3_concat(BitVecVal(0, 8),
+                                         z3_slice(p4_vars.h.h.a, 15, 8)), 8)
                 expr = p4_vars.set("h.h.c", rval)
                 return step(func_chain, p4_vars, expr)
             sub_chain.append(output_update)
@@ -290,9 +283,8 @@ def p4_program_1(z3_reg):
             sub_chain = []
 
             def output_update(func_chain, p4_vars):
-                rval = Extract(7, 0,
-                               Concat(BitVecVal(0, 16),
-                                      Extract(15, 8, p4_vars.h.h.a)))
+                rval = z3_cast(z3_concat(BitVecVal(0, 16),
+                                         z3_slice(p4_vars.h.h.a, 15, 8)), 8)
                 expr = p4_vars.set("h.h.c", rval)
                 return step(func_chain, p4_vars, expr)
             sub_chain.append(output_update)
@@ -304,9 +296,8 @@ def p4_program_1(z3_reg):
             sub_chain = []
 
             def output_update(func_chain, p4_vars):
-                rval = Extract(7, 0, Extract(31, 8,
-                                             Concat(BitVecVal(0, 16),
-                                                    p4_vars.h.h.a >> 3)))
+                rval = z3_cast(z3_slice(z3_concat(BitVecVal(0, 16),
+                                                  p4_vars.h.h.a >> 3), 31, 8), 8)
                 expr = p4_vars.set("h.h.c", rval)
                 return step(func_chain, p4_vars, expr)
             sub_chain.append(output_update)
