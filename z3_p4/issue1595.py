@@ -117,36 +117,31 @@ def p4_program_0(z3_reg):
         def apply(func_chain, p4_vars):
             sub_chain = []
 
-            sub_chain.append(t1_0.apply)
-
             def switch_block(sub_chain, p4_vars):
                 cases = []
-                switch = t1_0.action_run(p4_vars)
-                a = t1_0.actions
+                table = t1_0
 
                 def case_block(sub_chain, p4_vars):
                     sub_chain = []
 
                     return step(sub_chain + func_chain, p4_vars)
-                case = Implies(
-                    switch == a["a1"][0],
-                    case_block(func_chain, p4_vars))
+                case = table.case(
+                    func_chain, p4_vars, "a1", case_block)
                 cases.append(case)
 
                 def case_block(sub_chain, p4_vars):
                     sub_chain = []
 
                     def output_update(func_chain, p4_vars):
-                        rval = slice_assign(p4_vars.hdr.ethernet.srcAddr,
-                                            BitVecVal(2, 8), 39, 32)
+                        rval = slice_assign(
+                            p4_vars.hdr.ethernet.srcAddr, BitVecVal(2, 8), 39, 32)
                         expr = p4_vars.set("hdr.ethernet.srcAddr", rval)
                         return step(func_chain, p4_vars, expr)
                     sub_chain.append(output_update)
 
                     return step(sub_chain + func_chain, p4_vars)
-                case = Implies(
-                    switch == a["a2"][0],
-                    case_block(func_chain, p4_vars))
+                case = table.case(
+                    func_chain, p4_vars, "a2", case_block)
                 cases.append(case)
 
                 def case_block(sub_chain, p4_vars):
@@ -160,9 +155,8 @@ def p4_program_0(z3_reg):
                     sub_chain.append(output_update)
 
                     return step(sub_chain + func_chain, p4_vars)
-                case = Implies(
-                    switch == a["a3"][0],
-                    case_block(func_chain, p4_vars))
+                case = table.case(
+                    func_chain, p4_vars, "a3", case_block)
                 cases.append(case)
 
                 def case_block(sub_chain, p4_vars):
@@ -176,9 +170,8 @@ def p4_program_0(z3_reg):
                     sub_chain.append(output_update)
 
                     return step(sub_chain + func_chain, p4_vars)
-                case = Implies(
-                    switch == a["a4"][0],
-                    case_block(func_chain, p4_vars))
+                case = table.case(
+                    func_chain, p4_vars, "a4", case_block)
                 cases.append(case)
 
                 def case_block(sub_chain, p4_vars):
@@ -192,14 +185,15 @@ def p4_program_0(z3_reg):
                     sub_chain.append(output_update)
 
                     return step(sub_chain + func_chain, p4_vars)
-                case = Implies(
-                    switch == a["NoAction_0"][0],
-                    case_block(func_chain, p4_vars))
+                case = table.case(
+                    func_chain, p4_vars, "NoAction_0", case_block)
                 cases.append(case)
 
-                default = step(func_chain, p4_vars)
+                def default_case(func_chain, p4_vars):
+                    sub_chain = []
+                    return step(sub_chain + func_chain, p4_vars)
 
-                return And(*cases, default)
+                return table.switch_apply(func_chain, p4_vars, cases, default_case)
             sub_chain.append(switch_block)
 
             return step(sub_chain + func_chain, p4_vars)
@@ -324,20 +318,16 @@ def p4_program_1(z3_reg):
         def apply(func_chain, p4_vars):
             sub_chain = []
 
-            sub_chain.append(t1_0.apply)
-
             def switch_block(sub_chain, p4_vars):
                 cases = []
-                switch = t1_0.action_run(p4_vars)
-                a = t1_0.actions
+                table = t1_0
 
                 def case_block(sub_chain, p4_vars):
                     sub_chain = []
 
                     return step(sub_chain + func_chain, p4_vars)
-                case = Implies(
-                    switch == a["a1"][0],
-                    case_block(func_chain, p4_vars))
+                case = table.case(
+                    func_chain, p4_vars, "a1", case_block)
                 cases.append(case)
 
                 def case_block(sub_chain, p4_vars):
@@ -351,9 +341,8 @@ def p4_program_1(z3_reg):
                     sub_chain.append(output_update)
 
                     return step(sub_chain + func_chain, p4_vars)
-                case = Implies(
-                    switch == a["a2"][0],
-                    case_block(func_chain, p4_vars))
+                case = table.case(
+                    func_chain, p4_vars, "a2", case_block)
                 cases.append(case)
 
                 def case_block(sub_chain, p4_vars):
@@ -367,9 +356,8 @@ def p4_program_1(z3_reg):
                     sub_chain.append(output_update)
 
                     return step(sub_chain + func_chain, p4_vars)
-                case = Implies(
-                    switch == a["a3"][0],
-                    case_block(func_chain, p4_vars))
+                case = table.case(
+                    func_chain, p4_vars, "a3", case_block)
                 cases.append(case)
 
                 def case_block(sub_chain, p4_vars):
@@ -383,9 +371,8 @@ def p4_program_1(z3_reg):
                     sub_chain.append(output_update)
 
                     return step(sub_chain + func_chain, p4_vars)
-                case = Implies(
-                    switch == a["a4"][0],
-                    case_block(func_chain, p4_vars))
+                case = table.case(
+                    func_chain, p4_vars, "a4", case_block)
                 cases.append(case)
 
                 def case_block(sub_chain, p4_vars):
@@ -399,14 +386,15 @@ def p4_program_1(z3_reg):
                     sub_chain.append(output_update)
 
                     return step(sub_chain + func_chain, p4_vars)
-                case = Implies(
-                    switch == a["NoAction_0"][0],
-                    case_block(func_chain, p4_vars))
+                case = table.case(
+                    func_chain, p4_vars, "NoAction_0", case_block)
                 cases.append(case)
 
-                default = step(func_chain, p4_vars)
+                def default_case(func_chain, p4_vars):
+                    sub_chain = []
+                    return step(sub_chain + func_chain, p4_vars)
 
-                return And(*cases, default)
+                return table.switch_apply(func_chain, p4_vars, cases, default_case)
             sub_chain.append(switch_block)
 
             return step(sub_chain + func_chain, p4_vars)

@@ -63,32 +63,27 @@ def p4_program_0(z3_reg):
         def NoAction_1(func_chain, p4_vars):
             sub_chain = []
 
-            sub_chain.extend(func_chain)
-            return step(sub_chain, p4_vars)
+            return step(sub_chain + func_chain, p4_vars)
 
         def NoAction_8(func_chain, p4_vars):
             sub_chain = []
 
-            sub_chain.extend(func_chain)
-            return step(sub_chain, p4_vars)
+            return step(sub_chain + func_chain, p4_vars)
 
         def NoAction_9(func_chain, p4_vars):
             sub_chain = []
 
-            sub_chain.extend(func_chain)
-            return step(sub_chain, p4_vars)
+            return step(sub_chain + func_chain, p4_vars)
 
         def NoAction_10(func_chain, p4_vars):
             sub_chain = []
 
-            sub_chain.extend(func_chain)
-            return step(sub_chain, p4_vars)
+            return step(sub_chain + func_chain, p4_vars)
 
         def NoAction_11(func_chain, p4_vars):
             sub_chain = []
 
-            sub_chain.extend(func_chain)
-            return step(sub_chain, p4_vars)
+            return step(sub_chain + func_chain, p4_vars)
 
         def set_vrf(func_chain, p4_vars, vrf):
             sub_chain = []
@@ -99,26 +94,22 @@ def p4_program_0(z3_reg):
                 return step(func_chain, p4_vars, expr)
             sub_chain.append(output_update)
 
-            sub_chain.extend(func_chain)
-            return step(sub_chain, p4_vars)
+            return step(sub_chain + func_chain, p4_vars)
 
         def on_miss_2(func_chain, p4_vars):
             sub_chain = []
 
-            sub_chain.extend(func_chain)
-            return step(sub_chain, p4_vars)
+            return step(sub_chain + func_chain, p4_vars)
 
         def on_miss_5(func_chain, p4_vars):
             sub_chain = []
 
-            sub_chain.extend(func_chain)
-            return step(sub_chain, p4_vars)
+            return step(sub_chain + func_chain, p4_vars)
 
         def on_miss_6(func_chain, p4_vars):
             sub_chain = []
 
-            sub_chain.extend(func_chain)
-            return step(sub_chain, p4_vars)
+            return step(sub_chain + func_chain, p4_vars)
 
         def fib_hit_nexthop(func_chain, p4_vars, nexthop_index):
             sub_chain = []
@@ -135,8 +126,7 @@ def p4_program_0(z3_reg):
                 return step(func_chain, p4_vars, expr)
             sub_chain.append(output_update)
 
-            sub_chain.extend(func_chain)
-            return step(sub_chain, p4_vars)
+            return step(sub_chain + func_chain, p4_vars)
 
         def fib_hit_nexthop_2(func_chain, p4_vars, nexthop_index):
 
@@ -154,8 +144,7 @@ def p4_program_0(z3_reg):
                 return step(func_chain, p4_vars, expr)
             sub_chain.append(output_update)
 
-            sub_chain.extend(func_chain)
-            return step(sub_chain, p4_vars)
+            return step(sub_chain + func_chain, p4_vars)
 
         def set_egress_details(func_chain, p4_vars, egress_spec):
             sub_chain = []
@@ -166,8 +155,7 @@ def p4_program_0(z3_reg):
                 return step(func_chain, p4_vars, expr)
             sub_chain.append(output_update)
 
-            sub_chain.extend(func_chain)
-            return step(sub_chain, p4_vars)
+            return step(sub_chain + func_chain, p4_vars)
 
         def set_bd(func_chain, p4_vars, bd):
             sub_chain = []
@@ -178,8 +166,7 @@ def p4_program_0(z3_reg):
                 return step(func_chain, p4_vars, expr)
             sub_chain.append(output_update)
 
-            sub_chain.extend(func_chain)
-            return step(sub_chain, p4_vars)
+            return step(sub_chain + func_chain, p4_vars)
 
         class bd_0(Table):
 
@@ -295,52 +282,46 @@ def p4_program_0(z3_reg):
 
                 condition = p4_vars.hdr.ipv4.isValid()
 
-                def is_true():
+                def is_true(func_chain, p4_vars):
                     sub_chain = []
 
                     sub_chain.append(port_mapping_0.apply)
                     sub_chain.append(bd_0.apply)
 
-                    sub_chain.append(ipv4_fib_0.apply)
-
-                    def switch_block(sub_chain, p4_vars):
+                    def switch_block(func_chain, p4_vars):
                         cases = []
-                        switch = ipv4_fib_0.action_run(p4_vars)
-                        a = ipv4_fib_0.actions
+                        table = ipv4_fib_0
 
-                        def case_block(sub_chain, p4_vars):
+                        def case_block(func_chain, p4_vars):
                             sub_chain = []
 
                             sub_chain.append(ipv4_fib_lpm_0.apply)
 
-                            sub_chain.extend(func_chain)
-                            return step(sub_chain, p4_vars)
-                        case = Implies(
-                            switch == a["on_miss_2"][0],
-                            case_block(func_chain, p4_vars))
+                            return step(sub_chain + func_chain, p4_vars)
+                        case = table.case(
+                            func_chain, p4_vars, "on_miss_2", case_block)
                         cases.append(case)
 
-                        default = step(func_chain, p4_vars)
+                        def default_case(func_chain, p4_vars):
+                            sub_chain = []
+                            return step(sub_chain + func_chain, p4_vars)
 
-                        return And(*cases, default)
+                        return table.switch_apply(func_chain, p4_vars, cases, default_case)
                     sub_chain.append(switch_block)
 
-                    sub_chain.extend(func_chain)
-                    return step(sub_chain, p4_vars)
+                    return step(sub_chain + func_chain, p4_vars)
 
-                def is_false():
+                def is_false(func_chain, p4_vars):
                     sub_chain = []
 
-                    sub_chain.extend(func_chain)
-                    return step(sub_chain, p4_vars)
+                    return step(sub_chain + func_chain, p4_vars)
 
-                return If(condition, is_true(), is_false())
+                return If(condition, is_true(func_chain, p4_vars), is_false(func_chain, p4_vars))
             sub_chain.append(if_block)
 
             sub_chain.append(nexthop_0.apply)
 
-            sub_chain.extend(func_chain)
-            return step(sub_chain, p4_vars)
+            return step(sub_chain + func_chain, p4_vars)
         return apply([], p4_vars)
     return ((p,), (vrfy,), (ingress, ingress_args), (egress,), (update,), (deparser,))
 
@@ -407,32 +388,27 @@ def p4_program_1(z3_reg):
         def NoAction_1(func_chain, p4_vars):
             sub_chain = []
 
-            sub_chain.extend(func_chain)
-            return step(sub_chain, p4_vars)
+            return step(sub_chain + func_chain, p4_vars)
 
         def NoAction_8(func_chain, p4_vars):
             sub_chain = []
 
-            sub_chain.extend(func_chain)
-            return step(sub_chain, p4_vars)
+            return step(sub_chain + func_chain, p4_vars)
 
         def NoAction_9(func_chain, p4_vars):
             sub_chain = []
 
-            sub_chain.extend(func_chain)
-            return step(sub_chain, p4_vars)
+            return step(sub_chain + func_chain, p4_vars)
 
         def NoAction_10(func_chain, p4_vars):
             sub_chain = []
 
-            sub_chain.extend(func_chain)
-            return step(sub_chain, p4_vars)
+            return step(sub_chain + func_chain, p4_vars)
 
         def NoAction_11(func_chain, p4_vars):
             sub_chain = []
 
-            sub_chain.extend(func_chain)
-            return step(sub_chain, p4_vars)
+            return step(sub_chain + func_chain, p4_vars)
 
         def set_vrf(func_chain, p4_vars, vrf):
             sub_chain = []
@@ -443,26 +419,22 @@ def p4_program_1(z3_reg):
                 return step(func_chain, p4_vars, expr)
             sub_chain.append(output_update)
 
-            sub_chain.extend(func_chain)
-            return step(sub_chain, p4_vars)
+            return step(sub_chain + func_chain, p4_vars)
 
         def on_miss_2(func_chain, p4_vars):
             sub_chain = []
 
-            sub_chain.extend(func_chain)
-            return step(sub_chain, p4_vars)
+            return step(sub_chain + func_chain, p4_vars)
 
         def on_miss_5(func_chain, p4_vars):
             sub_chain = []
 
-            sub_chain.extend(func_chain)
-            return step(sub_chain, p4_vars)
+            return step(sub_chain + func_chain, p4_vars)
 
         def on_miss_6(func_chain, p4_vars):
             sub_chain = []
 
-            sub_chain.extend(func_chain)
-            return step(sub_chain, p4_vars)
+            return step(sub_chain + func_chain, p4_vars)
 
         def fib_hit_nexthop(func_chain, p4_vars, nexthop_index):
             sub_chain = []
@@ -479,8 +451,7 @@ def p4_program_1(z3_reg):
                 return step(func_chain, p4_vars, expr)
             sub_chain.append(output_update)
 
-            sub_chain.extend(func_chain)
-            return step(sub_chain, p4_vars)
+            return step(sub_chain + func_chain, p4_vars)
 
         def fib_hit_nexthop_2(func_chain, p4_vars, nexthop_index):
 
@@ -498,8 +469,7 @@ def p4_program_1(z3_reg):
                 return step(func_chain, p4_vars, expr)
             sub_chain.append(output_update)
 
-            sub_chain.extend(func_chain)
-            return step(sub_chain, p4_vars)
+            return step(sub_chain + func_chain, p4_vars)
 
         def set_egress_details(func_chain, p4_vars, egress_spec):
             sub_chain = []
@@ -510,8 +480,7 @@ def p4_program_1(z3_reg):
                 return step(func_chain, p4_vars, expr)
             sub_chain.append(output_update)
 
-            sub_chain.extend(func_chain)
-            return step(sub_chain, p4_vars)
+            return step(sub_chain + func_chain, p4_vars)
 
         def set_bd(func_chain, p4_vars, bd):
             sub_chain = []
@@ -522,8 +491,7 @@ def p4_program_1(z3_reg):
                 return step(func_chain, p4_vars, expr)
             sub_chain.append(output_update)
 
-            sub_chain.extend(func_chain)
-            return step(sub_chain, p4_vars)
+            return step(sub_chain + func_chain, p4_vars)
 
         class bd_0(Table):
 
@@ -639,52 +607,46 @@ def p4_program_1(z3_reg):
 
                 condition = p4_vars.hdr.ipv4.isValid()
 
-                def is_true():
+                def is_true(func_chain, p4_vars):
                     sub_chain = []
 
                     sub_chain.append(port_mapping_0.apply)
                     sub_chain.append(bd_0.apply)
 
-                    sub_chain.append(ipv4_fib_0.apply)
-
-                    def switch_block(sub_chain, p4_vars):
+                    def switch_block(func_chain, p4_vars):
                         cases = []
-                        switch = ipv4_fib_0.action_run(p4_vars)
-                        a = ipv4_fib_0.actions
+                        table = ipv4_fib_0
 
-                        def case_block(sub_chain, p4_vars):
+                        def case_block(func_chain, p4_vars):
                             sub_chain = []
 
                             sub_chain.append(ipv4_fib_lpm_0.apply)
 
-                            sub_chain.extend(func_chain)
-                            return step(sub_chain, p4_vars)
-                        case = Implies(
-                            switch == a["on_miss_2"][0],
-                            case_block(func_chain, p4_vars))
+                            return step(sub_chain + func_chain, p4_vars)
+                        case = table.case(
+                            func_chain, p4_vars, "on_miss_2", case_block)
                         cases.append(case)
 
-                        default = step(func_chain, p4_vars)
+                        def default_case(func_chain, p4_vars):
+                            sub_chain = []
+                            return step(sub_chain + func_chain, p4_vars)
 
-                        return And(*cases, default)
+                        return table.switch_apply(func_chain, p4_vars, cases, default_case)
                     sub_chain.append(switch_block)
 
-                    sub_chain.extend(func_chain)
-                    return step(sub_chain, p4_vars)
+                    return step(sub_chain + func_chain, p4_vars)
 
-                def is_false():
+                def is_false(func_chain, p4_vars):
                     sub_chain = []
 
-                    sub_chain.extend(func_chain)
-                    return step(sub_chain, p4_vars)
+                    return step(sub_chain + func_chain, p4_vars)
 
-                return If(condition, is_true(), is_false())
+                return If(condition, is_true(func_chain, p4_vars), is_false(func_chain, p4_vars))
             sub_chain.append(if_block)
 
             sub_chain.append(nexthop_0.apply)
 
-            sub_chain.extend(func_chain)
-            return step(sub_chain, p4_vars)
+            return step(sub_chain + func_chain, p4_vars)
         return apply([], p4_vars)
     return ((p,), (vrfy,), (ingress, ingress_args), (egress,), (update,), (deparser,))
 
@@ -705,15 +667,15 @@ def z3_check():
     p4_ctrl_0, p4_ctrl_0_args = p4_program_0(Z3Reg())[2]
     p4_ctrl_1, p4_ctrl_1_args = p4_program_1(Z3Reg())[2]
 
-    # print("PROGRAM 1")
-    # print(p4_ctrl_0(p4_ctrl_0_args))
-    # print("PROGRAM 2")
-    # print(p4_ctrl_1(p4_ctrl_1_args))
+    print("PROGRAM 1")
+    print(p4_ctrl_0(p4_ctrl_0_args))
+    print("PROGRAM 2")
+    print(p4_ctrl_1(p4_ctrl_1_args))
     tv_equiv = simplify(p4_ctrl_0(p4_ctrl_0_args) !=
                         p4_ctrl_1(p4_ctrl_1_args))
     s.add(tv_equiv)
-    print(tv_equiv)
-    print (s.sexpr())
+    # print(tv_equiv)
+    # print (s.sexpr())
     ret = s.check()
     if ret == sat:
         print (ret)

@@ -2,6 +2,8 @@ from z3 import *
 import os
 import operator
 
+constants = set([])
+
 
 class Z3Reg():
     types = {}
@@ -48,12 +50,7 @@ class Z3P4Class():
             accessors.append(z3_type.accessor(0, type_index))
         return accessors
 
-    def _update(self):
-        index = len(self.revisions)
-        self.const = Const(f"{self.name}_{index}", self.z3_type)
-        self.revisions.append(self.const)
-
-    def _make(self):
+    def _make(self, parent_const=None):
         members = []
         for accessor in self.accessors:
             arg_type = accessor.range()
@@ -61,11 +58,23 @@ class Z3P4Class():
             if is_datatype:
                 member_make = operator.attrgetter(
                     accessor.name() + "._make")(self)
-                members.append(member_make())
+                sub_const = accessor(parent_const)
+                members.append(member_make(sub_const))
             else:
+                # member_make = accessor(parent_const)
                 member_make = operator.attrgetter(accessor.name())(self)
+                is_datatype = type(member_make) == (DatatypeSortRef)
+
                 members.append(member_make)
         return self.constructor(*members)
+
+    def propagate_type(self, parent_const=None):
+        for accessor in self.accessors:
+            member = operator.attrgetter(accessor.name())(self)
+            if isinstance(member, Z3P4Class):
+                member.propagate_type(accessor(parent_const))
+            else:
+                setattr(self, accessor.name(), accessor(parent_const))
 
 
 class P4State(Z3P4Class):
@@ -74,12 +83,19 @@ class P4State(Z3P4Class):
         super(P4State, self).__init__(z3_reg, z3_id)
         # These are special for structs
         self._set_accessors(z3_reg)
+        self.propagate_type(self.const)
 
     def _set_accessors(self, z3_reg):
         for accessor in self.accessors:
             arg_type = accessor.range()
             member_cls = z3_reg.instance(arg_type.name())
             setattr(self, accessor.name(), member_cls)
+
+    def _update(self):
+        index = len(self.revisions)
+        self.const = Const(f"{self.name}_1", self.z3_type)
+        self.revisions.append(self.const)
+        constants.add(self.const)
 
     def set(self, lstring, rvalue):
         # update the internal representation of the attribute
@@ -88,7 +104,7 @@ class P4State(Z3P4Class):
             target_class = operator.attrgetter(prefix)(self)
             setattr(target_class, suffix, rvalue)
             # generate a new version of the z3 datatype
-            copy = self._make()
+            copy = self._make(self.const)
             # update the SSA version
             self._update()
             # return the update expression
@@ -122,7 +138,13 @@ class Header(Z3P4Class):
 
     def _set_hdr_accessors(self):
         for accessor in self.accessors:
-            setattr(self, accessor.name(), accessor(self.const))
+            arg_type = accessor.range()
+            is_datatype = type(arg_type) == (DatatypeSortRef)
+            if is_datatype:
+                member_cls = z3_reg.instance(arg_type.name())
+                setattr(self, accessor.name(), member_cls)
+            else:
+                setattr(self, accessor.name(), accessor(self.const))
 
     def _init_valid(self):
         self.valid = Const("%s_valid" % self.name, BoolSort())
@@ -161,7 +183,7 @@ class Table():
     @classmethod
     def table_action(cls, func_chain, p4_vars):
         name = cls.__name__
-        action = Const(f"{name}_action", IntSort())
+        action = Int(f"{name}_action")
         ''' This is a special macro to define action selection. We treat
         selection as a chain of implications. If we match, then the clause
         returned by the action must be valid.
@@ -185,10 +207,8 @@ class Table():
     @classmethod
     def action_run(cls, p4_vars):
         name = cls.__name__
-        action = Const(f"{name}_action", IntSort())
-        return If(cls.table_match(p4_vars),
-                  action,
-                  0)
+        action = Int(f"{name}_action")
+        return cls.table_match(p4_vars)
 
     @classmethod
     def apply(cls, func_chain, p4_vars):
@@ -200,6 +220,25 @@ class Table():
         return If(cls.table_match(p4_vars),
                   cls.table_action(func_chain, p4_vars),
                   def_fun(func_chain, p4_vars, *def_args))
+
+    @classmethod
+    def switch_apply(cls, func_chain, p4_vars, cases, default_case):
+        # This is a table match where we look up the provided key
+        # If we match select the associated action,
+        # else use the default action
+        def_fun = cls.actions["default"][1][0]
+        def_args = cls.actions["default"][1][1]
+        is_hit = cls.action_run(p4_vars)
+        switch_hit = And((*cases), def_fun(func_chain, p4_vars, *def_args))
+        switch_default = default_case(func_chain, p4_vars)
+        return And(cls.apply(func_chain, p4_vars), If(is_hit, switch_hit, switch_default))
+
+    @classmethod
+    def case(cls, func_chain, p4_vars, action_str, case_block):
+        action = cls.actions[action_str]
+
+        action_var = Int(f"{cls.__name__}_action")
+        return Implies(action_var == action[0], And(action[1][0](func_chain, p4_vars, *action[1][1]), case_block(func_chain, p4_vars)))
 
 
 def step(func_chain, p4_vars, expr=None):
@@ -217,7 +256,8 @@ def step(func_chain, p4_vars, expr=None):
         fun_expr = next_fun(func_chain, p4_vars)
         if expr is not None:
             # concatenate chain result with the provided expression
-            return And(expr, fun_expr)
+            # return And(expr, fun_expr)
+            return fun_expr
         else:
             # extract the chained result
             return fun_expr
@@ -226,7 +266,8 @@ def step(func_chain, p4_vars, expr=None):
         return expr
     else:
         # empty statement, just return true
-        return True
+        z3_copy = p4_vars._make(p4_vars.const)
+        return (p4_vars.const == z3_copy)
 
 
 def slice_assign(lval, rval, slice_l, slice_r):

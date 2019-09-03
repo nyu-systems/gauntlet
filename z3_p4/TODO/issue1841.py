@@ -1,101 +1,212 @@
-from z3 import *
-import os
-
-''' SOLVER '''
-s = Solver()
+from p4z3_base import *
 
 
-''' HEADERS '''
-# The input headers of the control pipeline
-Hdr = Datatype('Hdr')
-Hdr.declare('mk_Hdr',
-            ('fA', BitVecSort(32)), ('fB', BitVecSort(16)),
-            ('fC', BitVecSort(16)), ('fD', BitVecSort(16)),
-            ('fE', BitVecSort(16)), ('fF', BitVecSort(32)),
-            ('fG', BitVecSort(8))
-            )
-Hdr = Hdr.create()
+def p4_program_0(z3_reg):
 
-FieldList1_t = Datatype('FieldList1_t')
-FieldList1_t.declare('mk_FieldList1_t',
-                     ('a', BitVecSort(8)), ('b', BitVecSort(16)))
-FieldList1_t = FieldList1_t.create()
+    import v1model
+    z3_reg = v1model.register(z3_reg)
+    z3_args = [('fA', BitVecSort(32)), ('fB', BitVecSort(16)),
+               ('fC', BitVecSort(16)), ('fD', BitVecSort(16)),
+               ('fE', BitVecSort(16)), ('fF', BitVecSort(32)),
+               ('fG', BitVecSort(8))]
+    z3_reg.register_z3_type("Hdr", Header, z3_args)
 
-FieldList2_t = Datatype('FieldList2_t')
-FieldList2_t.declare('mk_FieldList2_t',
-                     ('a', BitVecSort(16)), ('b', BitVecSort(16)),
-                     ('c', BitVecSort(32)))
-FieldList2_t = FieldList2_t.create()
+    z3_args = [('h', z3_reg.types["Hdr"])]
+    z3_reg.register_z3_type("H", Struct, z3_args)
+
+    z3_args = []
+    z3_reg.register_z3_type("M", Struct, z3_args)
+
+    z3_args = [('a', BitVecSort(8)), ('b', BitVecSort(16))]
+    z3_reg.register_z3_type("FieldList1_t", Struct, z3_args)
+
+    z3_args = [('a', BitVecSort(16)), ('b', BitVecSort(16)),
+               ('c', BitVecSort(32))]
+    z3_reg.register_z3_type("FieldList2_t", Struct, z3_args)
+
+    z3_args = [('fl1', z3_reg.types["FieldList1_t"]),
+               ('fl2', z3_reg.types["FieldList2_t"])]
+    z3_reg.register_z3_type("FieldLists_t", Struct, z3_args)
+
+    def p():
+        pass
+
+    def vrfy():
+        pass
+
+    def update():
+        pass
+
+    def egress():
+        pass
+
+    def deparser():
+        pass
+
+    z3_args = [('hdr', z3_reg.types["H"]), ('meta', z3_reg.types["M"]),
+               ('smeta', z3_reg.types["standard_metadata_t"])]
+    z3_reg.register_z3_type("inouts", P4State, z3_args)
+    ingress_args = z3_reg.instance("inouts")
+
+    def ingress(p4_vars):
+
+        p4_vars.fl1_0 = z3_reg.instance("FieldList1_t")
+        p4_vars.fl2_0 = z3_reg.instance("FieldList2_t")
+
+        def apply(func_chain, p4_vars):
+            sub_chain = []
+
+            def struct_update(func_chain, p4_vars):
+                rval = (z3_slice(p4_vars.hdr.h.fA, 31, 24),
+                        p4_vars.hdr.h.fB)
+                expr = p4_vars.set_struct("fl1_0", rval)
+                return step(func_chain, p4_vars, expr)
+            sub_chain.append(struct_update)
+
+            def struct_update(func_chain, p4_vars):
+                rval = (p4_vars.hdr.h.fB, p4_vars.hdr.h.fC, p4_vars.hdr.h.fA)
+                expr = p4_vars.set_struct("fl2_0", rval)
+                return step(func_chain, p4_vars, expr)
+            sub_chain.append(struct_update)
+
+            def output_update(func_chain, p4_vars):
+                rval = BitVec("tmp", 16)
+                expr = p4_vars.set("tmp", rval)
+                return step(func_chain, p4_vars, expr)
+            sub_chain.append(output_update)
+
+            def output_update(func_chain, p4_vars):
+                rval = p4_vars.tmp
+                expr = p4_vars.set("output_0", rval)
+                return step(func_chain, p4_vars, expr)
+            sub_chain.append(output_update)
+
+            def output_update(func_chain, p4_vars):
+                rval = z3_cast(p4_vars.output_0, 9)
+                expr = p4_vars.set("smeta.egress_spec", rval)
+                return step(func_chain, p4_vars, expr)
+            sub_chain.append(output_update)
+
+            return step(sub_chain + func_chain, p4_vars)
+        return step(func_chain=[apply], p4_vars=p4_vars)
+    return ((p,), (vrfy,), (ingress, ingress_args), (egress,), (update,), (deparser,))
 
 
-FieldLists_t = Datatype('FieldLists_t')
-FieldLists_t.declare('mk_FieldLists_t',
-                     ('fl1', FieldList1_t), ('fl2', FieldList2_t))
-FieldLists_t = FieldLists_t.create()
+def p4_program_1(z3_reg):
 
-Hash_T = DeclareSort('Hash_T')
-I = DeclareSort('I')
-Hash_get = Function('Hash_get', I, Hash_T)
+    import v1model
+    z3_reg = v1model.register(z3_reg)
+    z3_args = [('fA', BitVecSort(32)), ('fB', BitVecSort(16)),
+               ('fC', BitVecSort(16)), ('fD', BitVecSort(16)),
+               ('fE', BitVecSort(16)), ('fF', BitVecSort(32)),
+               ('fG', BitVecSort(8))]
+    z3_reg.register_z3_type("Hdr", Header, z3_args)
 
+    z3_args = [('h', z3_reg.types["Hdr"])]
+    z3_reg.register_z3_type("H", Struct, z3_args)
+    z3_args = []
+    z3_reg.register_z3_type("M", Struct, z3_args)
 
-''' TABLES '''
-''' The table constant we are matching with.
- Actually this should be a match action tuple that picks the next action
- How to implement that? Some form of array?
- Right now, we have a hacky version of integer values which mimic an enum.
- Each integer value corresponds to a specific action PER table. The number of
- available integer values is constrained. '''
+    z3_args = [('a', BitVecSort(8)), ('b', BitVecSort(16))]
+    z3_reg.register_z3_type("FieldList1_t", Struct, z3_args)
 
+    z3_args = [('a', BitVecSort(16)), ('b', BitVecSort(16)),
+               ('c', BitVecSort(32))]
+    z3_reg.register_z3_type("FieldList2_t", Struct, z3_args)
 
-''' OUTPUT '''
+    z3_args = [('fl1', z3_reg.types["FieldList1_t"]),
+               ('fl2', z3_reg.types["FieldList2_t"])]
+    z3_reg.register_z3_type("FieldLists_t", Struct, z3_args)
 
-# the final output of the control pipeline in a single data type
-p4_output = Datatype('p4_output')
-p4_output.declare('mk_output',
-                  ('Hdr', Hdr),
-                  ('egress_spec', BitVecSort(9)))
-p4_output = p4_output.create()
+    def p():
+        pass
 
+    def vrfy():
+        pass
 
-''' INPUT VARIABLES AND MATCH-ACTION ENTRIES'''
+    def update():
+        pass
 
-# Initialize the header and match-action constraints
-# These are our inputs
-# Think of it as the header inputs after they have been parsed
-h_valid = Const('h_valid', BoolSort())
+    def egress():
+        pass
 
-# The output header, one variable per modification
-p4_return = Const("p4_return", p4_output)
+    def deparser():
+        pass
 
-# The possible table entries
-# reduce the range of action outputs to the total number of actions
+    z3_args = [('hdr', z3_reg.types["H"]), ('meta', z3_reg.types["M"]),
+               ('smeta', z3_reg.types["standard_metadata_t"])]
+    z3_reg.register_z3_type("inouts", P4State, z3_args)
+    ingress_args = z3_reg.instance("inouts")
 
+    def ingress(p4_vars):
 
-def step(func_chain, rets, assigns):
-    if func_chain:
-        rets = list(rets)  # do not propagate the list per step
-        next_fun = func_chain[0]
-        func_chain = func_chain[1:]
-        assigns.append(next_fun(func_chain, rets))
-    else:
-        assigns.append(True)
-    return And(assigns)
+        p4_vars.fl1_1 = z3_reg.instance("FieldList1_t")
+        p4_vars.fl2_1 = z3_reg.instance("FieldList2_t")
+
+        def apply(func_chain, p4_vars):
+            sub_chain = []
+
+            def output_update(func_chain, p4_vars):
+                rval = z3_slice(p4_vars.hdr.h.fA, 31, 24)
+                expr = p4_vars.set("fl1_1.a", rval)
+                return step(func_chain, p4_vars, expr)
+            sub_chain.append(output_update)
+
+            def output_update(func_chain, p4_vars):
+                rval = p4_vars.hdr.h.fB
+                expr = p4_vars.set("fl1_1.b", rval)
+                return step(func_chain, p4_vars, expr)
+            sub_chain.append(output_update)
+
+            def output_update(func_chain, p4_vars):
+                rval = p4_vars.hdr.h.fB
+                expr = p4_vars.set("fl2_1.a", rval)
+                return step(func_chain, p4_vars, expr)
+            sub_chain.append(output_update)
+
+            def output_update(func_chain, p4_vars):
+                rval = p4_vars.hdr.h.fC
+                expr = p4_vars.set("fl2_1.b", rval)
+                return step(func_chain, p4_vars, expr)
+            sub_chain.append(output_update)
+
+            def output_update(func_chain, p4_vars):
+                rval = p4_vars.hdr.h.fA
+                expr = p4_vars.set("fl2_1.c", rval)
+                return step(func_chain, p4_vars, expr)
+            sub_chain.append(output_update)
+
+            def output_update(func_chain, p4_vars):
+                rval = BitVec("tmp", 16)
+                expr = p4_vars.set("tmp", rval)
+                return step(func_chain, p4_vars, expr)
+            sub_chain.append(output_update)
+
+            def output_update(func_chain, p4_vars):
+                rval = z3_cast(p4_vars.tmp, 9)
+                expr = p4_vars.set("smeta.egress_spec", rval)
+                return step(func_chain, p4_vars, expr)
+            sub_chain.append(output_update)
+
+            return step(sub_chain + func_chain, p4_vars)
+        return step(func_chain=[apply], p4_vars=p4_vars)
+    return ((p,), (vrfy,), (ingress, ingress_args), (egress,), (update,), (deparser,))
 
 
 def z3_check():
-    # The equivalence check of the solver
-    # For all input packets and possible table matches the programs should
-    # be the same
+    ''' SOLVER '''
+    s = Solver()
 
-    bounds = [p4_return]
-    # the equivalence equation
-    tv_equiv = simplify(control_ingress_0() != control_ingress_0())
-    s.add(Exists(bounds, tv_equiv))
-    # tv_equiv = simplify(control_ingress_1()) != simplify(control_ingress_2())
-    # s.add(Exists(bounds, tv_equiv))
-    # tv_equiv = simplify(control_ingress_2()) != simplify(control_ingress_3())
-    # s.add(Exists(bounds, tv_equiv))
-    print(tv_equiv)
+    p4_ctrl_0, p4_ctrl_0_args = p4_program_0(Z3Reg())[2]
+    p4_ctrl_1, p4_ctrl_1_args = p4_program_1(Z3Reg())[2]
+
+    print("PROGRAM 1")
+    print(p4_ctrl_0(p4_ctrl_0_args))
+    print("PROGRAM 2")
+    print(p4_ctrl_1(p4_ctrl_1_args))
+    tv_equiv = simplify(p4_ctrl_0(p4_ctrl_0_args) !=
+                        p4_ctrl_1(p4_ctrl_1_args))
+    s.add(tv_equiv)
     print (s.sexpr())
     ret = s.check()
     if ret == sat:
@@ -105,79 +216,6 @@ def z3_check():
     else:
         print (ret)
         return os.EX_OK
-
-
-def control_ingress_0():
-    ''' This is the initial version of the program. '''
-    fl1_0 = Const("fl1_0", FieldList1_t)  # FieldList1_t fl2_0;
-    fl2_0 = Const("fl2_0", FieldList2_t)  # FieldList2_t fl2_0;
-    output_0 = BitVec("output_0", 16)  # bit<16> output_0;
-    tmp = BitVec("tmp", 16)  # bit<16> tmp;
-
-    def apply():
-        func_chain = []
-
-        def local_assign(func_chain, rets):
-            assigns = []
-            new_ret = len(rets)
-            prev_ret = new_ret - 1
-            nonlocal fl1_0
-            fl1_0 = FieldList1_t.mk_FieldList1_t(Extract(31, 24, Hdr.fA(p4_output.Hdr(
-                rets[prev_ret]))), Hdr.fB(p4_output.Hdr(
-                    rets[prev_ret])))
-            return step(func_chain, rets, assigns)
-        # fl1_0 = { hdr.h.fA[31:24], hdr.h.fB };
-        func_chain.append(local_assign)
-
-        def local_assign(func_chain, rets):
-            assigns = []
-            new_ret = len(rets)
-            prev_ret = new_ret - 1
-            nonlocal fl2_0
-            fl2_0 = FieldList2_t.mk_FieldList2_t(
-                Hdr.fB(p4_output.Hdr(rets[prev_ret])),
-                Hdr.fC(p4_output.Hdr(rets[prev_ret])),
-                Hdr.fA(p4_output.Hdr(rets[prev_ret])))
-            return step(func_chain, rets, assigns)
-        # fl2_0 = { hdr.h.fB, hdr.h.fC, hdr.h.fA };
-        func_chain.append(local_assign)
-
-        def local_assign(func_chain, rets):
-            assigns = []
-            new_ret = len(rets)
-            prev_ret = new_ret - 1
-            nonlocal tmp
-            Hash_get = Function('Hash_get', FieldLists_t, BitVecSort(16))
-            tmp = Hash_get(FieldLists_t.mk_FieldLists_t(
-                fl1_0, fl2_0))
-            return step(func_chain, rets, assigns)
-        # tmp = hash1_0.get<FieldLists_t>(FieldLists_t {fl1 = fl1_0,fl2 = fl2_0});
-        func_chain.append(local_assign)
-
-        def local_assign(func_chain, rets):
-            assigns = []
-            new_ret = len(rets)
-            prev_ret = new_ret - 1
-            nonlocal output_0
-            output_0 = tmp
-            return step(func_chain, rets, assigns)
-        # output_0 = tmp;
-        func_chain.append(local_assign)
-
-        def output_update(func_chain, rets):
-            assigns = []
-            new_ret = len(rets)
-            prev_ret = new_ret - 1
-            rets.append(Const("ret_%d" % new_ret, p4_output))
-            update = p4_output.mk_output(
-                p4_output.Hdr(rets[prev_ret]), Extract(8, 0, output_0))
-            assigns.append(rets[new_ret] == update)
-            return step(func_chain, rets, assigns)
-        func_chain.append(output_update)  # sm.egress_spec = (bit<9>)output_0;
-        return func_chain
-    # return the apply function as sequence of logic clauses
-    func_chain = apply()
-    return step(func_chain, assigns=[], rets=[p4_return])
 
 
 if __name__ == '__main__':
