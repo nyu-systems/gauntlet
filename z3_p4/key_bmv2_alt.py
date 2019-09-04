@@ -1,4 +1,4 @@
-from p4z3_base import *
+from p4z3_expressions import *
 
 
 def p4_program_0(z3_reg):
@@ -78,39 +78,13 @@ def p4_program_0(z3_reg):
         c_a_0.add(block)
 
         # @name("ingress.c.t") table c_t {
-        class c_t(TableExpr):
-            ''' This is a table '''
-            ''' The table constant we are matching with.
-             Right now, we have a hacky version of integer values which
-             mimic an enum. Each integer value corresponds to a specific
-             action PER table. The number of available integer values is
-             constrained. '''
+        c_t = TableExpr("c_t")
+        c_t.add_action("c_a_0", c_a_0, ())
+        c_t.add_action("NoAction_0", NoAction_0, ())
+        c_t.add_default(NoAction_0, ())
 
-            @classmethod
-            def table_match(cls, p4_vars):
-                # The keys of the table are compared with the input keys.
-                # In this case we are matching a single value
-                # key = {
-                #     h.h.a + h.h.a: exact @name("e") ;
-                # }
-                key_matches = []
-                # The key is an addition of two variables
-                key_0 = p4_vars.h.h.a + p4_vars.h.h.a
-                key_0_match = Const(f"{cls.__name__}_key_0", key_0.sort())
-
-                # It is an exact match, so we use direct comparison
-                key_matches.append(key_0 == key_0_match)
-                return And(key_matches)
-
-            # actions = {
-            #     c_a_0();
-            #     NoAction_0();
-            # }
-            actions = {
-                "c_a_0": (1, (c_a_0.eval, ())),
-                "NoAction_0": (2, (NoAction_0.eval, ())),
-            }
-            actions["default"] = (0, (NoAction_0.eval, ()))
+        def table_key(p4_vars): return p4_vars.h.h.a + p4_vars.h.h.a
+        c_t.add_match(table_key)
 
         apply = Function()
 
