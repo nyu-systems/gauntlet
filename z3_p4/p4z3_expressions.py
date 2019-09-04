@@ -51,7 +51,7 @@ class BlockStatement():
         return step_alt(p4_vars, self.exprs + expr_chain)
 
 
-class Function():
+class FunctionExpr():
     def __init__(self):
         self.block_statement = None
 
@@ -122,10 +122,8 @@ class TableExpr():
         return And(key_pairs)
 
     def action_run(self, p4_vars):
-        action = Const(f"{self.name}_action", IntSort())
-        return If(self.table_match(p4_vars),
-                  action,
-                  0)
+        action = Int(f"{self.name}_action")
+        return self.table_match(p4_vars)
 
     def apply(self):
         return self
@@ -139,4 +137,19 @@ class TableExpr():
         return If(self.table_match(p4_vars),
                   self.table_action(p4_vars, expr_chain),
                   def_fun(p4_vars, expr_chain, *def_args))
-        return self.apply(p4_vars, expr_chain)
+
+    def switch_apply(self, p4_vars, expr_chain, cases, default_case):
+        def_fun = self.actions["default"][1][0]
+        def_args = self.actions["default"][1][1]
+        is_hit = self.action_run(p4_vars)
+        switch_hit = And((*cases), def_fun(func_chain, p4_vars, *def_args))
+        switch_default = default_case(func_chain, p4_vars)
+        return And(self.apply(func_chain, p4_vars), If(is_hit, switch_hit,
+                                                       switch_default))
+
+    def case(self, p4_vars, expr_chain, action_str, case_block):
+        action = self.actions[action_str]
+        action_var = Int(f"{self.name}_action")
+        return Implies(action_var == action[0],
+                       And(action[1][0](func_chain, p4_vars, *action[1][1]),
+                           case_block(func_chain, p4_vars)))

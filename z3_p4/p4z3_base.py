@@ -223,9 +223,6 @@ class Table():
 
     @classmethod
     def switch_apply(cls, func_chain, p4_vars, cases, default_case):
-        # This is a table match where we look up the provided key
-        # If we match select the associated action,
-        # else use the default action
         def_fun = cls.actions["default"][1][0]
         def_args = cls.actions["default"][1][1]
         is_hit = cls.action_run(p4_vars)

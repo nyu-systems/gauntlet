@@ -233,10 +233,6 @@ def p4_program_1(z3_reg):
 
             return step(sub_chain + func_chain, p4_vars)
 
-        # The key is defined in the control function
-        # Practically, this is a placeholder variable
-        p4_vars.key_0 = BitVec("key_0", 32)  # bit<32> key_0;
-
         # @name("ingress.c.t") table c_t {
         class c_t(Table):
             ''' This is a table '''
