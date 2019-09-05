@@ -31,7 +31,8 @@ def step_alt(p4_vars, expr_chain=[], expr=None):
 
 
 class AssignmentStatement():
-    def __init__(self, lval, rval):
+
+    def add_assign(self, lval, rval):
         self.lval = lval
         self.rval = rval
 

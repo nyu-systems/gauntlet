@@ -75,9 +75,10 @@ def p4_program_0(z3_reg):
 
         def BLOCK():
             block = BlockStatement()
-            rval = p4_vars.h.h.a
+            assign = AssignmentStatement()
             lval = "h.h.b"
-            assign = AssignmentStatement(lval, rval)
+            rval = p4_vars.h.h.a
+            assign.add_assign(lval, rval)
             block.add(assign)
             return block
         c_a_0.add(BLOCK())
@@ -98,9 +99,10 @@ def p4_program_0(z3_reg):
 
             block.add(c_t.apply())
 
+            assign = AssignmentStatement()
             rval = BitVecVal(0, 9)
             lval = "sm.egress_spec"
-            assign = AssignmentStatement(lval, rval)
+            assign.add_assign(lval, rval)
 
             block.add(assign)
             return block
@@ -185,9 +187,10 @@ def p4_program_1(z3_reg):
 
         def BLOCK():
             block = BlockStatement()
-            rval = p4_vars.h.h.a
+            assign = AssignmentStatement()
             lval = "h.h.b"
-            assign = AssignmentStatement(lval, rval)
+            rval = p4_vars.h.h.a
+            assign.add_assign(lval, rval)
             block.add(assign)
             return block
         c_a_0.add(BLOCK())
@@ -208,18 +211,20 @@ def p4_program_1(z3_reg):
 
             def BLOCK():
                 block = BlockStatement()
+                assign = AssignmentStatement()
                 rval = p4_vars.h.h.a + p4_vars.h.h.a
                 lval = "key_0"
-                assign = AssignmentStatement(lval, rval)
+                assign.add_assign(lval, rval)
                 block.add(assign)
 
                 block.add(c_t.apply())
                 return block
             block.add(BLOCK())
 
+            assign = AssignmentStatement()
             rval = BitVecVal(0, 9)
             lval = "sm.egress_spec"
-            assign = AssignmentStatement(lval, rval)
+            assign.add_assign(lval, rval)
 
             block.add(assign)
             return block

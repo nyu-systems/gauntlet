@@ -252,7 +252,7 @@ def p4_program_1(z3_reg):
                 # }
                 key_matches = []
                 # The key is an addition of two variables
-                key_0 = p4_vars.h.h.a + p4_vars.h.h.a
+                key_0 = p4_vars.key_0
                 key_0_match = Const(f"{name}_key_0", key_0.sort())
 
                 # It is an exact match, so we use direct comparison
