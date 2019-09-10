@@ -133,7 +133,8 @@ def p4_program_0(z3_reg):
 
             def output_update(func_chain, p4_vars):
                 rval = BitVecVal(0, 9)
-                expr = p4_vars.set("sm.egress_spec", rval)
+                lval = "sm.egress_spec"
+                expr = p4_vars.set(lval, rval)
                 return step(func_chain, p4_vars, expr)
             # sm.egress_spec = 9w0
             sub_chain.append(output_update)

@@ -1,7 +1,8 @@
 from p4z3_base import *
+from collections import OrderedDict
 
 
-def step_alt(p4_vars, expr_chain=[], expr=None):
+def step(p4_vars, expr_chain=[], expr=None):
     ''' The step function ensures that modifications are propagated to
     all subsequent operations. This is important to guarantee correctness with
     branching or local modification. '''
@@ -31,6 +32,9 @@ def step_alt(p4_vars, expr_chain=[], expr=None):
 
 
 class AssignmentStatement():
+    def __init__(self):
+        self.lval = None
+        self.rval = None
 
     def add_assign(self, lval, rval):
         self.lval = lval
@@ -38,10 +42,11 @@ class AssignmentStatement():
 
     def eval(self, p4_vars, expr_chain=[]):
         expr = p4_vars.set(self.lval, self.rval)
-        return step_alt(p4_vars, expr_chain, expr)
+        return step(p4_vars, expr_chain, expr)
 
 
 class BlockStatement():
+
     def __init__(self):
         self.exprs = []
 
@@ -49,34 +54,96 @@ class BlockStatement():
         self.exprs.append(expr)
 
     def eval(self, p4_vars, expr_chain=[]):
-        return step_alt(p4_vars, self.exprs + expr_chain)
+        return step(p4_vars, self.exprs + expr_chain)
 
 
-class FunctionExpr():
+class ActionExpr():
+
     def __init__(self):
-        self.block_statement = None
+        self.block = BlockStatement()
 
-    def add(self, block_statement):
-        self.block_statement = block_statement
+    def add_stmt(self, stmt):
+        self.block.add(stmt)
 
     def eval(self, p4_vars, expr_chain=[]):
-        return self.block_statement.eval(p4_vars, expr_chain)
+        return self.block.eval(p4_vars, expr_chain)
 
 
 class IfStatement():
 
-    def __init__(self, condition, then_block, else_block):
+    def __init__(self):
+        self.condition = None
+        self.then_block = BlockStatement()
+        self.else_block = BlockStatement()
+
+    def add_condition(self, condition):
         self.condition = condition
-        self.then_block = then_block
-        self.else_block = else_block
+
+    def add_then_stmt(self, stmt):
+        self.then_block.add(stmt)
+
+    def add_else_stmt(self, stmt):
+        self.else_block.add(stmt)
 
     def eval(self, p4_vars, expr_chain=[]):
         if (isinstance(self.condition, AstRef)):
             condition = self.condition
         else:
             condition = self.condition.eval(p4_vars, expr_chain)
-        return If(condition, self.then_block.eval(p4_vars, expr_chain),
-                  self.else_block.eval(p4_vars, expr_chain))
+        if self.else_block:
+            return If(condition,
+                      self.then_block.eval(p4_vars, expr_chain),
+                      self.else_block.eval(p4_vars, expr_chain))
+        else:
+            return Implies(condition,
+                           self.then_block.eval(p4_vars, expr_chain))
+
+
+class SwitchStatement():
+
+    def __init__(self, table):
+        self.table = table
+        self.default_case = BlockStatement()
+        self.cases = OrderedDict()
+
+    def add_case(self, action_str):
+        table = self.table
+        action = table.actions[action_str]
+        action_var = Int(f"{table.name}_action")
+        case = {}
+        case["match"] = (action_var == action[0])
+        case["action_fun"] = action[1]
+        case["action_args"] = action[2]
+        case["case_block"] = BlockStatement()
+        self.cases[action_str] = case
+
+    def add_stmt_to_case(self, action_str, case_stmt):
+        case_block = self.cases[action_str]["case_block"]
+        case_block.add(case_stmt)
+
+    def add_stmt_to_default(self, default_stmt):
+        self.default_case.add(default_stmt)
+
+    def eval(self, p4_vars, expr_chain=[]):
+        class SwitchHit():
+            def __init__(self, cases):
+                self.cases = cases
+
+            def eval(self, p4_vars, expr_chain=[]):
+                case_exprs = []
+                for case_name, case in self.cases.items():
+                    case_block = step(
+                        p4_vars, [case["case_block"]] + expr_chain)
+                    case_exprs.append(Implies(case["match"], case_block))
+                return And(*case_exprs)
+        switch_hit = SwitchHit(self.cases)
+        switch_default = self.default_case
+        switch_if = IfStatement()
+        switch_if.add_condition(self.table.action_run(p4_vars))
+        switch_if.add_then_stmt(switch_hit)
+        switch_if.add_else_stmt(switch_default)
+        return And(self.table.eval(p4_vars, expr_chain),
+                   switch_if.eval(p4_vars, expr_chain))
 
 
 class TableExpr():
@@ -97,19 +164,19 @@ class TableExpr():
             if f_name == "default":
                 continue
             f_id = f_tuple[0]
-            f_fun = f_tuple[1][0]
-            f_args = f_tuple[1][1]
+            f_fun = f_tuple[1]
+            f_args = f_tuple[2]
             expr = Implies(action == f_id,
                            f_fun(p4_vars, expr_chain, *f_args))
             actions.append(expr)
         return And(*actions)
 
-    def add_action(self, str_name, action, action_args):
+    def add_action(self, str_name, action, *action_args):
         index = len(self.actions) + 1
-        self.actions[str_name] = (index, (action.eval, action_args))
+        self.actions[str_name] = (index, action, action_args)
 
-    def add_default(self, action, action_args):
-        self.actions["default"] = (0, (action.eval, action_args))
+    def add_default(self, action, *action_args):
+        self.actions["default"] = (0, action, action_args)
 
     def add_match(self, table_key):
         self.keys.append(table_key)
@@ -133,24 +200,8 @@ class TableExpr():
         # This is a table match where we look up the provided key
         # If we match select the associated action,
         # else use the default action
-        def_fun = self.actions["default"][1][0]
-        def_args = self.actions["default"][1][1]
+        def_fun = self.actions["default"][1]
+        def_args = self.actions["default"][2]
         return If(self.table_match(p4_vars),
                   self.table_action(p4_vars, expr_chain),
                   def_fun(p4_vars, expr_chain, *def_args))
-
-    def switch_apply(self, p4_vars, expr_chain, cases, default_case):
-        def_fun = self.actions["default"][1][0]
-        def_args = self.actions["default"][1][1]
-        is_hit = self.action_run(p4_vars)
-        switch_hit = And((*cases), def_fun(func_chain, p4_vars, *def_args))
-        switch_default = default_case(func_chain, p4_vars)
-        return And(self.apply(func_chain, p4_vars), If(is_hit, switch_hit,
-                                                       switch_default))
-
-    def case(self, p4_vars, expr_chain, action_str, case_block):
-        action = self.actions[action_str]
-        action_var = Int(f"{self.name}_action")
-        return Implies(action_var == action[0],
-                       And(action[1][0](func_chain, p4_vars, *action[1][1]),
-                           case_block(func_chain, p4_vars)))

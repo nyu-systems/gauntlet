@@ -61,38 +61,35 @@ def p4_program_0(z3_reg):
 
         # @name(".NoAction") action NoAction_0() {
         # }
-        NoAction_0 = FunctionExpr()
+        def NoAction_0(p4_vars, expr_chain):
+            def BLOCK():
+                block = BlockStatement()
+                return block
+            return BLOCK().eval(p4_vars, expr_chain)
 
-        def BLOCK():
-            block = BlockStatement()
-            return block
-        NoAction_0.add(BLOCK())
         # @name("ingress.c.a") action c_a_0() {
         #     h.h.b = h.h.a;
         # }
+        def c_a_0(p4_vars, expr_chain):
+            def BLOCK():
+                block = BlockStatement()
+                assign = AssignmentStatement()
+                lval = "h.h.b"
+                rval = p4_vars.h.h.a
+                assign.add_assign(lval, rval)
+                block.add(assign)
+                return block
+            return BLOCK().eval(p4_vars, expr_chain)
 
-        c_a_0 = FunctionExpr()
-
-        def BLOCK():
-            block = BlockStatement()
-            assign = AssignmentStatement()
-            lval = "h.h.b"
-            rval = p4_vars.h.h.a
-            assign.add_assign(lval, rval)
-            block.add(assign)
-            return block
-        c_a_0.add(BLOCK())
 
         # @name("ingress.c.t") table c_t {
         c_t = TableExpr("c_t")
-        c_t.add_action("c_a_0", c_a_0, ())
-        c_t.add_action("NoAction_0", NoAction_0, ())
-        c_t.add_default(NoAction_0, ())
+        c_t.add_action("c_a_0", c_a_0)
+        c_t.add_action("NoAction_0", NoAction_0)
+        c_t.add_default(NoAction_0)
 
         def table_key(p4_vars): return p4_vars.h.h.a + p4_vars.h.h.a
         c_t.add_match(table_key)
-
-        apply = FunctionExpr()
 
         def BLOCK():
             block = BlockStatement()
@@ -106,9 +103,8 @@ def p4_program_0(z3_reg):
 
             block.add(assign)
             return block
-        apply.add(BLOCK())
 
-        return apply.eval(p4_vars)
+        return BLOCK().eval(p4_vars)
 
     return ((p,), (vrfy,), (ingress, ingress_args), (egress,), (update,), (deparser,))
 
@@ -173,38 +169,34 @@ def p4_program_1(z3_reg):
 
         # @name(".NoAction") action NoAction_0() {
         # }
-        NoAction_0 = FunctionExpr()
+        def NoAction_0(p4_vars, expr_chain):
+            def BLOCK():
+                block = BlockStatement()
+                return block
+            return BLOCK().eval(p4_vars, expr_chain)
 
-        def BLOCK():
-            block = BlockStatement()
-            return block
-        NoAction_0.add(BLOCK())
         # @name("ingress.c.a") action c_a_0() {
         #     h.h.b = h.h.a;
         # }
-
-        c_a_0 = FunctionExpr()
-
-        def BLOCK():
-            block = BlockStatement()
-            assign = AssignmentStatement()
-            lval = "h.h.b"
-            rval = p4_vars.h.h.a
-            assign.add_assign(lval, rval)
-            block.add(assign)
-            return block
-        c_a_0.add(BLOCK())
+        def c_a_0(p4_vars, expr_chain):
+            def BLOCK():
+                block = BlockStatement()
+                assign = AssignmentStatement()
+                lval = "h.h.b"
+                rval = p4_vars.h.h.a
+                assign.add_assign(lval, rval)
+                block.add(assign)
+                return block
+            return BLOCK().eval(p4_vars, expr_chain)
 
         # @name("ingress.c.t") table c_t {
         c_t = TableExpr("c_t")
-        c_t.add_action("c_a_0", c_a_0, ())
-        c_t.add_action("NoAction_0", NoAction_0, ())
-        c_t.add_default(NoAction_0, ())
+        c_t.add_action("c_a_0", c_a_0)
+        c_t.add_action("NoAction_0", NoAction_0)
+        c_t.add_default(NoAction_0)
 
         def table_key(p4_vars): return p4_vars.key_0
         c_t.add_match(table_key)
-
-        apply = FunctionExpr()
 
         def BLOCK():
             block = BlockStatement()
@@ -228,9 +220,8 @@ def p4_program_1(z3_reg):
 
             block.add(assign)
             return block
-        apply.add(BLOCK())
 
-        return apply.eval(p4_vars)
+        return BLOCK().eval(p4_vars)
 
     return ((p,), (vrfy,), (ingress, ingress_args), (egress,), (update,), (deparser,))
 
