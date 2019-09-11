@@ -86,7 +86,7 @@ def p4_program_0(z3_reg):
         c_t.add_action("NoAction_0", NoAction_0)
         c_t.add_default(NoAction_0)
 
-        table_key = P4Add("h.h.a", "h.h.a")
+        table_key = P4add("h.h.a", "h.h.a")
         c_t.add_match(table_key)
 
         def BLOCK():
@@ -199,7 +199,7 @@ def p4_program_1(z3_reg):
 
             def BLOCK():
                 block = BlockStatement()
-                rval = P4Add("h.h.a", "h.h.a")
+                rval = P4add("h.h.a", "h.h.a")
                 lval = "key_0"
                 assign = AssignmentStatement(lval, rval)
                 block.add(assign)

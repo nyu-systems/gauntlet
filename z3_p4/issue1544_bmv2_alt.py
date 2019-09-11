@@ -95,7 +95,7 @@ def p4_program_0(z3_reg):
 
                 if_block = IfStatement()
 
-                condition = P4Gt("x_0", BitVecVal(5, 16))
+                condition = P4gt("x_0", BitVecVal(5, 16))
                 if_block.add_condition(condition)
 
                 rval = True
@@ -103,7 +103,7 @@ def p4_program_0(z3_reg):
                 assign = AssignmentStatement(lval, rval)
                 if_block.add_then_stmt(assign)
 
-                rval = P4Add("x_0", BitVecVal(65535, 16))
+                rval = P4add("x_0", BitVecVal(65535, 16))
                 lval = "retval"
                 assign = AssignmentStatement(lval, rval)
                 if_block.add_then_stmt(assign)
@@ -214,11 +214,11 @@ def p4_program_1(z3_reg):
 
             if_block = IfStatement()
 
-            condition = P4Gt(P4Slice("hdr.ethernet.srcAddr", 15, 0),
+            condition = P4gt(P4Slice("hdr.ethernet.srcAddr", 15, 0),
                              BitVecVal(5, 16))
             if_block.add_condition(condition)
 
-            rval = P4Add(P4Slice("hdr.ethernet.srcAddr", 15, 0),
+            rval = P4add(P4Slice("hdr.ethernet.srcAddr", 15, 0),
                          BitVecVal(65535, 16))
             lval = "retval"
             assign = AssignmentStatement(lval, rval)
@@ -231,8 +231,8 @@ def p4_program_1(z3_reg):
 
             block.add(if_block)
 
-            rval = P4Or(P4And("hdr.ethernet.srcAddr", P4Inv(BitVecVal(
-                0xffff, 48))), P4And(P4Lshift(Cast("retval", 48), 0), BitVecVal(0xffff, 48)))
+            rval = P4or(P4and("hdr.ethernet.srcAddr", P4inv(BitVecVal(
+                0xffff, 48))), P4and(P4rshift(P4Cast("retval", 48), 0), BitVecVal(0xffff, 48)))
             lval = "hdr.ethernet.srcAddr"
             assign = AssignmentStatement(lval, rval)
             block.add(assign)

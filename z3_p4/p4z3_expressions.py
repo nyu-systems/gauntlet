@@ -83,115 +83,115 @@ class P4UnaryOp(P4Z3Type):
         return self.operator(expr)
 
 
-class P4Not(P4UnaryOp):
+class P4not(P4UnaryOp):
     def __init__(self, val):
         operator = op.not_
         P4UnaryOp.__init__(self, val, operator)
 
 
-class P4Abs(P4UnaryOp):
+class P4abs(P4UnaryOp):
     def __init__(self, val):
         operator = op.abs
         P4UnaryOp.__init__(self, val, operator)
 
 
-class P4Inv(P4UnaryOp):
+class P4inv(P4UnaryOp):
     def __init__(self, val):
         operator = op.inv
         P4UnaryOp.__init__(self, val, operator)
 
 
-class P4Neg(P4UnaryOp):
+class P4neg(P4UnaryOp):
     def __init__(self, val):
         operator = op.neg
         P4UnaryOp.__init__(self, val, operator)
 
 
-class P4Add(P4BinaryOp):
+class P4add(P4BinaryOp):
     def __init__(self, lval, rval):
         operator = op.add
         P4BinaryOp.__init__(self, lval, rval, operator)
 
 
-class P4Mul(P4BinaryOp):
+class P4mul(P4BinaryOp):
     def __init__(self, lval, rval):
         operator = op.mul
         P4BinaryOp.__init__(self, lval, rval, operator)
 
 
-class P4Pow(P4BinaryOp):
+class P4pow(P4BinaryOp):
     def __init__(self, lval, rval):
         operator = op.pow
         P4BinaryOp.__init__(self, lval, rval, operator)
 
 
-class P4And(P4BinaryOp):
+class P4and(P4BinaryOp):
     def __init__(self, lval, rval):
         operator = op.and_
         P4BinaryOp.__init__(self, lval, rval, operator)
 
 
-class P4Or(P4BinaryOp):
+class P4or(P4BinaryOp):
     def __init__(self, lval, rval):
         operator = op.or_
         P4BinaryOp.__init__(self, lval, rval, operator)
 
 
-class P4Xor(P4BinaryOp):
+class P4xor(P4BinaryOp):
     def __init__(self, lval, rval):
         operator = op.xor
         P4BinaryOp.__init__(self, lval, rval, operator)
 
 
-class P4Div(P4BinaryOp):
+class P4div(P4BinaryOp):
     def __init__(self, lval, rval):
         operator = op.div
         P4BinaryOp.__init__(self, lval, rval, operator)
 
 
-class P4Lshift(P4BinaryOp):
+class P4lshift(P4BinaryOp):
     def __init__(self, lval, rval):
         operator = op.lshift
         P4BinaryOp.__init__(self, lval, rval, operator)
 
 
-class P4Rshift(P4BinaryOp):
+class P4rshift(P4BinaryOp):
     def __init__(self, lval, rval):
         operator = op.rshift
         P4BinaryOp.__init__(self, lval, rval, operator)
 
 
-class P4Lt(P4BinaryOp):
+class P4lt(P4BinaryOp):
     def __init__(self, lval, rval):
         operator = op.lt
         P4BinaryOp.__init__(self, lval, rval, operator)
 
 
-class P4Le(P4BinaryOp):
+class P4le(P4BinaryOp):
     def __init__(self, lval, rval):
         operator = op.le
         P4BinaryOp.__init__(self, lval, rval, operator)
 
 
-class P4Eq(P4BinaryOp):
+class P4eq(P4BinaryOp):
     def __init__(self, lval, rval):
         operator = op.eq
         P4BinaryOp.__init__(self, lval, rval, operator)
 
 
-class P4Ne(P4BinaryOp):
+class P4ne(P4BinaryOp):
     def __init__(self, lval, rval):
         operator = op.ne
         P4BinaryOp.__init__(self, lval, rval, operator)
 
 
-class P4Ge(P4BinaryOp):
+class P4ge(P4BinaryOp):
     def __init__(self, lval, rval):
         operator = op.ge
         P4BinaryOp.__init__(self, lval, rval, operator)
 
 
-class P4Gt(P4BinaryOp):
+class P4gt(P4BinaryOp):
     def __init__(self, lval, rval):
         operator = op.gt
         P4BinaryOp.__init__(self, lval, rval, operator)
@@ -208,7 +208,20 @@ class P4Slice(P4Z3Type):
         return Extract(self.slice_l, self.slice_r, val_expr)
 
 
-class Cast(P4Z3Type):
+class P4Concat(P4Z3Type):
+    def __init__(self, lval, rval):
+        self.lval = lval
+        self.rval = rval
+
+    def eval(self, p4_vars, expr_chain=[]):
+        lval_expr = resolve_val(p4_vars, expr_chain, self.lval)
+        rval_expr = resolve_val(p4_vars, expr_chain, self.rval)
+        return Concat(lval_expr, rval_expr)
+
+
+class P4Cast(P4Z3Type):
+    # TODO: need to take a closer look on how to do this correctly...
+    # If we cast do we add/remove the least or most significant bits?
     def __init__(self, val, to_size):
         self.val = val
         self.to_size = to_size
@@ -393,6 +406,9 @@ class TableExpr(P4Z3Type):
 
     def table_match(self, p4_vars, expr_chain=[]):
         key_pairs = []
+        if not self.keys:
+            # there is nothing to match with...
+            return False
         for index, key in enumerate(self.keys):
             key_eval = resolve_val(p4_vars, expr_chain, key)
             key_match = Const(f"{self.name}_key_{index}", key_eval.sort())
