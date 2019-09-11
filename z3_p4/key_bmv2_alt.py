@@ -75,12 +75,11 @@ def p4_program_0(z3_reg):
                 block = BlockStatement()
                 assign = AssignmentStatement()
                 lval = "h.h.b"
-                rval = p4_vars.h.h.a
+                rval = "h.h.a"
                 assign.add_assign(lval, rval)
                 block.add(assign)
                 return block
             return BLOCK().eval(p4_vars, expr_chain)
-
 
         # @name("ingress.c.t") table c_t {
         c_t = TableExpr("c_t")
@@ -88,7 +87,7 @@ def p4_program_0(z3_reg):
         c_t.add_action("NoAction_0", NoAction_0)
         c_t.add_default(NoAction_0)
 
-        def table_key(p4_vars): return p4_vars.h.h.a + p4_vars.h.h.a
+        table_key = P4Add("h.h.a", "h.h.a")
         c_t.add_match(table_key)
 
         def BLOCK():
@@ -183,7 +182,7 @@ def p4_program_1(z3_reg):
                 block = BlockStatement()
                 assign = AssignmentStatement()
                 lval = "h.h.b"
-                rval = p4_vars.h.h.a
+                rval = "h.h.a"
                 assign.add_assign(lval, rval)
                 block.add(assign)
                 return block
@@ -195,7 +194,7 @@ def p4_program_1(z3_reg):
         c_t.add_action("NoAction_0", NoAction_0)
         c_t.add_default(NoAction_0)
 
-        def table_key(p4_vars): return p4_vars.key_0
+        table_key = "key_0"
         c_t.add_match(table_key)
 
         def BLOCK():
@@ -204,7 +203,7 @@ def p4_program_1(z3_reg):
             def BLOCK():
                 block = BlockStatement()
                 assign = AssignmentStatement()
-                rval = p4_vars.h.h.a + p4_vars.h.h.a
+                rval = P4Add("h.h.a", "h.h.a")
                 lval = "key_0"
                 assign.add_assign(lval, rval)
                 block.add(assign)
@@ -263,22 +262,3 @@ def z3_check():
 
 if __name__ == '__main__':
     z3_check()
-
-
-# If(And(a(hdr6192_0) + a(hdr6192_0) == key_0(c_t_m)),
-#    Xor(Implies(action(c_t_m) == 1,
-#                p4_vars5688_2 ==
-#                mk_p4_vars(mk_headers(mk_hdr(a(hdr6192_0),
-#                                         a(hdr6192_0))),
-#                          mk_meta,
-#                          mk_standard_metadata_t(0))),
-#        Implies(action(c_t_m) == 2,
-#                p4_vars5688_2 ==
-#                mk_p4_vars(mk_headers(mk_hdr(a(hdr6192_0),
-#                                         a(hdr6192_0))),
-#                          mk_meta,
-#                          mk_standard_metadata_t(0)))),
-#    p4_vars5688_2 ==
-#    mk_p4_vars(mk_headers(mk_hdr(a(hdr6192_0), a(hdr6192_0))),
-#              mk_meta,
-#              mk_standard_metadata_t(0)))

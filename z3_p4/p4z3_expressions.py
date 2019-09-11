@@ -1,5 +1,6 @@
 from p4z3_base import *
 from collections import OrderedDict
+import operator as op
 
 
 def step(p4_vars, expr_chain=[], expr=None):
@@ -31,21 +32,104 @@ def step(p4_vars, expr_chain=[], expr=None):
         return (p4_vars.const == z3_copy)
 
 
-class AssignmentStatement():
-    def __init__(self):
-        self.lval = None
-        self.rval = None
+def resolve_val(p4_vars, expr_chain, val):
+    # resolve potential references first
+    if (isinstance(val, str)):
+        val = p4_vars.get(val)
 
-    def add_assign(self, lval, rval):
+    if (isinstance(val, AstRef) or isinstance(val, bool)):
+        expr = val
+    elif (isinstance(val, P4Z3Type)):
+        expr = val.eval(p4_vars, expr_chain)
+    else:
+        val_type = type(val)
+        raise RuntimeError(f"Value of type {val_type} cannot be resolved!")
+    return expr
+
+
+def evaluate_action_args(p4_vars, expr_chain, action_args):
+    p4_args = []
+    for arg in action_args:
+        expr = resolve_val(p4_vars, expr_chain, arg)
+        p4_args.append(expr)
+    return p4_args
+
+
+class P4Z3Type():
+    def eval(self, p4_vars, expr_chain=[]):
+        raise NotImplementedError("Method eval not implemented!")
+
+
+class P4Operation(P4Z3Type):
+    def __init__(self, lval, rval, operator):
+        self.lval = lval
+        self.rval = rval
+        self.operator = operator
+
+    def eval(self, p4_vars, expr_chain=[]):
+        lval_expr = resolve_val(p4_vars, expr_chain, self.lval)
+        rval_expr = resolve_val(p4_vars, expr_chain, self.rval)
+        return self.operator(lval_expr, rval_expr)
+
+
+class P4Add(P4Operation):
+    def __init__(self, lval, rval):
+        operator = op.add
+        P4Operation.__init__(self, lval, rval, operator)
+
+
+class P4Lss(P4Operation):
+    def __init__(self, lval, rval):
+        operator = op.lt
+        P4Operation.__init__(self, lval, rval, operator)
+
+
+class P4Grt(P4Operation):
+    def __init__(self, lval, rval):
+        operator = op.gt
+        P4Operation.__init__(self, lval, rval, operator)
+
+
+class P4Slice(P4Z3Type):
+    def __init__(self, val, slice_l, slice_r):
+        self.val = val
+        self.slice_l = slice_l
+        self.slice_r = slice_r
+
+    def eval(self, p4_vars, expr_chain=[]):
+        val_expr = resolve_val(p4_vars, expr_chain, self.val)
+        return Extract(self.slice_l, self.slice_r, val_expr)
+
+
+class SliceAssignment(P4Z3Type):
+    def __init__(self, lval, rval, slice_l, slice_r):
+        self.lval = lval
+        self.rval = rval
+        self.slice_l = slice_l
+        self.slice_r = slice_r
+
+    def eval(self, p4_vars, expr_chain=[]):
+        lval_expr = resolve_val(p4_vars, expr_chain, self.lval)
+        rval_expr = resolve_val(p4_vars, expr_chain, self.rval)
+        rval_expr = slice_assign(lval_expr, rval_expr,
+                                 self.slice_l, self.slice_r)
+        slice_assign_expr = p4_vars.set(self.lval, rval_expr)
+        return step(p4_vars, expr_chain, slice_assign_expr)
+
+
+class AssignmentStatement(P4Z3Type):
+
+    def __init__(self, lval, rval):
         self.lval = lval
         self.rval = rval
 
     def eval(self, p4_vars, expr_chain=[]):
-        expr = p4_vars.set(self.lval, self.rval)
-        return step(p4_vars, expr_chain, expr)
+        rval_expr = resolve_val(p4_vars, expr_chain, self.rval)
+        assign_expr = p4_vars.set(self.lval, rval_expr)
+        return step(p4_vars, expr_chain, assign_expr)
 
 
-class BlockStatement():
+class BlockStatement(P4Z3Type):
 
     def __init__(self):
         self.exprs = []
@@ -57,7 +141,7 @@ class BlockStatement():
         return step(p4_vars, self.exprs + expr_chain)
 
 
-class ActionExpr():
+class ActionExpr(P4Z3Type):
 
     def __init__(self):
         self.block = BlockStatement()
@@ -69,7 +153,7 @@ class ActionExpr():
         return self.block.eval(p4_vars, expr_chain)
 
 
-class IfStatement():
+class IfStatement(P4Z3Type):
 
     def __init__(self):
         self.condition = None
@@ -86,12 +170,11 @@ class IfStatement():
         self.else_block.add(stmt)
 
     def eval(self, p4_vars, expr_chain=[]):
-        if (isinstance(self.condition, AstRef)):
-            condition = self.condition
-        else:
-            condition = self.condition.eval(p4_vars, expr_chain)
+        if not condition:
+            raise RuntimeError("Missing condition!")
+        condition = resolve_val(p4_vars, expr_chain, self.condition)
         if self.else_block:
-            return If(condition,
+            return If(condition(p4_vars, expr_chain),
                       self.then_block.eval(p4_vars, expr_chain),
                       self.else_block.eval(p4_vars, expr_chain))
         else:
@@ -99,7 +182,7 @@ class IfStatement():
                            self.then_block.eval(p4_vars, expr_chain))
 
 
-class SwitchStatement():
+class SwitchStatement(P4Z3Type):
 
     def __init__(self, table):
         self.table = table
@@ -113,7 +196,8 @@ class SwitchStatement():
         case = {}
         case["match"] = (action_var == action[0])
         case["action_fun"] = action[1]
-        case["action_args"] = action[2]
+        case["action_args"] = evaluate_action_args(
+            p4_vars, expr_chain, action[2])
         case["case_block"] = BlockStatement()
         self.cases[action_str] = case
 
@@ -146,7 +230,7 @@ class SwitchStatement():
                    switch_if.eval(p4_vars, expr_chain))
 
 
-class TableExpr():
+class TableExpr(P4Z3Type):
 
     def __init__(self, name):
         self.name = name
@@ -165,7 +249,7 @@ class TableExpr():
                 continue
             f_id = f_tuple[0]
             f_fun = f_tuple[1]
-            f_args = f_tuple[2]
+            f_args = evaluate_action_args(p4_vars, expr_chain, f_tuple[2])
             expr = Implies(action == f_id,
                            f_fun(p4_vars, expr_chain, *f_args))
             actions.append(expr)
@@ -173,10 +257,10 @@ class TableExpr():
 
     def add_action(self, str_name, action, *action_args):
         index = len(self.actions) + 1
-        self.actions[str_name] = (index, action, action_args)
+        self.actions[str_name] = (index, action, *action_args)
 
     def add_default(self, action, *action_args):
-        self.actions["default"] = (0, action, action_args)
+        self.actions["default"] = (0, action, *action_args)
 
     def add_match(self, table_key):
         self.keys.append(table_key)
@@ -184,7 +268,15 @@ class TableExpr():
     def table_match(self, p4_vars):
         key_pairs = []
         for index, key in enumerate(self.keys):
-            key_eval = key(p4_vars)
+            if (isinstance(key, str)):
+                key_eval = p4_vars.get(key)
+                if(not isinstance(key_eval, AstRef)):
+                    key_eval = key_eval.eval(p4_vars)
+            else:
+                if(isinstance(key, AstRef)):
+                    key_eval = key
+                else:
+                    key_eval = key.eval(p4_vars)
             key_match = Const(f"{self.name}_key_{index}", key_eval.sort())
             key_pairs.append(key_eval == key_match)
         return And(key_pairs)
@@ -201,7 +293,8 @@ class TableExpr():
         # If we match select the associated action,
         # else use the default action
         def_fun = self.actions["default"][1]
-        def_args = self.actions["default"][2]
+        def_args = evaluate_action_args(
+            p4_vars, expr_chain, self.actions["default"][2])
         return If(self.table_match(p4_vars),
                   self.table_action(p4_vars, expr_chain),
                   def_fun(p4_vars, expr_chain, *def_args))

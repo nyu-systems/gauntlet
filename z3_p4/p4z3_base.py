@@ -97,6 +97,9 @@ class P4State(Z3P4Class):
         self.revisions.append(self.const)
         constants.add(self.const)
 
+    def get(self, var_string):
+        return operator.attrgetter(var_string)(self)
+
     def set(self, lstring, rvalue):
         # update the internal representation of the attribute
         if ("." in lstring):
