@@ -65,74 +65,71 @@ def p4_program_0(z3_reg):
             def BLOCK():
                 block = BlockStatement()
                 return block
-            return BLOCK().eval(p4_vars, expr_chain)
+            return step(p4_vars, [BLOCK()] + expr_chain)
 
         def NoAction_8(p4_vars, expr_chain):
             def BLOCK():
                 block = BlockStatement()
                 return block
-            return BLOCK().eval(p4_vars, expr_chain)
+            return step(p4_vars, [BLOCK()] + expr_chain)
 
         def NoAction_9(p4_vars, expr_chain):
             def BLOCK():
                 block = BlockStatement()
                 return block
-            return BLOCK().eval(p4_vars, expr_chain)
+            return step(p4_vars, [BLOCK()] + expr_chain)
 
         def NoAction_10(p4_vars, expr_chain):
             def BLOCK():
                 block = BlockStatement()
                 return block
-            return BLOCK().eval(p4_vars, expr_chain)
+            return step(p4_vars, [BLOCK()] + expr_chain)
 
         def NoAction_11(p4_vars, expr_chain):
             def BLOCK():
                 block = BlockStatement()
                 return block
-            return BLOCK().eval(p4_vars, expr_chain)
+            return step(p4_vars, [BLOCK()] + expr_chain)
 
         def set_vrf(p4_vars, expr_chain, vrf):
             def BLOCK():
                 block = BlockStatement()
-                assign = AssignmentStatement()
                 lval = "meta.ingress_metadata.vrf"
                 rval = vrf
-                assign.add_assign(lval, rval)
+                assign = AssignmentStatement(lval, rval)
                 block.add(assign)
                 return block
-            return BLOCK().eval(p4_vars, expr_chain)
+            return step(p4_vars, [BLOCK()] + expr_chain)
 
         def on_miss_2(p4_vars, expr_chain):
             def BLOCK():
                 block = BlockStatement()
                 return block
-            return BLOCK().eval(p4_vars, expr_chain)
+            return step(p4_vars, [BLOCK()] + expr_chain)
 
         def on_miss_5(p4_vars, expr_chain):
             def BLOCK():
                 block = BlockStatement()
                 return block
-            return BLOCK().eval(p4_vars, expr_chain)
+            return step(p4_vars, [BLOCK()] + expr_chain)
 
         def on_miss_6(p4_vars, expr_chain):
             def BLOCK():
                 block = BlockStatement()
                 return block
-            return BLOCK().eval(p4_vars, expr_chain)
+            return step(p4_vars, [BLOCK()] + expr_chain)
 
         def fib_hit_nexthop(p4_vars, expr_chain, nexthop_index):
             def BLOCK():
                 block = BlockStatement()
-                assign = AssignmentStatement()
                 lval = "meta.ingress_metadata.nexthop_index"
                 rval = nexthop_index
-                assign.add_assign(lval, rval)
+                assign = AssignmentStatement(lval, rval)
                 block.add(assign)
 
-                assign = AssignmentStatement()
                 lval = "hdr.ipv4.ttl"
                 rval = BitVec(255, 8)
-                assign.add_assign(lval, rval)
+                assign = AssignmentStatement(lval, rval)
                 block.add(assign)
                 return block
             return BLOCK().eval(p4_vars, expr_chain)
@@ -140,16 +137,14 @@ def p4_program_0(z3_reg):
         def fib_hit_nexthop_2(p4_vars, expr_chain, nexthop_index):
             def BLOCK():
                 block = BlockStatement()
-                assign = AssignmentStatement()
                 lval = "meta.ingress_metadata.nexthop_index"
                 rval = nexthop_index
-                assign.add_assign(lval, rval)
+                assign = AssignmentStatement(lval, rval)
                 block.add(assign)
 
-                assign = AssignmentStatement()
                 lval = "hdr.ipv4.ttl"
                 rval = BitVec(255, 8)
-                assign.add_assign(lval, rval)
+                assign = AssignmentStatement(lval, rval)
                 block.add(assign)
                 return block
             return BLOCK().eval(p4_vars, expr_chain)
@@ -157,10 +152,9 @@ def p4_program_0(z3_reg):
         def set_egress_details(p4_vars, expr_chain, egress_spec):
             def BLOCK():
                 block = BlockStatement()
-                assign = AssignmentStatement()
                 lval = "standard_metadata.egress_spec"
                 rval = egress_spec
-                assign.add_assign(lval, rval)
+                assign = AssignmentStatement(lval, rval)
                 block.add(assign)
                 return block
             return BLOCK().eval(p4_vars, expr_chain)
@@ -168,69 +162,69 @@ def p4_program_0(z3_reg):
         def set_bd(p4_vars, expr_chain, bd):
             def BLOCK():
                 block = BlockStatement()
-                assign = AssignmentStatement()
                 lval = "meta.ingress_metadata.bd"
                 rval = bd
-                assign.add_assign(lval, rval)
+                assign = AssignmentStatement(lval, rval)
                 block.add(assign)
                 return block
             return BLOCK().eval(p4_vars, expr_chain)
 
         bd_0 = TableExpr("bd_0")
-        bd_0.add_action("set_vrf", set_vrf, BitVec("bd_0_vrf", 12))
+        args = [BitVec("bd_0_vrf", 12)]
+        bd_0.add_action("set_vrf", set_vrf, args)
         bd_0.add_default(NoAction_1,)
 
-        def table_key(p4_vars): return p4_vars.meta.ingress_metadata.bd
+        table_key = "meta.ingress_metadata.bd"
         bd_0.add_match(table_key)
 
         ipv4_fib_0 = TableExpr("ipv4_fib_0")
-        ipv4_fib_0.add_action("on_miss_2", on_miss_2, )
-        ipv4_fib_0.add_action("fib_hit_nexthop", fib_hit_nexthop,
-                              BitVec("ipv4_fib_0_nexthop_index", 16))
-        ipv4_fib_0.add_default(NoAction_8,)
+        ipv4_fib_0.add_action("on_miss_2", on_miss_2)
 
-        def table_key(p4_vars): return p4_vars.meta.ingress_metadata.vrf
+        args = [BitVec("ipv4_fib_0_nexthop_index", 16)]
+        ipv4_fib_0.add_action("fib_hit_nexthop", fib_hit_nexthop, args)
+        ipv4_fib_0.add_default(NoAction_8)
+
+        table_key = "meta.ingress_metadata.vrf"
         ipv4_fib_0.add_match(table_key)
 
-        def table_key(p4_vars): return p4_vars.hdr.ipv4.dstAddr
+        table_key = "hdr.ipv4.dstAddr"
         ipv4_fib_0.add_match(table_key)
 
         ipv4_fib_lpm_0 = TableExpr("ipv4_fib_lpm_0")
-        ipv4_fib_lpm_0.add_action("on_miss_5", on_miss_5, )
-        ipv4_fib_lpm_0.add_action("fib_hit_nexthop_2", fib_hit_nexthop_2,
-                                  BitVec("ipv4_fib_lpm_0_nexthop_index", 16))
-        ipv4_fib_lpm_0.add_default(NoAction_9,)
+        ipv4_fib_lpm_0.add_action("on_miss_5", on_miss_5)
+        args = [BitVec("ipv4_fib_0_nexthop_index", 16)]
+        ipv4_fib_lpm_0.add_action("fib_hit_nexthop_2", fib_hit_nexthop_2, args)
+        ipv4_fib_lpm_0.add_default(NoAction_9)
 
-        def table_key(p4_vars): return p4_vars.meta.ingress_metadata.vrf
+        table_key = "meta.ingress_metadata.vrf"
         ipv4_fib_lpm_0.add_match(table_key)
         # TODO UPDATE TO LPM
 
-        def table_key(p4_vars): return p4_vars.hdr.ipv4.srcAddr
+        table_key = "hdr.ipv4.srcAddr"
         ipv4_fib_lpm_0.add_match(table_key)
 
         nexthop_0 = TableExpr("nexthop_0")
-        ipv4_fib_lpm_0.add_action("on_miss_6", on_miss_6, )
-        nexthop_0.add_action("set_egress_details", set_egress_details,
-                             BitVec("nexthop_0_egress_spec", 9))
+        ipv4_fib_lpm_0.add_action("on_miss_6", on_miss_6)
+        args = [BitVec("nexthop_0_egress_spec", 9)]
+        nexthop_0.add_action("set_egress_details", set_egress_details, args)
         nexthop_0.add_default(NoAction_10,)
 
-        def table_key(
-            p4_vars): return p4_vars.meta.ingress_metadata.nexthop_index
+        table_key = "meta.ingress_metadata.nexthop_index"
         nexthop_0.add_match(table_key)
 
         port_mapping_0 = TableExpr("port_mapping_0")
-        port_mapping_0.add_action(
-            "set_bd", set_bd, BitVec("port_mapping_0_bd", 16))
-        port_mapping_0.add_default(NoAction_11,)
+        args = [BitVec("port_mapping_0_bd", 16)]
+        port_mapping_0.add_action("set_bd", set_bd, args)
+        port_mapping_0.add_default(NoAction_11)
 
-        def table_key(p4_vars): return p4_vars.standard_metadata.ingress_port
+        table_key = "standard_metadata.ingress_port"
         port_mapping_0.add_match(table_key)
 
         def BLOCK():
             block = BlockStatement()
 
             if_block = IfStatement()
-            condition = p4_vars.hdr.ipv4.isValid()
+            condition = "hdr.ipv4.isValid()"
             if_block.add_condition(condition)
             if_block.add_then_stmt(port_mapping_0.apply())
             if_block.add_then_stmt(bd_0.apply())
@@ -312,74 +306,71 @@ def p4_program_1(z3_reg):
             def BLOCK():
                 block = BlockStatement()
                 return block
-            return BLOCK().eval(p4_vars, expr_chain)
+            return step(p4_vars, [BLOCK()] + expr_chain)
 
         def NoAction_8(p4_vars, expr_chain):
             def BLOCK():
                 block = BlockStatement()
                 return block
-            return BLOCK().eval(p4_vars, expr_chain)
+            return step(p4_vars, [BLOCK()] + expr_chain)
 
         def NoAction_9(p4_vars, expr_chain):
             def BLOCK():
                 block = BlockStatement()
                 return block
-            return BLOCK().eval(p4_vars, expr_chain)
+            return step(p4_vars, [BLOCK()] + expr_chain)
 
         def NoAction_10(p4_vars, expr_chain):
             def BLOCK():
                 block = BlockStatement()
                 return block
-            return BLOCK().eval(p4_vars, expr_chain)
+            return step(p4_vars, [BLOCK()] + expr_chain)
 
         def NoAction_11(p4_vars, expr_chain):
             def BLOCK():
                 block = BlockStatement()
                 return block
-            return BLOCK().eval(p4_vars, expr_chain)
+            return step(p4_vars, [BLOCK()] + expr_chain)
 
         def set_vrf(p4_vars, expr_chain, vrf):
             def BLOCK():
                 block = BlockStatement()
-                assign = AssignmentStatement()
                 lval = "meta.ingress_metadata.vrf"
                 rval = vrf
-                assign.add_assign(lval, rval)
+                assign = AssignmentStatement(lval, rval)
                 block.add(assign)
                 return block
-            return BLOCK().eval(p4_vars, expr_chain)
+            return step(p4_vars, [BLOCK()] + expr_chain)
 
         def on_miss_2(p4_vars, expr_chain):
             def BLOCK():
                 block = BlockStatement()
                 return block
-            return BLOCK().eval(p4_vars, expr_chain)
+            return step(p4_vars, [BLOCK()] + expr_chain)
 
         def on_miss_5(p4_vars, expr_chain):
             def BLOCK():
                 block = BlockStatement()
                 return block
-            return BLOCK().eval(p4_vars, expr_chain)
+            return step(p4_vars, [BLOCK()] + expr_chain)
 
         def on_miss_6(p4_vars, expr_chain):
             def BLOCK():
                 block = BlockStatement()
                 return block
-            return BLOCK().eval(p4_vars, expr_chain)
+            return step(p4_vars, [BLOCK()] + expr_chain)
 
         def fib_hit_nexthop(p4_vars, expr_chain, nexthop_index):
             def BLOCK():
                 block = BlockStatement()
-                assign = AssignmentStatement()
                 lval = "meta.ingress_metadata.nexthop_index"
                 rval = nexthop_index
-                assign.add_assign(lval, rval)
+                assign = AssignmentStatement(lval, rval)
                 block.add(assign)
 
-                assign = AssignmentStatement()
                 lval = "hdr.ipv4.ttl"
                 rval = BitVec(255, 8)
-                assign.add_assign(lval, rval)
+                assign = AssignmentStatement(lval, rval)
                 block.add(assign)
                 return block
             return BLOCK().eval(p4_vars, expr_chain)
@@ -387,16 +378,14 @@ def p4_program_1(z3_reg):
         def fib_hit_nexthop_2(p4_vars, expr_chain, nexthop_index):
             def BLOCK():
                 block = BlockStatement()
-                assign = AssignmentStatement()
                 lval = "meta.ingress_metadata.nexthop_index"
                 rval = nexthop_index
-                assign.add_assign(lval, rval)
+                assign = AssignmentStatement(lval, rval)
                 block.add(assign)
 
-                assign = AssignmentStatement()
                 lval = "hdr.ipv4.ttl"
                 rval = BitVec(255, 8)
-                assign.add_assign(lval, rval)
+                assign = AssignmentStatement(lval, rval)
                 block.add(assign)
                 return block
             return BLOCK().eval(p4_vars, expr_chain)
@@ -404,10 +393,9 @@ def p4_program_1(z3_reg):
         def set_egress_details(p4_vars, expr_chain, egress_spec):
             def BLOCK():
                 block = BlockStatement()
-                assign = AssignmentStatement()
                 lval = "standard_metadata.egress_spec"
                 rval = egress_spec
-                assign.add_assign(lval, rval)
+                assign = AssignmentStatement(lval, rval)
                 block.add(assign)
                 return block
             return BLOCK().eval(p4_vars, expr_chain)
@@ -415,69 +403,69 @@ def p4_program_1(z3_reg):
         def set_bd(p4_vars, expr_chain, bd):
             def BLOCK():
                 block = BlockStatement()
-                assign = AssignmentStatement()
                 lval = "meta.ingress_metadata.bd"
                 rval = bd
-                assign.add_assign(lval, rval)
+                assign = AssignmentStatement(lval, rval)
                 block.add(assign)
                 return block
             return BLOCK().eval(p4_vars, expr_chain)
 
         bd_0 = TableExpr("bd_0")
-        bd_0.add_action("set_vrf", set_vrf, BitVec("bd_0_vrf", 12))
+        args = [BitVec("bd_0_vrf", 12)]
+        bd_0.add_action("set_vrf", set_vrf, args)
         bd_0.add_default(NoAction_1,)
 
-        def table_key(p4_vars): return p4_vars.meta.ingress_metadata.bd
+        table_key = "meta.ingress_metadata.bd"
         bd_0.add_match(table_key)
 
         ipv4_fib_0 = TableExpr("ipv4_fib_0")
-        ipv4_fib_0.add_action("on_miss_2", on_miss_2, )
-        ipv4_fib_0.add_action("fib_hit_nexthop", fib_hit_nexthop,
-                              BitVec("ipv4_fib_0_nexthop_index", 16))
-        ipv4_fib_0.add_default(NoAction_8,)
+        ipv4_fib_0.add_action("on_miss_2", on_miss_2)
 
-        def table_key(p4_vars): return p4_vars.meta.ingress_metadata.vrf
+        args = [BitVec("ipv4_fib_0_nexthop_index", 16)]
+        ipv4_fib_0.add_action("fib_hit_nexthop", fib_hit_nexthop, args)
+        ipv4_fib_0.add_default(NoAction_8)
+
+        table_key = "meta.ingress_metadata.vrf"
         ipv4_fib_0.add_match(table_key)
 
-        def table_key(p4_vars): return p4_vars.hdr.ipv4.dstAddr
+        table_key = "hdr.ipv4.dstAddr"
         ipv4_fib_0.add_match(table_key)
 
         ipv4_fib_lpm_0 = TableExpr("ipv4_fib_lpm_0")
-        ipv4_fib_lpm_0.add_action("on_miss_5", on_miss_5, )
-        ipv4_fib_lpm_0.add_action("fib_hit_nexthop_2", fib_hit_nexthop_2,
-                                  BitVec("ipv4_fib_lpm_0_nexthop_index", 16))
-        ipv4_fib_lpm_0.add_default(NoAction_9,)
+        ipv4_fib_lpm_0.add_action("on_miss_5", on_miss_5)
+        args = [BitVec("ipv4_fib_0_nexthop_index", 16)]
+        ipv4_fib_lpm_0.add_action("fib_hit_nexthop_2", fib_hit_nexthop_2, args)
+        ipv4_fib_lpm_0.add_default(NoAction_9)
 
-        def table_key(p4_vars): return p4_vars.meta.ingress_metadata.vrf
+        table_key = "meta.ingress_metadata.vrf"
         ipv4_fib_lpm_0.add_match(table_key)
         # TODO UPDATE TO LPM
 
-        def table_key(p4_vars): return p4_vars.hdr.ipv4.srcAddr
+        table_key = "hdr.ipv4.srcAddr"
         ipv4_fib_lpm_0.add_match(table_key)
 
         nexthop_0 = TableExpr("nexthop_0")
-        ipv4_fib_lpm_0.add_action("on_miss_6", on_miss_6, )
-        nexthop_0.add_action("set_egress_details", set_egress_details,
-                             BitVec("nexthop_0_egress_spec", 9))
+        ipv4_fib_lpm_0.add_action("on_miss_6", on_miss_6)
+        args = [BitVec("nexthop_0_egress_spec", 9)]
+        nexthop_0.add_action("set_egress_details", set_egress_details, args)
         nexthop_0.add_default(NoAction_10,)
 
-        def table_key(
-            p4_vars): return p4_vars.meta.ingress_metadata.nexthop_index
+        table_key = "meta.ingress_metadata.nexthop_index"
         nexthop_0.add_match(table_key)
 
         port_mapping_0 = TableExpr("port_mapping_0")
-        port_mapping_0.add_action(
-            "set_bd", set_bd, BitVec("port_mapping_0_bd", 16))
-        port_mapping_0.add_default(NoAction_11,)
+        args = [BitVec("port_mapping_0_bd", 16)]
+        port_mapping_0.add_action("set_bd", set_bd, args)
+        port_mapping_0.add_default(NoAction_11)
 
-        def table_key(p4_vars): return p4_vars.standard_metadata.ingress_port
+        table_key = "standard_metadata.ingress_port"
         port_mapping_0.add_match(table_key)
 
         def BLOCK():
             block = BlockStatement()
 
             if_block = IfStatement()
-            condition = p4_vars.hdr.ipv4.isValid()
+            condition = "hdr.ipv4.isValid()"
             if_block.add_condition(condition)
             if_block.add_then_stmt(port_mapping_0.apply())
             if_block.add_then_stmt(bd_0.apply())
@@ -502,7 +490,7 @@ def z3_check():
     ''' SOLVER '''
     s = Solver()
 
-    # bounds = [p4_vars.const]
+    # bounds = ["const]
     # out = control_ingress_1(s, p4_vars)
     # print("FINAL OUTPUT")
     # print(out)

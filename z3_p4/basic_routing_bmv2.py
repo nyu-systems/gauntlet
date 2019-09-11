@@ -90,7 +90,7 @@ def p4_program_0(z3_reg):
 
             def output_update(func_chain, p4_vars):
                 rval = vrf
-                expr = p4_vars.set("meta.ingress_metadata.vrf", rval)
+                expr = p4_vars.set_or_add_var("meta.ingress_metadata.vrf", rval)
                 return step(func_chain, p4_vars, expr)
             sub_chain.append(output_update)
 
@@ -116,13 +116,13 @@ def p4_program_0(z3_reg):
 
             def output_update(func_chain, p4_vars):
                 rval = nexthop_index
-                expr = p4_vars.set("meta.ingress_metadata.nexthop_index", rval)
+                expr = p4_vars.set_or_add_var("meta.ingress_metadata.nexthop_index", rval)
                 return step(func_chain, p4_vars, expr)
             sub_chain.append(output_update)
 
             def output_update(func_chain, p4_vars):
                 rval = BitVec(255, 8)
-                expr = p4_vars.set("hdr.ipv4.ttl", rval)
+                expr = p4_vars.set_or_add_var("hdr.ipv4.ttl", rval)
                 return step(func_chain, p4_vars, expr)
             sub_chain.append(output_update)
 
@@ -134,13 +134,13 @@ def p4_program_0(z3_reg):
 
             def output_update(func_chain, p4_vars):
                 rval = nexthop_index
-                expr = p4_vars.set("meta.ingress_metadata.nexthop_index", rval)
+                expr = p4_vars.set_or_add_var("meta.ingress_metadata.nexthop_index", rval)
                 return step(func_chain, p4_vars, expr)
             sub_chain.append(output_update)
 
             def output_update(func_chain, p4_vars):
                 rval = BitVec(255, 8)
-                expr = p4_vars.set("hdr.ipv4.ttl", rval)
+                expr = p4_vars.set_or_add_var("hdr.ipv4.ttl", rval)
                 return step(func_chain, p4_vars, expr)
             sub_chain.append(output_update)
 
@@ -151,7 +151,7 @@ def p4_program_0(z3_reg):
 
             def output_update(func_chain, p4_vars):
                 rval = egress_spec
-                expr = p4_vars.set("standard_metadata.egress_spec", rval)
+                expr = p4_vars.set_or_add_var("standard_metadata.egress_spec", rval)
                 return step(func_chain, p4_vars, expr)
             sub_chain.append(output_update)
 
@@ -162,7 +162,7 @@ def p4_program_0(z3_reg):
 
             def output_update(func_chain, p4_vars):
                 rval = bd
-                expr = p4_vars.set("meta.ingress_metadata.bd", rval)
+                expr = p4_vars.set_or_add_var("meta.ingress_metadata.bd", rval)
                 return step(func_chain, p4_vars, expr)
             sub_chain.append(output_update)
 
@@ -415,7 +415,7 @@ def p4_program_1(z3_reg):
 
             def output_update(func_chain, p4_vars):
                 rval = vrf
-                expr = p4_vars.set("meta.ingress_metadata.vrf", rval)
+                expr = p4_vars.set_or_add_var("meta.ingress_metadata.vrf", rval)
                 return step(func_chain, p4_vars, expr)
             sub_chain.append(output_update)
 
@@ -441,13 +441,13 @@ def p4_program_1(z3_reg):
 
             def output_update(func_chain, p4_vars):
                 rval = nexthop_index
-                expr = p4_vars.set("meta.ingress_metadata.nexthop_index", rval)
+                expr = p4_vars.set_or_add_var("meta.ingress_metadata.nexthop_index", rval)
                 return step(func_chain, p4_vars, expr)
             sub_chain.append(output_update)
 
             def output_update(func_chain, p4_vars):
                 rval = BitVec(255, 8)
-                expr = p4_vars.set("hdr.ipv4.ttl", rval)
+                expr = p4_vars.set_or_add_var("hdr.ipv4.ttl", rval)
                 return step(func_chain, p4_vars, expr)
             sub_chain.append(output_update)
 
@@ -459,13 +459,13 @@ def p4_program_1(z3_reg):
 
             def output_update(func_chain, p4_vars):
                 rval = nexthop_index
-                expr = p4_vars.set("meta.ingress_metadata.nexthop_index", rval)
+                expr = p4_vars.set_or_add_var("meta.ingress_metadata.nexthop_index", rval)
                 return step(func_chain, p4_vars, expr)
             sub_chain.append(output_update)
 
             def output_update(func_chain, p4_vars):
                 rval = BitVec(255, 8)
-                expr = p4_vars.set("hdr.ipv4.ttl", rval)
+                expr = p4_vars.set_or_add_var("hdr.ipv4.ttl", rval)
                 return step(func_chain, p4_vars, expr)
             sub_chain.append(output_update)
 
@@ -476,7 +476,7 @@ def p4_program_1(z3_reg):
 
             def output_update(func_chain, p4_vars):
                 rval = egress_spec
-                expr = p4_vars.set("standard_metadata.egress_spec", rval)
+                expr = p4_vars.set_or_add_var("standard_metadata.egress_spec", rval)
                 return step(func_chain, p4_vars, expr)
             sub_chain.append(output_update)
 
@@ -487,7 +487,7 @@ def p4_program_1(z3_reg):
 
             def output_update(func_chain, p4_vars):
                 rval = bd
-                expr = p4_vars.set("meta.ingress_metadata.bd", rval)
+                expr = p4_vars.set_or_add_var("meta.ingress_metadata.bd", rval)
                 return step(func_chain, p4_vars, expr)
             sub_chain.append(output_update)
 

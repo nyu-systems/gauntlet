@@ -49,7 +49,7 @@ def p4_program_0(z3_reg):
 
             def output_update(func_chain, p4_vars):
                 rval = BitVecVal(0, 8)
-                expr = p4_vars.set("hdr.same.same", rval)
+                expr = p4_vars.set_or_add_var("hdr.same.same", rval)
                 return step(func_chain, p4_vars, expr)
             sub_chain.append(output_update)
 
@@ -62,7 +62,7 @@ def p4_program_0(z3_reg):
 
                     def output_update(func_chain, p4_vars):
                         rval = p4_vars.hdr.same.same | BitVecVal(1, 8)
-                        expr = p4_vars.set("hdr.same.same", rval)
+                        expr = p4_vars.set_or_add_var("hdr.same.same", rval)
                         return step(func_chain, p4_vars, expr)
                     sub_chain.append(output_update)
 
@@ -79,7 +79,7 @@ def p4_program_0(z3_reg):
 
             def output_update(func_chain, p4_vars):
                 rval = BitVecVal(0, 9)
-                expr = p4_vars.set("stdmeta.egress_spec", rval)
+                expr = p4_vars.set_or_add_var("stdmeta.egress_spec", rval)
                 return step(func_chain, p4_vars, expr)
             sub_chain.append(output_update)
 
@@ -92,7 +92,7 @@ def p4_program_0(z3_reg):
 
                     def output_update(func_chain, p4_vars):
                         rval = p4_vars.hdr.same.same | BitVecVal(2, 8)
-                        expr = p4_vars.set("hdr.same.same", rval)
+                        expr = p4_vars.set_or_add_var("hdr.same.same", rval)
                         return step(func_chain, p4_vars, expr)
                     sub_chain.append(output_update)
 
@@ -121,7 +121,7 @@ def p4_program_0(z3_reg):
 
                     def output_update(func_chain, p4_vars):
                         rval = p4_vars.hdr.same.same | BitVecVal(4, 8)
-                        expr = p4_vars.set("hdr.same.same", rval)
+                        expr = p4_vars.set_or_add_var("hdr.same.same", rval)
                         return step(func_chain, p4_vars, expr)
                     sub_chain.append(output_update)
 
@@ -138,13 +138,13 @@ def p4_program_0(z3_reg):
 
             def output_update(func_chain, p4_vars):
                 rval = p4_vars.hdr.h
-                expr = p4_vars.set("tmp_0", rval)
+                expr = p4_vars.set_or_add_var("tmp_0", rval)
                 return step(func_chain, p4_vars, expr)
             sub_chain.append(output_update)
 
             def output_update(func_chain, p4_vars):
                 rval = p4_vars.hdr.a_0
-                expr = p4_vars.set("tmp_1", rval)
+                expr = p4_vars.set_or_add_var("tmp_1", rval)
                 return step(func_chain, p4_vars, expr)
             sub_chain.append(output_update)
 
@@ -170,7 +170,7 @@ def p4_program_0(z3_reg):
 
                     def output_update(func_chain, p4_vars):
                         rval = p4_vars.hdr.same.same | BitVecVal(8, 8)
-                        expr = p4_vars.set("hdr.same.same", rval)
+                        expr = p4_vars.set_or_add_var("hdr.same.same", rval)
                         return step(func_chain, p4_vars, expr)
                     sub_chain.append(output_update)
 
@@ -238,13 +238,13 @@ def p4_program_1(z3_reg):
 
             def output_update(func_chain, p4_vars):
                 rval = BitVecVal(0, 8)
-                expr = p4_vars.set("hdr.same.same", rval)
+                expr = p4_vars.set_or_add_var("hdr.same.same", rval)
                 return step(func_chain, p4_vars, expr)
             sub_chain.append(output_update)
 
             def output_update(func_chain, p4_vars):
                 rval = BitVecVal(0, 9)
-                expr = p4_vars.set("stdmeta.egress_spec", rval)
+                expr = p4_vars.set_or_add_var("stdmeta.egress_spec", rval)
                 return step(func_chain, p4_vars, expr)
             sub_chain.append(output_update)
 
@@ -257,7 +257,7 @@ def p4_program_1(z3_reg):
 
                     def output_update(func_chain, p4_vars):
                         rval = BitVecVal(0, 8) | BitVecVal(1, 8)
-                        expr = p4_vars.set("hdr.same.same", rval)
+                        expr = p4_vars.set_or_add_var("hdr.same.same", rval)
                         return step(func_chain, p4_vars, expr)
                     sub_chain.append(output_update)
 
@@ -281,7 +281,7 @@ def p4_program_1(z3_reg):
 
                     def output_update(func_chain, p4_vars):
                         rval = p4_vars.hdr.same.same | BitVecVal(2, 8)
-                        expr = p4_vars.set("hdr.same.same", rval)
+                        expr = p4_vars.set_or_add_var("hdr.same.same", rval)
                         return step(func_chain, p4_vars, expr)
                     sub_chain.append(output_update)
 
@@ -310,7 +310,7 @@ def p4_program_1(z3_reg):
 
                     def output_update(func_chain, p4_vars):
                         rval = p4_vars.hdr.same.same | BitVecVal(4, 8)
-                        expr = p4_vars.set("hdr.same.same", rval)
+                        expr = p4_vars.set_or_add_var("hdr.same.same", rval)
                         return step(func_chain, p4_vars, expr)
                     sub_chain.append(output_update)
 
@@ -327,13 +327,13 @@ def p4_program_1(z3_reg):
 
             def output_update(func_chain, p4_vars):
                 rval = p4_vars.hdr.h
-                expr = p4_vars.set("tmp_0", rval)
+                expr = p4_vars.set_or_add_var("tmp_0", rval)
                 return step(func_chain, p4_vars, expr)
             sub_chain.append(output_update)
 
             def output_update(func_chain, p4_vars):
                 rval = p4_vars.hdr.a_0
-                expr = p4_vars.set("tmp_1", rval)
+                expr = p4_vars.set_or_add_var("tmp_1", rval)
                 return step(func_chain, p4_vars, expr)
             sub_chain.append(output_update)
 
@@ -359,7 +359,7 @@ def p4_program_1(z3_reg):
 
                     def output_update(func_chain, p4_vars):
                         rval = p4_vars.hdr.same.same | BitVecVal(8, 8)
-                        expr = p4_vars.set("hdr.same.same", rval)
+                        expr = p4_vars.set_or_add_var("hdr.same.same", rval)
                         return step(func_chain, p4_vars, expr)
                     sub_chain.append(output_update)
 
@@ -427,13 +427,13 @@ def p4_program_2(z3_reg):
 
             def output_update(func_chain, p4_vars):
                 rval = BitVecVal(0, 8)
-                expr = p4_vars.set("hdr.same.same", rval)
+                expr = p4_vars.set_or_add_var("hdr.same.same", rval)
                 return step(func_chain, p4_vars, expr)
             sub_chain.append(output_update)
 
             def output_update(func_chain, p4_vars):
                 rval = BitVecVal(0, 9)
-                expr = p4_vars.set("stdmeta.egress_spec", rval)
+                expr = p4_vars.set_or_add_var("stdmeta.egress_spec", rval)
                 return step(func_chain, p4_vars, expr)
             sub_chain.append(output_update)
 
@@ -446,7 +446,7 @@ def p4_program_2(z3_reg):
 
                     def output_update(func_chain, p4_vars):
                         rval = BitVecVal(1, 8)
-                        expr = p4_vars.set("hdr.same.same", rval)
+                        expr = p4_vars.set_or_add_var("hdr.same.same", rval)
                         return step(func_chain, p4_vars, expr)
                     sub_chain.append(output_update)
 
@@ -470,7 +470,7 @@ def p4_program_2(z3_reg):
 
                     def output_update(func_chain, p4_vars):
                         rval = p4_vars.hdr.same.same | BitVecVal(2, 8)
-                        expr = p4_vars.set("hdr.same.same", rval)
+                        expr = p4_vars.set_or_add_var("hdr.same.same", rval)
                         return step(func_chain, p4_vars, expr)
                     sub_chain.append(output_update)
 
@@ -499,7 +499,7 @@ def p4_program_2(z3_reg):
 
                     def output_update(func_chain, p4_vars):
                         rval = p4_vars.hdr.same.same | BitVecVal(4, 8)
-                        expr = p4_vars.set("hdr.same.same", rval)
+                        expr = p4_vars.set_or_add_var("hdr.same.same", rval)
                         return step(func_chain, p4_vars, expr)
                     sub_chain.append(output_update)
 
@@ -516,13 +516,13 @@ def p4_program_2(z3_reg):
 
             def output_update(func_chain, p4_vars):
                 rval = p4_vars.hdr.h
-                expr = p4_vars.set("tmp_0", rval)
+                expr = p4_vars.set_or_add_var("tmp_0", rval)
                 return step(func_chain, p4_vars, expr)
             sub_chain.append(output_update)
 
             def output_update(func_chain, p4_vars):
                 rval = p4_vars.hdr.a_0
-                expr = p4_vars.set("tmp_1", rval)
+                expr = p4_vars.set_or_add_var("tmp_1", rval)
                 return step(func_chain, p4_vars, expr)
             sub_chain.append(output_update)
 
@@ -548,7 +548,7 @@ def p4_program_2(z3_reg):
 
                     def output_update(func_chain, p4_vars):
                         rval = p4_vars.hdr.same.same | BitVecVal(8, 8)
-                        expr = p4_vars.set("hdr.same.same", rval)
+                        expr = p4_vars.set_or_add_var("hdr.same.same", rval)
                         return step(func_chain, p4_vars, expr)
                     sub_chain.append(output_update)
 

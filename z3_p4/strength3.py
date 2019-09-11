@@ -44,7 +44,7 @@ def p4_program_0(z3_reg):
             def output_update(func_chain, p4_vars):
                 rval = z3_cast(z3_concat(z3_slice(z3_concat(
                     BitVecVal(0, 16), p4_vars.h.h.a), 15, 0), BitVecVal(0, 16)), 8)
-                expr = p4_vars.set("h.h.c", rval)
+                expr = p4_vars.set_or_add_var("h.h.c", rval)
                 return step(func_chain, p4_vars, expr)
             sub_chain.append(output_update)
 
@@ -56,7 +56,7 @@ def p4_program_0(z3_reg):
 
             def output_update(func_chain, p4_vars):
                 rval = z3_cast(z3_slice(p4_vars.h.h.a, 15, 0), 8)
-                expr = p4_vars.set("h.h.c", rval)
+                expr = p4_vars.set_or_add_var("h.h.c", rval)
                 return step(func_chain, p4_vars, expr)
             sub_chain.append(output_update)
 
@@ -68,7 +68,7 @@ def p4_program_0(z3_reg):
 
             def output_update(func_chain, p4_vars):
                 rval = BitVecVal(0, 8)
-                expr = p4_vars.set("h.h.c", rval)
+                expr = p4_vars.set_or_add_var("h.h.c", rval)
                 return step(func_chain, p4_vars, expr)
             sub_chain.append(output_update)
 
@@ -80,7 +80,7 @@ def p4_program_0(z3_reg):
 
             def output_update(func_chain, p4_vars):
                 rval = z3_slice(p4_vars.h.h.a, 7, 0)
-                expr = p4_vars.set("h.h.c", rval)
+                expr = p4_vars.set_or_add_var("h.h.c", rval)
                 return step(func_chain, p4_vars, expr)
             sub_chain.append(output_update)
 
@@ -93,7 +93,7 @@ def p4_program_0(z3_reg):
             def output_update(func_chain, p4_vars):
                 rval = z3_cast(z3_concat(BitVecVal(0, 8),
                                          z3_slice(p4_vars.h.h.a, 15, 0)), 8)
-                expr = p4_vars.set("h.h.c", rval)
+                expr = p4_vars.set_or_add_var("h.h.c", rval)
                 return step(func_chain, p4_vars, expr)
             sub_chain.append(output_update)
 
@@ -106,7 +106,7 @@ def p4_program_0(z3_reg):
             def output_update(func_chain, p4_vars):
                 rval = z3_cast(z3_concat(BitVecVal(0, 8),
                                          z3_slice(p4_vars.h.h.a, 15, 8)), 8)
-                expr = p4_vars.set("h.h.c", rval)
+                expr = p4_vars.set_or_add_var("h.h.c", rval)
                 return step(func_chain, p4_vars, expr)
             sub_chain.append(output_update)
 
@@ -119,7 +119,7 @@ def p4_program_0(z3_reg):
             def output_update(func_chain, p4_vars):
                 rval = z3_cast(z3_concat(BitVecVal(0, 16),
                                          z3_slice(p4_vars.h.h.a, 15, 8)), 8)
-                expr = p4_vars.set("h.h.c", rval)
+                expr = p4_vars.set_or_add_var("h.h.c", rval)
                 return step(func_chain, p4_vars, expr)
             sub_chain.append(output_update)
 
@@ -132,7 +132,7 @@ def p4_program_0(z3_reg):
             def output_update(func_chain, p4_vars):
                 rval = z3_cast(z3_slice(z3_concat(BitVecVal(0, 16),
                                                   p4_vars.h.h.a) >> 3, 31, 8), 8)
-                expr = p4_vars.set("h.h.c", rval)
+                expr = p4_vars.set_or_add_var("h.h.c", rval)
                 return step(func_chain, p4_vars, expr)
             sub_chain.append(output_update)
 
@@ -210,7 +210,7 @@ def p4_program_1(z3_reg):
 
             def output_update(func_chain, p4_vars):
                 rval = z3_cast(z3_concat(z3_slice(p4_vars.h.h.a, 15, 0), BitVecVal(0, 16)), 8)
-                expr = p4_vars.set("h.h.c", rval)
+                expr = p4_vars.set_or_add_var("h.h.c", rval)
                 return step(func_chain, p4_vars, expr)
             sub_chain.append(output_update)
 
@@ -222,7 +222,7 @@ def p4_program_1(z3_reg):
 
             def output_update(func_chain, p4_vars):
                 rval = z3_cast(z3_slice(p4_vars.h.h.a, 15, 0), 8)
-                expr = p4_vars.set("h.h.c", rval)
+                expr = p4_vars.set_or_add_var("h.h.c", rval)
                 return step(func_chain, p4_vars, expr)
             sub_chain.append(output_update)
 
@@ -234,7 +234,7 @@ def p4_program_1(z3_reg):
 
             def output_update(func_chain, p4_vars):
                 rval = BitVecVal(0, 8)
-                expr = p4_vars.set("h.h.c", rval)
+                expr = p4_vars.set_or_add_var("h.h.c", rval)
                 return step(func_chain, p4_vars, expr)
             sub_chain.append(output_update)
 
@@ -246,7 +246,7 @@ def p4_program_1(z3_reg):
 
             def output_update(func_chain, p4_vars):
                 rval = z3_slice(p4_vars.h.h.a, 7, 0)
-                expr = p4_vars.set("h.h.c", rval)
+                expr = p4_vars.set_or_add_var("h.h.c", rval)
                 return step(func_chain, p4_vars, expr)
             sub_chain.append(output_update)
 
@@ -259,7 +259,7 @@ def p4_program_1(z3_reg):
             def output_update(func_chain, p4_vars):
                 rval = z3_cast(z3_concat(BitVecVal(0, 8),
                                          z3_slice(p4_vars.h.h.a, 15, 0)), 8)
-                expr = p4_vars.set("h.h.c", rval)
+                expr = p4_vars.set_or_add_var("h.h.c", rval)
                 return step(func_chain, p4_vars, expr)
             sub_chain.append(output_update)
 
@@ -273,7 +273,7 @@ def p4_program_1(z3_reg):
                 rval = z3_cast(z3_concat(BitVecVal(0, 8),
                                          z3_slice(p4_vars.h.h.a, 15, 8)), 8)
                 lval = "h.h.c"
-                expr = p4_vars.set(lval, rval)
+                expr = p4_vars.set_or_add_var(lval, rval)
                 return step(func_chain, p4_vars, expr)
             sub_chain.append(output_update)
 
@@ -286,7 +286,7 @@ def p4_program_1(z3_reg):
             def output_update(func_chain, p4_vars):
                 rval = z3_cast(z3_concat(BitVecVal(0, 16),
                                          z3_slice(p4_vars.h.h.a, 15, 8)), 8)
-                expr = p4_vars.set("h.h.c", rval)
+                expr = p4_vars.set_or_add_var("h.h.c", rval)
                 return step(func_chain, p4_vars, expr)
             sub_chain.append(output_update)
 
@@ -299,7 +299,7 @@ def p4_program_1(z3_reg):
             def output_update(func_chain, p4_vars):
                 rval = z3_cast(z3_slice(z3_concat(BitVecVal(0, 16),
                                                   p4_vars.h.h.a) >> 3, 31, 8), 8)
-                expr = p4_vars.set("h.h.c", rval)
+                expr = p4_vars.set_or_add_var("h.h.c", rval)
                 return step(func_chain, p4_vars, expr)
             sub_chain.append(output_update)
 

@@ -98,7 +98,13 @@ class P4State(Z3P4Class):
         constants.add(self.const)
 
     def get_var(self, var_string):
-        return operator.attrgetter(var_string)(self)
+        # we are trying to access a base function
+        # just remove the brackets and call the result
+        if (var_string.endswith("()")):
+            var_string = var_string[:-2]
+            return operator.attrgetter(var_string)(self)()
+        else:
+            return operator.attrgetter(var_string)(self)
 
     def del_var(self, var_string):
         return operator.attrgetter(var_string)(self)
@@ -118,7 +124,7 @@ class P4State(Z3P4Class):
         else:
             setattr(self, lstring, rvalue)
 
-    def set_struct(self, lstring, args):
+    def set_or_add_struct(self, lstring, args):
         # this operation assumes that
         # args matches accessors in length
         members = []

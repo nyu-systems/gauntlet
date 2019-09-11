@@ -54,31 +54,31 @@ def p4_program_0(z3_reg):
 
             def output_update(func_chain, p4_vars):
                 rval = BitVecVal(0, 9)
-                expr = p4_vars.set("stdmeta.egress_spec", rval)
+                expr = p4_vars.set_or_add_var("stdmeta.egress_spec", rval)
                 return step(func_chain, p4_vars, expr)
             sub_chain.append(output_update)
 
             def struct_update(func_chain, p4_vars):
                 rval = (BitVecVal(1, 8), BitVecVal(2, 8))
-                expr = p4_vars.set_struct("foo_0", rval)
+                expr = p4_vars.set_or_add_struct("foo_0", rval)
                 return step(func_chain, p4_vars, expr)
             sub_chain.append(struct_update)
 
             def struct_update(func_chain, p4_vars):
                 rval = (p4_vars.foo_0.b, p4_vars.foo_0.a)
-                expr = p4_vars.set_struct("foo_0", rval)
+                expr = p4_vars.set_or_add_struct("foo_0", rval)
                 return step(func_chain, p4_vars, expr)
             sub_chain.append(struct_update)
 
             def output_update(func_chain, p4_vars):
                 rval = p4_vars.foo_0.a
-                expr = p4_vars.set("hdr.custom.a", rval)
+                expr = p4_vars.set_or_add_var("hdr.custom.a", rval)
                 return step(func_chain, p4_vars, expr)
             sub_chain.append(output_update)
 
             def output_update(func_chain, p4_vars):
                 rval = p4_vars.foo_0.b
-                expr = p4_vars.set("hdr.custom.b", rval)
+                expr = p4_vars.set_or_add_var("hdr.custom.b", rval)
                 return step(func_chain, p4_vars, expr)
             sub_chain.append(output_update)
 
@@ -140,43 +140,43 @@ def p4_program_1(z3_reg):
 
             def output_update(func_chain, p4_vars):
                 rval = BitVecVal(0, 9)
-                expr = p4_vars.set("stdmeta.egress_spec", rval)
+                expr = p4_vars.set_or_add_var("stdmeta.egress_spec", rval)
                 return step(func_chain, p4_vars, expr)
             sub_chain.append(output_update)
 
             def output_update(func_chain, p4_vars):
                 rval = BitVecVal(1, 8)
-                expr = p4_vars.set("foo_0.a", rval)
+                expr = p4_vars.set_or_add_var("foo_0.a", rval)
                 return step(func_chain, p4_vars, expr)
             sub_chain.append(output_update)
 
             def output_update(func_chain, p4_vars):
                 rval = BitVecVal(2, 8)
-                expr = p4_vars.set("foo_0.b", rval)
+                expr = p4_vars.set_or_add_var("foo_0.b", rval)
                 return step(func_chain, p4_vars, expr)
             sub_chain.append(output_update)
 
             def output_update(func_chain, p4_vars):
                 rval = p4_vars.foo_0.b
-                expr = p4_vars.set("foo_0.a", rval)
+                expr = p4_vars.set_or_add_var("foo_0.a", rval)
                 return step(func_chain, p4_vars, expr)
             sub_chain.append(output_update)
 
             def output_update(func_chain, p4_vars):
                 rval = p4_vars.foo_0.a
-                expr = p4_vars.set("foo_0.b", rval)
+                expr = p4_vars.set_or_add_var("foo_0.b", rval)
                 return step(func_chain, p4_vars, expr)
             sub_chain.append(output_update)
 
             def output_update(func_chain, p4_vars):
                 rval = p4_vars.foo_0.a
-                expr = p4_vars.set("hdr.custom.a", rval)
+                expr = p4_vars.set_or_add_var("hdr.custom.a", rval)
                 return step(func_chain, p4_vars, expr)
             sub_chain.append(output_update)
 
             def output_update(func_chain, p4_vars):
                 rval = p4_vars.foo_0.b
-                expr = p4_vars.set("hdr.custom.b", rval)
+                expr = p4_vars.set_or_add_var("hdr.custom.b", rval)
                 return step(func_chain, p4_vars, expr)
             sub_chain.append(output_update)
 

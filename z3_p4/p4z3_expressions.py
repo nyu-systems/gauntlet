@@ -36,7 +36,9 @@ def resolve_val(p4_vars, expr_chain, val):
     # resolve potential references first
     if (isinstance(val, str)):
         val = p4_vars.get_var(val)
-    if (isinstance(val, AstRef) or isinstance(val, bool) or isinstance(val, int)):
+    if ((isinstance(val, AstRef) or
+         isinstance(val, bool) or
+         isinstance(val, int))):
         expr = val
     elif (isinstance(val, P4Z3Type)):
         expr = val.eval(p4_vars, expr_chain)
@@ -295,7 +297,7 @@ class IfStatement(P4Z3Type):
         self.else_block.add(stmt)
 
     def eval(self, p4_vars, expr_chain=[]):
-        if not self.condition:
+        if self.condition is None:
             raise RuntimeError("Missing condition!")
         condition = resolve_val(p4_vars, expr_chain, self.condition)
         if self.else_block:
@@ -321,8 +323,7 @@ class SwitchStatement(P4Z3Type):
         case = {}
         case["match"] = (action_var == action[0])
         case["action_fun"] = action[1]
-        case["action_args"] = evaluate_action_args(
-            p4_vars, expr_chain, *action[2])
+        case["action_args"] = action[2]
         case["case_block"] = BlockStatement()
         self.cases[action_str] = case
 

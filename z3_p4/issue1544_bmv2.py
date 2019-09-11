@@ -50,7 +50,7 @@ def p4_program_0(z3_reg):
 
             def output_update(func_chain, p4_vars):
                 rval = output_port
-                expr = p4_vars.set("standard_metadata.egress_spec", rval)
+                expr = p4_vars.set_or_add_var("standard_metadata.egress_spec", rval)
                 return step(func_chain, p4_vars, expr)
             sub_chain.append(output_update)
 
@@ -83,13 +83,13 @@ def p4_program_0(z3_reg):
 
                 def output_update(func_chain, p4_vars):
                     rval = z3_slice(p4_vars.hdr.ethernet.srcAddr, 15, 0)
-                    expr = p4_vars.set("x_0", rval)
+                    expr = p4_vars.set_or_add_var("x_0", rval)
                     return step(func_chain, p4_vars, expr)
                 sub_chain.append(output_update)
 
                 def output_update(func_chain, p4_vars):
                     rval = False
-                    expr = p4_vars.set("hasReturned", rval)
+                    expr = p4_vars.set_or_add_var("hasReturned", rval)
                     return step(func_chain, p4_vars, expr)
                 sub_chain.append(output_update)
 
@@ -102,13 +102,13 @@ def p4_program_0(z3_reg):
 
                         def output_update(func_chain, p4_vars):
                             rval = True
-                            expr = p4_vars.set("hasReturned", rval)
+                            expr = p4_vars.set_or_add_var("hasReturned", rval)
                             return step(func_chain, p4_vars, expr)
                         sub_chain.append(output_update)
 
                         def output_update(func_chain, p4_vars):
                             rval = p4_vars.x_0 + BitVecVal(65535, 16)
-                            expr = p4_vars.set("retval", rval)
+                            expr = p4_vars.set_or_add_var("retval", rval)
                             return step(func_chain, p4_vars, expr)
                         sub_chain.append(output_update)
 
@@ -119,13 +119,13 @@ def p4_program_0(z3_reg):
 
                         def output_update(func_chain, p4_vars):
                             rval = True
-                            expr = p4_vars.set("hasReturned", rval)
+                            expr = p4_vars.set_or_add_var("hasReturned", rval)
                             return step(func_chain, p4_vars, expr)
                         sub_chain.append(output_update)
 
                         def output_update(func_chain, p4_vars):
                             rval = p4_vars.x_0
-                            expr = p4_vars.set("retval", rval)
+                            expr = p4_vars.set_or_add_var("retval", rval)
                             return step(func_chain, p4_vars, expr)
                         sub_chain.append(output_update)
 
@@ -137,7 +137,7 @@ def p4_program_0(z3_reg):
 
                 def output_update(func_chain, p4_vars):
                     rval = p4_vars.retval
-                    expr = p4_vars.set("tmp", rval)
+                    expr = p4_vars.set_or_add_var("tmp", rval)
                     return step(func_chain, p4_vars, expr)
                 sub_chain.append(output_update)
 
@@ -147,7 +147,7 @@ def p4_program_0(z3_reg):
             def output_update(func_chain, p4_vars):
                 rval = slice_assign(
                     p4_vars.hdr.ethernet.srcAddr, p4_vars.tmp, 15, 0)
-                expr = p4_vars.set("hdr.ethernet.srcAddr", rval)
+                expr = p4_vars.set_or_add_var("hdr.ethernet.srcAddr", rval)
                 return step(func_chain, p4_vars, expr)
             sub_chain.append(output_update)
 
@@ -205,7 +205,7 @@ def p4_program_1(z3_reg):
 
             def output_update(func_chain, p4_vars):
                 rval = output_port
-                expr = p4_vars.set("standard_metadata.egress_spec", rval)
+                expr = p4_vars.set_or_add_var("standard_metadata.egress_spec", rval)
                 return step(func_chain, p4_vars, expr)
             sub_chain.append(output_update)
 
@@ -244,7 +244,7 @@ def p4_program_1(z3_reg):
                     def output_update(func_chain, p4_vars):
                         rval = z3_slice(p4_vars.hdr.ethernet.srcAddr,
                                         15, 0) + BitVecVal(65535, 16)
-                        expr = p4_vars.set("retval", rval)
+                        expr = p4_vars.set_or_add_var("retval", rval)
                         return step(func_chain, p4_vars, expr)
                     sub_chain.append(output_update)
 
@@ -256,7 +256,7 @@ def p4_program_1(z3_reg):
                     def output_update(func_chain, p4_vars):
                         rval = z3_slice(p4_vars.hdr.ethernet.srcAddr,
                                         15, 0)
-                        expr = p4_vars.set("retval", rval)
+                        expr = p4_vars.set_or_add_var("retval", rval)
                         return step(func_chain, p4_vars, expr)
                     sub_chain.append(output_update)
 
@@ -269,7 +269,7 @@ def p4_program_1(z3_reg):
             def output_update(func_chain, p4_vars):
                 rval = p4_vars.hdr.ethernet.srcAddr & ~BitVecVal(
                     0xffff, 48) | z3_cast(p4_vars.retval, 48) << 0 & BitVecVal(0xffff, 48)
-                expr = p4_vars.set("hdr.ethernet.srcAddr", rval)
+                expr = p4_vars.set_or_add_var("hdr.ethernet.srcAddr", rval)
                 return step(func_chain, p4_vars, expr)
             sub_chain.append(output_update)
 

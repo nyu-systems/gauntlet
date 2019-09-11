@@ -48,7 +48,7 @@ def p4_program_0(z3_reg):
 
             def output_update(func_chain, p4_vars):
                 rval = BitVecVal(0, 8)
-                expr = p4_vars.set("hdr.h.x", rval)
+                expr = p4_vars.set_or_add_var("hdr.h.x", rval)
                 return step(func_chain, p4_vars, expr)
             sub_chain.append(output_update)
             return step(sub_chain + func_chain, p4_vars)
@@ -122,13 +122,13 @@ def p4_program_1(z3_reg):
 
             def output_update(func_chain, p4_vars):
                 rval = Or(p4_vars.hdr.h.isValid(), True)
-                expr = p4_vars.set("b_1", rval)
+                expr = p4_vars.set_or_add_var("b_1", rval)
                 return step(func_chain, p4_vars, expr)
             sub_chain.append(output_update)
 
             def output_update(func_chain, p4_vars):
                 rval = BitVecVal(0, 8)
-                expr = p4_vars.set("hdr.h.x", rval)
+                expr = p4_vars.set_or_add_var("hdr.h.x", rval)
                 return step(func_chain, p4_vars, expr)
             sub_chain.append(output_update)
             return step(sub_chain + func_chain, p4_vars)

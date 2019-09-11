@@ -132,87 +132,92 @@ def p4_program_0(z3_reg):
 
             def output_update(func_chain, p4_vars):
                 rval = ~p4_vars.hdr.ethernet.etherType
-                expr = p4_vars.set("tmp_0", rval)
+                expr = p4_vars.set_or_add_var("tmp_0", rval)
                 return step(func_chain, p4_vars, expr)
             sub_chain.append(output_update)
 
             def output_update(func_chain, p4_vars):
                 rval = z3_cast(p4_vars.tmp_0, 32)
-                expr = p4_vars.set("x1_0", rval)
+                expr = p4_vars.set_or_add_var("x1_0", rval)
                 return step(func_chain, p4_vars, expr)
             sub_chain.append(output_update)
 
             def output_update(func_chain, p4_vars):
                 rval = z3_slice(p4_vars.x1_0, 31, 16) + \
                     z3_slice(p4_vars.x1_0, 15, 0)
-                expr = p4_vars.set("x2_0", rval)
+                expr = p4_vars.set_or_add_var("x2_0", rval)
                 return step(func_chain, p4_vars, expr)
             sub_chain.append(output_update)
 
             def output_update(func_chain, p4_vars):
                 rval = p4_vars.tmp_0
-                expr = p4_vars.set("user_meta.fwd_meta.tmp", rval)
+                expr = p4_vars.set_or_add_var("user_meta.fwd_meta.tmp", rval)
                 return step(func_chain, p4_vars, expr)
             sub_chain.append(output_update)
 
             def output_update(func_chain, p4_vars):
                 rval = p4_vars.x1_0
-                expr = p4_vars.set("user_meta.fwd_meta.x1", rval)
+                expr = p4_vars.set_or_add_var("user_meta.fwd_meta.x1", rval)
                 return step(func_chain, p4_vars, expr)
             sub_chain.append(output_update)
 
             def output_update(func_chain, p4_vars):
                 rval = p4_vars.x2_0
-                expr = p4_vars.set("user_meta.fwd_meta.x2", rval)
+                expr = p4_vars.set_or_add_var("user_meta.fwd_meta.x2", rval)
                 return step(func_chain, p4_vars, expr)
             sub_chain.append(output_update)
 
             def output_update(func_chain, p4_vars):
                 rval = z3_cast(~p4_vars.hdr.ethernet.etherType, 32)
-                expr = p4_vars.set("user_meta.fwd_meta.x3", rval)
+                expr = p4_vars.set_or_add_var("user_meta.fwd_meta.x3", rval)
                 return step(func_chain, p4_vars, expr)
             sub_chain.append(output_update)
 
             def output_update(func_chain, p4_vars):
                 rval = ~z3_cast(p4_vars.hdr.ethernet.etherType, 32)
 
-                expr = p4_vars.set("user_meta.fwd_meta.x4", rval)
+                expr = p4_vars.set_or_add_var("user_meta.fwd_meta.x4", rval)
                 return step(func_chain, p4_vars, expr)
             sub_chain.append(output_update)
 
             def output_update(func_chain, p4_vars):
                 rval = BitVecVal(0x800, 16)
-                expr = p4_vars.set("user_meta.fwd_meta.exp_etherType", rval)
+                expr = p4_vars.set_or_add_var(
+                    "user_meta.fwd_meta.exp_etherType", rval)
                 return step(func_chain, p4_vars, expr)
             sub_chain.append(output_update)
 
             def output_update(func_chain, p4_vars):
                 rval = BitVecVal(0xf7ff, 32)
-                expr = p4_vars.set("user_meta.fwd_meta.exp_x1", rval)
+                expr = p4_vars.set_or_add_var(
+                    "user_meta.fwd_meta.exp_x1", rval)
                 return step(func_chain, p4_vars, expr)
             sub_chain.append(output_update)
 
             def output_update(func_chain, p4_vars):
                 rval = BitVecVal(0xf7ff, 16)
-                expr = p4_vars.set("user_meta.fwd_meta.exp_x2", rval)
+                expr = p4_vars.set_or_add_var(
+                    "user_meta.fwd_meta.exp_x2", rval)
                 return step(func_chain, p4_vars, expr)
             sub_chain.append(output_update)
 
             def output_update(func_chain, p4_vars):
                 rval = BitVecVal(0xf7ff, 32)
-                expr = p4_vars.set("user_meta.fwd_meta.exp_x3", rval)
+                expr = p4_vars.set_or_add_var(
+                    "user_meta.fwd_meta.exp_x3", rval)
                 return step(func_chain, p4_vars, expr)
             sub_chain.append(output_update)
 
             def output_update(func_chain, p4_vars):
                 rval = BitVecVal(0xfffff7ff, 32)
-                expr = p4_vars.set("user_meta.fwd_meta.exp_x4", rval)
+                expr = p4_vars.set_or_add_var(
+                    "user_meta.fwd_meta.exp_x4", rval)
                 return step(func_chain, p4_vars, expr)
             sub_chain.append(output_update)
 
             def output_update(func_chain, p4_vars):
                 rval = BitVecVal(0, 48)
-                expr = p4_vars.set("hdr.ethernet.dstAddr", rval)
+                expr = p4_vars.set_or_add_var("hdr.ethernet.dstAddr", rval)
                 return step(func_chain, p4_vars, expr)
             sub_chain.append(output_update)
 
@@ -227,7 +232,8 @@ def p4_program_0(z3_reg):
                     def output_update(func_chain, p4_vars):
                         rval = slice_assign(
                             p4_vars.hdr.ethernet.dstAddr, BitVecVal(1, 8), 47, 40)
-                        expr = p4_vars.set("hdr.ethernet.dstAddr", rval)
+                        expr = p4_vars.set_or_add_var(
+                            "hdr.ethernet.dstAddr", rval)
                         return step(func_chain, p4_vars, expr)
                     sub_chain.append(output_update)
 
@@ -252,7 +258,8 @@ def p4_program_0(z3_reg):
                     def output_update(func_chain, p4_vars):
                         rval = slice_assign(
                             p4_vars.hdr.ethernet.dstAddr, BitVecVal(1, 8), 39, 32)
-                        expr = p4_vars.set("hdr.ethernet.dstAddr", rval)
+                        expr = p4_vars.set_or_add_var(
+                            "hdr.ethernet.dstAddr", rval)
                         return step(func_chain, p4_vars, expr)
                     sub_chain.append(output_update)
 
@@ -276,7 +283,8 @@ def p4_program_0(z3_reg):
                     def output_update(func_chain, p4_vars):
                         rval = slice_assign(
                             p4_vars.hdr.ethernet.dstAddr, BitVecVal(1, 8), 31, 24)
-                        expr = p4_vars.set("hdr.ethernet.dstAddr", rval)
+                        expr = p4_vars.set_or_add_var(
+                            "hdr.ethernet.dstAddr", rval)
                         return step(func_chain, p4_vars, expr)
                     sub_chain.append(output_update)
 
@@ -300,7 +308,8 @@ def p4_program_0(z3_reg):
                     def output_update(func_chain, p4_vars):
                         rval = slice_assign(
                             p4_vars.hdr.ethernet.dstAddr, BitVecVal(1, 8), 23, 16)
-                        expr = p4_vars.set("hdr.ethernet.dstAddr", rval)
+                        expr = p4_vars.set_or_add_var(
+                            "hdr.ethernet.dstAddr", rval)
                         return step(func_chain, p4_vars, expr)
                     sub_chain.append(output_update)
 
@@ -324,7 +333,8 @@ def p4_program_0(z3_reg):
                     def output_update(func_chain, p4_vars):
                         rval = slice_assign(
                             p4_vars.hdr.ethernet.dstAddr, BitVecVal(1, 8), 15, 8)
-                        expr = p4_vars.set("hdr.ethernet.dstAddr", rval)
+                        expr = p4_vars.set_or_add_var(
+                            "hdr.ethernet.dstAddr", rval)
                         return step(func_chain, p4_vars, expr)
                     sub_chain.append(output_update)
 
@@ -475,69 +485,74 @@ def p4_program_1(z3_reg):
 
             def output_update(func_chain, p4_vars):
                 rval = ~p4_vars.hdr.ethernet.etherType
-                expr = p4_vars.set("user_meta.fwd_meta.tmp", rval)
+                expr = p4_vars.set_or_add_var("user_meta.fwd_meta.tmp", rval)
                 return step(func_chain, p4_vars, expr)
             sub_chain.append(output_update)
 
             def output_update(func_chain, p4_vars):
                 rval = z3_cast(~p4_vars.hdr.ethernet.etherType, 32)
-                expr = p4_vars.set("user_meta.fwd_meta.x1", rval)
+                expr = p4_vars.set_or_add_var("user_meta.fwd_meta.x1", rval)
                 return step(func_chain, p4_vars, expr)
             sub_chain.append(output_update)
 
             def output_update(func_chain, p4_vars):
                 rval = z3_slice(z3_cast(p4_vars.hdr.ethernet.etherType, 32), 31, 16) + \
                     z3_slice(z3_cast(~p4_vars.hdr.ethernet.etherType, 32), 15, 0)
-                expr = p4_vars.set("user_meta.fwd_meta.x2", rval)
+                expr = p4_vars.set_or_add_var("user_meta.fwd_meta.x2", rval)
                 return step(func_chain, p4_vars, expr)
             sub_chain.append(output_update)
 
             def output_update(func_chain, p4_vars):
                 rval = z3_cast(~p4_vars.hdr.ethernet.etherType, 32)
-                expr = p4_vars.set("user_meta.fwd_meta.x3", rval)
+                expr = p4_vars.set_or_add_var("user_meta.fwd_meta.x3", rval)
                 return step(func_chain, p4_vars, expr)
             sub_chain.append(output_update)
 
             def output_update(func_chain, p4_vars):
                 rval = ~z3_cast(p4_vars.hdr.ethernet.etherType, 32)
 
-                expr = p4_vars.set("user_meta.fwd_meta.x4", rval)
+                expr = p4_vars.set_or_add_var("user_meta.fwd_meta.x4", rval)
                 return step(func_chain, p4_vars, expr)
             sub_chain.append(output_update)
 
             def output_update(func_chain, p4_vars):
                 rval = BitVecVal(0x800, 16)
-                expr = p4_vars.set("user_meta.fwd_meta.exp_etherType", rval)
+                expr = p4_vars.set_or_add_var(
+                    "user_meta.fwd_meta.exp_etherType", rval)
                 return step(func_chain, p4_vars, expr)
             sub_chain.append(output_update)
 
             def output_update(func_chain, p4_vars):
                 rval = BitVecVal(0xf7ff, 32)
-                expr = p4_vars.set("user_meta.fwd_meta.exp_x1", rval)
+                expr = p4_vars.set_or_add_var(
+                    "user_meta.fwd_meta.exp_x1", rval)
                 return step(func_chain, p4_vars, expr)
             sub_chain.append(output_update)
 
             def output_update(func_chain, p4_vars):
                 rval = BitVecVal(0xf7ff, 16)
-                expr = p4_vars.set("user_meta.fwd_meta.exp_x2", rval)
+                expr = p4_vars.set_or_add_var(
+                    "user_meta.fwd_meta.exp_x2", rval)
                 return step(func_chain, p4_vars, expr)
             sub_chain.append(output_update)
 
             def output_update(func_chain, p4_vars):
                 rval = BitVecVal(0xf7ff, 32)
-                expr = p4_vars.set("user_meta.fwd_meta.exp_x3", rval)
+                expr = p4_vars.set_or_add_var(
+                    "user_meta.fwd_meta.exp_x3", rval)
                 return step(func_chain, p4_vars, expr)
             sub_chain.append(output_update)
 
             def output_update(func_chain, p4_vars):
                 rval = BitVecVal(0xfffff7ff, 32)
-                expr = p4_vars.set("user_meta.fwd_meta.exp_x4", rval)
+                expr = p4_vars.set_or_add_var(
+                    "user_meta.fwd_meta.exp_x4", rval)
                 return step(func_chain, p4_vars, expr)
             sub_chain.append(output_update)
 
             def output_update(func_chain, p4_vars):
                 rval = BitVecVal(0, 48)
-                expr = p4_vars.set("hdr.ethernet.dstAddr", rval)
+                expr = p4_vars.set_or_add_var("hdr.ethernet.dstAddr", rval)
                 return step(func_chain, p4_vars, expr)
             sub_chain.append(output_update)
 
@@ -552,7 +567,8 @@ def p4_program_1(z3_reg):
                     def output_update(func_chain, p4_vars):
                         rval = slice_assign(
                             p4_vars.hdr.ethernet.dstAddr, BitVecVal(1, 8), 47, 40)
-                        expr = p4_vars.set("hdr.ethernet.dstAddr", rval)
+                        expr = p4_vars.set_or_add_var(
+                            "hdr.ethernet.dstAddr", rval)
                         return step(func_chain, p4_vars, expr)
                     sub_chain.append(output_update)
 
@@ -577,7 +593,8 @@ def p4_program_1(z3_reg):
                     def output_update(func_chain, p4_vars):
                         rval = slice_assign(
                             p4_vars.hdr.ethernet.dstAddr, BitVecVal(1, 8), 39, 32)
-                        expr = p4_vars.set("hdr.ethernet.dstAddr", rval)
+                        expr = p4_vars.set_or_add_var(
+                            "hdr.ethernet.dstAddr", rval)
                         return step(func_chain, p4_vars, expr)
                     sub_chain.append(output_update)
 
@@ -602,7 +619,8 @@ def p4_program_1(z3_reg):
                     def output_update(func_chain, p4_vars):
                         rval = slice_assign(
                             p4_vars.hdr.ethernet.dstAddr, BitVecVal(1, 8), 31, 24)
-                        expr = p4_vars.set("hdr.ethernet.dstAddr", rval)
+                        expr = p4_vars.set_or_add_var(
+                            "hdr.ethernet.dstAddr", rval)
                         return step(func_chain, p4_vars, expr)
                     sub_chain.append(output_update)
 
@@ -627,7 +645,8 @@ def p4_program_1(z3_reg):
                     def output_update(func_chain, p4_vars):
                         rval = slice_assign(
                             p4_vars.hdr.ethernet.dstAddr, BitVecVal(1, 8), 23, 16)
-                        expr = p4_vars.set("hdr.ethernet.dstAddr", rval)
+                        expr = p4_vars.set_or_add_var(
+                            "hdr.ethernet.dstAddr", rval)
                         return step(func_chain, p4_vars, expr)
                     sub_chain.append(output_update)
 
@@ -651,7 +670,8 @@ def p4_program_1(z3_reg):
                     def output_update(func_chain, p4_vars):
                         rval = slice_assign(
                             p4_vars.hdr.ethernet.dstAddr, BitVecVal(1, 8), 15, 8)
-                        expr = p4_vars.set("hdr.ethernet.dstAddr", rval)
+                        expr = p4_vars.set_or_add_var(
+                            "hdr.ethernet.dstAddr", rval)
                         return step(func_chain, p4_vars, expr)
                     sub_chain.append(output_update)
 
