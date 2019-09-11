@@ -97,10 +97,13 @@ class P4State(Z3P4Class):
         self.revisions.append(self.const)
         constants.add(self.const)
 
-    def get(self, var_string):
+    def get_var(self, var_string):
         return operator.attrgetter(var_string)(self)
 
-    def set(self, lstring, rvalue):
+    def del_var(self, var_string):
+        return operator.attrgetter(var_string)(self)
+
+    def set_or_add_var(self, lstring, rvalue):
         # update the internal representation of the attribute
         if ("." in lstring):
             prefix, suffix = lstring.rsplit(".", 1)

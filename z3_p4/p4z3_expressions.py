@@ -35,9 +35,8 @@ def step(p4_vars, expr_chain=[], expr=None):
 def resolve_val(p4_vars, expr_chain, val):
     # resolve potential references first
     if (isinstance(val, str)):
-        val = p4_vars.get(val)
-
-    if (isinstance(val, AstRef) or isinstance(val, bool)):
+        val = p4_vars.get_var(val)
+    if (isinstance(val, AstRef) or isinstance(val, bool) or isinstance(val, int)):
         expr = val
     elif (isinstance(val, P4Z3Type)):
         expr = val.eval(p4_vars, expr_chain)
@@ -47,7 +46,7 @@ def resolve_val(p4_vars, expr_chain, val):
     return expr
 
 
-def evaluate_action_args(p4_vars, expr_chain, action_args):
+def evaluate_action_args(p4_vars, expr_chain, action_args=[]):
     p4_args = []
     for arg in action_args:
         expr = resolve_val(p4_vars, expr_chain, arg)
@@ -60,7 +59,7 @@ class P4Z3Type():
         raise NotImplementedError("Method eval not implemented!")
 
 
-class P4Operation(P4Z3Type):
+class P4BinaryOp(P4Z3Type):
     def __init__(self, lval, rval, operator):
         self.lval = lval
         self.rval = rval
@@ -72,22 +71,128 @@ class P4Operation(P4Z3Type):
         return self.operator(lval_expr, rval_expr)
 
 
-class P4Add(P4Operation):
+class P4UnaryOp(P4Z3Type):
+    def __init__(self, val, operator):
+        self.val = val
+        self.operator = operator
+
+    def eval(self, p4_vars, expr_chain=[]):
+        expr = resolve_val(p4_vars, expr_chain, self.val)
+        return self.operator(expr)
+
+
+class P4Not(P4UnaryOp):
+    def __init__(self, val):
+        operator = op.not_
+        P4UnaryOp.__init__(self, val, operator)
+
+
+class P4Abs(P4UnaryOp):
+    def __init__(self, val):
+        operator = op.abs
+        P4UnaryOp.__init__(self, val, operator)
+
+
+class P4Inv(P4UnaryOp):
+    def __init__(self, val):
+        operator = op.inv
+        P4UnaryOp.__init__(self, val, operator)
+
+
+class P4Neg(P4UnaryOp):
+    def __init__(self, val):
+        operator = op.neg
+        P4UnaryOp.__init__(self, val, operator)
+
+
+class P4Add(P4BinaryOp):
     def __init__(self, lval, rval):
         operator = op.add
-        P4Operation.__init__(self, lval, rval, operator)
+        P4BinaryOp.__init__(self, lval, rval, operator)
 
 
-class P4Lss(P4Operation):
+class P4Mul(P4BinaryOp):
+    def __init__(self, lval, rval):
+        operator = op.mul
+        P4BinaryOp.__init__(self, lval, rval, operator)
+
+
+class P4Pow(P4BinaryOp):
+    def __init__(self, lval, rval):
+        operator = op.pow
+        P4BinaryOp.__init__(self, lval, rval, operator)
+
+
+class P4And(P4BinaryOp):
+    def __init__(self, lval, rval):
+        operator = op.and_
+        P4BinaryOp.__init__(self, lval, rval, operator)
+
+
+class P4Or(P4BinaryOp):
+    def __init__(self, lval, rval):
+        operator = op.or_
+        P4BinaryOp.__init__(self, lval, rval, operator)
+
+
+class P4Xor(P4BinaryOp):
+    def __init__(self, lval, rval):
+        operator = op.xor
+        P4BinaryOp.__init__(self, lval, rval, operator)
+
+
+class P4Div(P4BinaryOp):
+    def __init__(self, lval, rval):
+        operator = op.div
+        P4BinaryOp.__init__(self, lval, rval, operator)
+
+
+class P4Lshift(P4BinaryOp):
+    def __init__(self, lval, rval):
+        operator = op.lshift
+        P4BinaryOp.__init__(self, lval, rval, operator)
+
+
+class P4Rshift(P4BinaryOp):
+    def __init__(self, lval, rval):
+        operator = op.rshift
+        P4BinaryOp.__init__(self, lval, rval, operator)
+
+
+class P4Lt(P4BinaryOp):
     def __init__(self, lval, rval):
         operator = op.lt
-        P4Operation.__init__(self, lval, rval, operator)
+        P4BinaryOp.__init__(self, lval, rval, operator)
 
 
-class P4Grt(P4Operation):
+class P4Le(P4BinaryOp):
+    def __init__(self, lval, rval):
+        operator = op.le
+        P4BinaryOp.__init__(self, lval, rval, operator)
+
+
+class P4Eq(P4BinaryOp):
+    def __init__(self, lval, rval):
+        operator = op.eq
+        P4BinaryOp.__init__(self, lval, rval, operator)
+
+
+class P4Ne(P4BinaryOp):
+    def __init__(self, lval, rval):
+        operator = op.ne
+        P4BinaryOp.__init__(self, lval, rval, operator)
+
+
+class P4Ge(P4BinaryOp):
+    def __init__(self, lval, rval):
+        operator = op.ge
+        P4BinaryOp.__init__(self, lval, rval, operator)
+
+
+class P4Gt(P4BinaryOp):
     def __init__(self, lval, rval):
         operator = op.gt
-        P4Operation.__init__(self, lval, rval, operator)
+        P4BinaryOp.__init__(self, lval, rval, operator)
 
 
 class P4Slice(P4Z3Type):
@@ -99,6 +204,21 @@ class P4Slice(P4Z3Type):
     def eval(self, p4_vars, expr_chain=[]):
         val_expr = resolve_val(p4_vars, expr_chain, self.val)
         return Extract(self.slice_l, self.slice_r, val_expr)
+
+
+class Cast(P4Z3Type):
+    def __init__(self, val, to_size):
+        self.val = val
+        self.to_size = to_size
+
+    def eval(self, p4_vars, expr_chain=[]):
+        expr = resolve_val(p4_vars, expr_chain, self.val)
+        if (expr.size() < self.to_size):
+            return ZeroExt(self.to_size - expr.size(), expr)
+        else:
+            slice_l = expr.size() - 1
+            slice_r = expr.size() - self.to_size
+            return Extract(slice_l, slice_r, expr)
 
 
 class SliceAssignment(P4Z3Type):
@@ -113,7 +233,7 @@ class SliceAssignment(P4Z3Type):
         rval_expr = resolve_val(p4_vars, expr_chain, self.rval)
         rval_expr = slice_assign(lval_expr, rval_expr,
                                  self.slice_l, self.slice_r)
-        slice_assign_expr = p4_vars.set(self.lval, rval_expr)
+        slice_assign_expr = p4_vars.set_or_add_var(self.lval, rval_expr)
         return step(p4_vars, expr_chain, slice_assign_expr)
 
 
@@ -125,7 +245,7 @@ class AssignmentStatement(P4Z3Type):
 
     def eval(self, p4_vars, expr_chain=[]):
         rval_expr = resolve_val(p4_vars, expr_chain, self.rval)
-        assign_expr = p4_vars.set(self.lval, rval_expr)
+        assign_expr = p4_vars.set_or_add_var(self.lval, rval_expr)
         return step(p4_vars, expr_chain, assign_expr)
 
 
@@ -141,16 +261,21 @@ class BlockStatement(P4Z3Type):
         return step(p4_vars, self.exprs + expr_chain)
 
 
-class ActionExpr(P4Z3Type):
+# class P4Action(P4Z3Type):
 
-    def __init__(self):
-        self.block = BlockStatement()
+#     def __init__(self):
+#         self.block = BlockStatement()
+#         self.arguments = []
 
-    def add_stmt(self, stmt):
-        self.block.add(stmt)
+#     def add_argument(self, arg_name):
+#         self.arguments.add(arg_name)
+#         pass
 
-    def eval(self, p4_vars, expr_chain=[]):
-        return self.block.eval(p4_vars, expr_chain)
+#     def add_stmt(self, stmt):
+#         self.block.add(stmt)
+
+#     def eval(self, p4_vars, expr_chain=[]):
+#         return step(p4_vars, [self.block] + expr_chain)
 
 
 class IfStatement(P4Z3Type):
@@ -170,16 +295,16 @@ class IfStatement(P4Z3Type):
         self.else_block.add(stmt)
 
     def eval(self, p4_vars, expr_chain=[]):
-        if not condition:
+        if not self.condition:
             raise RuntimeError("Missing condition!")
         condition = resolve_val(p4_vars, expr_chain, self.condition)
         if self.else_block:
-            return If(condition(p4_vars, expr_chain),
-                      self.then_block.eval(p4_vars, expr_chain),
-                      self.else_block.eval(p4_vars, expr_chain))
+            return If(condition,
+                      step(p4_vars, [self.then_block] + expr_chain),
+                      step(p4_vars, [self.else_block] + expr_chain))
         else:
             return Implies(condition,
-                           self.then_block.eval(p4_vars, expr_chain))
+                           step(p4_vars, [self.then_block] + expr_chain))
 
 
 class SwitchStatement(P4Z3Type):
@@ -197,7 +322,7 @@ class SwitchStatement(P4Z3Type):
         case["match"] = (action_var == action[0])
         case["action_fun"] = action[1]
         case["action_args"] = evaluate_action_args(
-            p4_vars, expr_chain, action[2])
+            p4_vars, expr_chain, *action[2])
         case["case_block"] = BlockStatement()
         self.cases[action_str] = case
 
@@ -223,7 +348,7 @@ class SwitchStatement(P4Z3Type):
         switch_hit = SwitchHit(self.cases)
         switch_default = self.default_case
         switch_if = IfStatement()
-        switch_if.add_condition(self.table.action_run(p4_vars))
+        switch_if.add_condition(self.table.action_run(p4_vars, expr_chain))
         switch_if.add_then_stmt(switch_hit)
         switch_if.add_else_stmt(switch_default)
         return And(self.table.eval(p4_vars, expr_chain),
@@ -249,7 +374,7 @@ class TableExpr(P4Z3Type):
                 continue
             f_id = f_tuple[0]
             f_fun = f_tuple[1]
-            f_args = evaluate_action_args(p4_vars, expr_chain, f_tuple[2])
+            f_args = evaluate_action_args(p4_vars, expr_chain, *f_tuple[2])
             expr = Implies(action == f_id,
                            f_fun(p4_vars, expr_chain, *f_args))
             actions.append(expr)
@@ -257,33 +382,25 @@ class TableExpr(P4Z3Type):
 
     def add_action(self, str_name, action, *action_args):
         index = len(self.actions) + 1
-        self.actions[str_name] = (index, action, *action_args)
+        self.actions[str_name] = (index, action, action_args)
 
     def add_default(self, action, *action_args):
-        self.actions["default"] = (0, action, *action_args)
+        self.actions["default"] = (0, action, action_args)
 
     def add_match(self, table_key):
         self.keys.append(table_key)
 
-    def table_match(self, p4_vars):
+    def table_match(self, p4_vars, expr_chain=[]):
         key_pairs = []
         for index, key in enumerate(self.keys):
-            if (isinstance(key, str)):
-                key_eval = p4_vars.get(key)
-                if(not isinstance(key_eval, AstRef)):
-                    key_eval = key_eval.eval(p4_vars)
-            else:
-                if(isinstance(key, AstRef)):
-                    key_eval = key
-                else:
-                    key_eval = key.eval(p4_vars)
+            key_eval = resolve_val(p4_vars, expr_chain, key)
             key_match = Const(f"{self.name}_key_{index}", key_eval.sort())
             key_pairs.append(key_eval == key_match)
         return And(key_pairs)
 
-    def action_run(self, p4_vars):
+    def action_run(self, p4_vars, expr_chain):
         action = Int(f"{self.name}_action")
-        return self.table_match(p4_vars)
+        return self.table_match(p4_vars, expr_chain)
 
     def apply(self):
         return self
@@ -294,7 +411,7 @@ class TableExpr(P4Z3Type):
         # else use the default action
         def_fun = self.actions["default"][1]
         def_args = evaluate_action_args(
-            p4_vars, expr_chain, self.actions["default"][2])
-        return If(self.table_match(p4_vars),
+            p4_vars, expr_chain, *self.actions["default"][2])
+        return If(self.table_match(p4_vars, expr_chain),
                   self.table_action(p4_vars, expr_chain),
                   def_fun(p4_vars, expr_chain, *def_args))

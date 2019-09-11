@@ -65,7 +65,7 @@ def p4_program_0(z3_reg):
             def BLOCK():
                 block = BlockStatement()
                 return block
-            return BLOCK().eval(p4_vars, expr_chain)
+            return step(p4_vars, [BLOCK()] + expr_chain)
 
         # @name("ingress.c.a") action c_a_0() {
         #     h.h.b = h.h.a;
@@ -73,13 +73,12 @@ def p4_program_0(z3_reg):
         def c_a_0(p4_vars, expr_chain):
             def BLOCK():
                 block = BlockStatement()
-                assign = AssignmentStatement()
                 lval = "h.h.b"
                 rval = "h.h.a"
-                assign.add_assign(lval, rval)
+                assign = AssignmentStatement(lval, rval)
                 block.add(assign)
                 return block
-            return BLOCK().eval(p4_vars, expr_chain)
+            return step(p4_vars, [BLOCK()] + expr_chain)
 
         # @name("ingress.c.t") table c_t {
         c_t = TableExpr("c_t")
@@ -95,10 +94,9 @@ def p4_program_0(z3_reg):
 
             block.add(c_t.apply())
 
-            assign = AssignmentStatement()
             rval = BitVecVal(0, 9)
             lval = "sm.egress_spec"
-            assign.add_assign(lval, rval)
+            assign = AssignmentStatement(lval, rval)
 
             block.add(assign)
             return block
@@ -172,7 +170,7 @@ def p4_program_1(z3_reg):
             def BLOCK():
                 block = BlockStatement()
                 return block
-            return BLOCK().eval(p4_vars, expr_chain)
+            return step(p4_vars, [BLOCK()] + expr_chain)
 
         # @name("ingress.c.a") action c_a_0() {
         #     h.h.b = h.h.a;
@@ -180,13 +178,12 @@ def p4_program_1(z3_reg):
         def c_a_0(p4_vars, expr_chain):
             def BLOCK():
                 block = BlockStatement()
-                assign = AssignmentStatement()
                 lval = "h.h.b"
                 rval = "h.h.a"
-                assign.add_assign(lval, rval)
+                assign = AssignmentStatement(lval, rval)
                 block.add(assign)
                 return block
-            return BLOCK().eval(p4_vars, expr_chain)
+            return step(p4_vars, [BLOCK()] + expr_chain)
 
         # @name("ingress.c.t") table c_t {
         c_t = TableExpr("c_t")
@@ -202,20 +199,19 @@ def p4_program_1(z3_reg):
 
             def BLOCK():
                 block = BlockStatement()
-                assign = AssignmentStatement()
                 rval = P4Add("h.h.a", "h.h.a")
                 lval = "key_0"
-                assign.add_assign(lval, rval)
+                assign = AssignmentStatement(lval, rval)
                 block.add(assign)
 
                 block.add(c_t.apply())
+
                 return block
             block.add(BLOCK())
 
-            assign = AssignmentStatement()
             rval = BitVecVal(0, 9)
             lval = "sm.egress_spec"
-            assign.add_assign(lval, rval)
+            assign = AssignmentStatement(lval, rval)
 
             block.add(assign)
             return block

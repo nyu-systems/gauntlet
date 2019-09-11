@@ -95,7 +95,7 @@ def p4_program_0(z3_reg):
 
                 if_block = IfStatement()
 
-                condition = P4Grt("x_0", BitVecVal(5, 16))
+                condition = P4Gt("x_0", BitVecVal(5, 16))
                 if_block.add_condition(condition)
 
                 rval = True
@@ -117,6 +117,7 @@ def p4_program_0(z3_reg):
                 lval = "retval"
                 assign = AssignmentStatement(lval, rval)
                 if_block.add_else_stmt(assign)
+                block.add(if_block)
 
                 rval = "retval"
                 lval = "tmp"
@@ -125,8 +126,10 @@ def p4_program_0(z3_reg):
                 return block
             block.add(BLOCK())
 
+            rval = "tmp"
+            lval = "hdr.ethernet.srcAddr"
             assign = SliceAssignment(
-                "hdr.ethernet.srcAddr", "tmp", 15, 0)
+                lval, rval, 15, 0)
             block.add(assign)
             return block
 
@@ -174,86 +177,69 @@ def p4_program_1(z3_reg):
     ingress_args = z3_reg.instance("inouts")
 
     def ingress(p4_vars):
-        def my_drop(func_chain, p4_vars, smeta):
-            sub_chain = []
 
-            return step(sub_chain + func_chain, p4_vars)
+        def my_drop(p4_vars, expr_chain, smeta):
+            def BLOCK():
+                block = BlockStatement()
+                return block
+            return step(p4_vars, [BLOCK()] + expr_chain)
 
-        def set_port(func_chain, p4_vars, output_port):
-            sub_chain = []
-
-            def output_update(func_chain, p4_vars):
+        def set_port(p4_vars, expr_chain, output_port):
+            def BLOCK():
+                block = BlockStatement()
+                lval = "standard_metadata.egress_spec"
                 rval = output_port
-                expr = p4_vars.set("standard_metadata.egress_spec", rval)
-                return step(func_chain, p4_vars, expr)
-            sub_chain.append(output_update)
+                assign = AssignmentStatement(lval, rval)
+                block.add(assign)
+                return block
+            return step(p4_vars, [BLOCK()] + expr_chain)
 
-            return step(sub_chain + func_chain, p4_vars)
+        mac_da_0 = TableExpr("mac_da_0")
 
-        class mac_da_0(Table):
+        args = [BitVec("mac_da_0_output_port", 9)]
+        mac_da_0.add_action("set_port", set_port, args)
 
-            @classmethod
-            def table_match(cls, p4_vars):
-                key_matches = []
-                key_0 = p4_vars.hdr.ethernet.dstAddr
-                key_0_match = Const(f"{cls.__name__}_key_0", key_0.sort())
+        args = ["standard_metadata.const"]
+        mac_da_0.add_action("my_drop", my_drop, args)
 
-                key_matches.append(key_0 == key_0_match)
-                return And(key_matches)
+        args = ["standard_metadata.const"]
+        mac_da_0.add_default(my_drop, args)
 
-            actions = {
-                "set_port": (1, (set_port, (BitVec("output_port", 9),))),
-                "my_drop": (2, (my_drop, (p4_vars.standard_metadata.const,))),
-            }
-            actions["default"] = (
-                0, (my_drop, (p4_vars.standard_metadata.const,)))
+        table_key = "hdr.ethernet.dstAddr"
+        mac_da_0.add_match(table_key)
 
-        def apply(func_chain, p4_vars):
-            sub_chain = []
-            sub_chain.append(mac_da_0.apply)
+        def BLOCK():
+            block = BlockStatement()
+            block.add(mac_da_0.apply())
 
-            def if_block(func_chain, p4_vars):
+            if_block = IfStatement()
 
-                condition = Extract(
-                    15, 0, p4_vars.hdr.ethernet.srcAddr) > BitVecVal(5, 16)
+            condition = P4Gt(P4Slice("hdr.ethernet.srcAddr", 15, 0),
+                             BitVecVal(5, 16))
+            if_block.add_condition(condition)
 
-                def is_true():
-                    sub_chain = []
+            rval = P4Add(P4Slice("hdr.ethernet.srcAddr", 15, 0),
+                         BitVecVal(65535, 16))
+            lval = "retval"
+            assign = AssignmentStatement(lval, rval)
+            if_block.add_then_stmt(assign)
 
-                    def output_update(func_chain, p4_vars):
-                        rval = z3_slice(p4_vars.hdr.ethernet.srcAddr,
-                                        15, 0) + BitVecVal(65535, 16)
-                        expr = p4_vars.set("retval", rval)
-                        return step(func_chain, p4_vars, expr)
-                    sub_chain.append(output_update)
+            rval = P4Slice("hdr.ethernet.srcAddr", 15, 0)
+            lval = "retval"
+            assign = AssignmentStatement(lval, rval)
+            if_block.add_else_stmt(assign)
 
-                    return step(sub_chain + func_chain, p4_vars)
+            block.add(if_block)
 
-                def is_false():
-                    sub_chain = []
+            rval = P4Or(P4And("hdr.ethernet.srcAddr", P4Inv(BitVecVal(
+                0xffff, 48))), P4And(P4Lshift(Cast("retval", 48), 0), BitVecVal(0xffff, 48)))
+            lval = "hdr.ethernet.srcAddr"
+            assign = AssignmentStatement(lval, rval)
+            block.add(assign)
+            return block
 
-                    def output_update(func_chain, p4_vars):
-                        rval = z3_slice(p4_vars.hdr.ethernet.srcAddr,
-                                        15, 0)
-                        expr = p4_vars.set("retval", rval)
-                        return step(func_chain, p4_vars, expr)
-                    sub_chain.append(output_update)
+        return BLOCK().eval(p4_vars)
 
-                    sub_chain.extend(func_chain)
-                    return step(sub_chain + func_chain, p4_vars)
-
-                return If(condition, is_true(), is_false())
-            sub_chain.append(if_block)
-
-            def output_update(func_chain, p4_vars):
-                rval = p4_vars.hdr.ethernet.srcAddr & ~BitVecVal(
-                    0xffff, 48) | z3_cast(p4_vars.retval, 48) << 0 & BitVecVal(0xffff, 48)
-                expr = p4_vars.set("hdr.ethernet.srcAddr", rval)
-                return step(func_chain, p4_vars, expr)
-            sub_chain.append(output_update)
-
-            return step(sub_chain + func_chain, p4_vars)
-        return step(func_chain=[apply], p4_vars=p4_vars)
     return ((p,), (vrfy,), (ingress, ingress_args), (egress,), (update,), (deparser,))
 
 
@@ -261,7 +247,7 @@ def z3_check():
     s = Solver()
 
     p4_ctrl_0, p4_ctrl_0_args = p4_program_0(Z3Reg())[2]
-    p4_ctrl_1, p4_ctrl_1_args = p4_program_0(Z3Reg())[2]
+    p4_ctrl_1, p4_ctrl_1_args = p4_program_1(Z3Reg())[2]
 
     print("PROGRAM 1")
     print(p4_ctrl_0(p4_ctrl_0_args))

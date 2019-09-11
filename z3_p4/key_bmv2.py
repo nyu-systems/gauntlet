@@ -82,7 +82,7 @@ def p4_program_0(z3_reg):
 
             def output_update(func_chain, p4_vars):
                 rval = p4_vars.h.h.a
-                expr = p4_vars.set("h.h.b", rval)
+                expr = p4_vars.set_or_add_var("h.h.b", rval)
                 return step(func_chain, p4_vars, expr)
             sub_chain.append(output_update)
 
@@ -134,7 +134,7 @@ def p4_program_0(z3_reg):
             def output_update(func_chain, p4_vars):
                 rval = BitVecVal(0, 9)
                 lval = "sm.egress_spec"
-                expr = p4_vars.set(lval, rval)
+                expr = p4_vars.set_or_add_var(lval, rval)
                 return step(func_chain, p4_vars, expr)
             # sm.egress_spec = 9w0
             sub_chain.append(output_update)
@@ -228,7 +228,7 @@ def p4_program_1(z3_reg):
 
             def output_update(func_chain, p4_vars):
                 rval = p4_vars.h.h.a
-                expr = p4_vars.set("h.h.b", rval)
+                expr = p4_vars.set_or_add_var("h.h.b", rval)
                 return step(func_chain, p4_vars, expr)
             sub_chain.append(output_update)
 
@@ -281,7 +281,7 @@ def p4_program_1(z3_reg):
 
                 def output_update(func_chain, p4_vars):
                     rval = p4_vars.h.h.a + p4_vars.h.h.a
-                    expr = p4_vars.set("key_0", rval)
+                    expr = p4_vars.set_or_add_var("key_0", rval)
                     return step(func_chain, p4_vars, expr)
                 # key_0 = h.h.a + h.h.a;
                 sub_chain.append(output_update)
@@ -294,7 +294,7 @@ def p4_program_1(z3_reg):
 
             def output_update(func_chain, p4_vars):
                 rval = BitVecVal(0, 9)
-                expr = p4_vars.set("sm.egress_spec", rval)
+                expr = p4_vars.set_or_add_var("sm.egress_spec", rval)
                 return step(func_chain, p4_vars, expr)
             # sm.egress_spec = 9w0
             sub_chain.append(output_update)
