@@ -1,6 +1,6 @@
 from z3 import *
 import os
-import operator
+import operator as op
 
 constants = set([])
 
@@ -56,13 +56,13 @@ class Z3P4Class():
             arg_type = accessor.range()
             is_datatype = type(arg_type) == (DatatypeSortRef)
             if is_datatype:
-                member_make = operator.attrgetter(
+                member_make = op.attrgetter(
                     accessor.name() + "._make")(self)
                 sub_const = accessor(parent_const)
                 members.append(member_make(sub_const))
             else:
                 # member_make = accessor(parent_const)
-                member_make = operator.attrgetter(accessor.name())(self)
+                member_make = op.attrgetter(accessor.name())(self)
                 is_datatype = type(member_make) == (DatatypeSortRef)
 
                 members.append(member_make)
@@ -70,7 +70,7 @@ class Z3P4Class():
 
     def propagate_type(self, parent_const=None):
         for accessor in self.accessors:
-            member = operator.attrgetter(accessor.name())(self)
+            member = op.attrgetter(accessor.name())(self)
             if isinstance(member, Z3P4Class):
                 member.propagate_type(accessor(parent_const))
             else:
@@ -100,20 +100,24 @@ class P4State(Z3P4Class):
     def get_var(self, var_string):
         # we are trying to access a base function
         # just remove the brackets and call the result
-        if (var_string.endswith("()")):
-            var_string = var_string[:-2]
-            return operator.attrgetter(var_string)(self)()
-        else:
-            return operator.attrgetter(var_string)(self)
+        try:
+            if (var_string.endswith("()")):
+                var_string = var_string[:-2]
+                return op.attrgetter(var_string)(self)()
+                # return op.methodcaller(var_string)(self)
+            else:
+                return op.attrgetter(var_string)(self)
+        except AttributeError:
+            return None
 
     def del_var(self, var_string):
-        return operator.attrgetter(var_string)(self)
+        delattr(self, var_string)
 
     def set_or_add_var(self, lstring, rvalue):
         # update the internal representation of the attribute
         if ("." in lstring):
             prefix, suffix = lstring.rsplit(".", 1)
-            target_class = operator.attrgetter(prefix)(self)
+            target_class = op.attrgetter(prefix)(self)
             setattr(target_class, suffix, rvalue)
             # generate a new version of the z3 datatype
             copy = self._make(self.const)
@@ -128,7 +132,7 @@ class P4State(Z3P4Class):
         # this operation assumes that
         # args matches accessors in length
         members = []
-        target_class = operator.attrgetter(lstring)(self)
+        target_class = op.attrgetter(lstring)(self)
         for index, accessor in enumerate(target_class.accessors):
             setattr(target_class, accessor.name(), args[index])
         # generate a new version of the z3 datatype

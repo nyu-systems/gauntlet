@@ -1,6 +1,5 @@
 from p4z3_base import *
 from collections import OrderedDict
-import operator as op
 
 
 def step(p4_vars, expr_chain=[], expr=None):
@@ -36,6 +35,7 @@ def resolve_val(p4_vars, expr_chain, val):
     # resolve potential references first
     if (isinstance(val, str)):
         val = p4_vars.get_var(val)
+
     if ((isinstance(val, AstRef) or
          isinstance(val, bool) or
          isinstance(val, int))):
@@ -276,21 +276,38 @@ class BlockStatement(P4Z3Type):
         return step(p4_vars, self.exprs + expr_chain)
 
 
-# class P4Action(P4Z3Type):
+class P4Action():
 
-#     def __init__(self):
-#         self.block = BlockStatement()
-#         self.arguments = []
+    def __init__(self):
+        self.block = BlockStatement()
+        self.arguments = []
 
-#     def add_argument(self, arg_name):
-#         self.arguments.add(arg_name)
-#         pass
+    def add_argument(self, arg_name, arg_type):
+        self.arguments.append((arg_name, arg_type))
 
-#     def add_stmt(self, stmt):
-#         self.block.add(stmt)
+    def add_stmt(self, stmt):
+        self.block.add(stmt)
 
-#     def eval(self, p4_vars, expr_chain=[]):
-#         return step(p4_vars, [self.block] + expr_chain)
+    def run(self, tbl_name, p4_vars, expr_chain=[]):
+        var_buffer = {}
+        for action_arg in self.arguments:
+            arg_name = action_arg[0]
+            arg_type = action_arg[1]
+            # previous previous variables in the environment
+            prev_val = p4_vars.get_var(arg_name)
+            if prev_val:
+                var_buffer[arg_name] = prev_val
+            # set variables to the function arguments
+            z3_param = Const(f"{tbl_name}_{arg_name}", arg_type)
+            p4_vars.set_or_add_var(arg_name, z3_param)
+        # execute the action expression with the new environment
+        expr = step(p4_vars, [self.block] + expr_chain)
+        # reset the variables that were overwritten to their previous value
+        for action_arg in self.arguments:
+            p4_vars.del_var(action_arg[0])
+        for arg_name, arg_expr in var_buffer.items():
+            p4_vars.set_or_add_var(arg_name, arg_expr)
+        return expr
 
 
 class IfStatement(P4Z3Type):
@@ -390,7 +407,7 @@ class TableExpr(P4Z3Type):
             f_fun = f_tuple[1]
             f_args = evaluate_action_args(p4_vars, expr_chain, *f_tuple[2])
             expr = Implies(action == f_id,
-                           f_fun(p4_vars, expr_chain, *f_args))
+                           f_fun.run(self.name, p4_vars, expr_chain))
             actions.append(expr)
         return And(*actions)
 
@@ -431,4 +448,4 @@ class TableExpr(P4Z3Type):
             p4_vars, expr_chain, *self.actions["default"][2])
         return If(self.table_match(p4_vars, expr_chain),
                   self.table_action(p4_vars, expr_chain),
-                  def_fun(p4_vars, expr_chain, *def_args))
+                  def_fun.run(self.name, p4_vars, expr_chain))

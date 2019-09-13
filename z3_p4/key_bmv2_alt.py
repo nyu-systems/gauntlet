@@ -61,28 +61,21 @@ def p4_program_0(z3_reg):
 
         # @name(".NoAction") action NoAction_0() {
         # }
-        def NoAction_0(p4_vars, expr_chain):
-            def BLOCK():
-                block = BlockStatement()
-                return block
-            return step(p4_vars, [BLOCK()] + expr_chain)
+        NoAction_0 = P4Action()
 
         # @name("ingress.c.a") action c_a_0() {
         #     h.h.b = h.h.a;
         # }
-        def c_a_0(p4_vars, expr_chain):
-            def BLOCK():
-                block = BlockStatement()
-                lval = "h.h.b"
-                rval = "h.h.a"
-                assign = AssignmentStatement(lval, rval)
-                block.add(assign)
-                return block
-            return step(p4_vars, [BLOCK()] + expr_chain)
+        c_a_0 = P4Action()
+        lval = "h.h.b"
+        rval = "h.h.a"
+        assign = AssignmentStatement(lval, rval)
+        c_a_0.add_stmt(assign)
 
         # @name("ingress.c.t") table c_t {
         c_t = TableExpr("c_t")
-        c_t.add_action("c_a_0", c_a_0)
+        args = []
+        c_t.add_action("c_a_0", c_a_0, args)
         c_t.add_action("NoAction_0", NoAction_0)
         c_t.add_default(NoAction_0)
 
@@ -166,33 +159,26 @@ def p4_program_1(z3_reg):
 
         # @name(".NoAction") action NoAction_0() {
         # }
-        def NoAction_0(p4_vars, expr_chain):
-            def BLOCK():
-                block = BlockStatement()
-                return block
-            return step(p4_vars, [BLOCK()] + expr_chain)
+        NoAction_0 = P4Action()
 
         # @name("ingress.c.a") action c_a_0() {
         #     h.h.b = h.h.a;
         # }
-        def c_a_0(p4_vars, expr_chain):
-            def BLOCK():
-                block = BlockStatement()
-                lval = "h.h.b"
-                rval = "h.h.a"
-                assign = AssignmentStatement(lval, rval)
-                block.add(assign)
-                return block
-            return step(p4_vars, [BLOCK()] + expr_chain)
+        c_a_0 = P4Action()
+        lval = "h.h.b"
+        rval = "h.h.a"
+        assign = AssignmentStatement(lval, rval)
+        c_a_0.add_stmt(assign)
 
         # @name("ingress.c.t") table c_t {
         c_t = TableExpr("c_t")
-        c_t.add_action("c_a_0", c_a_0)
-        c_t.add_action("NoAction_0", NoAction_0)
-        c_t.add_default(NoAction_0)
 
         table_key = "key_0"
         c_t.add_match(table_key)
+
+        c_t.add_action("c_a_0", c_a_0)
+        c_t.add_action("NoAction_0", NoAction_0)
+        c_t.add_default(NoAction_0)
 
         def BLOCK():
             block = BlockStatement()

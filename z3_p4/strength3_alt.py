@@ -38,90 +38,65 @@ def p4_program_0(z3_reg):
 
     def ingress(p4_vars):
 
-        def case0(p4_vars, expr_chain):
-            def BLOCK():
-                block = BlockStatement()
-                lval = "h.h.c"
-                rval = P4Cast(P4Concat(P4Slice(P4Concat(
-                    BitVecVal(0, 16), p4_vars.h.h.a), 15, 0), BitVecVal(0, 16)), 8)
-                assign = AssignmentStatement(lval, rval)
-                block.add(assign)
-                return block
-            return step(p4_vars, [BLOCK()] + expr_chain)
+        case0 = P4Action()
+        lval = "h.h.c"
+        rval = P4Cast(P4Concat(P4Slice(P4Concat(
+            BitVecVal(0, 16), "h.h.a"), 15, 0), BitVecVal(0, 16)), 8)
+        assign = AssignmentStatement(lval, rval)
+        case0.add_stmt(assign)
 
-        def case1(p4_vars, expr_chain):
-            def BLOCK():
-                block = BlockStatement()
-                lval = "h.h.c"
-                rval = P4Cast(P4Slice(p4_vars.h.h.a, 15, 0), 8)
-                assign = AssignmentStatement(lval, rval)
-                block.add(assign)
-                return block
-            return step(p4_vars, [BLOCK()] + expr_chain)
+        case1 = P4Action()
+        lval = "h.h.c"
+        rval = P4Cast(P4Slice("h.h.a", 15, 0), 8)
+        assign = AssignmentStatement(lval, rval)
+        case1.add_stmt(assign)
 
-        def case2(p4_vars, expr_chain):
-            def BLOCK():
-                block = BlockStatement()
-                lval = "h.h.c"
-                rval = BitVecVal(0, 8)
-                assign = AssignmentStatement(lval, rval)
-                block.add(assign)
-                return block
-            return step(p4_vars, [BLOCK()] + expr_chain)
+        case2 = P4Action()
+        lval = "h.h.c"
+        rval = P4Cast(P4Concat(P4Slice(P4Concat(
+            BitVecVal(0, 16), "h.h.a"), 15, 0), BitVecVal(0, 16)), 8)
+        assign = AssignmentStatement(lval, rval)
+        case2.add_stmt(assign)
 
-        def case3(p4_vars, expr_chain):
-            def BLOCK():
-                block = BlockStatement()
-                lval = "h.h.c"
-                rval = P4Slice(p4_vars.h.h.a, 7, 0)
-                assign = AssignmentStatement(lval, rval)
-                block.add(assign)
-                return block
-            return step(p4_vars, [BLOCK()] + expr_chain)
+        case2 = P4Action()
+        lval = "h.h.c"
+        rval = BitVecVal(0, 8)
+        assign = AssignmentStatement(lval, rval)
+        case2.add_stmt(assign)
 
-        def case4(p4_vars, expr_chain):
-            def BLOCK():
-                block = BlockStatement()
-                lval = "h.h.c"
-                rval = P4Cast(P4Concat(BitVecVal(0, 8),
-                                       P4Slice(p4_vars.h.h.a, 15, 0)), 8)
-                assign = AssignmentStatement(lval, rval)
-                block.add(assign)
-                return block
-            return step(p4_vars, [BLOCK()] + expr_chain)
+        case3 = P4Action()
+        lval = "h.h.c"
+        rval = P4Slice("h.h.a", 7, 0)
+        assign = AssignmentStatement(lval, rval)
+        case3.add_stmt(assign)
 
-        def case5(p4_vars, expr_chain):
-            def BLOCK():
-                block = BlockStatement()
-                lval = "h.h.c"
-                rval = P4Cast(P4Concat(BitVecVal(0, 8),
-                                       P4Slice(p4_vars.h.h.a, 15, 8)), 8)
-                assign = AssignmentStatement(lval, rval)
-                block.add(assign)
-                return block
-            return step(p4_vars, [BLOCK()] + expr_chain)
+        case4 = P4Action()
+        lval = "h.h.c"
+        rval = P4Cast(P4Concat(BitVecVal(0, 8),
+                               P4Slice("h.h.a", 15, 0)), 8)
+        assign = AssignmentStatement(lval, rval)
+        case4.add_stmt(assign)
 
-        def case6(p4_vars, expr_chain):
-            def BLOCK():
-                block = BlockStatement()
-                lval = "h.h.c"
-                rval = P4Cast(P4Concat(BitVecVal(0, 16),
-                                       P4Slice(p4_vars.h.h.a, 15, 8)), 8)
-                assign = AssignmentStatement(lval, rval)
-                block.add(assign)
-                return block
-            return step(p4_vars, [BLOCK()] + expr_chain)
+        case5 = P4Action()
+        lval = "h.h.c"
+        rval = P4Cast(P4Concat(BitVecVal(0, 8),
+                               P4Slice("h.h.a", 15, 8)), 8)
+        assign = AssignmentStatement(lval, rval)
+        case5.add_stmt(assign)
 
-        def case7(p4_vars, expr_chain):
-            def BLOCK():
-                block = BlockStatement()
-                lval = "h.h.c"
-                rval = P4Cast(P4Slice(P4rshift(P4Concat(BitVecVal(0, 16),
-                                                        p4_vars.h.h.a), 3), 31, 8), 8)
-                assign = AssignmentStatement(lval, rval)
-                block.add(assign)
-                return block
-            return step(p4_vars, [BLOCK()] + expr_chain)
+        case6 = P4Action()
+        lval = "h.h.c"
+        rval = P4Cast(P4Concat(BitVecVal(0, 16),
+                               P4Slice("h.h.a", 15, 8)), 8)
+        assign = AssignmentStatement(lval, rval)
+        case6.add_stmt(assign)
+
+        case7 = P4Action()
+        lval = "h.h.c"
+        rval = P4Cast(P4Slice(P4rshift(P4Concat(BitVecVal(0, 16),
+                                                "h.h.a"), 3), 31, 8), 8)
+        assign = AssignmentStatement(lval, rval)
+        case7.add_stmt(assign)
 
         t_0 = TableExpr("t_0")
         t_0.add_action("case0", case0)
@@ -183,90 +158,65 @@ def p4_program_1(z3_reg):
 
     def ingress(p4_vars):
 
-        def case0(p4_vars, expr_chain):
-            def BLOCK():
-                block = BlockStatement()
-                lval = "h.h.c"
-                rval = P4Cast(
-                    P4Concat(P4Slice("h.h.a", 15, 0), BitVecVal(0, 16)), 8)
-                assign = AssignmentStatement(lval, rval)
-                block.add(assign)
-                return block
-            return step(p4_vars, [BLOCK()] + expr_chain)
+        case0 = P4Action()
+        lval = "h.h.c"
+        rval = P4Cast(
+            P4Concat(P4Slice("h.h.a", 15, 0), BitVecVal(0, 16)), 8)
+        assign = AssignmentStatement(lval, rval)
+        case0.add_stmt(assign)
 
-        def case1(p4_vars, expr_chain):
-            def BLOCK():
-                block = BlockStatement()
-                lval = "h.h.c"
-                rval = P4Cast(P4Slice(p4_vars.h.h.a, 15, 0), 8)
-                assign = AssignmentStatement(lval, rval)
-                block.add(assign)
-                return block
-            return step(p4_vars, [BLOCK()] + expr_chain)
+        case1 = P4Action()
+        lval = "h.h.c"
+        rval = P4Cast(P4Slice("h.h.a", 15, 0), 8)
+        assign = AssignmentStatement(lval, rval)
+        case1.add_stmt(assign)
 
-        def case2(p4_vars, expr_chain):
-            def BLOCK():
-                block = BlockStatement()
-                lval = "h.h.c"
-                rval = BitVecVal(0, 8)
-                assign = AssignmentStatement(lval, rval)
-                block.add(assign)
-                return block
-            return step(p4_vars, [BLOCK()] + expr_chain)
+        case2 = P4Action()
+        lval = "h.h.c"
+        rval = P4Cast(P4Concat(P4Slice(P4Concat(
+            BitVecVal(0, 16), "h.h.a"), 15, 0), BitVecVal(0, 16)), 8)
+        assign = AssignmentStatement(lval, rval)
+        case2.add_stmt(assign)
 
-        def case3(p4_vars, expr_chain):
-            def BLOCK():
-                block = BlockStatement()
-                lval = "h.h.c"
-                rval = P4Slice(p4_vars.h.h.a, 7, 0)
-                assign = AssignmentStatement(lval, rval)
-                block.add(assign)
-                return block
-            return step(p4_vars, [BLOCK()] + expr_chain)
+        case2 = P4Action()
+        lval = "h.h.c"
+        rval = BitVecVal(0, 8)
+        assign = AssignmentStatement(lval, rval)
+        case2.add_stmt(assign)
 
-        def case4(p4_vars, expr_chain):
-            def BLOCK():
-                block = BlockStatement()
-                lval = "h.h.c"
-                rval = P4Cast(P4Concat(BitVecVal(0, 8),
-                                       P4Slice(p4_vars.h.h.a, 15, 0)), 8)
-                assign = AssignmentStatement(lval, rval)
-                block.add(assign)
-                return block
-            return step(p4_vars, [BLOCK()] + expr_chain)
+        case3 = P4Action()
+        lval = "h.h.c"
+        rval = P4Slice("h.h.a", 7, 0)
+        assign = AssignmentStatement(lval, rval)
+        case3.add_stmt(assign)
 
-        def case5(p4_vars, expr_chain):
-            def BLOCK():
-                block = BlockStatement()
-                lval = "h.h.c"
-                rval = P4Cast(P4Concat(BitVecVal(0, 8),
-                                       P4Slice(p4_vars.h.h.a, 15, 8)), 8)
-                assign = AssignmentStatement(lval, rval)
-                block.add(assign)
-                return block
-            return step(p4_vars, [BLOCK()] + expr_chain)
+        case4 = P4Action()
+        lval = "h.h.c"
+        rval = P4Cast(P4Concat(BitVecVal(0, 8),
+                               P4Slice("h.h.a", 15, 0)), 8)
+        assign = AssignmentStatement(lval, rval)
+        case4.add_stmt(assign)
 
-        def case6(p4_vars, expr_chain):
-            def BLOCK():
-                block = BlockStatement()
-                lval = "h.h.c"
-                rval = P4Cast(P4Concat(BitVecVal(0, 16),
-                                       P4Slice(p4_vars.h.h.a, 15, 8)), 8)
-                assign = AssignmentStatement(lval, rval)
-                block.add(assign)
-                return block
-            return step(p4_vars, [BLOCK()] + expr_chain)
+        case5 = P4Action()
+        lval = "h.h.c"
+        rval = P4Cast(P4Concat(BitVecVal(0, 8),
+                               P4Slice("h.h.a", 15, 8)), 8)
+        assign = AssignmentStatement(lval, rval)
+        case5.add_stmt(assign)
 
-        def case7(p4_vars, expr_chain):
-            def BLOCK():
-                block = BlockStatement()
-                lval = "h.h.c"
-                rval = P4Cast(P4Slice(P4rshift(P4Concat(BitVecVal(0, 16),
-                                                        p4_vars.h.h.a), 3), 31, 8), 8)
-                assign = AssignmentStatement(lval, rval)
-                block.add(assign)
-                return block
-            return step(p4_vars, [BLOCK()] + expr_chain)
+        case6 = P4Action()
+        lval = "h.h.c"
+        rval = P4Cast(P4Concat(BitVecVal(0, 16),
+                               P4Slice("h.h.a", 15, 8)), 8)
+        assign = AssignmentStatement(lval, rval)
+        case6.add_stmt(assign)
+
+        case7 = P4Action()
+        lval = "h.h.c"
+        rval = P4Cast(P4Slice(P4rshift(P4Concat(BitVecVal(0, 16),
+                                                "h.h.a"), 3), 31, 8), 8)
+        assign = AssignmentStatement(lval, rval)
+        case7.add_stmt(assign)
 
         t_0 = TableExpr("t_0")
         t_0.add_action("case0", case0)

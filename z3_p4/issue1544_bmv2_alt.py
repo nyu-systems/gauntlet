@@ -41,21 +41,14 @@ def p4_program_0(z3_reg):
 
     def ingress(p4_vars):
 
-        def my_drop(p4_vars, expr_chain, smeta):
-            def BLOCK():
-                block = BlockStatement()
-                return block
-            return BLOCK().eval(p4_vars, expr_chain)
+        my_drop = P4Action()
 
-        def set_port(p4_vars, expr_chain, output_port):
-            def BLOCK():
-                block = BlockStatement()
-                lval = "standard_metadata.egress_spec"
-                rval = output_port
-                assign = AssignmentStatement(lval, rval)
-                block.add(assign)
-                return block
-            return BLOCK().eval(p4_vars, expr_chain)
+        set_port = P4Action()
+        set_port.add_argument("output_port", BitVecSort(9))
+        lval = "standard_metadata.egress_spec"
+        rval = "output_port"
+        assign = AssignmentStatement(lval, rval)
+        set_port.add_stmt(assign)
 
         mac_da_0 = TableExpr("mac_da_0")
 
@@ -178,21 +171,14 @@ def p4_program_1(z3_reg):
 
     def ingress(p4_vars):
 
-        def my_drop(p4_vars, expr_chain, smeta):
-            def BLOCK():
-                block = BlockStatement()
-                return block
-            return step(p4_vars, [BLOCK()] + expr_chain)
+        my_drop = P4Action()
 
-        def set_port(p4_vars, expr_chain, output_port):
-            def BLOCK():
-                block = BlockStatement()
-                lval = "standard_metadata.egress_spec"
-                rval = output_port
-                assign = AssignmentStatement(lval, rval)
-                block.add(assign)
-                return block
-            return step(p4_vars, [BLOCK()] + expr_chain)
+        set_port = P4Action()
+        set_port.add_argument("output_port", BitVecSort(9))
+        lval = "standard_metadata.egress_spec"
+        rval = "output_port"
+        assign = AssignmentStatement(lval, rval)
+        set_port.add_stmt(assign)
 
         mac_da_0 = TableExpr("mac_da_0")
 
