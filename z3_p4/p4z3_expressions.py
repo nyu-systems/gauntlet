@@ -242,6 +242,7 @@ class P4Cast(P4Z3Type):
 
 
 class P4Declaration():
+    # TODO: Add some more declaration checks here.
     def __init__(self, name, opt_init=None):
         self.name = name
         self.opt_init = opt_init
@@ -250,7 +251,7 @@ class P4Declaration():
         if self.opt_init is None:
             return step(p4_vars, expr_chain)
         else:
-            assign = AssignmentStatement(name, self.opt_init)
+            assign = AssignmentStatement(self.name, self.opt_init)
         return assign.eval(p4_vars, expr_chain)
 
 
