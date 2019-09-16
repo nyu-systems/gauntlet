@@ -251,7 +251,7 @@ class P4Declaration():
             return step(p4_vars, expr_chain)
         else:
             assign = AssignmentStatement(name, self.opt_init)
-        return step(p4_vars, expr_chain, assign_expr)
+        return assign.eval(p4_vars, expr_chain)
 
 
 class SliceAssignment(P4Z3Type):
