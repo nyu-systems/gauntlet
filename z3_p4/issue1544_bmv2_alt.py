@@ -42,18 +42,25 @@ def p4_program_0(z3_reg):
     def ingress(p4_vars):
 
         my_drop = P4Action()
+        my_drop.add_argument("smeta", z3_reg.types["standard_metadata_t"])
 
         set_port = P4Action()
         set_port.add_argument("output_port", BitVecSort(9))
+
         lval = "standard_metadata.egress_spec"
         rval = "output_port"
         assign = AssignmentStatement(lval, rval)
         set_port.add_stmt(assign)
 
         mac_da_0 = TableExpr("mac_da_0")
+
         mac_da_0.add_action("set_port", set_port)
-        mac_da_0.add_action("my_drop", my_drop)
-        mac_da_0.add_default(my_drop)
+
+        args = ["standard_metadata"]
+        mac_da_0.add_action("my_drop", my_drop, args)
+
+        args = ["standard_metadata"]
+        mac_da_0.add_default(my_drop, args)
 
         table_key = "hdr.ethernet.dstAddr"
         mac_da_0.add_match(table_key)
@@ -166,6 +173,7 @@ def p4_program_1(z3_reg):
     def ingress(p4_vars):
 
         my_drop = P4Action()
+        my_drop.add_argument("smeta", z3_reg.types["standard_metadata_t"])
 
         set_port = P4Action()
         set_port.add_argument("output_port", BitVecSort(9))
@@ -175,9 +183,14 @@ def p4_program_1(z3_reg):
         set_port.add_stmt(assign)
 
         mac_da_0 = TableExpr("mac_da_0")
+
         mac_da_0.add_action("set_port", set_port)
-        mac_da_0.add_action("my_drop", my_drop)
-        mac_da_0.add_default(my_drop)
+
+        args = ["standard_metadata"]
+        mac_da_0.add_action("my_drop", my_drop, args)
+
+        args = ["standard_metadata"]
+        mac_da_0.add_default(my_drop, args)
 
         table_key = "hdr.ethernet.dstAddr"
         mac_da_0.add_match(table_key)

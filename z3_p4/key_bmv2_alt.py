@@ -74,7 +74,8 @@ def p4_program_0(z3_reg):
 
         # @name("ingress.c.t") table c_t {
         c_t = TableExpr("c_t")
-        c_t.add_action("c_a_0", c_a_0)
+        args = []
+        c_t.add_action("c_a_0", c_a_0, args)
         c_t.add_action("NoAction_0", NoAction_0)
         c_t.add_default(NoAction_0)
 

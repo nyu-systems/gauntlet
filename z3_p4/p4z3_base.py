@@ -69,12 +69,16 @@ class Z3P4Class():
         return self.constructor(*members)
 
     def propagate_type(self, parent_const=None):
+        members = []
         for accessor in self.accessors:
             member = op.attrgetter(accessor.name())(self)
             if isinstance(member, Z3P4Class):
                 member.propagate_type(accessor(parent_const))
+                members.append(accessor(parent_const))
             else:
                 setattr(self, accessor.name(), accessor(parent_const))
+                members.append(accessor(parent_const))
+        self.const = self.constructor(*members)
 
 
 class P4State(Z3P4Class):

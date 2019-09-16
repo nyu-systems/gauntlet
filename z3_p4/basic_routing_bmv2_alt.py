@@ -68,8 +68,10 @@ def p4_program_0(z3_reg):
         NoAction_11 = P4Action()
 
         set_vrf = P4Action()
+        set_vrf.add_argument("vrf", BitVecSort(12))
+
         lval = "meta.ingress_metadata.vrf"
-        rval = vrf
+        rval = "vrf"
         assign = AssignmentStatement(lval, rval)
         set_vrf.add_stmt(assign)
 
@@ -78,9 +80,10 @@ def p4_program_0(z3_reg):
         on_miss_6 = P4Action()
 
         fib_hit_nexthop = P4Action()
+        fib_hit_nexthop.add_argument("nexthop_index", BitVecSort(16))
         block = BlockStatement()
         lval = "meta.ingress_metadata.nexthop_index"
-        rval = nexthop_index
+        rval = "nexthop_index"
         assign = AssignmentStatement(lval, rval)
         fib_hit_nexthop.add_stmt(assign)
 
@@ -91,9 +94,11 @@ def p4_program_0(z3_reg):
         fib_hit_nexthop.add_stmt(assign)
 
         fib_hit_nexthop_2 = P4Action()
+        fib_hit_nexthop_2.add_argument("nexthop_index", BitVecSort(16))
+
         block = BlockStatement()
         lval = "meta.ingress_metadata.nexthop_index"
-        rval = nexthop_index
+        rval = "nexthop_index"
         assign = AssignmentStatement(lval, rval)
         fib_hit_nexthop_2.add_stmt(assign)
 
@@ -104,14 +109,18 @@ def p4_program_0(z3_reg):
         fib_hit_nexthop_2.add_stmt(assign)
 
         set_egress_details = P4Action()
-        lval = "meta.ingress_metadata.vrf"
-        rval = egress_spec
+        set_egress_details.add_argument("egress_spec", BitVecSort(9))
+
+        lval = "meta.ingress_metadata.egress_spec"
+        rval = "egress_spec"
         assign = AssignmentStatement(lval, rval)
         set_egress_details.add_stmt(assign)
 
         set_bd = P4Action()
+        set_bd.add_argument("bd", BitVecSort(16))
+
         lval = "meta.ingress_metadata.bd"
-        rval = egress_spec
+        rval = "bd"
         assign = AssignmentStatement(lval, rval)
         set_bd.add_stmt(assign)
 
@@ -250,8 +259,10 @@ def p4_program_1(z3_reg):
         NoAction_11 = P4Action()
 
         set_vrf = P4Action()
+        set_vrf.add_argument("vrf", BitVecSort(12))
+
         lval = "meta.ingress_metadata.vrf"
-        rval = vrf
+        rval = "vrf"
         assign = AssignmentStatement(lval, rval)
         set_vrf.add_stmt(assign)
 
@@ -260,9 +271,10 @@ def p4_program_1(z3_reg):
         on_miss_6 = P4Action()
 
         fib_hit_nexthop = P4Action()
+        fib_hit_nexthop.add_argument("nexthop_index", BitVecSort(16))
         block = BlockStatement()
         lval = "meta.ingress_metadata.nexthop_index"
-        rval = nexthop_index
+        rval = "nexthop_index"
         assign = AssignmentStatement(lval, rval)
         fib_hit_nexthop.add_stmt(assign)
 
@@ -273,9 +285,11 @@ def p4_program_1(z3_reg):
         fib_hit_nexthop.add_stmt(assign)
 
         fib_hit_nexthop_2 = P4Action()
+        fib_hit_nexthop_2.add_argument("nexthop_index", BitVecSort(16))
+
         block = BlockStatement()
         lval = "meta.ingress_metadata.nexthop_index"
-        rval = nexthop_index
+        rval = "nexthop_index"
         assign = AssignmentStatement(lval, rval)
         fib_hit_nexthop_2.add_stmt(assign)
 
@@ -286,14 +300,18 @@ def p4_program_1(z3_reg):
         fib_hit_nexthop_2.add_stmt(assign)
 
         set_egress_details = P4Action()
-        lval = "meta.ingress_metadata.vrf"
-        rval = egress_spec
+        set_egress_details.add_argument("egress_spec", BitVecSort(9))
+
+        lval = "meta.ingress_metadata.egress_spec"
+        rval = "egress_spec"
         assign = AssignmentStatement(lval, rval)
         set_egress_details.add_stmt(assign)
 
         set_bd = P4Action()
+        set_bd.add_argument("bd", BitVecSort(16))
+
         lval = "meta.ingress_metadata.bd"
-        rval = egress_spec
+        rval = "bd"
         assign = AssignmentStatement(lval, rval)
         set_bd.add_stmt(assign)
 
