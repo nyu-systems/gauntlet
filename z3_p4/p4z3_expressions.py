@@ -405,18 +405,17 @@ class TableExpr(P4Z3Type):
                 continue
             f_id = f_tuple[0]
             f_fun = f_tuple[1]
-            f_args = evaluate_action_args(p4_vars, expr_chain, *f_tuple[2])
             expr = Implies(action == f_id,
                            f_fun.run(self.name, p4_vars, expr_chain))
             actions.append(expr)
         return And(*actions)
 
-    def add_action(self, str_name, action, *action_args):
+    def add_action(self, str_name, action):
         index = len(self.actions) + 1
-        self.actions[str_name] = (index, action, action_args)
+        self.actions[str_name] = (index, action)
 
-    def add_default(self, action, *action_args):
-        self.actions["default"] = (0, action, action_args)
+    def add_default(self, action):
+        self.actions["default"] = (0, action)
 
     def add_match(self, table_key):
         self.keys.append(table_key)
@@ -444,8 +443,6 @@ class TableExpr(P4Z3Type):
         # If we match select the associated action,
         # else use the default action
         def_fun = self.actions["default"][1]
-        def_args = evaluate_action_args(
-            p4_vars, expr_chain, *self.actions["default"][2])
         return If(self.table_match(p4_vars, expr_chain),
                   self.table_action(p4_vars, expr_chain),
                   def_fun.run(self.name, p4_vars, expr_chain))

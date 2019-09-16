@@ -51,15 +51,9 @@ def p4_program_0(z3_reg):
         set_port.add_stmt(assign)
 
         mac_da_0 = TableExpr("mac_da_0")
-
-        args = [BitVec("mac_da_0_output_port", 9)]
-        mac_da_0.add_action("set_port", set_port, args)
-
-        args = ["standard_metadata.const"]
-        mac_da_0.add_action("my_drop", my_drop, args)
-
-        args = ["standard_metadata.const"]
-        mac_da_0.add_default(my_drop, args)
+        mac_da_0.add_action("set_port", set_port)
+        mac_da_0.add_action("my_drop", my_drop)
+        mac_da_0.add_default(my_drop)
 
         table_key = "hdr.ethernet.dstAddr"
         mac_da_0.add_match(table_key)
@@ -181,15 +175,9 @@ def p4_program_1(z3_reg):
         set_port.add_stmt(assign)
 
         mac_da_0 = TableExpr("mac_da_0")
-
-        args = [BitVec("mac_da_0_output_port", 9)]
-        mac_da_0.add_action("set_port", set_port, args)
-
-        args = ["standard_metadata.const"]
-        mac_da_0.add_action("my_drop", my_drop, args)
-
-        args = ["standard_metadata.const"]
-        mac_da_0.add_default(my_drop, args)
+        mac_da_0.add_action("set_port", set_port)
+        mac_da_0.add_action("my_drop", my_drop)
+        mac_da_0.add_default(my_drop)
 
         table_key = "hdr.ethernet.dstAddr"
         mac_da_0.add_match(table_key)
