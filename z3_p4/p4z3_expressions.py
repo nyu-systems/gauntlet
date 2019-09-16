@@ -32,13 +32,13 @@ def step(p4_vars, expr_chain=[], expr=None):
 
 
 def resolve_val(p4_vars, expr_chain, val):
-
+    val_str = val
     # resolve potential references first
     if (isinstance(val, str)):
         val = p4_vars.get_var(val)
 
     if val is None:
-        raise RuntimeError(f"Variable does not exist in current environment!")
+        raise RuntimeError(f"Variable {val_str} does not exist in current environment!")
     if ((isinstance(val, AstRef) or
          isinstance(val, bool) or
          isinstance(val, int))):
@@ -239,6 +239,19 @@ class P4Cast(P4Z3Type):
             slice_l = expr.size() - 1
             slice_r = expr.size() - self.to_size
             return Extract(slice_l, slice_r, expr)
+
+
+class P4Declaration():
+    def __init__(self, name, opt_init=None):
+        self.name = name
+        self.opt_init = opt_init
+
+    def eval(self, p4_vars, expr_chain=[]):
+        if self.opt_init is None:
+            return step(p4_vars, expr_chain)
+        else:
+            assign = AssignmentStatement(name, self.opt_init)
+        return step(p4_vars, expr_chain, assign_expr)
 
 
 class SliceAssignment(P4Z3Type):
