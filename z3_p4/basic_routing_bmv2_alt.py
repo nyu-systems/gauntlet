@@ -170,24 +170,65 @@ def p4_program_0(z3_reg):
         table_key = "standard_metadata.ingress_port"
         port_mapping_0.add_match(table_key)
 
+        # BlockStatement begin
         def BLOCK():
             block = BlockStatement()
 
+            # IfBlock begin
             if_block = IfStatement()
-            condition = "hdr.ipv4.isValid()"
-            if_block.add_condition(condition)
-            if_block.add_then_stmt(port_mapping_0.apply())
-            if_block.add_then_stmt(bd_0.apply())
+            expr = MethodCallExpr("hdr.ipv4.isValid")
+            if_block.add_condition(expr)
 
-            switch_block = SwitchStatement(ipv4_fib_0)
-            switch_block.add_case("on_miss_2")
-            switch_block.add_stmt_to_case("on_miss_2", ipv4_fib_lpm_0.apply())
-            if_block.add_then_stmt(switch_block)
-            if_block.add_then_stmt(nexthop_0.apply())
-            block.add(if_block)
+            # BlockStatement begin
+            def BLOCK():
+                block = BlockStatement()
+                # port_mapping_0 begin
+                stmt = port_mapping_0.apply()
+                # port_mapping_0 end
+                block.add(stmt)
+                # bd_0 begin
+                stmt = bd_0.apply()
+                # bd_0 end
+                block.add(stmt)
+                # switch_block begin
+                switch_block = SwitchStatement(ipv4_fib_0.apply())
+                switch_block.add_case("on_miss_2")
+
+                # BlockStatement begin
+                def BLOCK():
+                    block = BlockStatement()
+                    block.add(ipv4_fib_lpm_0.apply())
+                    return block
+                stmt = BLOCK()
+                # BlockStatement end
+                switch_block.add_stmt_to_case("on_miss_2", stmt)
+                stmt = switch_block
+                # switch_block end
+                block.add(stmt)
+                # BlockStatement begin
+
+                def BLOCK():
+                    block = BlockStatement()
+                    block.add(ipv4_fib_lpm_0.apply())
+                    return block
+                stmt = BLOCK()
+                # BlockStatement end
+                block.add(stmt)
+                # nexthop_0 begin
+                stmt = nexthop_0.apply()
+                # nexthop_0 end
+                block.add(stmt)
+                return block
+            stmt = BLOCK()
+            # BlockStatement end
+            if_block.add_then_stmt(stmt)
+            stmt = if_block
+            # IfBlock end
+            block.add(stmt)
             return block
-
-        return BLOCK().eval(p4_vars)
+        stmt = BLOCK()
+        # BlockStatement end
+        return stmt.eval(p4_vars)
 
     return ((p,), (vrfy,), (ingress, ingress_args), (egress,), (update,), (deparser,))
 
@@ -265,6 +306,7 @@ def p4_program_1(z3_reg):
         rval = "vrf"
         assign = AssignmentStatement(lval, rval)
         set_vrf.add_stmt(assign)
+        # p4_vars.set_or_add_var("set_vrf", set_vrf)
 
         on_miss_2 = P4Action()
         on_miss_5 = P4Action()
@@ -283,6 +325,7 @@ def p4_program_1(z3_reg):
         assign = AssignmentStatement(lval, rval)
         block.add(assign)
         fib_hit_nexthop.add_stmt(assign)
+        # p4_vars.set_or_add_var("fib_hit_nexthop", fib_hit_nexthop)
 
         fib_hit_nexthop_2 = P4Action()
         fib_hit_nexthop_2.add_argument("nexthop_index", BitVecSort(16))
@@ -298,6 +341,7 @@ def p4_program_1(z3_reg):
         assign = AssignmentStatement(lval, rval)
         block.add(assign)
         fib_hit_nexthop_2.add_stmt(assign)
+        # p4_vars.set_or_add_var("fib_hit_nexthop_2", fib_hit_nexthop_2)
 
         set_egress_details = P4Action()
         set_egress_details.add_argument("egress_spec", BitVecSort(9))
@@ -306,6 +350,7 @@ def p4_program_1(z3_reg):
         rval = "egress_spec"
         assign = AssignmentStatement(lval, rval)
         set_egress_details.add_stmt(assign)
+        # p4_vars.set_or_add_var("set_egress_details", set_egress_details)
 
         set_bd = P4Action()
         set_bd.add_argument("bd", BitVecSort(16))
@@ -314,6 +359,7 @@ def p4_program_1(z3_reg):
         rval = "bd"
         assign = AssignmentStatement(lval, rval)
         set_bd.add_stmt(assign)
+        # p4_vars.set_or_add_var("set_bd", set_bd)
 
         bd_0 = TableExpr("bd_0")
         bd_0.add_action("set_vrf", set_vrf)
@@ -361,24 +407,66 @@ def p4_program_1(z3_reg):
         table_key = "standard_metadata.ingress_port"
         port_mapping_0.add_match(table_key)
 
+        # BlockStatement begin
         def BLOCK():
             block = BlockStatement()
 
+            # IfBlock begin
             if_block = IfStatement()
-            condition = "hdr.ipv4.isValid()"
-            if_block.add_condition(condition)
-            if_block.add_then_stmt(port_mapping_0.apply())
-            if_block.add_then_stmt(bd_0.apply())
 
-            switch_block = SwitchStatement(ipv4_fib_0)
-            switch_block.add_case("on_miss_2")
-            switch_block.add_stmt_to_case("on_miss_2", ipv4_fib_lpm_0.apply())
-            if_block.add_then_stmt(switch_block)
-            if_block.add_then_stmt(nexthop_0.apply())
-            block.add(if_block)
+            expr = MethodCallExpr("hdr.ipv4.isValid")
+            if_block.add_condition(expr)
+
+            # BlockStatement begin
+            def BLOCK():
+                block = BlockStatement()
+                # port_mapping_0 begin
+                stmt = port_mapping_0.apply()
+                # port_mapping_0 end
+                block.add(stmt)
+                # bd_0 begin
+                stmt = bd_0.apply()
+                # bd_0 end
+                block.add(stmt)
+                # switch_block begin
+                switch_block = SwitchStatement(ipv4_fib_0.apply())
+                switch_block.add_case("on_miss_2")
+
+                # BlockStatement begin
+                def BLOCK():
+                    block = BlockStatement()
+                    block.add(ipv4_fib_lpm_0.apply())
+                    return block
+                stmt = BLOCK()
+                # BlockStatement end
+                switch_block.add_stmt_to_case("on_miss_2", stmt)
+                stmt = switch_block
+                # switch_block end
+                block.add(stmt)
+                # BlockStatement begin
+
+                def BLOCK():
+                    block = BlockStatement()
+                    block.add(ipv4_fib_lpm_0.apply())
+                    return block
+                stmt = BLOCK()
+                # BlockStatement end
+                block.add(stmt)
+                # nexthop_0 begin
+                stmt = nexthop_0.apply()
+                # nexthop_0 end
+                block.add(stmt)
+                return block
+            stmt = BLOCK()
+            # BlockStatement end
+            if_block.add_then_stmt(stmt)
+            stmt = if_block
+            # IfBlock end
+            block.add(stmt)
             return block
-
-        return BLOCK().eval(p4_vars)
+        stmt = BLOCK()
+        # BlockStatement end
+        return stmt.eval(p4_vars)
 
     return ((p,), (vrfy,), (ingress, ingress_args), (egress,), (update,), (deparser,))
 

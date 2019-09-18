@@ -36,12 +36,12 @@ def resolve_val(p4_vars, expr_chain, val):
     # resolve potential references first
     if (isinstance(val, str)):
         val = p4_vars.get_var(val)
-
     if val is None:
         raise RuntimeError(f"Variable {val_str} does not exist in current environment!")
     if ((isinstance(val, AstRef) or
          isinstance(val, bool) or
-         isinstance(val, int))):
+         isinstance(val, int) or
+         callable(val))):
         expr = val
     elif (isinstance(val, P4Z3Type)):
         expr = val.eval(p4_vars, expr_chain)
@@ -64,6 +64,17 @@ def evaluate_action_args(p4_vars, expr_chain, action_args=[]):
 class P4Z3Type():
     def eval(self, p4_vars, expr_chain=[]):
         raise NotImplementedError("Method eval not implemented!")
+
+
+class MethodCallExpr(P4Z3Type):
+
+    def __init__(self, expr, *args):
+        self.expr = expr
+        self.args = args
+
+    def eval(self, p4_vars, expr_chain=[]):
+        expr = resolve_val(p4_vars, expr_chain, self.expr)
+        return expr(*self.args)
 
 
 class P4BinaryOp(P4Z3Type):
@@ -90,7 +101,7 @@ class P4UnaryOp(P4Z3Type):
 
 class P4not(P4UnaryOp):
     def __init__(self, val):
-        operator = op.not_
+        operator = Not
         P4UnaryOp.__init__(self, val, operator)
 
 
@@ -314,7 +325,7 @@ class P4Action():
             arg_type = action_arg[1]
             # previous previous variables in the environment
             prev_val = p4_vars.get_var(arg_name)
-            if prev_val:
+            if prev_val is not None:
                 var_buffer[arg_name] = prev_val
             # set variables to the function arguments
             z3_param = Const(f"{tbl_name}_{arg_name}", arg_type)

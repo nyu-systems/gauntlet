@@ -57,7 +57,7 @@ def p4_program_0(z3_reg):
         mac_da_0.add_action("set_port", set_port)
 
         args = ["standard_metadata"]
-        mac_da_0.add_action("my_drop", my_drop, args)
+        mac_da_0.add_action("my_drop", my_drop)
 
         args = ["standard_metadata"]
         mac_da_0.add_default(my_drop, args)
@@ -74,18 +74,18 @@ def p4_program_0(z3_reg):
 
                 rval = P4Slice("hdr.ethernet.srcAddr", 15, 0)
                 lval = "x_0"
-                assign = AssignmentStatement(lval, rval)
-                block.add(assign)
+                decl = P4Declaration(lval, rval)
+                block.add(decl)
 
                 rval = False
                 lval = "hasReturned"
-                assign = AssignmentStatement(lval, rval)
-                block.add(assign)
+                decl = P4Declaration(lval, rval)
+                block.add(decl)
 
                 rval = BitVec("retval", 16)
                 lval = "retval"
-                assign = AssignmentStatement(lval, rval)
-                block.add(assign)
+                decl = P4Declaration(lval)
+                block.add(decl)
 
                 if_block = IfStatement()
 
