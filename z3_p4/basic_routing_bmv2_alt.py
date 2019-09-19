@@ -140,6 +140,7 @@ def p4_program_0(z3_reg):
         bd_0 = TableExpr("bd_0")
         bd_0.add_action(MethodCallExpr("set_vrf"))
         bd_0.add_default(MethodCallExpr("NoAction_1"))
+        p4_vars.set_or_add_var("bd_0", bd_0)
 
         table_key = "meta.ingress_metadata.bd"
         bd_0.add_match(table_key)
@@ -155,6 +156,7 @@ def p4_program_0(z3_reg):
 
         table_key = "hdr.ipv4.dstAddr"
         ipv4_fib_0.add_match(table_key)
+        p4_vars.set_or_add_var("ipv4_fib_0", ipv4_fib_0)
 
         ipv4_fib_lpm_0 = TableExpr("ipv4_fib_lpm_0")
         ipv4_fib_lpm_0.add_action(MethodCallExpr("on_miss_5"))
@@ -167,6 +169,7 @@ def p4_program_0(z3_reg):
 
         table_key = "hdr.ipv4.srcAddr"
         ipv4_fib_lpm_0.add_match(table_key)
+        p4_vars.set_or_add_var("ipv4_fib_lpm_0", ipv4_fib_lpm_0)
 
         nexthop_0 = TableExpr("nexthop_0")
         ipv4_fib_lpm_0.add_action(MethodCallExpr("on_miss_6"))
@@ -175,6 +178,7 @@ def p4_program_0(z3_reg):
 
         table_key = "meta.ingress_metadata.nexthop_index"
         nexthop_0.add_match(table_key)
+        p4_vars.set_or_add_var("nexthop_0", nexthop_0)
 
         port_mapping_0 = TableExpr("port_mapping_0")
         port_mapping_0.add_action(MethodCallExpr("set_bd"))
@@ -182,6 +186,7 @@ def p4_program_0(z3_reg):
 
         table_key = "standard_metadata.ingress_port"
         port_mapping_0.add_match(table_key)
+        p4_vars.set_or_add_var("port_mapping_0", port_mapping_0)
 
         # BlockStatement begin
         def BLOCK():
@@ -197,21 +202,23 @@ def p4_program_0(z3_reg):
             def BLOCK():
                 block = BlockStatement()
                 # port_mapping_0 begin
-                stmt = port_mapping_0.apply()
+                stmt = MethodCallStmt(MethodCallExpr("port_mapping_0.apply"))
                 # port_mapping_0 end
                 block.add(stmt)
                 # bd_0 begin
-                stmt = bd_0.apply()
+                stmt = MethodCallStmt(MethodCallExpr("bd_0.apply"))
                 # bd_0 end
                 block.add(stmt)
                 # switch_block begin
-                switch_block = SwitchStatement(ipv4_fib_0.apply())
+                switch_block = SwitchStatement(ipv4_fib_0)
                 switch_block.add_case("on_miss_2")
 
                 # BlockStatement begin
                 def BLOCK():
                     block = BlockStatement()
-                    block.add(ipv4_fib_lpm_0.apply())
+                    stmt = MethodCallStmt(
+                        MethodCallExpr("ipv4_fib_lpm_0.apply"))
+                    block.add(stmt)
                     return block
                 stmt = BLOCK()
                 # BlockStatement end
@@ -219,17 +226,8 @@ def p4_program_0(z3_reg):
                 stmt = switch_block
                 # switch_block end
                 block.add(stmt)
-                # BlockStatement begin
-
-                def BLOCK():
-                    block = BlockStatement()
-                    block.add(ipv4_fib_lpm_0.apply())
-                    return block
-                stmt = BLOCK()
-                # BlockStatement end
-                block.add(stmt)
                 # nexthop_0 begin
-                stmt = nexthop_0.apply()
+                stmt = MethodCallStmt(MethodCallExpr("nexthop_0.apply"))
                 # nexthop_0 end
                 block.add(stmt)
                 return block
@@ -245,7 +243,6 @@ def p4_program_0(z3_reg):
         return stmt.eval(p4_vars)
 
     return ((p,), (vrfy,), (ingress, ingress_args), (egress,), (update,), (deparser,))
-
 
 
 def p4_program_1(z3_reg):
@@ -387,6 +384,7 @@ def p4_program_1(z3_reg):
         bd_0 = TableExpr("bd_0")
         bd_0.add_action(MethodCallExpr("set_vrf"))
         bd_0.add_default(MethodCallExpr("NoAction_1"))
+        p4_vars.set_or_add_var("bd_0", bd_0)
 
         table_key = "meta.ingress_metadata.bd"
         bd_0.add_match(table_key)
@@ -402,6 +400,7 @@ def p4_program_1(z3_reg):
 
         table_key = "hdr.ipv4.dstAddr"
         ipv4_fib_0.add_match(table_key)
+        p4_vars.set_or_add_var("ipv4_fib_0", ipv4_fib_0)
 
         ipv4_fib_lpm_0 = TableExpr("ipv4_fib_lpm_0")
         ipv4_fib_lpm_0.add_action(MethodCallExpr("on_miss_5"))
@@ -414,6 +413,7 @@ def p4_program_1(z3_reg):
 
         table_key = "hdr.ipv4.srcAddr"
         ipv4_fib_lpm_0.add_match(table_key)
+        p4_vars.set_or_add_var("ipv4_fib_lpm_0", ipv4_fib_lpm_0)
 
         nexthop_0 = TableExpr("nexthop_0")
         ipv4_fib_lpm_0.add_action(MethodCallExpr("on_miss_6"))
@@ -422,6 +422,7 @@ def p4_program_1(z3_reg):
 
         table_key = "meta.ingress_metadata.nexthop_index"
         nexthop_0.add_match(table_key)
+        p4_vars.set_or_add_var("nexthop_0", nexthop_0)
 
         port_mapping_0 = TableExpr("port_mapping_0")
         port_mapping_0.add_action(MethodCallExpr("set_bd"))
@@ -429,6 +430,7 @@ def p4_program_1(z3_reg):
 
         table_key = "standard_metadata.ingress_port"
         port_mapping_0.add_match(table_key)
+        p4_vars.set_or_add_var("port_mapping_0", port_mapping_0)
 
         # BlockStatement begin
         def BLOCK():
@@ -444,21 +446,23 @@ def p4_program_1(z3_reg):
             def BLOCK():
                 block = BlockStatement()
                 # port_mapping_0 begin
-                stmt = port_mapping_0.apply()
+                stmt = MethodCallStmt(MethodCallExpr("port_mapping_0.apply"))
                 # port_mapping_0 end
                 block.add(stmt)
                 # bd_0 begin
-                stmt = bd_0.apply()
+                stmt = MethodCallStmt(MethodCallExpr("bd_0.apply"))
                 # bd_0 end
                 block.add(stmt)
                 # switch_block begin
-                switch_block = SwitchStatement(ipv4_fib_0.apply())
+                switch_block = SwitchStatement(ipv4_fib_0)
                 switch_block.add_case("on_miss_2")
 
                 # BlockStatement begin
                 def BLOCK():
                     block = BlockStatement()
-                    block.add(ipv4_fib_lpm_0.apply())
+                    stmt = MethodCallStmt(
+                        MethodCallExpr("ipv4_fib_lpm_0.apply"))
+                    block.add(stmt)
                     return block
                 stmt = BLOCK()
                 # BlockStatement end
@@ -466,17 +470,8 @@ def p4_program_1(z3_reg):
                 stmt = switch_block
                 # switch_block end
                 block.add(stmt)
-                # BlockStatement begin
-
-                def BLOCK():
-                    block = BlockStatement()
-                    block.add(ipv4_fib_lpm_0.apply())
-                    return block
-                stmt = BLOCK()
-                # BlockStatement end
-                block.add(stmt)
                 # nexthop_0 begin
-                stmt = nexthop_0.apply()
+                stmt = MethodCallStmt(MethodCallExpr("nexthop_0.apply"))
                 # nexthop_0 end
                 block.add(stmt)
                 return block

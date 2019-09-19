@@ -301,6 +301,15 @@ class AssignmentStatement(P4Z3Type):
         return step(p4_vars, expr_chain, assign_expr)
 
 
+class MethodCallStmt(P4Z3Type):
+
+    def __init__(self, method_expr):
+        self.method_expr = method_expr
+
+    def eval(self, p4_vars, expr_chain=[]):
+        return self.method_expr.eval(p4_vars, expr_chain)
+
+
 class BlockStatement(P4Z3Type):
 
     def __init__(self):
@@ -410,7 +419,7 @@ class SwitchStatement(P4Z3Type):
         action_var = Int(f"{table.name}_action")
         case = {}
         case["match"] = (action_var == action[0])
-        case["action_fun"] = action[1]
+        # case["action_fun"] = action[1]
         case["case_block"] = BlockStatement()
         self.cases[action_str] = case
 
@@ -448,7 +457,7 @@ class TableExpr(P4Z3Type):
     def __init__(self, name):
         self.name = name
         self.keys = []
-        self.actions = {}
+        self.actions = OrderedDict()
 
     def table_action(self, p4_vars, expr_chain=[]):
         action = Int(f"{self.name}_action")
@@ -503,8 +512,8 @@ class TableExpr(P4Z3Type):
         action_expr = p4_action.eval(p4_vars, expr_chain, *p4_action_args)
         return action_expr
 
-    def apply(self):
-        return self
+    def apply(self, p4_vars, expr_chain=[]):
+        return self.eval(p4_vars, expr_chain)
 
     def eval(self, p4_vars, expr_chain=[]):
         # This is a table match where we look up the provided key
