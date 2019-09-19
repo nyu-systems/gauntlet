@@ -2,7 +2,7 @@ from p4z3_base import *
 from collections import OrderedDict
 
 
-def step(p4_vars, expr_chain=[], expr=None):
+def step(p4_vars, expr_chain=[], expr=None) -> AstRef:
     ''' The step function ensures that modifications are propagated to
     all subsequent operations. This is important to guarantee correctness with
     branching or local modification. '''
@@ -31,32 +31,32 @@ def step(p4_vars, expr_chain=[], expr=None):
         return (p4_vars.const == z3_copy)
 
 
-def resolve_val(p4_vars, expr_chain, val):
+def resolve_expr(p4_vars, expr_chain, val) -> AstRef:
+    # Resolves to  z3 expressions, bools and int are also okay
     val_str = val
     # resolve potential references first
     if (isinstance(val, str)):
         val = p4_vars.get_var(val)
     if val is None:
         raise RuntimeError(f"Variable {val_str} does not exist in current environment!")
+
     if ((isinstance(val, AstRef) or
          isinstance(val, bool) or
-         isinstance(val, int) or
-         callable(val))):
+         isinstance(val, int))):
         expr = val
     elif (isinstance(val, P4Z3Type)):
         expr = val.eval(p4_vars, expr_chain)
     elif (isinstance(val, Z3P4Class)):
         expr = val.const
     else:
-        val_type = type(val)
-        raise RuntimeError(f"Value of type {val_type} cannot be resolved!")
+        raise RuntimeError(f"Value of type {type(val)} cannot be resolved!")
     return expr
 
 
 def evaluate_action_args(p4_vars, expr_chain, action_args=[]):
     p4_args = []
     for arg in action_args:
-        expr = resolve_val(p4_vars, expr_chain, arg)
+        expr = resolve_expr(p4_vars, expr_chain, arg)
         p4_args.append(expr)
     return p4_args
 
@@ -76,11 +76,16 @@ class MethodCallExpr(P4Z3Type):
         self.args = args
 
     def eval(self, p4_vars, expr_chain=[], *args):
-        p4_method = resolve_val(p4_vars, expr_chain, self.expr)
-        if (isinstance(p4_method, P4Action)):
+        p4_method = self.expr
+        if (isinstance(self.expr, str)):
+            p4_method = p4_vars.get_var(self.expr)
+        if (callable(p4_method)):
+            return p4_method(p4_vars, expr_chain, *args)
+        elif (isinstance(p4_method, P4Action)):
             # TODO: Eval should always return a z3 expression, never just a class
-            return p4_method
-        return p4_method(p4_vars, expr_chain, *args)
+            return p4_method.eval(p4_vars, expr_chain, *args)
+        else:
+            raise RuntimeError(f"Unsupported method type {type(p4_method)}!")
 
 
 class P4BinaryOp(P4Z3Type):
@@ -90,8 +95,8 @@ class P4BinaryOp(P4Z3Type):
         self.operator = operator
 
     def eval(self, p4_vars, expr_chain=[]):
-        lval_expr = resolve_val(p4_vars, expr_chain, self.lval)
-        rval_expr = resolve_val(p4_vars, expr_chain, self.rval)
+        lval_expr = resolve_expr(p4_vars, expr_chain, self.lval)
+        rval_expr = resolve_expr(p4_vars, expr_chain, self.rval)
         return self.operator(lval_expr, rval_expr)
 
 
@@ -101,7 +106,7 @@ class P4UnaryOp(P4Z3Type):
         self.operator = operator
 
     def eval(self, p4_vars, expr_chain=[]):
-        expr = resolve_val(p4_vars, expr_chain, self.val)
+        expr = resolve_expr(p4_vars, expr_chain, self.val)
         return self.operator(expr)
 
 
@@ -226,7 +231,7 @@ class P4Slice(P4Z3Type):
         self.slice_r = slice_r
 
     def eval(self, p4_vars, expr_chain=[]):
-        val_expr = resolve_val(p4_vars, expr_chain, self.val)
+        val_expr = resolve_expr(p4_vars, expr_chain, self.val)
         return Extract(self.slice_l, self.slice_r, val_expr)
 
 
@@ -236,8 +241,8 @@ class P4Concat(P4Z3Type):
         self.rval = rval
 
     def eval(self, p4_vars, expr_chain=[]):
-        lval_expr = resolve_val(p4_vars, expr_chain, self.lval)
-        rval_expr = resolve_val(p4_vars, expr_chain, self.rval)
+        lval_expr = resolve_expr(p4_vars, expr_chain, self.lval)
+        rval_expr = resolve_expr(p4_vars, expr_chain, self.rval)
         return Concat(lval_expr, rval_expr)
 
 
@@ -249,7 +254,7 @@ class P4Cast(P4Z3Type):
         self.to_size = to_size
 
     def eval(self, p4_vars, expr_chain=[]):
-        expr = resolve_val(p4_vars, expr_chain, self.val)
+        expr = resolve_expr(p4_vars, expr_chain, self.val)
         if (expr.size() < self.to_size):
             return ZeroExt(self.to_size - expr.size(), expr)
         else:
@@ -280,8 +285,8 @@ class SliceAssignment(P4Z3Type):
         self.slice_r = slice_r
 
     def eval(self, p4_vars, expr_chain=[]):
-        lval_expr = resolve_val(p4_vars, expr_chain, self.lval)
-        rval_expr = resolve_val(p4_vars, expr_chain, self.rval)
+        lval_expr = resolve_expr(p4_vars, expr_chain, self.lval)
+        rval_expr = resolve_expr(p4_vars, expr_chain, self.rval)
         rval_expr = slice_assign(lval_expr, rval_expr,
                                  self.slice_l, self.slice_r)
         slice_assign_expr = p4_vars.set_or_add_var(self.lval, rval_expr)
@@ -295,7 +300,7 @@ class AssignmentStatement(P4Z3Type):
         self.rval = rval
 
     def eval(self, p4_vars, expr_chain=[]):
-        rval_expr = resolve_val(p4_vars, expr_chain, self.rval)
+        rval_expr = resolve_expr(p4_vars, expr_chain, self.rval)
         assign_expr = p4_vars.set_or_add_var(self.lval, rval_expr)
         return step(p4_vars, expr_chain, assign_expr)
 
@@ -395,7 +400,7 @@ class IfStatement(P4Z3Type):
     def eval(self, p4_vars, expr_chain=[]):
         if self.condition is None:
             raise RuntimeError("Missing condition!")
-        condition = resolve_val(p4_vars, expr_chain, self.condition)
+        condition = resolve_expr(p4_vars, expr_chain, self.condition)
         if self.else_block:
             return If(condition,
                       step(p4_vars, [self.then_block] + expr_chain),
@@ -504,7 +509,7 @@ class TableExpr(P4Z3Type):
             # there is nothing to match with...
             return False
         for index, key in enumerate(self.keys):
-            key_eval = resolve_val(p4_vars, expr_chain, key)
+            key_eval = resolve_expr(p4_vars, expr_chain, key)
             key_match = Const(f"{self.name}_key_{index}", key_eval.sort())
             key_pairs.append(key_eval == key_match)
         return And(key_pairs)
