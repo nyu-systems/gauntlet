@@ -138,18 +138,18 @@ def p4_program_0(z3_reg):
         p4_vars.set_or_add_var("set_bd", set_bd)
 
         bd_0 = TableExpr("bd_0")
-        bd_0.add_action(MethodCallExpr("set_vrf"))
-        bd_0.add_default(MethodCallExpr("NoAction_1"))
+        bd_0.add_action(p4_vars, MethodCallExpr("set_vrf"))
+        bd_0.add_default(p4_vars, MethodCallExpr("NoAction_1"))
         p4_vars.set_or_add_var("bd_0", bd_0)
 
         table_key = "meta.ingress_metadata.bd"
         bd_0.add_match(table_key)
 
         ipv4_fib_0 = TableExpr("ipv4_fib_0")
-        ipv4_fib_0.add_action(MethodCallExpr("on_miss_2"))
+        ipv4_fib_0.add_action(p4_vars, MethodCallExpr("on_miss_2"))
 
-        ipv4_fib_0.add_action(MethodCallExpr("fib_hit_nexthop"))
-        ipv4_fib_0.add_default(MethodCallExpr("NoAction_8"))
+        ipv4_fib_0.add_action(p4_vars, MethodCallExpr("fib_hit_nexthop"))
+        ipv4_fib_0.add_default(p4_vars, MethodCallExpr("NoAction_8"))
 
         table_key = "meta.ingress_metadata.vrf"
         ipv4_fib_0.add_match(table_key)
@@ -159,9 +159,9 @@ def p4_program_0(z3_reg):
         p4_vars.set_or_add_var("ipv4_fib_0", ipv4_fib_0)
 
         ipv4_fib_lpm_0 = TableExpr("ipv4_fib_lpm_0")
-        ipv4_fib_lpm_0.add_action(MethodCallExpr("on_miss_5"))
-        ipv4_fib_lpm_0.add_action(MethodCallExpr("fib_hit_nexthop_2"))
-        ipv4_fib_lpm_0.add_default(MethodCallExpr("NoAction_9"))
+        ipv4_fib_lpm_0.add_action(p4_vars, MethodCallExpr("on_miss_5"))
+        ipv4_fib_lpm_0.add_action(p4_vars, MethodCallExpr("fib_hit_nexthop_2"))
+        ipv4_fib_lpm_0.add_default(p4_vars, MethodCallExpr("NoAction_9"))
 
         table_key = "meta.ingress_metadata.vrf"
         ipv4_fib_lpm_0.add_match(table_key)
@@ -172,17 +172,17 @@ def p4_program_0(z3_reg):
         p4_vars.set_or_add_var("ipv4_fib_lpm_0", ipv4_fib_lpm_0)
 
         nexthop_0 = TableExpr("nexthop_0")
-        ipv4_fib_lpm_0.add_action(MethodCallExpr("on_miss_6"))
-        nexthop_0.add_action(MethodCallExpr("set_egress_details"))
-        nexthop_0.add_default(MethodCallExpr("NoAction_10"))
+        ipv4_fib_lpm_0.add_action(p4_vars, MethodCallExpr("on_miss_6"))
+        nexthop_0.add_action(p4_vars, MethodCallExpr("set_egress_details"))
+        nexthop_0.add_default(p4_vars, MethodCallExpr("NoAction_10"))
 
         table_key = "meta.ingress_metadata.nexthop_index"
         nexthop_0.add_match(table_key)
         p4_vars.set_or_add_var("nexthop_0", nexthop_0)
 
         port_mapping_0 = TableExpr("port_mapping_0")
-        port_mapping_0.add_action(MethodCallExpr("set_bd"))
-        port_mapping_0.add_default(MethodCallExpr("NoAction_11"))
+        port_mapping_0.add_action(p4_vars, MethodCallExpr("set_bd"))
+        port_mapping_0.add_default(p4_vars, MethodCallExpr("NoAction_11"))
 
         table_key = "standard_metadata.ingress_port"
         port_mapping_0.add_match(table_key)
@@ -382,18 +382,18 @@ def p4_program_1(z3_reg):
         p4_vars.set_or_add_var("set_bd", set_bd)
 
         bd_0 = TableExpr("bd_0")
-        bd_0.add_action(MethodCallExpr("set_vrf"))
-        bd_0.add_default(MethodCallExpr("NoAction_1"))
+        bd_0.add_action(p4_vars, MethodCallExpr("set_vrf"))
+        bd_0.add_default(p4_vars, MethodCallExpr("NoAction_1"))
         p4_vars.set_or_add_var("bd_0", bd_0)
 
         table_key = "meta.ingress_metadata.bd"
         bd_0.add_match(table_key)
 
         ipv4_fib_0 = TableExpr("ipv4_fib_0")
-        ipv4_fib_0.add_action(MethodCallExpr("on_miss_2"))
+        ipv4_fib_0.add_action(p4_vars, MethodCallExpr("on_miss_2"))
 
-        ipv4_fib_0.add_action(MethodCallExpr("fib_hit_nexthop"))
-        ipv4_fib_0.add_default(MethodCallExpr("NoAction_8"))
+        ipv4_fib_0.add_action(p4_vars, MethodCallExpr("fib_hit_nexthop"))
+        ipv4_fib_0.add_default(p4_vars, MethodCallExpr("NoAction_8"))
 
         table_key = "meta.ingress_metadata.vrf"
         ipv4_fib_0.add_match(table_key)
@@ -403,9 +403,9 @@ def p4_program_1(z3_reg):
         p4_vars.set_or_add_var("ipv4_fib_0", ipv4_fib_0)
 
         ipv4_fib_lpm_0 = TableExpr("ipv4_fib_lpm_0")
-        ipv4_fib_lpm_0.add_action(MethodCallExpr("on_miss_5"))
-        ipv4_fib_lpm_0.add_action(MethodCallExpr("fib_hit_nexthop_2"))
-        ipv4_fib_lpm_0.add_default(MethodCallExpr("NoAction_9"))
+        ipv4_fib_lpm_0.add_action(p4_vars, MethodCallExpr("on_miss_5"))
+        ipv4_fib_lpm_0.add_action(p4_vars, MethodCallExpr("fib_hit_nexthop_2"))
+        ipv4_fib_lpm_0.add_default(p4_vars, MethodCallExpr("NoAction_9"))
 
         table_key = "meta.ingress_metadata.vrf"
         ipv4_fib_lpm_0.add_match(table_key)
@@ -416,17 +416,17 @@ def p4_program_1(z3_reg):
         p4_vars.set_or_add_var("ipv4_fib_lpm_0", ipv4_fib_lpm_0)
 
         nexthop_0 = TableExpr("nexthop_0")
-        ipv4_fib_lpm_0.add_action(MethodCallExpr("on_miss_6"))
-        nexthop_0.add_action(MethodCallExpr("set_egress_details"))
-        nexthop_0.add_default(MethodCallExpr("NoAction_10"))
+        ipv4_fib_lpm_0.add_action(p4_vars, MethodCallExpr("on_miss_6"))
+        nexthop_0.add_action(p4_vars, MethodCallExpr("set_egress_details"))
+        nexthop_0.add_default(p4_vars, MethodCallExpr("NoAction_10"))
 
         table_key = "meta.ingress_metadata.nexthop_index"
         nexthop_0.add_match(table_key)
         p4_vars.set_or_add_var("nexthop_0", nexthop_0)
 
         port_mapping_0 = TableExpr("port_mapping_0")
-        port_mapping_0.add_action(MethodCallExpr("set_bd"))
-        port_mapping_0.add_default(MethodCallExpr("NoAction_11"))
+        port_mapping_0.add_action(p4_vars, MethodCallExpr("set_bd"))
+        port_mapping_0.add_default(p4_vars, MethodCallExpr("NoAction_11"))
 
         table_key = "standard_metadata.ingress_port"
         port_mapping_0.add_match(table_key)

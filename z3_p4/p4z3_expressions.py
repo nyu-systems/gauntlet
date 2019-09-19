@@ -39,7 +39,6 @@ def resolve_val(p4_vars, expr_chain, val):
     if val is None:
         raise RuntimeError(f"Variable {val_str} does not exist in current environment!")
     if ((isinstance(val, AstRef) or
-         isinstance(val, P4Action) or
          isinstance(val, bool) or
          isinstance(val, int) or
          callable(val))):
@@ -322,7 +321,7 @@ class BlockStatement(P4Z3Type):
         return step(p4_vars, self.exprs + expr_chain)
 
 
-class P4Action():
+class P4Action(P4Z3Type):
 
     def __init__(self):
         self.block = BlockStatement()
@@ -467,23 +466,34 @@ class TableExpr(P4Z3Type):
         '''
         actions = []
         for f_name, f_tuple in self.actions.items():
-            if f_name == "default":
-                continue
             p4_action_id = f_tuple[0]
+            if p4_action_id == 0:
+                continue
             action_expr = self.execute_action(p4_vars, expr_chain, f_tuple)
             expr = Implies(action == p4_action_id, action_expr)
             actions.append(expr)
         return And(*actions)
 
-    def add_action(self, action_expr):
+    def add_action(self, p4_vars, action_expr):
+        # TODO Fix this roundabout way of getting a P4 Action, super annoying...
         expr_name = action_expr.expr
         if not isinstance(expr_name, str):
             raise RuntimeError(f"Expected a string, got {type(expr_name)}!")
+        p4_action = p4_vars.get_var(expr_name)
+        if not isinstance(p4_action, P4Action):
+            raise RuntimeError(f"Expected a P4Action got {type(p4_action)}!")
         index = len(self.actions) + 1
-        self.actions[expr_name] = (index, action_expr, action_expr.args)
+        self.actions[expr_name] = (index, p4_action, action_expr.args)
 
-    def add_default(self, action_expr):
-        self.actions["default"] = (0, action_expr, action_expr.args)
+    def add_default(self, p4_vars, action_expr):
+        expr_name = action_expr.expr
+        if not isinstance(expr_name, str):
+            raise RuntimeError(f"Expected a string, got {type(expr_name)}!")
+        p4_action = p4_vars.get_var(expr_name)
+        if not isinstance(p4_action, P4Action):
+            raise RuntimeError(f"Expected a P4Action got {type(p4_action)}!")
+        index = len(self.actions) + 1
+        self.actions["default"] = (0, p4_action, action_expr.args)
 
     def add_match(self, table_key):
         self.keys.append(table_key)
@@ -504,9 +514,7 @@ class TableExpr(P4Z3Type):
         return self.table_match(p4_vars, expr_chain)
 
     def execute_action(self, p4_vars, expr_chain, action_tuple):
-        p4_action = resolve_val(p4_vars, expr_chain, action_tuple[1])
-        if not isinstance(p4_action, P4Action):
-            raise RuntimeError(f"Expected a P4Action, got {type(p4_action)}!")
+        p4_action = action_tuple[1]
         p4_action_args = p4_action.synthesize_args(
             p4_vars, expr_chain, arg_prefix=self.name, *action_tuple[2])
         action_expr = p4_action.eval(p4_vars, expr_chain, *p4_action_args)
