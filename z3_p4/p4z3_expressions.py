@@ -34,7 +34,7 @@ def step(p4_vars, expr_chain=[], expr=None) -> AstRef:
 def resolve_expr(p4_vars, expr_chain, val) -> AstRef:
     # Resolves to  z3 expressions, bools and int are also okay
     val_str = val
-    # resolve potential references first
+    # resolve potential string references first
     if (isinstance(val, str)):
         val = p4_vars.get_var(val)
     if val is None:
@@ -43,14 +43,16 @@ def resolve_expr(p4_vars, expr_chain, val) -> AstRef:
     if ((isinstance(val, AstRef) or
          isinstance(val, bool) or
          isinstance(val, int))):
-        expr = val
+        # These are z3 types and can be returned
+        return val
     elif (isinstance(val, P4Z3Type)):
-        expr = val.eval(p4_vars, expr_chain)
+        # We got a P4 time, recurse...
+        return val.eval(p4_vars, expr_chain)
     elif (isinstance(val, Z3P4Class)):
-        expr = val.const
+        # If we get a whole class return the complex z3 type
+        return val.const
     else:
         raise RuntimeError(f"Value of type {type(val)} cannot be resolved!")
-    return expr
 
 
 def evaluate_action_args(p4_vars, expr_chain, action_args=[]):
@@ -456,7 +458,7 @@ class SwitchStatement(P4Z3Type):
                    switch_if.eval(p4_vars, expr_chain))
 
 
-class TableExpr(P4Z3Type):
+class P4Table(P4Z3Type):
 
     def __init__(self, name):
         self.name = name
