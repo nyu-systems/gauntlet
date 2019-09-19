@@ -90,7 +90,6 @@ def p4_program_0(z3_reg):
             rval = BitVecVal(0, 9)
             lval = "sm.egress_spec"
             assign = AssignmentStatement(lval, rval)
-
             block.add(assign)
             return block
 

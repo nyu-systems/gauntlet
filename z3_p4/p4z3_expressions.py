@@ -39,6 +39,7 @@ def resolve_val(p4_vars, expr_chain, val):
     if val is None:
         raise RuntimeError(f"Variable {val_str} does not exist in current environment!")
     if ((isinstance(val, AstRef) or
+         isinstance(val, P4Action) or
          isinstance(val, bool) or
          isinstance(val, int) or
          callable(val))):
@@ -72,9 +73,15 @@ class MethodCallExpr(P4Z3Type):
         self.expr = expr
         self.args = args
 
-    def eval(self, p4_vars, expr_chain=[]):
-        expr = resolve_val(p4_vars, expr_chain, self.expr)
-        return expr(*self.args)
+    def set_args(self, *args):
+        self.args = args
+
+    def eval(self, p4_vars, expr_chain=[], *args):
+        p4_method = resolve_val(p4_vars, expr_chain, self.expr)
+        if (isinstance(p4_method, P4Action)):
+            # TODO: Eval should always return a z3 expression, never just a class
+            return p4_method
+        return p4_method(p4_vars, expr_chain, *args)
 
 
 class P4BinaryOp(P4Z3Type):
@@ -310,40 +317,51 @@ class P4Action():
 
     def __init__(self):
         self.block = BlockStatement()
-        self.arguments = []
+        self.parameters = []
 
-    def add_argument(self, arg_name, arg_type):
-        self.arguments.append((arg_name, arg_type))
+    def add_parameter(self, arg_name, arg_type):
+        self.parameters.append((arg_name, arg_type))
 
     def add_stmt(self, stmt):
         self.block.add(stmt)
 
-    def run(self, tbl_name, p4_vars, expr_chain=[], *args):
+    def get_parameters(self):
+        return self.parameters
+
+    def synthesize_args(self, p4_vars, expr_chain, arg_prefix="", *args):
+        params = self.get_parameters()
+        action_args = []
+        for param in params:
+            arg_name = param[0]
+            arg_type = param[1]
+            action_args.append(Const(f"{arg_prefix}{arg_name}", arg_type))
+        for index, runtime_arg in enumerate(args):
+            action_args[index] = arg
+        return action_args
+
+    def eval(self, p4_vars, expr_chain=[], *args):
         var_buffer = {}
-        for action_arg in self.arguments:
+        for action_arg in self.parameters:
             arg_name = action_arg[0]
             arg_type = action_arg[1]
             # previous previous variables in the environment
             prev_val = p4_vars.get_var(arg_name)
             if prev_val is not None:
                 var_buffer[arg_name] = prev_val
-            # set variables to the function arguments
-            z3_param = Const(f"{tbl_name}_{arg_name}", arg_type)
-            p4_vars.set_or_add_var(arg_name, z3_param)
 
         # override the symbolic entries if we have concrete
         # arguments from the table
-        for index, arg in enumerate(*args):
-            if index > len(self.arguments) - 1:
+        for index, arg in enumerate(args):
+            if index > len(self.parameters) - 1:
                 raise RuntimeError(
-                    "Provided arguments exceed possible function parameters.")
-            arg_name = self.arguments[index][0]
-            p4_vars.set_or_add_var(arg_name, z3_param)
+                    f"Provided arguments {args} exceed possible function parameters.")
+            arg_name = self.parameters[index][0]
+            p4_vars.set_or_add_var(arg_name, arg)
 
         # execute the action expression with the new environment
         expr = step(p4_vars, [self.block] + expr_chain)
         # reset the variables that were overwritten to their previous value
-        for action_arg in self.arguments:
+        for action_arg in self.parameters:
             p4_vars.del_var(action_arg[0])
         for arg_name, arg_expr in var_buffer.items():
             p4_vars.set_or_add_var(arg_name, arg_expr)
@@ -393,7 +411,6 @@ class SwitchStatement(P4Z3Type):
         case = {}
         case["match"] = (action_var == action[0])
         case["action_fun"] = action[1]
-        case["action_args"] = action[2]
         case["case_block"] = BlockStatement()
         self.cases[action_str] = case
 
@@ -443,20 +460,21 @@ class TableExpr(P4Z3Type):
         for f_name, f_tuple in self.actions.items():
             if f_name == "default":
                 continue
-            f_id = f_tuple[0]
-            f_fun = f_tuple[1]
-            f_args = evaluate_action_args(p4_vars, expr_chain, *f_tuple[2])
-            expr = Implies(action == f_id,
-                           f_fun.run(self.name, p4_vars, expr_chain, f_args))
+            p4_action_id = f_tuple[0]
+            action_expr = self.execute_action(p4_vars, expr_chain, f_tuple)
+            expr = Implies(action == p4_action_id, action_expr)
             actions.append(expr)
         return And(*actions)
 
-    def add_action(self, str_name, action, *action_args):
+    def add_action(self, action_expr):
+        expr_name = action_expr.expr
+        if not isinstance(expr_name, str):
+            raise RuntimeError(f"Expected a string, got {type(expr_name)}!")
         index = len(self.actions) + 1
-        self.actions[str_name] = (index, action, action_args)
+        self.actions[expr_name] = (index, action_expr, action_expr.args)
 
-    def add_default(self, action, *action_args):
-        self.actions["default"] = (0, action, action_args)
+    def add_default(self, action_expr):
+        self.actions["default"] = (0, action_expr, action_expr.args)
 
     def add_match(self, table_key):
         self.keys.append(table_key)
@@ -476,6 +494,15 @@ class TableExpr(P4Z3Type):
         action = Int(f"{self.name}_action")
         return self.table_match(p4_vars, expr_chain)
 
+    def execute_action(self, p4_vars, expr_chain, action_tuple):
+        p4_action = resolve_val(p4_vars, expr_chain, action_tuple[1])
+        if not isinstance(p4_action, P4Action):
+            raise RuntimeError(f"Expected a P4Action, got {type(p4_action)}!")
+        p4_action_args = p4_action.synthesize_args(
+            p4_vars, expr_chain, arg_prefix=self.name, *action_tuple[2])
+        action_expr = p4_action.eval(p4_vars, expr_chain, *p4_action_args)
+        return action_expr
+
     def apply(self):
         return self
 
@@ -483,9 +510,8 @@ class TableExpr(P4Z3Type):
         # This is a table match where we look up the provided key
         # If we match select the associated action,
         # else use the default action
-        def_fun = self.actions["default"][1]
-        def_args = evaluate_action_args(
-            p4_vars, expr_chain, *self.actions["default"][2])
+        def_expr = self.execute_action(
+            p4_vars, expr_chain, self.actions["default"])
         return If(self.table_match(p4_vars, expr_chain),
                   self.table_action(p4_vars, expr_chain),
-                  def_fun.run(self.name, p4_vars, expr_chain, def_args))
+                  def_expr)

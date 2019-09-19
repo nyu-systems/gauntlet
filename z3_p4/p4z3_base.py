@@ -169,7 +169,7 @@ class Header(Z3P4Class):
     def _init_valid(self):
         self.valid = Const("%s_valid" % self.name, BoolSort())
 
-    def isValid(self):
+    def isValid(self, p4_vars, expr_chain=[]):
         return self.valid
 
     def setValid(self):

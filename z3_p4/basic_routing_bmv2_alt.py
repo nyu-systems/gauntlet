@@ -62,25 +62,34 @@ def p4_program_0(z3_reg):
     def ingress(p4_vars):
 
         NoAction_1 = P4Action()
+        p4_vars.set_or_add_var("NoAction_1", NoAction_1)
         NoAction_8 = P4Action()
+        p4_vars.set_or_add_var("NoAction_8", NoAction_8)
         NoAction_9 = P4Action()
+        p4_vars.set_or_add_var("NoAction_9", NoAction_9)
         NoAction_10 = P4Action()
+        p4_vars.set_or_add_var("NoAction_10", NoAction_10)
         NoAction_11 = P4Action()
+        p4_vars.set_or_add_var("NoAction_11", NoAction_11)
 
         set_vrf = P4Action()
-        set_vrf.add_argument("vrf", BitVecSort(12))
+        set_vrf.add_parameter("vrf", BitVecSort(12))
 
         lval = "meta.ingress_metadata.vrf"
         rval = "vrf"
         assign = AssignmentStatement(lval, rval)
         set_vrf.add_stmt(assign)
+        p4_vars.set_or_add_var("set_vrf", set_vrf)
 
         on_miss_2 = P4Action()
+        p4_vars.set_or_add_var("on_miss_2", on_miss_2)
         on_miss_5 = P4Action()
+        p4_vars.set_or_add_var("on_miss_5", on_miss_5)
         on_miss_6 = P4Action()
+        p4_vars.set_or_add_var("on_miss_6", on_miss_6)
 
         fib_hit_nexthop = P4Action()
-        fib_hit_nexthop.add_argument("nexthop_index", BitVecSort(16))
+        fib_hit_nexthop.add_parameter("nexthop_index", BitVecSort(16))
         block = BlockStatement()
         lval = "meta.ingress_metadata.nexthop_index"
         rval = "nexthop_index"
@@ -92,9 +101,10 @@ def p4_program_0(z3_reg):
         assign = AssignmentStatement(lval, rval)
         block.add(assign)
         fib_hit_nexthop.add_stmt(assign)
+        p4_vars.set_or_add_var("fib_hit_nexthop", fib_hit_nexthop)
 
         fib_hit_nexthop_2 = P4Action()
-        fib_hit_nexthop_2.add_argument("nexthop_index", BitVecSort(16))
+        fib_hit_nexthop_2.add_parameter("nexthop_index", BitVecSort(16))
 
         block = BlockStatement()
         lval = "meta.ingress_metadata.nexthop_index"
@@ -107,35 +117,38 @@ def p4_program_0(z3_reg):
         assign = AssignmentStatement(lval, rval)
         block.add(assign)
         fib_hit_nexthop_2.add_stmt(assign)
+        p4_vars.set_or_add_var("fib_hit_nexthop_2", fib_hit_nexthop_2)
 
         set_egress_details = P4Action()
-        set_egress_details.add_argument("egress_spec", BitVecSort(9))
+        set_egress_details.add_parameter("egress_spec", BitVecSort(9))
 
         lval = "meta.ingress_metadata.egress_spec"
         rval = "egress_spec"
         assign = AssignmentStatement(lval, rval)
         set_egress_details.add_stmt(assign)
+        p4_vars.set_or_add_var("set_egress_details", set_egress_details)
 
         set_bd = P4Action()
-        set_bd.add_argument("bd", BitVecSort(16))
+        set_bd.add_parameter("bd", BitVecSort(16))
 
         lval = "meta.ingress_metadata.bd"
         rval = "bd"
         assign = AssignmentStatement(lval, rval)
         set_bd.add_stmt(assign)
+        p4_vars.set_or_add_var("set_bd", set_bd)
 
         bd_0 = TableExpr("bd_0")
-        bd_0.add_action("set_vrf", set_vrf)
-        bd_0.add_default(NoAction_1,)
+        bd_0.add_action(MethodCallExpr("set_vrf"))
+        bd_0.add_default(MethodCallExpr("NoAction_1"))
 
         table_key = "meta.ingress_metadata.bd"
         bd_0.add_match(table_key)
 
         ipv4_fib_0 = TableExpr("ipv4_fib_0")
-        ipv4_fib_0.add_action("on_miss_2", on_miss_2)
+        ipv4_fib_0.add_action(MethodCallExpr("on_miss_2"))
 
-        ipv4_fib_0.add_action("fib_hit_nexthop", fib_hit_nexthop)
-        ipv4_fib_0.add_default(NoAction_8)
+        ipv4_fib_0.add_action(MethodCallExpr("fib_hit_nexthop"))
+        ipv4_fib_0.add_default(MethodCallExpr("NoAction_8"))
 
         table_key = "meta.ingress_metadata.vrf"
         ipv4_fib_0.add_match(table_key)
@@ -144,9 +157,9 @@ def p4_program_0(z3_reg):
         ipv4_fib_0.add_match(table_key)
 
         ipv4_fib_lpm_0 = TableExpr("ipv4_fib_lpm_0")
-        ipv4_fib_lpm_0.add_action("on_miss_5", on_miss_5)
-        ipv4_fib_lpm_0.add_action("fib_hit_nexthop_2", fib_hit_nexthop_2)
-        ipv4_fib_lpm_0.add_default(NoAction_9)
+        ipv4_fib_lpm_0.add_action(MethodCallExpr("on_miss_5"))
+        ipv4_fib_lpm_0.add_action(MethodCallExpr("fib_hit_nexthop_2"))
+        ipv4_fib_lpm_0.add_default(MethodCallExpr("NoAction_9"))
 
         table_key = "meta.ingress_metadata.vrf"
         ipv4_fib_lpm_0.add_match(table_key)
@@ -156,16 +169,16 @@ def p4_program_0(z3_reg):
         ipv4_fib_lpm_0.add_match(table_key)
 
         nexthop_0 = TableExpr("nexthop_0")
-        ipv4_fib_lpm_0.add_action("on_miss_6", on_miss_6)
-        nexthop_0.add_action("set_egress_details", set_egress_details)
-        nexthop_0.add_default(NoAction_10,)
+        ipv4_fib_lpm_0.add_action(MethodCallExpr("on_miss_6"))
+        nexthop_0.add_action(MethodCallExpr("set_egress_details"))
+        nexthop_0.add_default(MethodCallExpr("NoAction_10"))
 
         table_key = "meta.ingress_metadata.nexthop_index"
         nexthop_0.add_match(table_key)
 
         port_mapping_0 = TableExpr("port_mapping_0")
-        port_mapping_0.add_action("set_bd", set_bd)
-        port_mapping_0.add_default(NoAction_11)
+        port_mapping_0.add_action(MethodCallExpr("set_bd"))
+        port_mapping_0.add_default(MethodCallExpr("NoAction_11"))
 
         table_key = "standard_metadata.ingress_port"
         port_mapping_0.add_match(table_key)
@@ -176,6 +189,7 @@ def p4_program_0(z3_reg):
 
             # IfBlock begin
             if_block = IfStatement()
+
             expr = MethodCallExpr("hdr.ipv4.isValid")
             if_block.add_condition(expr)
 
@@ -231,6 +245,7 @@ def p4_program_0(z3_reg):
         return stmt.eval(p4_vars)
 
     return ((p,), (vrfy,), (ingress, ingress_args), (egress,), (update,), (deparser,))
+
 
 
 def p4_program_1(z3_reg):
@@ -294,26 +309,34 @@ def p4_program_1(z3_reg):
     def ingress(p4_vars):
 
         NoAction_1 = P4Action()
+        p4_vars.set_or_add_var("NoAction_1", NoAction_1)
         NoAction_8 = P4Action()
+        p4_vars.set_or_add_var("NoAction_8", NoAction_8)
         NoAction_9 = P4Action()
+        p4_vars.set_or_add_var("NoAction_9", NoAction_9)
         NoAction_10 = P4Action()
+        p4_vars.set_or_add_var("NoAction_10", NoAction_10)
         NoAction_11 = P4Action()
+        p4_vars.set_or_add_var("NoAction_11", NoAction_11)
 
         set_vrf = P4Action()
-        set_vrf.add_argument("vrf", BitVecSort(12))
+        set_vrf.add_parameter("vrf", BitVecSort(12))
 
         lval = "meta.ingress_metadata.vrf"
         rval = "vrf"
         assign = AssignmentStatement(lval, rval)
         set_vrf.add_stmt(assign)
-        # p4_vars.set_or_add_var("set_vrf", set_vrf)
+        p4_vars.set_or_add_var("set_vrf", set_vrf)
 
         on_miss_2 = P4Action()
+        p4_vars.set_or_add_var("on_miss_2", on_miss_2)
         on_miss_5 = P4Action()
+        p4_vars.set_or_add_var("on_miss_5", on_miss_5)
         on_miss_6 = P4Action()
+        p4_vars.set_or_add_var("on_miss_6", on_miss_6)
 
         fib_hit_nexthop = P4Action()
-        fib_hit_nexthop.add_argument("nexthop_index", BitVecSort(16))
+        fib_hit_nexthop.add_parameter("nexthop_index", BitVecSort(16))
         block = BlockStatement()
         lval = "meta.ingress_metadata.nexthop_index"
         rval = "nexthop_index"
@@ -325,10 +348,10 @@ def p4_program_1(z3_reg):
         assign = AssignmentStatement(lval, rval)
         block.add(assign)
         fib_hit_nexthop.add_stmt(assign)
-        # p4_vars.set_or_add_var("fib_hit_nexthop", fib_hit_nexthop)
+        p4_vars.set_or_add_var("fib_hit_nexthop", fib_hit_nexthop)
 
         fib_hit_nexthop_2 = P4Action()
-        fib_hit_nexthop_2.add_argument("nexthop_index", BitVecSort(16))
+        fib_hit_nexthop_2.add_parameter("nexthop_index", BitVecSort(16))
 
         block = BlockStatement()
         lval = "meta.ingress_metadata.nexthop_index"
@@ -341,38 +364,38 @@ def p4_program_1(z3_reg):
         assign = AssignmentStatement(lval, rval)
         block.add(assign)
         fib_hit_nexthop_2.add_stmt(assign)
-        # p4_vars.set_or_add_var("fib_hit_nexthop_2", fib_hit_nexthop_2)
+        p4_vars.set_or_add_var("fib_hit_nexthop_2", fib_hit_nexthop_2)
 
         set_egress_details = P4Action()
-        set_egress_details.add_argument("egress_spec", BitVecSort(9))
+        set_egress_details.add_parameter("egress_spec", BitVecSort(9))
 
         lval = "meta.ingress_metadata.egress_spec"
         rval = "egress_spec"
         assign = AssignmentStatement(lval, rval)
         set_egress_details.add_stmt(assign)
-        # p4_vars.set_or_add_var("set_egress_details", set_egress_details)
+        p4_vars.set_or_add_var("set_egress_details", set_egress_details)
 
         set_bd = P4Action()
-        set_bd.add_argument("bd", BitVecSort(16))
+        set_bd.add_parameter("bd", BitVecSort(16))
 
         lval = "meta.ingress_metadata.bd"
         rval = "bd"
         assign = AssignmentStatement(lval, rval)
         set_bd.add_stmt(assign)
-        # p4_vars.set_or_add_var("set_bd", set_bd)
+        p4_vars.set_or_add_var("set_bd", set_bd)
 
         bd_0 = TableExpr("bd_0")
-        bd_0.add_action("set_vrf", set_vrf)
-        bd_0.add_default(NoAction_1,)
+        bd_0.add_action(MethodCallExpr("set_vrf"))
+        bd_0.add_default(MethodCallExpr("NoAction_1"))
 
         table_key = "meta.ingress_metadata.bd"
         bd_0.add_match(table_key)
 
         ipv4_fib_0 = TableExpr("ipv4_fib_0")
-        ipv4_fib_0.add_action("on_miss_2", on_miss_2)
+        ipv4_fib_0.add_action(MethodCallExpr("on_miss_2"))
 
-        ipv4_fib_0.add_action("fib_hit_nexthop", fib_hit_nexthop)
-        ipv4_fib_0.add_default(NoAction_8)
+        ipv4_fib_0.add_action(MethodCallExpr("fib_hit_nexthop"))
+        ipv4_fib_0.add_default(MethodCallExpr("NoAction_8"))
 
         table_key = "meta.ingress_metadata.vrf"
         ipv4_fib_0.add_match(table_key)
@@ -381,9 +404,9 @@ def p4_program_1(z3_reg):
         ipv4_fib_0.add_match(table_key)
 
         ipv4_fib_lpm_0 = TableExpr("ipv4_fib_lpm_0")
-        ipv4_fib_lpm_0.add_action("on_miss_5", on_miss_5)
-        ipv4_fib_lpm_0.add_action("fib_hit_nexthop_2", fib_hit_nexthop_2)
-        ipv4_fib_lpm_0.add_default(NoAction_9)
+        ipv4_fib_lpm_0.add_action(MethodCallExpr("on_miss_5"))
+        ipv4_fib_lpm_0.add_action(MethodCallExpr("fib_hit_nexthop_2"))
+        ipv4_fib_lpm_0.add_default(MethodCallExpr("NoAction_9"))
 
         table_key = "meta.ingress_metadata.vrf"
         ipv4_fib_lpm_0.add_match(table_key)
@@ -393,16 +416,16 @@ def p4_program_1(z3_reg):
         ipv4_fib_lpm_0.add_match(table_key)
 
         nexthop_0 = TableExpr("nexthop_0")
-        ipv4_fib_lpm_0.add_action("on_miss_6", on_miss_6)
-        nexthop_0.add_action("set_egress_details", set_egress_details)
-        nexthop_0.add_default(NoAction_10,)
+        ipv4_fib_lpm_0.add_action(MethodCallExpr("on_miss_6"))
+        nexthop_0.add_action(MethodCallExpr("set_egress_details"))
+        nexthop_0.add_default(MethodCallExpr("NoAction_10"))
 
         table_key = "meta.ingress_metadata.nexthop_index"
         nexthop_0.add_match(table_key)
 
         port_mapping_0 = TableExpr("port_mapping_0")
-        port_mapping_0.add_action("set_bd", set_bd)
-        port_mapping_0.add_default(NoAction_11)
+        port_mapping_0.add_action(MethodCallExpr("set_bd"))
+        port_mapping_0.add_default(MethodCallExpr("NoAction_11"))
 
         table_key = "standard_metadata.ingress_port"
         port_mapping_0.add_match(table_key)
