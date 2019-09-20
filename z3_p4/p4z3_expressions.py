@@ -343,7 +343,7 @@ class P4Action(P4Z3Type):
     def get_parameters(self):
         return self.parameters
 
-    def synthesize_args(self, p4_vars, expr_chain, arg_prefix="", *args):
+    def synthesize_args(self, p4_vars, expr_chain, arg_prefix="", args=[]):
         params = self.get_parameters()
         action_args = []
         for param in params:
@@ -351,7 +351,7 @@ class P4Action(P4Z3Type):
             arg_type = param[1]
             action_args.append(Const(f"{arg_prefix}{arg_name}", arg_type))
         for index, runtime_arg in enumerate(args):
-            action_args[index] = arg
+            action_args[index] = runtime_arg
         return action_args
 
     def eval(self, p4_vars, expr_chain=[], *args):
@@ -523,7 +523,7 @@ class P4Table(P4Z3Type):
     def execute_action(self, p4_vars, expr_chain, action_tuple):
         p4_action = action_tuple[1]
         p4_action_args = p4_action.synthesize_args(
-            p4_vars, expr_chain, arg_prefix=self.name, *action_tuple[2])
+            p4_vars, expr_chain, arg_prefix=self.name, args=action_tuple[2])
         action_expr = p4_action.eval(p4_vars, expr_chain, *p4_action_args)
         return action_expr
 

@@ -42,17 +42,17 @@ def p4_program_0(z3_reg):
     def ingress(p4_vars):
 
         my_drop = P4Action()
-        my_drop.add_argument("smeta", z3_reg.types["standard_metadata_t"])
+        my_drop.add_parameter("smeta", z3_reg.types["standard_metadata_t"])
 
         set_port = P4Action()
-        set_port.add_argument("output_port", BitVecSort(9))
+        set_port.add_parameter("output_port", BitVecSort(9))
 
         lval = "standard_metadata.egress_spec"
         rval = "output_port"
         assign = AssignmentStatement(lval, rval)
         set_port.add_stmt(assign)
 
-        mac_da_0 = TableExpr("mac_da_0")
+        mac_da_0 = P4Table("mac_da_0")
 
         mac_da_0.add_action("set_port", set_port)
 
@@ -173,31 +173,35 @@ def p4_program_1(z3_reg):
     def ingress(p4_vars):
 
         my_drop = P4Action()
-        my_drop.add_argument("smeta", z3_reg.types["standard_metadata_t"])
+        my_drop.add_parameter("smeta", z3_reg.types["standard_metadata_t"])
+        p4_vars.set_or_add_var("my_drop", my_drop)
 
         set_port = P4Action()
-        set_port.add_argument("output_port", BitVecSort(9))
+        set_port.add_parameter("output_port", BitVecSort(9))
+
         lval = "standard_metadata.egress_spec"
         rval = "output_port"
         assign = AssignmentStatement(lval, rval)
         set_port.add_stmt(assign)
+        p4_vars.set_or_add_var("set_port", set_port)
 
-        mac_da_0 = TableExpr("mac_da_0")
+        mac_da_0 = P4Table("mac_da_0")
 
-        mac_da_0.add_action("set_port", set_port)
-
-        args = ["standard_metadata"]
-        mac_da_0.add_action("my_drop", my_drop, args)
+        mac_da_0.add_action(p4_vars, MethodCallExpr("set_port"))
 
         args = ["standard_metadata"]
-        mac_da_0.add_default(my_drop, args)
+        mac_da_0.add_action(p4_vars, MethodCallExpr("my_drop", *args))
+
+        args = ["standard_metadata"]
+        mac_da_0.add_default(p4_vars, MethodCallExpr("my_drop", *args))
 
         table_key = "hdr.ethernet.dstAddr"
         mac_da_0.add_match(table_key)
+        p4_vars.set_or_add_var("mac_da_0", mac_da_0)
 
         def BLOCK():
             block = BlockStatement()
-            block.add(mac_da_0.apply())
+            block.add(MethodCallExpr("mac_da_0.apply"))
 
             if_block = IfStatement()
 
@@ -233,7 +237,7 @@ def p4_program_1(z3_reg):
 def z3_check():
     s = Solver()
 
-    p4_ctrl_0, p4_ctrl_0_args = p4_program_0(Z3Reg())[2]
+    p4_ctrl_0, p4_ctrl_0_args = p4_program_1(Z3Reg())[2]
     p4_ctrl_1, p4_ctrl_1_args = p4_program_1(Z3Reg())[2]
 
     print("PROGRAM 1")
