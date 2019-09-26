@@ -342,22 +342,3 @@ def z3_check():
 
 if __name__ == '__main__':
     z3_check()
-
-
-# If(And(a(hdr6192_0) + a(hdr6192_0) == key_0(c_t_m)),
-#    Xor(Implies(action(c_t_m) == 1,
-#                p4_vars5688_2 ==
-#                mk_p4_vars(mk_headers(mk_hdr(a(hdr6192_0),
-#                                         a(hdr6192_0))),
-#                          mk_meta,
-#                          mk_standard_metadata_t(0))),
-#        Implies(action(c_t_m) == 2,
-#                p4_vars5688_2 ==
-#                mk_p4_vars(mk_headers(mk_hdr(a(hdr6192_0),
-#                                         a(hdr6192_0))),
-#                          mk_meta,
-#                          mk_standard_metadata_t(0)))),
-#    p4_vars5688_2 ==
-#    mk_p4_vars(mk_headers(mk_hdr(a(hdr6192_0), a(hdr6192_0))),
-#              mk_meta,
-#              mk_standard_metadata_t(0)))
