@@ -3,3 +3,5 @@ dumps
 *.p4i
 *.json
 z3_p4/__pycache__/
+
+z3_p4/generated/

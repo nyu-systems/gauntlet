@@ -10,6 +10,8 @@ FILE_DIR = os.path.dirname(os.path.abspath(__file__))
 def import_prog(module, prog_name):
     """ Try to import a module and class directly instead of the typical
         Python method. Allows for dynamic imports. """
+    print(module)
+    print(prog_name)
     module = __import__(module, fromlist=[prog_name])
     return getattr(module, prog_name)
 
@@ -46,7 +48,7 @@ def check_equivalence(p4_program_0, p4_program_1):
 def z3_check(args=None):
     p = argparse.ArgumentParser()
     p.add_argument("--progs", "-p", dest="progs",
-                   type=str.lower, nargs='+', required=True,
+                   type=str, nargs='+', required=True,
                    help="The ordered list of programs to compare.")
     args = p.parse_args(args)
     if len(args.progs) < 2:
@@ -57,10 +59,10 @@ def z3_check(args=None):
     ctrls = []
     for path in args.progs:
         prog_path = Path(path)
-        ctrl_name = prog_path.stem
+        ctrl_name = prog_path.parent.joinpath(prog_path.stem)
         ctrl_function = "p4_program"
         try:
-            ctrl_module = import_prog(ctrl_name, ctrl_function)
+            ctrl_module = import_prog(str(ctrl_name).replace('/', '.'), ctrl_function)
             ctrls.append(ctrl_module)
         except ImportError as e:
             print("Could not import the requested control function: %s " %
