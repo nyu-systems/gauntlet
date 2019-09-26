@@ -15,9 +15,14 @@ def step(p4_vars, expr_chain=[], expr=None) -> AstRef:
         expr_chain = list(expr_chain)
         # iterate through all the remaining functions in the chain
         fun_expr = next_expr.eval(p4_vars, expr_chain)
+        if not isinstance(fun_expr, AstRef):
+            raise TypeError(f"Expression {fun_expr} is not a z3 expression!")
+        # eval should always return an expression
         if expr is not None:
             # concatenate chain result with the provided expression
             # return And(expr, fun_expr)
+            # actually, there is no need to chain.
+            # so let's return the normal expression for now
             return fun_expr
         else:
             # extract the chained result
@@ -46,7 +51,7 @@ def resolve_expr(p4_vars, expr_chain, val) -> AstRef:
         # These are z3 types and can be returned
         return val
     elif (isinstance(val, P4Z3Type)):
-        # We got a P4 time, recurse...
+        # We got a P4 type, recurse...
         return val.eval(p4_vars, expr_chain)
     elif (isinstance(val, Z3P4Class)):
         # If we get a whole class return the complex z3 type

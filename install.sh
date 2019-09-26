@@ -6,11 +6,11 @@ set -e
 # fetch submodules
 git submodule update --init --recursive --remote --merge
 
-# Install pip locally
-export PATH+=$PATH:~/.local/bin
-wget https://bootstrap.pypa.io/get-pip.py
-python3 get-pip.py --user
-rm get-pip.py
+# Install pip and python
+sudo apt install -y python
+sudo apt install -y python3
+sudo apt install -y python-pip
+sudo apt install -y python3-pip
 
 # Install the p4 compiler
 sudo apt install -y bison \
@@ -26,8 +26,10 @@ sudo apt install -y bison \
                     libgmp-dev \
                     pkg-config \
                     python-setuptools
+# This only works on Ubuntu 18+
+sudo apt install -y libprotoc-dev protobuf-compiler
 
-pip install --user pyroute2 ipaddr ply==3.8 scapy==2.4.0
+pip3 install --user pyroute2 ipaddr ply==3.8 scapy==2.4.0
 cd p4c
 mkdir -p build
 cd build
