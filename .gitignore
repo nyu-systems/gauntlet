@@ -5,3 +5,5 @@ dumps
 z3_p4/__pycache__/
 
 z3_p4/generated/
+
+generated/
