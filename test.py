@@ -15,9 +15,8 @@ FILE_DIR = os.path.dirname(os.path.abspath(__file__))
 P4_BINARY = FILE_DIR + "/p4c/build/p4toz3"
 CHECK_BINARY = FILE_DIR + "/z3_p4/p4z3_check.py"
 TARGET_DIR = FILE_DIR + "/generated"
-P4_DIR = FILE_DIR + "/z3_p4/p4files"
+P4_DIR = FILE_DIR + "/p4c/testdata/p4_16_samples/"
 P4_BIN = FILE_DIR + "/p4c/build/p4c-bm2-ss"
-
 
 def run_p4toz3(p4_file, id):
     cmd = P4_BINARY + " "
@@ -28,7 +27,7 @@ def run_p4toz3(p4_file, id):
 
 def generate_p4_dump(p4_file, p4_dmp_dir):
     p4_cmd = f"{P4_BIN} "
-    p4_cmd += "--top4 FrontEnd,MidEnd "
+    p4_cmd += "--top4 MidEnd "
     p4_cmd += f"--dump {p4_dmp_dir} "
     p4_cmd += p4_file
     log.debug(f"Running dumps with command {p4_cmd}")
@@ -46,22 +45,15 @@ def run_pass_dump(p4_file):
 class Z3Tests(unittest.TestCase):
 
     def setUp(self):
+        util.del_dir(TARGET_DIR)
         util.check_dir(TARGET_DIR)
 
     def test_key_bmv2(self):
-        # # generate code for file 1
-        # p4_file_0 = Path(f"{P4_DIR}/key-bmv2/key-bmv2-frontend.p4")
-        # result = run_p4toz3(p4_file_0, 0)
-        # self.assertEqual(result.returncode, util.EXIT_SUCCESS)
-
-        # # generate code for file 2
-        # p4_file_1 = Path(f"{P4_DIR}/key-bmv2/key-bmv2_8_SimplifyKey.p4")
-        # result = run_p4toz3(p4_file_1, 1)
-        # self.assertEqual(result.returncode, util.EXIT_SUCCESS)
-        p4_file = f"{P4_DIR}/key-bmv2/key-bmv2.p4"
+        p4_file = f"{P4_DIR}/key-bmv2.p4"
+        # run the p4 compiler and dump all the passes for this file
         passes = run_pass_dump(p4_file)
         p4_py_files = []
-        print(passes)
+        # for each emitted pass, generate a python representation
         for p4_pass in passes:
             p4_py_file = Path(p4_pass)
             result = run_p4toz3(p4_py_file, 1)
