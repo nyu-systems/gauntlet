@@ -33,3 +33,5 @@ control compute(inout hdr h) {
         t.apply();
     }
 }
+
+#include "arith-inline-skeleton.p4"
