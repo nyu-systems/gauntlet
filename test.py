@@ -18,6 +18,7 @@ TARGET_DIR = FILE_DIR + "/generated"
 P4_DIR = FILE_DIR + "/p4c/testdata/p4_16_samples/"
 P4_BIN = FILE_DIR + "/p4c/build/p4c-bm2-ss"
 
+
 def run_p4toz3(p4_file, id):
     cmd = P4_BINARY + " "
     cmd += str(p4_file) + " "
@@ -44,12 +45,7 @@ def run_pass_dump(p4_file):
 
 class Z3Tests(unittest.TestCase):
 
-    def setUp(self):
-        util.del_dir(TARGET_DIR)
-        util.check_dir(TARGET_DIR)
-
-    def test_key_bmv2(self):
-        p4_file = f"{P4_DIR}/key-bmv2.p4"
+    def validate_translation(self, p4_file):
         # run the p4 compiler and dump all the passes for this file
         passes = run_pass_dump(p4_file)
         p4_py_files = []
@@ -67,6 +63,26 @@ class Z3Tests(unittest.TestCase):
             cmd += f"{TARGET_DIR}/{p4_py_file.stem} "
         result = util.exec_process(cmd)
         self.assertEqual(result.returncode, util.EXIT_SUCCESS)
+
+    def setUp(self):
+        util.del_dir(TARGET_DIR)
+        util.check_dir(TARGET_DIR)
+
+    def test_key_bmv2(self):
+        p4_file = f"{P4_DIR}/key-bmv2.p4"
+        self.validate_translation(p4_file)
+
+    def test_strength3(self):
+        p4_file = f"{P4_DIR}/strength3.p4"
+        self.validate_translation(p4_file)
+
+    def test_issue_1544(self):
+        p4_file = f"{P4_DIR}/issue1544-bmv2.p4"
+        self.validate_translation(p4_file)
+
+    def test_basic_routing_bmv2(self):
+        p4_file = f"{P4_DIR}/basic_routing-bmv2.p4"
+        self.validate_translation(p4_file)
 
 
 if __name__ == '__main__':
