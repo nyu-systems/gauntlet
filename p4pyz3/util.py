@@ -2,6 +2,7 @@ import os
 import subprocess
 import shutil
 import logging as log
+import re
 from pathlib import Path
 
 EXIT_SUCCESS = 0
@@ -30,6 +31,27 @@ def del_dir(directory):
         shutil.rmtree(directory)
     except OSError as e:
         log.error("Error: %s - %s." % (e.filename, e.strerror))
+
+
+def copy_file(src, dst):
+    if isinstance(src, list):
+        for src_file in src:
+            shutil.copy2(src_file, dst)
+    else:
+        shutil.copy2(src, dst)
+
+
+def convert(text):
+    return int(text) if text.isdigit() else text.lower()
+
+
+def alphanum_key(key):
+    return [convert(c)
+            for c in re.split('([0-9]+)', key)]
+
+
+def natural_sort(l):
+    return sorted(l, key=alphanum_key)
 
 
 def exec_process(cmd, out_file=subprocess.STDOUT):

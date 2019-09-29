@@ -3,9 +3,11 @@ import glob
 import shutil
 import argparse
 import subprocess
+import signal
 from pathlib import Path
 
-import z3_p4.util as util
+import p4pyz3.util as util
+import p4pyz3.p4z3_check as z3check
 
 # configure logging
 import logging
@@ -19,14 +21,24 @@ PARSER.add_argument("-i", "--p4_input", dest="p4_input",
 
 FILE_DIR = os.path.dirname(os.path.abspath(__file__))
 P4_BIN = FILE_DIR + "/p4c/build/p4c-bm2-ss"
-CHECK_BIN = FILE_DIR + "/z3_p4/p4z3_check.py"
+CHECK_BIN = FILE_DIR + "/p4pyz3/p4z3_check.py"
 P4Z3_BIN = FILE_DIR + "/p4c/build/p4toz3"
 
 
-def prune_files(p4_dmp_dir):
-    p4_prune_dir = f"{p4_dmp_dir}/pruned"
+def generate_p4_dump(p4_file, p4_dmp_dir):
+    p4_cmd = f"{P4_BIN} "
+    p4_cmd += "--top4 MidEnd "
+    # disable midend for now
+    # p4_cmd += "--top4 FrontEnd,MidEnd "
+    p4_cmd += f"--dump {p4_dmp_dir} "
+    p4_cmd += p4_file
+    log.debug(f"Running dumps with command {p4_cmd}")
+    return util.exec_process(p4_cmd)
+
+
+def prune_files(p4_prune_dir, p4_passes):
     util.check_dir(p4_prune_dir)
-    for p4_file in glob.glob(f"{p4_dmp_dir}/*.p4"):
+    for p4_file in p4_passes:
         sed_cmd = "sed -r "
         sed_cmd += "\':a; s%(.*)/\\*.*\\*/%\\1%; ta; /\\/\\*/ !b; N; ba\' "
         sed_cmd += f"{p4_file} "
@@ -65,10 +77,8 @@ def diff_files(passes, pass_dir, p4_prune_dir, p4_file):
         if os.stat(diff_file).st_size == 0:
             os.remove(diff_file)
         else:
-            shutil.copyfile(pass_after,
-                            f"{diff_dir}/{p4_name}_{p4_pass}.p4")
-            shutil.copyfile(p4_file,
-                            f"{diff_dir}/{p4_name}_original.p4")
+            util.copy_file(pass_after, f"{diff_dir}/{p4_name}_{p4_pass}.p4")
+            util.copy_file(p4_file, f"{diff_dir}/{p4_name}_original.p4")
     return util.EXIT_SUCCESS
 
 
@@ -105,69 +115,56 @@ def list_passes(p4_file):
     return passes
 
 
-def generate_p4_dump(p4_file, p4_dmp_dir):
-    p4_cmd = f"{P4_BIN} "
-    p4_cmd += "--top4 FrontEnd,MidEnd "
-    p4_cmd += f"--dump {p4_dmp_dir} "
-    p4_cmd += p4_file
-    log.debug(f"Running dumps with command {p4_cmd}")
-    util.exec_process(p4_cmd)
-
-
 def analyse_p4_file(p4_file, pass_dir):
-    log.info(f"Analysing {p4_file}")
     p4_dmp_dir = f"dumps"
-    util.check_dir(p4_dmp_dir)
-    passes = list_passes(p4_file)
-    generate_p4_dump(p4_file, p4_dmp_dir)
-    prune_dir = prune_files(p4_dmp_dir)
-    err = diff_files(passes, pass_dir, prune_dir, p4_file)
-    # util.del_dir(p4_dmp_dir)
+    p4_prune_dir = f"{p4_dmp_dir}/pruned"
+
+    log.info(f"Analysing {p4_file}")
+    ir_passes = list_passes(p4_file)
+    p4_passes = gen_p4_passes(p4_dmp_dir, p4_file)
+    prune_files(p4_prune_dir, p4_passes)
+    err = diff_files(ir_passes, pass_dir, p4_prune_dir, p4_file)
+    util.del_dir(p4_dmp_dir)
+    return err
 
 
-def run_p4toz3(target_dir, p4_file, id):
+def run_p4_to_py(target_dir, p4_file, py_file):
     cmd = P4Z3_BIN + " "
-    cmd += str(p4_file) + " "
-    cmd += f"--output {target_dir}/{p4_file.stem}.py "
-    return util.exec_process(cmd)
+    cmd += p4_file + " "
+    cmd += f"--output {py_file} "
+    result = util.exec_process(cmd)
+    return result.returncode
 
 
-def generate_p4_dump(p4_file, p4_dmp_dir):
-    p4_cmd = f"{P4_BIN} "
-    p4_cmd += "--top4 MidEnd "
-    p4_cmd += f"--dump {p4_dmp_dir} "
-    p4_cmd += p4_file
-    log.debug(f"Running dumps with command {p4_cmd}")
-    util.exec_process(p4_cmd)
-
-
-def run_pass_dump(target_dir, p4_file):
-    p4_dmp_dir = f"{target_dir}/dumps"
+def gen_p4_passes(p4_dmp_dir, p4_file):
     util.check_dir(p4_dmp_dir)
     generate_p4_dump(p4_file, p4_dmp_dir)
     p4_passes = glob.glob(f"{p4_dmp_dir}/*.p4")
-    return p4_passes
+    # Sort the pass list before returning
+    # TODO: Find a better way to maintain order
+    return util.natural_sort(p4_passes)
 
 
 def validate_translation(p4_file, target_dir):
+    fail_dir = f"{target_dir}/failed"
     # run the p4 compiler and dump all the passes for this file
-    passes = run_pass_dump(target_dir, p4_file)
+    passes = gen_p4_passes(p4_dmp_dir=target_dir, p4_file=p4_file)
     p4_py_files = []
     # for each emitted pass, generate a python representation
-    for p4_pass in passes:
-        p4_py_file = Path(p4_pass)
-        result = run_p4toz3(target_dir, p4_py_file, 1)
-        if result.returncode != util.EXIT_SUCCESS:
+    for p4_file in passes:
+        p4_path = Path(p4_file).stem
+        py_file = f"{target_dir}/{p4_path}.py"
+        result = run_p4_to_py(target_dir, p4_file, py_file)
+        if result != util.EXIT_SUCCESS:
+            log.error("Failed to translate P4 to Python.")
+            log.error("Compiler crashed!")
+            util.check_dir(fail_dir)
+            util.copy_file([p4_file, py_file], fail_dir)
             return result
-        p4_py_files.append(p4_py_file)
-
+        p4_py_files.append(f"{target_dir}/{p4_path}")
     # perform the actual comparison
-    cmd = f"python3 {CHECK_BIN} "
-    cmd += "--progs "
-    for p4_py_file in p4_py_files:
-        cmd += f"{target_dir}/{p4_py_file.stem} "
-    result = util.exec_process(cmd)
-    return result.returncode
+    result = z3check.z3_check(p4_py_files, fail_dir)
+    return result
 
 
 def main():
