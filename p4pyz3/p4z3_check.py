@@ -5,12 +5,10 @@ import sys
 import imp
 
 import z3
-import p4pyz3.util as util
-from p4pyz3.p4z3_base import *
+import util as util
+from p4z3_base import *
 
 FILE_DIR = os.path.dirname(os.path.abspath(__file__))
-# avoid annoying import errors...
-sys.path.append(FILE_DIR)
 
 
 def import_prog(ctrl_dir, ctrl_name, prog_name):
@@ -52,7 +50,18 @@ def check_equivalence(p4_program_0, p4_program_1):
         return util.EXIT_SUCCESS
 
 
-def z3_check(prog_paths, fail_dir=f"./failed/"):
+def handle_pyz3_error(fail_dir, prog_pre, prog_post):
+    util.check_dir(fail_dir)
+    failed = [prog_pre + ".py", prog_post + ".py",
+              prog_pre + ".p4", prog_post + ".p4"]
+    util.copy_file(failed, fail_dir)
+    debug_string = "You can debug this failure by running:\n"
+    debug_string += f"python3 {FILE_DIR}/{Path(__file__).stem}.py "
+    debug_string += f"--progs {prog_pre} {prog_post}"
+    log.error(debug_string)
+
+
+def z3_check(prog_paths, fail_dir=None):
     if len(prog_paths) < 2:
         log.error("The equivalence check " +
                   "requires at least two input programs!")
@@ -77,10 +86,8 @@ def z3_check(prog_paths, fail_dir=f"./failed/"):
             ctrl_fun_post = ctrls[i + 1][1]
             ret = check_equivalence(ctrl_fun_pre, ctrl_fun_post)
             if ret != util.EXIT_SUCCESS:
-                util.check_dir(fail_dir)
-                failed = [ctrls[i][0] + ".py", ctrls[i + 1][0] + ".py",
-                          ctrls[i][0] + ".p4", ctrls[i + 1][0] + ".p4"]
-                util.copy_file(failed, fail_dir)
+                if fail_dir:
+                    handle_pyz3_error(fail_dir, ctrls[i][0], ctrls[i + 1][0])
                 return ret
     return util.EXIT_SUCCESS
 
@@ -96,8 +103,8 @@ def main(args=None):
                   "requires at least two input programs!")
         p.print_help()
         return util.EXIT_FAILURE
-    return z3_check(arg.progs)
+    return z3_check(args.progs)
 
 
 if __name__ == '__main__':
-    z3_check()
+    main()
