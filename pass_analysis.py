@@ -6,22 +6,17 @@ import subprocess
 import signal
 from pathlib import Path
 
-import p4pyz3.util as util
-import p4pyz3.p4z3_check as z3check
+import p4z3.util as util
+import p4z3_check as z3check
 
 # configure logging
 import logging
 logging.basicConfig(format="%(levelname)s:%(message)s",
                     level=logging.INFO)
 log = logging.getLogger(__name__)
-PARSER = argparse.ArgumentParser()
-PARSER.add_argument("-i", "--p4_input", dest="p4_input",
-                    default="p4c/testdata/p4_16_samples", help="A P4 file or path to a "
-                    "directory which contains P4 files.")
 
 FILE_DIR = os.path.dirname(os.path.abspath(__file__))
 P4_BIN = FILE_DIR + "/p4c/build/p4c-bm2-ss"
-CHECK_BIN = FILE_DIR + "/p4pyz3/p4z3_check.py"
 P4Z3_BIN = FILE_DIR + "/p4c/build/p4toz3"
 
 
@@ -80,28 +75,6 @@ def diff_files(passes, pass_dir, p4_prune_dir, p4_file):
             util.copy_file(pass_after, f"{diff_dir}/{p4_name}_{p4_pass}.p4")
             util.copy_file(p4_file, f"{diff_dir}/{p4_name}_original.p4")
     return util.EXIT_SUCCESS
-
-
-def get_links_to_passes(pass_dir, p4_file):
-    util.check_dir(pass_dir)
-    p4_name = os.path.splitext(os.path.basename(p4_file))[0]
-    passes = {}
-    for p4_file in glob.glob(f"{pass_dir}/**/full_{p4_name}*.p4"):
-        split_p4 = p4_file.split('/')
-        passes.setdefault(split_p4[1], []).append(split_p4[2])
-
-    if passes.keys():
-        with open(f"{pass_dir}/{p4_name}_matches.txt", 'w+') as match_file:
-            for key in passes.keys():
-                match_file.write(f"{key} ###########\n")
-                for p4_test in passes[key]:
-                    src_dir = "https://github.com/fruffy/"
-                    src_dir += "p4_tv/tree/master/"
-                    src_dir += "p4_16_samples/"
-                    match_file.write(f"{src_dir}{p4_test}\n")
-    else:
-        with open(f"{pass_dir}/no_passes.txt", 'a') as match_file:
-            match_file.write(f"{p4_file}\n")
 
 
 def list_passes(p4_file):
@@ -168,22 +141,25 @@ def validate_translation(p4_file, target_dir):
 
 
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-i", "--p4_input", dest="p4_input",
+                        default="p4c/testdata/p4_16_samples",
+                        help="A P4 file or path to a "
+                        "directory which contains P4 files.")
     # Parse options and process argv
-    args = PARSER.parse_args()
+    args = parser.parse_args()
     p4_input = args.p4_input
     if (os.path.isfile(p4_input)):
         pass_dir = "single_passes"
         util.check_dir(pass_dir)
         open(f"{pass_dir}/no_passes.txt", 'w+')
         analyse_p4_file(p4_input, pass_dir)
-        get_links_to_passes(pass_dir, p4_input)
     else:
         pass_dir = "passes"
         util.check_dir(pass_dir)
         open(f"{pass_dir}/no_passes.txt", 'w+')
         for p4_file in glob.glob(f"{p4_input}/*.p4"):
             analyse_p4_file(p4_file, pass_dir)
-            get_links_to_passes(pass_dir, p4_file)
 
 
 if __name__ == '__main__':

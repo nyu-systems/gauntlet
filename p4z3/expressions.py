@@ -1,4 +1,4 @@
-from p4z3_base import *
+from p4z3.base import *
 from collections import OrderedDict
 
 
@@ -84,6 +84,7 @@ class MethodCallExpr(P4Z3Type):
 
     def eval(self, p4_vars, expr_chain=[], *args):
         p4_method = self.expr
+
         if (isinstance(self.expr, str)):
             p4_method = p4_vars.get_var(self.expr)
         if (callable(p4_method)):

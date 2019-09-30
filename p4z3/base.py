@@ -7,6 +7,7 @@ constants = set([])
 
 class Z3Reg():
     types = {}
+    externs = {}
     _classes = {}
     _ref_count = {}
 
@@ -17,6 +18,9 @@ class Z3Reg():
 
         self._classes[name] = type(name, (p4_class,), {})
         self._ref_count[name] = 0
+
+    def register_extern(self, name, method):
+        self.externs[name] = method
 
     def reset(self):
         self.types.clear()
@@ -145,6 +149,10 @@ class P4State(Z3P4Class):
         # self._update()
         # # return the update expression
         # return (self.const == copy)
+
+    def add_externs(self, externs):
+        for extern_name, extern_method in externs.items():
+            self.set_or_add_var(extern_name, extern_method)
 
 
 class Header(Z3P4Class):

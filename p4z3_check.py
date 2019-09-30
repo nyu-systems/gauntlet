@@ -5,8 +5,8 @@ import sys
 import imp
 
 import z3
-import util as util
-from p4z3_base import *
+import p4z3.util as util
+from p4z3.base import *
 
 FILE_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -19,22 +19,41 @@ def import_prog(ctrl_dir, ctrl_name, prog_name):
     return getattr(module, prog_name)
 
 
-def check_equivalence(p4_program_0, p4_program_1):
+def handle_pyz3_error(fail_dir, p4_file):
+    p4_file_name = p4_file.stem
+    p4_file_dir = p4_file.parent
+    util.check_dir(fail_dir)
+    failed = [f"{p4_file}.py", f"{p4_file}.p4"]
+    util.copy_file(failed, fail_dir)
+    debug_string = "You can debug this failure by running:\n"
+    debug_string += f"python3 {FILE_DIR}/{Path(__file__).stem}.py "
+    debug_string += f"--progs {p4_file_dir}/failed/{p4_file_name} "
+    debug_string += f"{p4_file_dir}/failed/{p4_file_name}"
+    log.error(debug_string)
+
+
+def get_z3_repr(p4_ctrl, fail_dir):
+    p4_file = p4_ctrl[0]
+    p4_program = p4_ctrl[1]
+    try:
+        p4_ctrl, p4_ctrl_args = p4_program(Z3Reg())[2]
+        z3_ast = p4_ctrl(p4_ctrl_args)
+    except Exception as e:
+        log.exception("Failed to compile Python to Z3:\n")
+        if fail_dir:
+            handle_pyz3_error(fail_dir, p4_file)
+        return None
+    return z3_ast
+
+
+def check_equivalence(prog_before, prog_after):
     # The equivalence check of the solver
     # For all input packets and possible table matches the programs should
     # be the same
     ''' SOLVER '''
     s = z3.Solver()
-    try:
-        p4_ctrl_0, p4_ctrl_0_args = p4_program_0(Z3Reg())[2]
-        p4_ctrl_1, p4_ctrl_1_args = p4_program_1(Z3Reg())[2]
-        prog_before = p4_ctrl_0(p4_ctrl_0_args)
-        prog_after = p4_ctrl_1(p4_ctrl_1_args)
-        log.debug("PROGRAM BEFORE", prog_before)
-        log.debug("PROGRAM AFTER", prog_after)
-    except Exception as e:
-        log.exception("Failed to translate Python to Z3:\n")
-        return util.EXIT_FAILURE
+    log.debug("PROGRAM BEFORE", prog_before)
+    log.debug("PROGRAM AFTER", prog_after)
     # the equivalence equation
     tv_equiv = z3.simplify(prog_before != prog_after)
     s.add(tv_equiv)
@@ -48,17 +67,6 @@ def check_equivalence(p4_program_0, p4_program_1):
     else:
         log.info(ret)
         return util.EXIT_SUCCESS
-
-
-def handle_pyz3_error(fail_dir, prog_pre, prog_post):
-    util.check_dir(fail_dir)
-    failed = [prog_pre + ".py", prog_post + ".py",
-              prog_pre + ".p4", prog_post + ".p4"]
-    util.copy_file(failed, fail_dir)
-    debug_string = "You can debug this failure by running:\n"
-    debug_string += f"python3 {FILE_DIR}/{Path(__file__).stem}.py "
-    debug_string += f"--progs {prog_pre} {prog_post}"
-    log.error(debug_string)
 
 
 def z3_check(prog_paths, fail_dir=None):
@@ -75,29 +83,30 @@ def z3_check(prog_paths, fail_dir=None):
         try:
             ctrl_module = import_prog(
                 ctrl_dir, ctrl_name, ctrl_function)
-            ctrls.append((path, ctrl_module))
+            ctrls.append((prog_path, ctrl_module))
         except ImportError as e:
             log.error(("Could not import the"
                        "requested control function: %s" % e))
             return util.EXIT_FAILURE
     for i, _ in enumerate(ctrls):
         if i < len(ctrls) - 1:
-            ctrl_fun_pre = ctrls[i][1]
-            ctrl_fun_post = ctrls[i + 1][1]
+            ctrl_fun_pre = get_z3_repr(ctrls[i], fail_dir)
+            ctrl_fun_post = get_z3_repr(ctrls[i + 1], fail_dir)
+            if ctrl_fun_pre is None or ctrl_fun_post is None:
+                return util.EXIT_FAILURE
             ret = check_equivalence(ctrl_fun_pre, ctrl_fun_post)
             if ret != util.EXIT_SUCCESS:
-                if fail_dir:
-                    handle_pyz3_error(fail_dir, ctrls[i][0], ctrls[i + 1][0])
+                log.error("Detected an equivalence violation!")
                 return ret
     return util.EXIT_SUCCESS
 
 
 def main(args=None):
-    p = argparse.ArgumentParser()
-    p.add_argument("--progs", "-p", dest="progs",
-                   type=str, nargs='+', required=True,
-                   help="The ordered list of programs to compare.")
-    args = p.parse_args(args)
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--progs", "-p", dest="progs",
+                        type=str, nargs='+', required=True,
+                        help="The ordered list of programs to compare.")
+    args = parser.parse_args(args)
     if len(args.progs) < 2:
         log.error("ERROR: The equivalence check " +
                   "requires at least two input programs!")
