@@ -6,11 +6,8 @@ dist: xenial
 services:
   - docker
 
-env:
-  - CTEST_PARALLEL_LEVEL=4
-
 install:
   - sudo docker build -t p4tv .
 
 script:
-  - sudo docker run --privileged -w /home/p4_tv -e CTEST_PARALLEL_LEVEL p4tv python3 test.py
+  - sudo docker run --privileged -w /home/p4_tv p4tv python3 test.py -v

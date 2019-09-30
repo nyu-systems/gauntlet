@@ -57,15 +57,15 @@ def check_equivalence(prog_before, prog_after):
     # the equivalence equation
     tv_equiv = z3.simplify(prog_before != prog_after)
     s.add(tv_equiv)
-    log.info(tv_equiv)
-    log.info(s.sexpr())
+    log.debug(tv_equiv)
+    log.debug(s.sexpr())
     ret = s.check()
     if ret == z3.sat:
-        log.info(ret)
-        log.info(s.model())
+        log.error(ret)
+        log.error(s.model())
         return util.EXIT_FAILURE
     else:
-        log.info(ret)
+        log.debug(ret)
         return util.EXIT_SUCCESS
 
 
@@ -97,6 +97,9 @@ def z3_check(prog_paths, fail_dir=None):
             ret = check_equivalence(ctrl_fun_pre, ctrl_fun_post)
             if ret != util.EXIT_SUCCESS:
                 log.error("Detected an equivalence violation!")
+                if fail_dir:
+                    handle_pyz3_error(fail_dir, ctrls[i])
+                    handle_pyz3_error(fail_dir, ctrls[i + 1])
                 return ret
     return util.EXIT_SUCCESS
 
