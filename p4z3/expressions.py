@@ -357,7 +357,7 @@ class P4Action(P4Z3Type):
             arg_type = param[1]
             action_args.append(Const(f"{arg_prefix}{arg_name}", arg_type))
         for index, runtime_arg in enumerate(args):
-            action_args[index] = runtime_arg
+            action_args[index] = resolve_expr(p4_vars, expr_chain, runtime_arg)
         return action_args
 
     def eval(self, p4_vars, expr_chain=[], *args):

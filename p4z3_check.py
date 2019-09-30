@@ -1,8 +1,8 @@
 import argparse
-import logging as log
 from pathlib import Path
 import sys
 import imp
+import logging as log
 
 import z3
 import p4z3.util as util
@@ -19,17 +19,20 @@ def import_prog(ctrl_dir, ctrl_name, prog_name):
     return getattr(module, prog_name)
 
 
+def debug_msg(p4_files):
+    debug_string = "You can debug this failure by running:\n"
+    debug_string += f"python3 {FILE_DIR}/{Path(__file__).stem}.py --progs "
+    for p4_file in p4_files:
+        p4_file_name = p4_file.stem
+        p4_file_dir = p4_file.parent
+        debug_string += f" {p4_file_dir}/failed/{p4_file_name} "
+    log.error(debug_string)
+
+
 def handle_pyz3_error(fail_dir, p4_file):
-    p4_file_name = p4_file.stem
-    p4_file_dir = p4_file.parent
     util.check_dir(fail_dir)
     failed = [f"{p4_file}.py", f"{p4_file}.p4"]
     util.copy_file(failed, fail_dir)
-    debug_string = "You can debug this failure by running:\n"
-    debug_string += f"python3 {FILE_DIR}/{Path(__file__).stem}.py "
-    debug_string += f"--progs {p4_file_dir}/failed/{p4_file_name} "
-    debug_string += f"{p4_file_dir}/failed/{p4_file_name}"
-    log.error(debug_string)
 
 
 def get_z3_repr(p4_ctrl, fail_dir):
@@ -42,6 +45,7 @@ def get_z3_repr(p4_ctrl, fail_dir):
         log.exception("Failed to compile Python to Z3:\n")
         if fail_dir:
             handle_pyz3_error(fail_dir, p4_file)
+            debug_msg([p4_file])
         return None
     return z3_ast
 
@@ -52,8 +56,8 @@ def check_equivalence(prog_before, prog_after):
     # be the same
     ''' SOLVER '''
     s = z3.Solver()
-    log.debug("PROGRAM BEFORE", prog_before)
-    log.debug("PROGRAM AFTER", prog_after)
+    log.debug("PROGRAM BEFORE\n%s" % prog_before)
+    log.debug("PROGRAM AFTER\n%s" % prog_after)
     # the equivalence equation
     tv_equiv = z3.simplify(prog_before != prog_after)
     s.add(tv_equiv)
@@ -63,6 +67,7 @@ def check_equivalence(prog_before, prog_after):
     if ret == z3.sat:
         log.error(ret)
         log.error(s.model())
+        log.error("Detected an equivalence violation!")
         return util.EXIT_FAILURE
     else:
         log.debug(ret)
@@ -81,8 +86,7 @@ def z3_check(prog_paths, fail_dir=None):
         ctrl_name = prog_path.stem
         ctrl_function = "p4_program"
         try:
-            ctrl_module = import_prog(
-                ctrl_dir, ctrl_name, ctrl_function)
+            ctrl_module = import_prog(ctrl_dir, ctrl_name, ctrl_function)
             ctrls.append((prog_path, ctrl_module))
         except ImportError as e:
             log.error(("Could not import the"
@@ -96,10 +100,12 @@ def z3_check(prog_paths, fail_dir=None):
                 return util.EXIT_FAILURE
             ret = check_equivalence(ctrl_fun_pre, ctrl_fun_post)
             if ret != util.EXIT_SUCCESS:
-                log.error("Detected an equivalence violation!")
                 if fail_dir:
-                    handle_pyz3_error(fail_dir, ctrls[i])
-                    handle_pyz3_error(fail_dir, ctrls[i + 1])
+                    p4_file_pre = ctrls[i][0]
+                    p4_file_post = ctrls[i + 1][0]
+                    handle_pyz3_error(fail_dir, p4_file_pre)
+                    handle_pyz3_error(fail_dir, p4_file_post)
+                    debug_msg([p4_file_pre, p4_file_post])
                 return ret
     return util.EXIT_SUCCESS
 

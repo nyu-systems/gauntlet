@@ -34,11 +34,11 @@ def register(z3_reg):
 
     def BLOCK():
         block = BlockStatement()
-        lval = "standard_metadata.drop"
+        lval = "smeta.drop"
         rval = BitVecVal(1, 1)
         stmt = AssignmentStatement(lval, rval)
         block.add(stmt)
-        lval = "standard_metadata.mcast_grp"
+        lval = "smeta.mcast_grp"
         rval = BitVecVal(0, 16)
         stmt = AssignmentStatement(lval, rval)
         block.add(stmt)
