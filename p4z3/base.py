@@ -59,16 +59,12 @@ class Z3P4Class():
         for accessor in self.accessors:
             arg_type = accessor.range()
             is_datatype = type(arg_type) == (DatatypeSortRef)
-            if is_datatype:
-                member_make = op.attrgetter(
-                    accessor.name() + "._make")(self)
+            member_make = op.attrgetter(accessor.name())(self)
+            if isinstance(member_make, Z3P4Class):
                 sub_const = accessor(parent_const)
-                members.append(member_make(sub_const))
+                members.append(member_make._make(sub_const))
             else:
                 # member_make = accessor(parent_const)
-                member_make = op.attrgetter(accessor.name())(self)
-                is_datatype = type(member_make) == (DatatypeSortRef)
-
                 members.append(member_make)
         return self.constructor(*members)
 
