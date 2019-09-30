@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/p4bughunt/p4_tv.svg?branch=master)](https://travis-ci.org/p4bughunt/p4_tv)
+
 # p4_tv
 
 This is a repository to test translation validation for the P4 Compiler.

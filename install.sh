@@ -3,8 +3,10 @@
 # exit when any command fails
 set -e
 
-# fetch submodules
+# fetch submodules and update apt
 git submodule update --init --recursive --remote --merge
+sudo apt-get update
+
 
 # Install pip and python
 sudo apt install -y python
@@ -26,10 +28,14 @@ sudo apt install -y bison \
                     libgmp-dev \
                     pkg-config \
                     python-setuptools
+
 # This only works on Ubuntu 18+
 sudo apt install -y libprotoc-dev protobuf-compiler
 
+# install python packages using pip
+pip3 install --user wheel
 pip3 install --user pyroute2 ipaddr ply==3.8 scapy==2.4.0
+# build the p4 compiler
 cd p4c
 mkdir -p build
 cd build
