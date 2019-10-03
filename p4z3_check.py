@@ -56,21 +56,20 @@ def check_equivalence(prog_before, prog_after):
     # be the same
     ''' SOLVER '''
     s = z3.Solver()
-    log.debug("PROGRAM BEFORE\n%s" % prog_before)
-    log.debug("PROGRAM AFTER\n%s" % prog_after)
     # the equivalence equation
     tv_equiv = z3.simplify(prog_before != prog_after)
     s.add(tv_equiv)
-    log.debug(tv_equiv)
     log.debug(s.sexpr())
     ret = s.check()
+    log.debug(tv_equiv)
+    log.debug(ret)
     if ret == z3.sat:
-        log.error(ret)
+        log.error("PROGRAM BEFORE\n%s" % prog_before)
+        log.error("PROGRAM AFTER\n%s" % prog_after)
         log.error(s.model())
         log.error("Detected an equivalence violation!")
         return util.EXIT_FAILURE
     else:
-        log.debug(ret)
         return util.EXIT_SUCCESS
 
 

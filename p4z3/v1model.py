@@ -24,6 +24,7 @@ def register(z3_reg):
                ('resubmit_flag', BitVecSort(32)),
                ('egress_rid', BitVecSort(16)),
                ('recirculate_flag', BitVecSort(32)),
+               ('parser_error', BitVecSort(1)),
                ('checksum_error', BitVecSort(1)),
                ('priority', BitVecSort(3)),
                ]
@@ -34,8 +35,8 @@ def register(z3_reg):
 
     def BLOCK():
         block = BlockStatement()
-        lval = "smeta.drop"
-        rval = BitVecVal(1, 1)
+        lval = "smeta.egress_spec"
+        rval = BitVecVal(9, 9)
         stmt = AssignmentStatement(lval, rval)
         block.add(stmt)
         lval = "smeta.mcast_grp"

@@ -34,10 +34,10 @@ class Z3Tests(unittest.TestCase):
         self.assertEqual(result, util.EXIT_SUCCESS)
 
     # broken
-    # def test_issue_1544(self):
-    #     p4_file = f"{P4_DIR}/issue1544-bmv2.p4"
-    #     result = pa.validate_translation(p4_file, TARGET_DIR)
-    #     self.assertEqual(result, util.EXIT_SUCCESS)
+    def test_issue_1544(self):
+        p4_file = f"{P4_DIR}/issue1544-bmv2.p4"
+        result = pa.validate_translation(p4_file, TARGET_DIR)
+        self.assertEqual(result, util.EXIT_SUCCESS)
 
     # def test_issue1863(self):
     #     p4_file = f"{P4_DIR}/issue1863.p4"
