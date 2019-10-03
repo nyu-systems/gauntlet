@@ -40,11 +40,11 @@ def get_z3_repr(p4_ctrl, fail_dir):
     try:
         p4_ctrl, p4_ctrl_args = p4_program(Z3Reg())[2]
         z3_ast = p4_ctrl(p4_ctrl_args)
-    except Exception as e:
+    except Exception:
         log.exception("Failed to compile Python to Z3:\n")
         if fail_dir:
             handle_pyz3_error(fail_dir, p4_file)
-            debug_msg([p4_file])
+            debug_msg([p4_file, p4_file])
         return None
     return z3_ast
 
@@ -63,8 +63,8 @@ def check_equivalence(prog_before, prog_after):
     log.debug(tv_equiv)
     log.debug(ret)
     if ret == z3.sat:
-        log.error("PROGRAM BEFORE\n%s" % prog_before)
-        log.error("PROGRAM AFTER\n%s" % prog_after)
+        log.error("PROGRAM BEFORE\n%s", prog_before)
+        log.error("PROGRAM AFTER\n%s", prog_after)
         log.error(s.model())
         log.error("Detected an equivalence violation!")
         return util.EXIT_FAILURE
@@ -72,11 +72,7 @@ def check_equivalence(prog_before, prog_after):
         return util.EXIT_SUCCESS
 
 
-def z3_check(prog_paths, fail_dir=None):
-    if len(prog_paths) < 2:
-        log.error("The equivalence check " +
-                  "requires at least two input programs!")
-        return util.EXIT_FAILURE
+def get_ctrl_modules(prog_paths):
     ctrls = []
     for path in prog_paths:
         prog_path = Path(path)
@@ -88,8 +84,13 @@ def z3_check(prog_paths, fail_dir=None):
             ctrls.append((prog_path, ctrl_module))
         except ImportError as e:
             log.error(("Could not import the"
-                       "requested control function: %s" % e))
-            return util.EXIT_FAILURE
+                       "requested control function: %s", e))
+            return None
+    return ctrls
+
+
+def compare_programs(ctrls, fail_dir):
+
     for i in range(1, len(ctrls)):
         p4_pre = ctrls[i - 1]
         p4_post = ctrls[i]
@@ -109,17 +110,22 @@ def z3_check(prog_paths, fail_dir=None):
     return util.EXIT_SUCCESS
 
 
+def z3_check(prog_paths, fail_dir=None):
+    if len(prog_paths) < 2:
+        log.error("The equivalence check requires at least two input programs!")
+        return util.EXIT_FAILURE
+    ctrls = get_ctrl_modules(prog_paths)
+    if ctrls is None:
+        return util.EXIT_FAILURE
+    return compare_programs(ctrls, fail_dir)
+
+
 def main(args=None):
     parser = argparse.ArgumentParser()
     parser.add_argument("--progs", "-p", dest="progs",
                         type=str, nargs='+', required=True,
                         help="The ordered list of programs to compare.")
     args = parser.parse_args(args)
-    if len(args.progs) < 2:
-        log.error("ERROR: The equivalence check " +
-                  "requires at least two input programs!")
-        parser.print_help()
-        return util.EXIT_FAILURE
     return z3_check(args.progs)
 
 

@@ -1,6 +1,6 @@
-from p4z3.base import *
 from copy import deepcopy
 from collections import OrderedDict
+from p4z3.base import *
 
 
 def step(p4_vars, expr_chain, expr=None) -> z3.AstRef:
@@ -34,38 +34,27 @@ def step(p4_vars, expr_chain, expr=None) -> z3.AstRef:
     else:
         # empty statement, just return true
         z3_copy = p4_vars._make(p4_vars.const)
-        return (p4_vars.const == z3_copy)
+        return p4_vars.const == z3_copy
 
 
 def resolve_expr(p4_vars, expr_chain, val) -> z3.AstRef:
-    # Resolves to  z3 expressions, bools and int are also okay
+    # Resolves to z3 and z3p4 expressions, bools and int are also okay
     val_str = val
     # resolve potential string references first
-    if (isinstance(val, str)):
+    if isinstance(val, str):
         val = p4_vars.get_var(val)
     if val is None:
         raise RuntimeError(f"Variable {val_str} does not exist in current environment!")
-    if ((isinstance(val, z3.AstRef) or
-         isinstance(val, bool) or
-         isinstance(val, int))):
+    if isinstance(val, (z3.AstRef, bool, int)):
         # These are z3 types and can be returned
         return val
-    elif (isinstance(val, P4Z3Type)):
+    if isinstance(val, P4Z3Type):
         # We got a P4 type, recurse...
         return step(p4_vars, [val] + expr_chain)
-    elif (isinstance(val, Z3P4Class)):
+    if isinstance(val, Z3P4Class):
         # If we get a whole class return the complex z3 type
         return val
-    else:
-        raise RuntimeError(f"Value of type {type(val)} cannot be resolved!")
-
-
-def evaluate_action_args(p4_vars, expr_chain, action_args=[]):
-    p4_args = []
-    for arg in action_args:
-        expr = resolve_expr(p4_vars, expr_chain, arg)
-        p4_args.append(expr)
-    return p4_args
+    raise RuntimeError(f"Value of type {type(val)} cannot be resolved!")
 
 
 class P4Z3Type():
@@ -84,15 +73,14 @@ class MethodCallExpr(P4Z3Type):
 
     def eval(self, p4_vars, expr_chain):
         p4_method = self.expr
-        if (isinstance(self.expr, str)):
+        if isinstance(self.expr, str):
             p4_method = p4_vars.get_var(self.expr)
-        if (callable(p4_method)):
+        if callable(p4_method):
             return p4_method(p4_vars, expr_chain, *self.args)
-        elif (isinstance(p4_method, P4Action)):
+        if isinstance(p4_method, P4Action):
             p4_method.merge_args(p4_vars, expr_chain, "", self.args)
             return step(p4_vars, [p4_method] + expr_chain)
-        else:
-            raise RuntimeError(f"Unsupported method type {type(p4_method)}!")
+        raise RuntimeError(f"Unsupported method type {type(p4_method)}!")
 
 
 class P4BinaryOp(P4Z3Type):
@@ -262,7 +250,7 @@ class P4Cast(P4Z3Type):
 
     def eval(self, p4_vars, expr_chain):
         expr = resolve_expr(p4_vars, expr_chain, self.val)
-        if (expr.size() < self.to_size):
+        if expr.size() < self.to_size:
             return z3.ZeroExt(self.to_size - expr.size(), expr)
         else:
             slice_l = expr.size() - 1
@@ -285,7 +273,6 @@ class P4Declaration():
 
 
 class P4StructInitializer():
-    # TODO: Add some more declaration checks here.
     def __init__(self, p4_struct, **kwargs):
         if len(kwargs) != len(p4_struct.accessors):
             raise RuntimeError(
@@ -357,7 +344,7 @@ class BlockStatement(P4Z3Type):
     def add(self, expr):
         self.exprs.append(expr)
 
-    def eval(self, p4_vars, expr_chain=[]):
+    def eval(self, p4_vars, expr_chain):
         return step(p4_vars, self.exprs + expr_chain)
 
 
@@ -453,7 +440,8 @@ class IfStatement(P4Z3Type):
             return z3.If(condition, if_expr, then_expr)
         else:
             return z3.Implies(condition,
-                              step(deepcopy(p4_vars), [self.then_block] + expr_chain))
+                              step(deepcopy(p4_vars),
+                                   [self.then_block] + expr_chain))
 
 
 class SwitchStatement(P4Z3Type):

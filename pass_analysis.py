@@ -1,16 +1,14 @@
 import os
 import glob
-import shutil
 import argparse
 import subprocess
-import signal
+import logging
 from pathlib import Path
 
 import p4z3.util as util
 import p4z3_check as z3check
 
 # configure logging
-import logging
 logging.basicConfig(format="%(levelname)s:%(message)s",
                     level=logging.INFO)
 log = logging.getLogger(__name__)
@@ -27,7 +25,7 @@ def generate_p4_dump(p4_file, p4_dmp_dir):
     # p4_cmd += "--top4 FrontEnd,MidEnd "
     p4_cmd += f"--dump {p4_dmp_dir} "
     p4_cmd += p4_file
-    log.debug(f"Running dumps with command {p4_cmd}")
+    log.debug("Running dumps with command %s ", p4_cmd)
     return util.exec_process(p4_cmd)
 
 
@@ -39,8 +37,8 @@ def prune_files(p4_prune_dir, p4_passes):
         sed_cmd += f"{p4_file} "
         sed_cmd += " | sed -r \'/^\\s*$/d\' "
         sed_cmd += f"> {p4_prune_dir}/{os.path.basename(p4_file)}"
-        log.debug(f"Removing comments and whitespace")
-        log.debug(f"Command: {sed_cmd}")
+        log.debug("Removing comments and whitespace")
+        log.debug("Command: %s", sed_cmd)
         util.exec_process(sed_cmd)
     return p4_prune_dir
 
@@ -58,8 +56,8 @@ def diff_files(passes, pass_dir, p4_file):
         diff_cmd += "--label=\"before_pass\" --label=\"after_pass\" "
         diff_cmd += f"{pass_before} {pass_after}"
         diff_cmd += f"> {diff_file}"
-        log.debug(f"Creating a diff of the file")
-        log.debug(f"Command: {diff_cmd}")
+        log.debug("Creating a diff of the file")
+        log.debug("Command: %s", diff_cmd)
         util.exec_process(diff_cmd)
         if os.stat(diff_file).st_size == 0:
             os.remove(diff_file)
@@ -74,7 +72,7 @@ def list_passes(p4_file):
     p4_pass_cmd += f"{p4_file} 2>&1 "
     p4_pass_cmd += "| sed -e \'/FrontEnd_0_/,$!d\' | "
     p4_pass_cmd += "sed -e \'/MidEndLast/q\' "
-    log.debug(f"Grabbing passes with command {p4_pass_cmd}")
+    log.debug("Grabbing passes with command %s", p4_pass_cmd)
     output = subprocess.check_output(p4_pass_cmd, shell=True)
     passes = output.decode('ascii').strip().split('\n')
     return passes
@@ -84,16 +82,15 @@ def analyse_p4_file(p4_file, pass_dir):
     p4_dmp_dir = f"dumps"
     p4_prune_dir = f"{p4_dmp_dir}/pruned"
 
-    log.info(f"Analysing {p4_file}")
-    ir_passes = list_passes(p4_file)
+    log.info("Analysing %s", p4_file)
     p4_passes = gen_p4_passes(p4_dmp_dir, p4_file)
     prune_files(p4_prune_dir, p4_passes)
-    err = diff_files(p4_passes, pass_dir, p4_prune_dir, p4_file)
+    err = diff_files(p4_passes, pass_dir, p4_file)
     util.del_dir(p4_dmp_dir)
     return err
 
 
-def run_p4_to_py(target_dir, p4_file, py_file):
+def run_p4_to_py(p4_file, py_file):
     cmd = P4Z3_BIN + " "
     cmd += p4_file + " "
     cmd += f"--output {py_file} "
@@ -116,15 +113,15 @@ def validate_translation(p4_file, target_dir):
     passes = gen_p4_passes(p4_dmp_dir=target_dir, p4_file=p4_file)
     p4_py_files = []
     # for each emitted pass, generate a python representation
-    for p4_file in passes:
-        p4_path = Path(p4_file).stem
+    for p4_pass in passes:
+        p4_path = Path(p4_pass).stem
         py_file = f"{target_dir}/{p4_path}.py"
-        result = run_p4_to_py(target_dir, p4_file, py_file)
+        result = run_p4_to_py(p4_pass, py_file)
         if result != util.EXIT_SUCCESS:
             log.error("Failed to translate P4 to Python.")
             log.error("Compiler crashed!")
             util.check_dir(fail_dir)
-            util.copy_file([p4_file, py_file], fail_dir)
+            util.copy_file([p4_pass, py_file], fail_dir)
             return result
         p4_py_files.append(f"{target_dir}/{p4_path}")
     # perform the actual comparison
@@ -141,7 +138,7 @@ def main():
     # Parse options and process argv
     args = parser.parse_args()
     p4_input = args.p4_input
-    if (os.path.isfile(p4_input)):
+    if os.path.isfile(p4_input):
         pass_dir = "single_passes"
         util.check_dir(pass_dir)
         open(f"{pass_dir}/no_passes.txt", 'w+')

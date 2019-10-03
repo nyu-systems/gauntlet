@@ -63,7 +63,6 @@ class Z3P4Class():
     def _make(self, parent_const=None):
         members = []
         for accessor in self.accessors:
-            arg_type = accessor.range()
             member_make = op.attrgetter(accessor.name())(self)
             if isinstance(member_make, Z3P4Class):
                 sub_const = accessor(parent_const)
@@ -110,14 +109,14 @@ class Z3P4Class():
             prefix, suffix = lstring.rsplit(".", 1)
             target_class = op.attrgetter(prefix)(self)
             setattr(target_class, suffix, rvalue)
-            # generate a new version of the z3 datatype
-            const_copy = self._make(self.const)
             # update the SSA version
-            self._update()
-            # return the update expression
-            return self.const == const_copy
         else:
             setattr(self, lstring, rvalue)
+        # generate a new version of the z3 datatype
+        const_copy = self._make(self.const)
+        self._update()
+        # return the update expression
+        return self.const == const_copy
 
 
 class P4State(Z3P4Class):
