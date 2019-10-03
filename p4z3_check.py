@@ -1,11 +1,10 @@
 import argparse
 from pathlib import Path
-import sys
+import os
 import imp
 import logging as log
 
-import z3
-from p4z3.base import *
+from p4z3.base import Z3Reg, z3
 import p4z3.util as util
 
 FILE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -91,7 +90,7 @@ def z3_check(prog_paths, fail_dir=None):
             log.error(("Could not import the"
                        "requested control function: %s" % e))
             return util.EXIT_FAILURE
-    for i, _ in enumerate(ctrls[1:]):
+    for i in range(1, len(ctrls)):
         p4_pre = ctrls[i - 1]
         p4_post = ctrls[i]
         ctrl_fun_pre = get_z3_repr(p4_pre, fail_dir)

@@ -5,28 +5,28 @@ from p4z3.expressions import *
 
 
 def register(z3_reg):
-    z3_args = [('ingress_port', BitVecSort(9)),
-               ('egress_spec', BitVecSort(9)),
-               ('egress_port', BitVecSort(9)),
-               ('clone_spec', BitVecSort(32)),
-               ('instance_type', BitVecSort(32)),
-               ('drop', BitVecSort(1)),
-               ('recirculate_port', BitVecSort(16)),
-               ('packet_length', BitVecSort(32)),
-               ('enq_timestamp', BitVecSort(32)),
-               ('enq_qdepth', BitVecSort(19)),
-               ('deq_timedelta', BitVecSort(32)),
-               ('deq_qdepth', BitVecSort(19)),
-               ('ingress_global_timestamp', BitVecSort(48)),
-               ('egress_global_timestamp', BitVecSort(48)),
-               ('lf_field_list', BitVecSort(32)),
-               ('mcast_grp', BitVecSort(16)),
-               ('resubmit_flag', BitVecSort(32)),
-               ('egress_rid', BitVecSort(16)),
-               ('recirculate_flag', BitVecSort(32)),
-               ('parser_error', BitVecSort(1)),
-               ('checksum_error', BitVecSort(1)),
-               ('priority', BitVecSort(3)),
+    z3_args = [('ingress_port', z3.BitVecSort(9)),
+               ('egress_spec', z3.BitVecSort(9)),
+               ('egress_port', z3.BitVecSort(9)),
+               ('clone_spec', z3.BitVecSort(32)),
+               ('instance_type', z3.BitVecSort(32)),
+               ('drop', z3.BitVecSort(1)),
+               ('recirculate_port', z3.BitVecSort(16)),
+               ('packet_length', z3.BitVecSort(32)),
+               ('enq_timestamp', z3.BitVecSort(32)),
+               ('enq_qdepth', z3.BitVecSort(19)),
+               ('deq_timedelta', z3.BitVecSort(32)),
+               ('deq_qdepth', z3.BitVecSort(19)),
+               ('ingress_global_timestamp', z3.BitVecSort(48)),
+               ('egress_global_timestamp', z3.BitVecSort(48)),
+               ('lf_field_list', z3.BitVecSort(32)),
+               ('mcast_grp', z3.BitVecSort(16)),
+               ('resubmit_flag', z3.BitVecSort(32)),
+               ('egress_rid', z3.BitVecSort(16)),
+               ('recirculate_flag', z3.BitVecSort(32)),
+               ('parser_error', z3.BitVecSort(1)),
+               ('checksum_error', z3.BitVecSort(1)),
+               ('priority', z3.BitVecSort(3)),
                ]
     z3_reg.register_z3_type("standard_metadata_t", Struct, z3_args)
 
@@ -36,11 +36,11 @@ def register(z3_reg):
     def BLOCK():
         block = BlockStatement()
         lval = "smeta.egress_spec"
-        rval = BitVecVal(9, 9)
+        rval = z3.BitVecVal(9, 9)
         stmt = AssignmentStatement(lval, rval)
         block.add(stmt)
         lval = "smeta.mcast_grp"
-        rval = BitVecVal(0, 16)
+        rval = z3.BitVecVal(0, 16)
         stmt = AssignmentStatement(lval, rval)
         block.add(stmt)
 

@@ -1,8 +1,5 @@
-from z3 import *
-import os
 import operator as op
-
-constants = set([])
+import z3
 
 
 class Z3Reg():
@@ -12,7 +9,7 @@ class Z3Reg():
     _ref_count = {}
 
     def register_z3_type(self, name, p4_class, z3_args):
-        self.types[name] = Datatype(name)
+        self.types[name] = z3.Datatype(name)
         self.types[name].declare(f"mk_{name}", *z3_args)
         self.types[name] = self.types[name].create()
 
@@ -38,7 +35,7 @@ class Z3P4Class():
     def __init__(self, z3_reg, z3_id=0):
         self._set_basic_attrs(z3_reg, z3_id)
         self.constructor = self.z3_type.constructor(0)
-        self.const = Const(f"{self.name}_0", self.z3_type)
+        self.const = z3.Const(f"{self.name}_0", self.z3_type)
         self.revisions = [self.const]
         self.accessors = self._generate_accessors(
             self.z3_type, self.constructor)
@@ -47,6 +44,15 @@ class Z3P4Class():
         cls_name = self.__class__.__name__
         self.name = "%s%d" % (cls_name, z3_id)
         self.z3_type = z3_reg.types[cls_name]
+
+    def _set_accessors(self, z3_reg):
+        for accessor in self.accessors:
+            arg_type = accessor.range()
+            if isinstance(arg_type, z3.DatatypeSortRef):
+                member_cls = z3_reg.instance(arg_type.name())
+                setattr(self, accessor.name(), member_cls)
+            else:
+                setattr(self, accessor.name(), accessor(self.const))
 
     def _generate_accessors(self, z3_type, constructor):
         accessors = []
@@ -58,7 +64,6 @@ class Z3P4Class():
         members = []
         for accessor in self.accessors:
             arg_type = accessor.range()
-            is_datatype = type(arg_type) == (DatatypeSortRef)
             member_make = op.attrgetter(accessor.name())(self)
             if isinstance(member_make, Z3P4Class):
                 sub_const = accessor(parent_const)
@@ -80,71 +85,49 @@ class Z3P4Class():
                 members.append(accessor(parent_const))
         self.const = self.constructor(*members)
 
+    def get_var(self, var_string):
+        # we are trying to access a base function
+        # just remove the brackets and try to call the result
+        if var_string.endswith("()"):
+            var_string = var_string[:-2]
+            return op.attrgetter(var_string)(self)()
+            # return op.methodcaller(var_string)(self)
+        else:
+            return op.attrgetter(var_string)(self)
+
+    def del_var(self, var_string):
+        delattr(self, var_string)
+
+    def _update(self):
+        # index = len(self.revisions)
+        # self.const = z3.Const(f"{self.name}_{index}", self.z3_type)
+        self.const = z3.Const(f"{self.name}_1", self.z3_type)
+        self.revisions.append(self.const)
+
+    def set_or_add_var(self, lstring, rvalue):
+        # update the internal representation of the attribute
+        if '.' in lstring:
+            prefix, suffix = lstring.rsplit(".", 1)
+            target_class = op.attrgetter(prefix)(self)
+            setattr(target_class, suffix, rvalue)
+            # generate a new version of the z3 datatype
+            const_copy = self._make(self.const)
+            # update the SSA version
+            self._update()
+            # return the update expression
+            return self.const == const_copy
+        else:
+            setattr(self, lstring, rvalue)
+
 
 class P4State(Z3P4Class):
 
     def __init__(self, z3_reg, z3_id=0):
         super(P4State, self).__init__(z3_reg, z3_id)
-        # These are special for structs
         self._set_accessors(z3_reg)
+
+        # These are special for state
         self.propagate_type(self.const)
-
-    def _set_accessors(self, z3_reg):
-        for accessor in self.accessors:
-            arg_type = accessor.range()
-            member_cls = z3_reg.instance(arg_type.name())
-            setattr(self, accessor.name(), member_cls)
-
-    def _update(self):
-        index = len(self.revisions)
-        self.const = Const(f"{self.name}_1", self.z3_type)
-        self.revisions.append(self.const)
-        constants.add(self.const)
-
-    def get_var(self, var_string):
-        # we are trying to access a base function
-        # just remove the brackets and call the result
-        try:
-            if (var_string.endswith("()")):
-                var_string = var_string[:-2]
-                return op.attrgetter(var_string)(self)()
-                # return op.methodcaller(var_string)(self)
-            else:
-                return op.attrgetter(var_string)(self)
-        except AttributeError:
-            return None
-
-    def del_var(self, var_string):
-        delattr(self, var_string)
-
-    def set_or_add_var(self, lstring, rvalue):
-        # update the internal representation of the attribute
-        if ("." in lstring):
-            prefix, suffix = lstring.rsplit(".", 1)
-            target_class = op.attrgetter(prefix)(self)
-            setattr(target_class, suffix, rvalue)
-            # generate a new version of the z3 datatype
-            copy = self._make(self.const)
-            # update the SSA version
-            self._update()
-            # return the update expression
-            return (self.const == copy)
-        else:
-            setattr(self, lstring, rvalue)
-
-    def set_or_add_struct(self, lstring, args):
-        # this operation assumes that
-        # args matches accessors in length
-        members = []
-        target_class = op.attrgetter(lstring)(self)
-        for index, accessor in enumerate(target_class.accessors):
-            setattr(target_class, accessor.name(), args[index])
-        # generate a new version of the z3 datatype
-        # copy = self._make()
-        # # update the SSA version
-        # self._update()
-        # # return the update expression
-        # return (self.const == copy)
 
     def add_externs(self, externs):
         for extern_name, extern_method in externs.items():
@@ -155,25 +138,12 @@ class Header(Z3P4Class):
 
     def __init__(self, z3_reg, z3_id=0):
         super(Header, self).__init__(z3_reg, z3_id)
+        self._set_accessors(z3_reg)
 
         # These are special for headers
-        self._set_hdr_accessors()
-        self._init_valid()
+        self.valid = z3.Const("%s_valid" % self.name, z3.BoolSort())
 
-    def _set_hdr_accessors(self):
-        for accessor in self.accessors:
-            arg_type = accessor.range()
-            is_datatype = type(arg_type) == (DatatypeSortRef)
-            if is_datatype:
-                member_cls = z3_reg.instance(arg_type.name())
-                setattr(self, accessor.name(), member_cls)
-            else:
-                setattr(self, accessor.name(), accessor(self.const))
-
-    def _init_valid(self):
-        self.valid = Const("%s_valid" % self.name, BoolSort())
-
-    def isValid(self, p4_vars, expr_chain=[]):
+    def isValid(self, p4_vars, expr_chain):
         return self.valid
 
     def setValid(self):
@@ -187,76 +157,4 @@ class Struct(Z3P4Class):
 
     def __init__(self, z3_reg, z3_id=0):
         super(Struct, self).__init__(z3_reg, z3_id)
-
-        # These are special for structs
-        self._set_struct_accessors(z3_reg)
-
-    def _set_struct_accessors(self, z3_reg):
-        for accessor in self.accessors:
-            arg_type = accessor.range()
-            is_datatype = type(arg_type) == (DatatypeSortRef)
-            if is_datatype:
-                member_cls = z3_reg.instance(arg_type.name())
-                setattr(self, accessor.name(), member_cls)
-            else:
-                setattr(self, accessor.name(), accessor(self.const))
-
-
-class Table():
-
-    @classmethod
-    def table_action(cls, func_chain, p4_vars):
-        name = cls.__name__
-        action = Int(f"{name}_action")
-        ''' This is a special macro to define action selection. We treat
-        selection as a chain of implications. If we match, then the clause
-        returned by the action must be valid.
-        '''
-        actions = []
-        for f_name, f_tuple in cls.actions.items():
-            if f_name == "default":
-                continue
-            f_id = f_tuple[0]
-            f_fun = f_tuple[1][0]
-            f_args = f_tuple[1][1]
-            expr = Implies(action == f_id,
-                           f_fun(func_chain, p4_vars, *f_args))
-            actions.append(expr)
-        return And(*actions)
-
-    @classmethod
-    def table_match(cls, p4_vars):
-        raise NotImplementedError
-
-    @classmethod
-    def action_run(cls, p4_vars):
-        name = cls.__name__
-        action = Int(f"{name}_action")
-        return cls.table_match(p4_vars)
-
-    @classmethod
-    def apply(cls, func_chain, p4_vars):
-        # This is a table match where we look up the provided key
-        # If we match select the associated action,
-        # else use the default action
-        def_fun = cls.actions["default"][1][0]
-        def_args = cls.actions["default"][1][1]
-        return If(cls.table_match(p4_vars),
-                  cls.table_action(func_chain, p4_vars),
-                  def_fun(func_chain, p4_vars, *def_args))
-
-    @classmethod
-    def switch_apply(cls, func_chain, p4_vars, cases, default_case):
-        def_fun = cls.actions["default"][1][0]
-        def_args = cls.actions["default"][1][1]
-        is_hit = cls.action_run(p4_vars)
-        switch_hit = And((*cases), def_fun(func_chain, p4_vars, *def_args))
-        switch_default = default_case(func_chain, p4_vars)
-        return And(cls.apply(func_chain, p4_vars), If(is_hit, switch_hit, switch_default))
-
-    @classmethod
-    def case(cls, func_chain, p4_vars, action_str, case_block):
-        action = cls.actions[action_str]
-
-        action_var = Int(f"{cls.__name__}_action")
-        return Implies(action_var == action[0], And(action[1][0](func_chain, p4_vars, *action[1][1]), case_block(func_chain, p4_vars)))
+        self._set_accessors(z3_reg)

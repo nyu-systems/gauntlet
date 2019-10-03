@@ -45,7 +45,7 @@ def prune_files(p4_prune_dir, p4_passes):
     return p4_prune_dir
 
 
-def diff_files(passes, pass_dir, p4_prune_dir, p4_file):
+def diff_files(passes, pass_dir, p4_file):
 
     p4_name = Path(os.path.basename(p4_file)).stem
     for index, p4_pass in enumerate(passes[1:]):

@@ -1,13 +1,11 @@
 import unittest
 import os
-import subprocess
-from pathlib import Path
-import glob
+import logging
+
 import p4z3.util as util
 import pass_analysis as pa
 
 # configure logging
-import logging
 logging.basicConfig(format="%(levelname)s:%(message)s",
                     level=logging.INFO)
 log = logging.getLogger(__name__)
@@ -35,7 +33,7 @@ class Z3Tests(unittest.TestCase):
         p4_file = f"{P4_DIR}/strength3.p4"
         self.assertEqual(validate_p4_prog(p4_file), util.EXIT_SUCCESS)
 
-    def test_issue_1544(self):
+    def test_issue1544(self):
         p4_file = f"{P4_DIR}/issue1544-bmv2.p4"
         self.assertEqual(validate_p4_prog(p4_file), util.EXIT_SUCCESS)
 
@@ -45,7 +43,7 @@ class Z3Tests(unittest.TestCase):
         self.assertNotEqual(validate_p4_prog(p4_file), util.EXIT_SUCCESS)
 
     def test_issue1863(self):
-        p4_file = f"{P4_DIR}/issue1863.p4"
+        p4_file = f"p4z3/p4files/issue1863/issue1863-bmv2.p4"
         self.assertNotEqual(validate_p4_prog(p4_file), util.EXIT_SUCCESS)
 
     def test_basic_routing_bmv2(self):

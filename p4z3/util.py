@@ -12,7 +12,7 @@ EXIT_FAILURE = -1
 def check_dir(directory):
     # create the folder if it does not exit
     if not directory == "" and not os.path.exists(directory):
-        log.warn(f"Folder {directory} does not exist! Creating...")
+        log.warning(f"Folder {directory} does not exist! Creating...")
         os.makedirs(directory)
 
 
@@ -30,7 +30,7 @@ def del_dir(directory):
     try:
         shutil.rmtree(directory)
     except OSError as e:
-        log.warn("%s - %s." % (e.filename, e.strerror))
+        log.warning("%s - %s." % (e.filename, e.strerror))
 
 
 def copy_file(src, dst):
