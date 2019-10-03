@@ -5,8 +5,8 @@ import imp
 import logging as log
 
 import z3
-import p4z3.util as util
 from p4z3.base import *
+import p4z3.util as util
 
 FILE_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -91,21 +91,22 @@ def z3_check(prog_paths, fail_dir=None):
             log.error(("Could not import the"
                        "requested control function: %s" % e))
             return util.EXIT_FAILURE
-    for i, _ in enumerate(ctrls):
-        if i < len(ctrls) - 1:
-            ctrl_fun_pre = get_z3_repr(ctrls[i], fail_dir)
-            ctrl_fun_post = get_z3_repr(ctrls[i + 1], fail_dir)
-            if ctrl_fun_pre is None or ctrl_fun_post is None:
-                return util.EXIT_FAILURE
-            ret = check_equivalence(ctrl_fun_pre, ctrl_fun_post)
-            if ret != util.EXIT_SUCCESS:
-                if fail_dir:
-                    p4_file_pre = ctrls[i][0]
-                    p4_file_post = ctrls[i + 1][0]
-                    handle_pyz3_error(fail_dir, p4_file_pre)
-                    handle_pyz3_error(fail_dir, p4_file_post)
-                    debug_msg([p4_file_pre, p4_file_post])
-                return ret
+    for i, _ in enumerate(ctrls[1:]):
+        p4_pre = ctrls[i - 1]
+        p4_post = ctrls[i]
+        ctrl_fun_pre = get_z3_repr(p4_pre, fail_dir)
+        ctrl_fun_post = get_z3_repr(p4_post, fail_dir)
+        if ctrl_fun_pre is None or ctrl_fun_post is None:
+            return util.EXIT_FAILURE
+        ret = check_equivalence(ctrl_fun_pre, ctrl_fun_post)
+        if ret != util.EXIT_SUCCESS:
+            if fail_dir:
+                p4_file_pre = p4_pre[0]
+                p4_file_post = p4_post[0]
+                handle_pyz3_error(fail_dir, p4_file_pre)
+                handle_pyz3_error(fail_dir, p4_file_post)
+                debug_msg([p4_file_pre, p4_file_post])
+            return ret
     return util.EXIT_SUCCESS
 
 
@@ -118,7 +119,7 @@ def main(args=None):
     if len(args.progs) < 2:
         log.error("ERROR: The equivalence check " +
                   "requires at least two input programs!")
-        p.print_help()
+        parser.print_help()
         return util.EXIT_FAILURE
     return z3_check(args.progs)
 

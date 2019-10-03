@@ -361,7 +361,6 @@ class P4Action(P4Z3Type):
     def get_parameters(self):
         return self.parameters
 
-
     def merge_args(self, p4_vars, expr_chain, arg_prefix, *args):
         action_args = []
         for param in self.parameters:

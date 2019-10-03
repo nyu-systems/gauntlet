@@ -49,16 +49,8 @@ def diff_files(passes, pass_dir, p4_prune_dir, p4_file):
 
     p4_name = Path(os.path.basename(p4_file)).stem
     for index, p4_pass in enumerate(passes[1:]):
-        pass_before = glob.glob(f"{p4_prune_dir}/*{passes[index]}*.p4")
-        pass_after = glob.glob(f"{p4_prune_dir}/*{passes[index+1]}*.p4")
-        if not(pass_before and pass_after):
-            log.error(f"Could not find the P4 files for pass {p4_name}! "
-                      "Some passes were not generated.")
-            continue
-        # pass_before = f"{p4_prune_dir}/{p4_base}-{passes[index]}.p4"
-        # pass_after = f"{p4_prune_dir}/{p4_base}-{passes[index+1]}.p4"
-        pass_before = pass_before[0]
-        pass_after = pass_after[0]
+        pass_before = passes[index - 1]
+        pass_after = passes[index]
         diff_dir = f"{pass_dir}/{p4_name}"
         util.check_dir(diff_dir)
         diff_file = f"{diff_dir}/{p4_name}_{p4_pass}.diff"
@@ -96,7 +88,7 @@ def analyse_p4_file(p4_file, pass_dir):
     ir_passes = list_passes(p4_file)
     p4_passes = gen_p4_passes(p4_dmp_dir, p4_file)
     prune_files(p4_prune_dir, p4_passes)
-    err = diff_files(ir_passes, pass_dir, p4_prune_dir, p4_file)
+    err = diff_files(p4_passes, pass_dir, p4_prune_dir, p4_file)
     util.del_dir(p4_dmp_dir)
     return err
 
