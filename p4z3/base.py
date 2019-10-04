@@ -72,16 +72,18 @@ class Z3P4Class():
                 members.append(member_make)
         return self.constructor(*members)
 
+    def set_member(self, accessor_name, val):
+        member = op.attrgetter(accessor_name)(self)
+        if isinstance(member, Z3P4Class):
+            member.propagate_type(val)
+        else:
+            setattr(self, accessor_name, val)
+
     def propagate_type(self, parent_const=None):
         members = []
         for accessor in self.accessors:
-            member = op.attrgetter(accessor.name())(self)
-            if isinstance(member, Z3P4Class):
-                member.propagate_type(accessor(parent_const))
-                members.append(accessor(parent_const))
-            else:
-                setattr(self, accessor.name(), accessor(parent_const))
-                members.append(accessor(parent_const))
+            self.set_member(accessor.name(), accessor(parent_const))
+            members.append(accessor(parent_const))
         self.const = self.constructor(*members)
 
 
@@ -121,6 +123,24 @@ class P4State(Z3P4Class):
             # update the SSA version
         else:
             setattr(self, lstring, rvalue)
+        # generate a new version of the z3 datatype
+        const_copy = self._make(self.const)
+        self._update()
+        # return the update expression
+        return self.const == const_copy
+
+    def set_list(self, lstring, rvals):
+        if '.' in lstring:
+            prefix, suffix = lstring.rsplit(".", 1)
+            target_class = op.attrgetter(prefix)(self)
+        else:
+            target_class = op.attrgetter(lstring)(self)
+        if not isinstance(target_class, Z3P4Class):
+            raise RuntimeError(
+                "Trying to assign values to a non-complex type!")
+        for index, rval in enumerate(rvals):
+            accessor = target_class.accessors[index]
+            setattr(target_class, accessor.name(), rval)
         # generate a new version of the z3 datatype
         const_copy = self._make(self.const)
         self._update()

@@ -260,7 +260,7 @@ class P4Cast(P4Z3Type):
             return z3.Extract(slice_l, slice_r, expr)
 
 
-class P4Declaration():
+class P4Declaration(P4Z3Type):
     # TODO: Add some more declaration checks here.
     def __init__(self, name, opt_init=None):
         self.name = name
@@ -275,18 +275,18 @@ class P4Declaration():
 
 
 class P4StructInitializer():
-    def __init__(self, p4_struct, **kwargs):
-        if len(kwargs) != len(p4_struct.accessors):
+    def __init__(self, p4z3_type, **kwargs):
+        if len(kwargs) != len(p4z3_type.accessors):
             raise RuntimeError(
                 "Invalid number of arguments for struct initialization!")
-        self.p4_struct = p4_struct
+        self.p4z3_type = p4z3_type
         self.members = kwargs
 
-    def eval(self, p4_vars, expr_chain):
-        for name, val in self.members:
-
-            self.p4_struct.set_or_add_var(name, val)
-        return self.p4_struct.const
+    def get_struct(self, p4_vars, expr_chain):
+        for name, val in self.members.items():
+            val_expr = resolve_expr(p4_vars, expr_chain, val)
+            self.p4z3_type.set_member(name, val_expr)
+        return self.p4z3_type
 
 
 def slice_assign(lval, rval, slice_l, slice_r) -> z3.AstRef:
@@ -325,8 +325,17 @@ class AssignmentStatement(P4Z3Type):
         self.rval = rval
 
     def eval(self, p4_vars, expr_chain):
-        rval_expr = resolve_expr(p4_vars, expr_chain, self.rval)
-        assign_expr = p4_vars.set_or_add_var(self.lval, rval_expr)
+        if isinstance(self.rval, list):
+            list_expr = []
+            for val in self.rval:
+                list_expr.append(resolve_expr(p4_vars, expr_chain, val))
+            assign_expr = p4_vars.set_list(self.lval, list_expr)
+        elif isinstance(self.rval, P4StructInitializer):
+            rval_expr = self.rval.get_struct(p4_vars, expr_chain)
+            assign_expr = p4_vars.set_or_add_var(self.lval, rval_expr)
+        else:
+            rval_expr = resolve_expr(p4_vars, expr_chain, self.rval)
+            assign_expr = p4_vars.set_or_add_var(self.lval, rval_expr)
         return step(p4_vars, expr_chain, assign_expr)
 
 
