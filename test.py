@@ -14,7 +14,7 @@ FILE_DIR = os.path.dirname(os.path.abspath(__file__))
 TARGET_DIR = FILE_DIR + "/generated"
 P4_DIR = FILE_DIR + "/p4c/testdata/p4_16_samples/"
 
-P4C_BIN = FILE_DIR + "/p4c_bins/latest"
+P4C_BIN = FILE_DIR + "/p4c/build/p4c-bm2-ss"
 P4C_BIN_1863 = FILE_DIR + "/p4c_bins/issue1863"
 
 
@@ -40,12 +40,17 @@ class Z3Tests(unittest.TestCase):
         self.assertEqual(result, util.EXIT_SUCCESS)
 
     # actual violation
-    def test_issue1863(self):
+    def test_issue1863_broken(self):
         p4_file = f"p4z3/p4files/issue1863/issue1863-bmv2.p4"
         result = pa.validate_translation(p4_file, TARGET_DIR, P4C_BIN_1863)
         self.assertNotEqual(result, util.EXIT_SUCCESS)
 
-    # broken tests
+    # broken tests, need fixing
+    def test_issue1863(self):
+        p4_file = f"p4z3/p4files/issue1863/issue1863-bmv2.p4"
+        result = pa.validate_translation(p4_file, TARGET_DIR, P4C_BIN)
+        self.assertNotEqual(result, util.EXIT_SUCCESS)
+
     def test_issue1595(self):
         p4_file = f"{P4_DIR}/issue1595.p4"
         result = pa.validate_translation(p4_file, TARGET_DIR, P4C_BIN)
