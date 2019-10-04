@@ -14,12 +14,12 @@ logging.basicConfig(format="%(levelname)s:%(message)s",
 log = logging.getLogger(__name__)
 
 FILE_DIR = os.path.dirname(os.path.abspath(__file__))
-P4_BIN = FILE_DIR + "/p4c/build/p4c-bm2-ss"
+P4C_BIN = FILE_DIR + "/p4c/build/p4c-bm2-ss"
 P4Z3_BIN = FILE_DIR + "/p4c/build/p4toz3"
 
 
 def generate_p4_dump(p4_file, p4_dmp_dir):
-    p4_cmd = f"{P4_BIN} "
+    p4_cmd = f"{P4C_BIN} "
     p4_cmd += "-vvvv --top4 MidEnd "
     # disable midend for now
     # p4_cmd += "--top4 FrontEnd,MidEnd "
@@ -68,7 +68,7 @@ def diff_files(passes, pass_dir, p4_file):
 
 
 def list_passes(p4_file):
-    p4_pass_cmd = f"{P4_BIN} -v "
+    p4_pass_cmd = f"{P4C_BIN} -v "
     p4_pass_cmd += f"{p4_file} 2>&1 "
     p4_pass_cmd += "| sed -e \'/FrontEnd_0_/,$!d\' | "
     p4_pass_cmd += "sed -e \'/MidEndLast/q\' "
@@ -107,7 +107,9 @@ def gen_p4_passes(p4_dmp_dir, p4_file):
     return util.natural_sort(p4_passes)
 
 
-def validate_translation(p4_file, target_dir):
+def validate_translation(p4_file, target_dir, p4c_bin):
+    global P4C_BIN
+    P4C_BIN = p4c_bin
     fail_dir = f"{target_dir}/failed"
     # run the p4 compiler and dump all the passes for this file
     passes = gen_p4_passes(p4_dmp_dir=target_dir, p4_file=p4_file)
