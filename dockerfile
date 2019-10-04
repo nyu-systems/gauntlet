@@ -23,7 +23,8 @@ ENV P4C_DEPS bison \
             protobuf-compiler
 
 ENV PIP_PACKAGES wheel \
-                 z3-solver
+                 z3-solver \
+                 pytest
 
 RUN apt update
 RUN apt install -y $DEPS $P4C_DEPS

@@ -314,8 +314,8 @@ class SliceAssignment(P4Z3Type):
         rval_expr = resolve_expr(p4_vars, expr_chain, self.rval)
         rval_expr = slice_assign(lval_expr, rval_expr,
                                  self.slice_l, self.slice_r)
-        slice_assign_expr = p4_vars.set_or_add_var(self.lval, rval_expr)
-        return step(p4_vars, expr_chain, slice_assign_expr)
+        assign = AssignmentStatement(self.lval, rval_expr)
+        return step(p4_vars, [assign] + expr_chain)
 
 
 class AssignmentStatement(P4Z3Type):
@@ -432,17 +432,17 @@ class IfStatement(P4Z3Type):
 
     def __init__(self):
         self.condition = None
-        self.then_block = BlockStatement()
-        self.else_block = BlockStatement()
+        self.then_block = None
+        self.else_block = None
 
     def add_condition(self, condition):
         self.condition = condition
 
     def add_then_stmt(self, stmt):
-        self.then_block.add(stmt)
+        self.then_block = stmt
 
     def add_else_stmt(self, stmt):
-        self.else_block.add(stmt)
+        self.else_block = stmt
 
     def eval(self, p4_vars, expr_chain):
         if self.condition is None:

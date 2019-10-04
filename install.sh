@@ -45,3 +45,4 @@ cd ../..
 
 # Install z3 locally
 pip3 install --upgrade --user z3-solver
+pip3 install --upgrade --user pytest
