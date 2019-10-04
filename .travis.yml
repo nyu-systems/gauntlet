@@ -10,4 +10,4 @@ install:
   - sudo docker build -t p4tv .
 
 script:
-  - sudo docker run --privileged -w /home/p4_tv p4tv pytest test.py -v -s
+  - sudo docker run --privileged -w /home/p4_tv p4tv python3 -m pytest test.py -v -s
