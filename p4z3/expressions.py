@@ -32,7 +32,7 @@ def step(p4_vars, expr_chain, expr=None) -> z3.AstRef:
         # end of chain, just mirror the passed expressions
         return expr
     else:
-        # empty statement, just return true
+        # empty statement, just return the final update assignment
         z3_copy = p4_vars._make(p4_vars.const)
         return p4_vars.const == z3_copy
 
@@ -44,7 +44,8 @@ def resolve_expr(p4_vars, expr_chain, val) -> z3.AstRef:
     if isinstance(val, str):
         val = p4_vars.get_var(val)
     if val is None:
-        raise RuntimeError(f"Variable {val_str} does not exist in current environment!")
+        raise RuntimeError(
+            f"Variable {val_str} does not exist in current environment!")
     if isinstance(val, (z3.AstRef, bool, int)):
         # These are z3 types and can be returned
         return val
@@ -78,7 +79,8 @@ class MethodCallExpr(P4Z3Type):
         if callable(p4_method):
             return p4_method(p4_vars, expr_chain, *self.args)
         if isinstance(p4_method, P4Action):
-            p4_method.merge_args(p4_vars, expr_chain, "", self.args)
+            p4_method.set_param_args(arg_prefix="")
+            p4_method.merge_args(p4_vars, expr_chain, self.args)
             return step(p4_vars, [p4_method] + expr_chain)
         raise RuntimeError(f"Unsupported method type {type(p4_method)}!")
 
@@ -167,7 +169,7 @@ class P4xor(P4BinaryOp):
 
 class P4div(P4BinaryOp):
     def __init__(self, lval, rval):
-        operator = op.div
+        operator = op.floordiv
         P4BinaryOp.__init__(self, lval, rval, operator)
 
 
@@ -282,11 +284,12 @@ class P4StructInitializer():
 
     def eval(self, p4_vars, expr_chain):
         for name, val in self.members:
+
             self.p4_struct.set_or_add_var(name, val)
         return self.p4_struct.const
 
 
-def slice_assign(lval, rval, slice_l, slice_r):
+def slice_assign(lval, rval, slice_l, slice_r) -> z3.AstRef:
     lval_max = lval.size() - 1
     if slice_l == lval_max and slice_r == 0:
         return rval
@@ -366,21 +369,25 @@ class P4Action(P4Z3Type):
     def get_parameters(self):
         return self.parameters
 
-    def merge_args(self, p4_vars, expr_chain, arg_prefix, *args):
-        if len(*args) > len(self.parameters):
-            raise RuntimeError(
-                f"Provided arguments {args} exceeds possible number of parameters.")
+    def set_param_args(self, arg_prefix):
+
         action_args = []
         for param in self.parameters:
             arg_name = param[0]
             arg_type = param[1]
             if isinstance(arg_type, z3.AstRef):
-                action_args.append(z3.Const(f"{arg_prefix}{arg_name}", arg_type))
+                action_args.append(
+                    z3.Const(f"{arg_prefix}{arg_name}", arg_type))
             else:
                 action_args.append(arg_type)
-        for index, runtime_arg in enumerate(*args):
-            action_args[index] = resolve_expr(p4_vars, expr_chain, runtime_arg)
         self.args = action_args
+
+    def merge_args(self, p4_vars, expr_chain, *args):
+        if len(*args) > len(self.args):
+            raise RuntimeError(
+                f"Provided arguments {args} exceeds possible number of parameters.")
+        for index, runtime_arg in enumerate(*args):
+            self.args[index] = resolve_expr(p4_vars, expr_chain, runtime_arg)
 
     def eval(self, p4_vars, expr_chain):
         # var_buffer = {}
@@ -532,7 +539,6 @@ class P4Table(P4Z3Type):
         p4_action = p4_vars.get_var(expr_name)
         if not isinstance(p4_action, P4Action):
             raise RuntimeError(f"Expected a P4Action got {type(p4_action)}!")
-        index = len(self.actions) + 1
         self.actions["default"] = (0, p4_action, action_expr.args)
 
     def add_match(self, table_key):
@@ -552,8 +558,8 @@ class P4Table(P4Z3Type):
     def execute_action(self, p4_vars, expr_chain, action_tuple):
         p4_action = action_tuple[1]
         p4_vars = deepcopy(p4_vars)
-        p4_action.merge_args(p4_vars, expr_chain,
-                             self.name, action_tuple[2])
+        p4_action.set_param_args(arg_prefix=self.name)
+        p4_action.merge_args(p4_vars, expr_chain, action_tuple[2])
         action_expr = step(p4_vars, [p4_action] + expr_chain)
         return action_expr
 
