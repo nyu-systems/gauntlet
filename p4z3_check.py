@@ -94,7 +94,8 @@ def z3_check(prog_paths, fail_dir=None):
         # We do not support the flatten passes right now
         # Reason is they generate entirely new variables
         # which cause z3 to crash
-        if "Flatten" in prog_paths[i - 1]:
+        if "Flatten" in prog_paths[i - 1] or "Flatten" in prog_paths[i]:
+            log.warning("Skipping \"Flatten\" passes because of z3 crash...")
             continue
         p4_pre_path = Path(prog_paths[i - 1])
         p4_post_path = Path(prog_paths[i])

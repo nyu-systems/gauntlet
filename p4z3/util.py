@@ -3,7 +3,6 @@ import subprocess
 import shutil
 import logging as log
 import re
-from pathlib import Path
 
 EXIT_SUCCESS = 0
 EXIT_FAILURE = -1
@@ -14,16 +13,6 @@ def check_dir(directory):
     if not directory == "" and not os.path.exists(directory):
         log.warning(f"Folder {directory} does not exist! Creating...")
         os.makedirs(directory)
-
-
-def check_path(path):
-    """Checks if a path is an actual directory and converts the input
-        to an absolute path"""
-    if not os.path.exists(path):
-        msg = "{0} does not exist".format(path)
-        raise argparse.ArgumentTypeError(msg)
-    else:
-        return os.path.abspath(os.path.expanduser(path))
 
 
 def del_dir(directory):
@@ -46,6 +35,7 @@ def convert(text):
 
 
 def alphanum_key(key):
+    key = str(key)
     return [convert(c)
             for c in re.split('([0-9]+)', key)]
 

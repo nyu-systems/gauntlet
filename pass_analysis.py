@@ -4,6 +4,7 @@ import argparse
 import subprocess
 import logging
 from pathlib import Path
+import hashlib
 
 import p4z3.util as util
 import p4z3_check as z3check
@@ -18,13 +19,12 @@ P4C_BIN = FILE_DIR + "/p4c/build/p4c-bm2-ss"
 P4Z3_BIN = FILE_DIR + "/p4c/build/p4toz3"
 
 
-def generate_p4_dump(p4_file, p4_dmp_dir):
-    p4_cmd = f"{P4C_BIN} "
-    p4_cmd += "-vvvv --top4 MidEnd "
+def generate_p4_dump(p4c_bin, p4_file, p4_dmp_dir):
+    p4_cmd = f"{p4c_bin} "
+    p4_cmd += " --top4 MidEnd "
     # disable midend for now
     # p4_cmd += "--top4 FrontEnd,MidEnd "
-    p4_cmd += f"--dump {p4_dmp_dir} "
-    p4_cmd += p4_file
+    p4_cmd += f"--dump {p4_dmp_dir} {p4_file}"
     log.debug("Running dumps with command %s ", p4_cmd)
     return util.exec_process(p4_cmd)
 
@@ -83,7 +83,7 @@ def analyse_p4_file(p4_file, pass_dir):
     p4_prune_dir = f"{p4_dmp_dir}/pruned"
 
     log.info("Analysing %s", p4_file)
-    p4_passes = gen_p4_passes(p4_dmp_dir, p4_file)
+    p4_passes = gen_p4_passes(P4C_BIN, p4_dmp_dir, p4_file)
     prune_files(p4_prune_dir, p4_passes)
     err = diff_files(p4_passes, pass_dir, p4_file)
     util.del_dir(p4_dmp_dir)
@@ -92,27 +92,48 @@ def analyse_p4_file(p4_file, pass_dir):
 
 def run_p4_to_py(p4_file, py_file):
     cmd = P4Z3_BIN + " "
-    cmd += p4_file + " "
+    cmd += f"{p4_file} "
     cmd += f"--output {py_file} "
     result = util.exec_process(cmd)
     return result.returncode
 
 
-def gen_p4_passes(p4_dmp_dir, p4_file):
+def gen_p4_passes(p4c_bin, p4_dmp_dir, p4_file):
     util.check_dir(p4_dmp_dir)
-    generate_p4_dump(p4_file, p4_dmp_dir)
-    p4_passes = glob.glob(f"{p4_dmp_dir}/*.p4")
+    generate_p4_dump(p4c_bin, p4_file, p4_dmp_dir)
+    p4_passes = list(p4_dmp_dir.glob("**/*.p4"))
     # Sort the pass list before returning
     # TODO: Find a better way to maintain order
     return util.natural_sort(p4_passes)
 
 
+def prune_passes(p4_passes):
+    pruned_passes = []
+
+    def sha256(fname):
+        hash_sha256 = hashlib.sha256()
+        with open(fname, "rb") as f:
+            for chunk in iter(lambda: f.read(4096), b""):
+                hash_sha256.update(chunk)
+        return hash_sha256.hexdigest()
+
+    hash_prev = None
+    for p4_pass in p4_passes:
+        hash_sha256 = sha256(p4_pass)
+        if hash_prev == hash_sha256:
+            log.debug("Deleting file from test set:\n%s", p4_pass)
+            os.remove(p4_pass)
+        else:
+            pruned_passes.append(p4_pass)
+        hash_prev = hash_sha256
+    return pruned_passes
+
+
 def validate_translation(p4_file, target_dir, p4c_bin):
-    global P4C_BIN
-    P4C_BIN = p4c_bin
-    fail_dir = f"{target_dir}/failed"
+    fail_dir = target_dir.joinpath("failed")
     # run the p4 compiler and dump all the passes for this file
-    passes = gen_p4_passes(p4_dmp_dir=target_dir, p4_file=p4_file)
+    passes = gen_p4_passes(p4c_bin, target_dir, p4_file)
+    passes = prune_passes(passes)
     p4_py_files = []
     # for each emitted pass, generate a python representation
     for p4_pass in passes:
