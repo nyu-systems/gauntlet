@@ -147,6 +147,9 @@ def validate_translation(p4_file, target_dir, p4c_bin):
             util.copy_file([p4_pass, py_file], fail_dir)
             return result
         p4_py_files.append(f"{target_dir}/{p4_path}")
+    if len(p4_py_files) < 2:
+        log.warning("P4 file did not generate enough passes!")
+        return util.EXIT_SKIPPED
     # perform the actual comparison
     result = z3check.z3_check(p4_py_files, fail_dir)
     return result
