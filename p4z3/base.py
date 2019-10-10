@@ -2,6 +2,21 @@ import operator as op
 import z3
 
 
+def handle_type_stack(z3_args):
+    fixed_args = []
+    print(z3_args)
+    for z3_arg in z3_args:
+        z3_name = z3_arg[0]
+        z3_type = z3_arg[1]
+        if isinstance(z3_type, list):
+            for index, val in enumerate(z3_type):
+                z3_tuple = (z3_name + "_%d" % index, val)
+                fixed_args.append(z3_tuple)
+        else:
+            fixed_args.append(z3_arg)
+    return fixed_args
+
+
 class Z3Reg():
     types = {}
     externs = {}
@@ -10,7 +25,8 @@ class Z3Reg():
 
     def register_z3_type(self, name, p4_class, z3_args):
         self.types[name] = z3.Datatype(name)
-        self.types[name].declare(f"mk_{name}", *z3_args)
+        fixed_args = handle_type_stack(z3_args)
+        self.types[name].declare(f"mk_{name}", *fixed_args)
         self.types[name] = self.types[name].create()
 
         self._classes[name] = type(name, (p4_class,), {})
@@ -160,13 +176,13 @@ class Header(Z3P4Class):
         # These are special for headers
         self.valid = z3.Const("%s_valid" % self.name, z3.BoolSort())
 
-    def isValid(self, p4_vars, expr_chain):
+    def isValid(self, *args):
         return self.valid
 
-    def setValid(self):
+    def setValid(self, *args):
         self.valid = True
 
-    def setInvalid(self):
+    def setInvalid(self, *args):
         self.valid = False
 
 
