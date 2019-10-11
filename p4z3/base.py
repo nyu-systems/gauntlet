@@ -4,7 +4,6 @@ import z3
 
 def handle_type_stack(z3_args):
     fixed_args = []
-    print(z3_args)
     for z3_arg in z3_args:
         z3_name = z3_arg[0]
         z3_type = z3_arg[1]
