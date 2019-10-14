@@ -44,14 +44,39 @@ bmv2_tests = [
     "issue983-bmv2.p4",
     "basic_routing-bmv2.p4",
     "issue1595.p4",
-    "hit-expr.p4",
-    "concat-bmv2.p4",
+    "drop-bmv2.p4",
+    "array-copy-bmv2.p4",
+    "empty-bmv2.p4",
 ]
 
 
 @pytest.mark.parametrize("test_name", bmv2_tests)
 def test_bmv2(test_name):
     assert run_z3p4_test(test_name) == util.EXIT_SUCCESS
+
+
+# ***** working tests but do not generate passes *****
+skipped_tests = [
+    "concat-bmv2.p4",
+    "action-synth.p4",
+    "arith-bmv2.p4",
+    "arith1-bmv2.p4",
+    "arith2-bmv2.p4",
+    "arith3-bmv2.p4",
+    "arith4-bmv2.p4",
+    "arith5-bmv2.p4",
+    "concat-bmv2.p4",
+    "fabric.p4",
+    "free-form-annotation.p4",
+    "hit-expr.p4",
+    "inline-bmv2.p4",
+    "inline-stack-bmv2.p4",
+]
+
+
+@pytest.mark.parametrize("test_name", skipped_tests)
+def test_skipped(test_name):
+    assert run_z3p4_test(test_name) == util.EXIT_SKIPPED
 
 # ***** actual violation *****
 
@@ -68,8 +93,22 @@ def test_issue1863_broken():
 xfails = [
     "issue1863.p4",  # Struct initializer not implemented
     "equality-bmv2.p4",  # header stacks not implemented
-    "array-copy-bmv2.p4",  # header stacks not implemented
-    "drop-bmv2.p4",  # pass by reference still broken...
+    "def-use.p4",       # typedef
+    "flag_lost-bmv2.p4",  # type bool not supported
+    "action-two-params.p4",  # Vector arguments
+    "action_profile-bmv2.p4",  # Action profile
+    "action_profile_max_group_size_annotation.p4",  # Action profile
+    "action_selector_shared-bmv2.p4",  # Action selector
+    "action_selector_unused-bmv2.p4",  # Action selector
+    "bvec-hdr-bmv2.p4",  # Vector arguments
+    "checksum1-bmv2.p4",  # externs
+    "checksum2-bmv2.p4",  # externs
+    "checksum3-bmv2.p4",  # externs
+    "crc32-bmv2.p4",  # externs
+    "equality-varbit-bmv2.p4",  # varbits
+    "flowlet_switching-bmv2.p4",  # externs
+    "hash-bmv2.p4",  # externs
+    "header-bool-bmv2.p4",  # type bool not supported
 ]
 
 

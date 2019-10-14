@@ -143,6 +143,12 @@ class P4mul(P4BinaryOp):
         P4BinaryOp.__init__(self, lval, rval, operator)
 
 
+class P4mod(P4BinaryOp):
+    def __init__(self, lval, rval):
+        operator = op.mod
+        P4BinaryOp.__init__(self, lval, rval, operator)
+
+
 class P4pow(P4BinaryOp):
     def __init__(self, lval, rval):
         operator = op.pow
