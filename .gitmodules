@@ -3,6 +3,12 @@
     path = p4c
     ignore = dirty
 
+[submodule "p4_gen"]
+    url = https://github.com/p4bughunt/p4-compiler-fuzzer
+    path = p4_gen
+    ignore = dirty
+
+
 [submodule "p4_tv.wiki"]
     url = https://github.com/fruffy/p4_tv.wiki
     path = p4_tv.wiki
