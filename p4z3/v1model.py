@@ -3,9 +3,10 @@ from p4z3.expressions import *
 ''' Standard metadata definitions. These are typically defined by the model
     imported on top of the file.'''
 
-EthernetAddress = z3.BitVecSort(48)
 
 def register(z3_reg):
+    z3_args = [("", z3.BitVecSort(1))]
+    z3_reg.register_z3_type("error", TypeDef, z3_args)
     z3_args = [('ingress_port', z3.BitVecSort(9)),
                ('egress_spec', z3.BitVecSort(9)),
                ('egress_port', z3.BitVecSort(9)),

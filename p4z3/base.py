@@ -2,50 +2,6 @@ import operator as op
 import z3
 
 
-def handle_type_stack(z3_args):
-    fixed_args = []
-    for z3_arg in z3_args:
-        z3_name = z3_arg[0]
-        z3_type = z3_arg[1]
-        if isinstance(z3_type, list):
-            for index, val in enumerate(z3_type):
-                z3_tuple = (z3_name + "_%d" % index, val)
-                fixed_args.append(z3_tuple)
-        else:
-            fixed_args.append(z3_arg)
-    return fixed_args
-
-
-class Z3Reg():
-    types = {}
-    externs = {}
-    _classes = {}
-    _ref_count = {}
-
-    def register_z3_type(self, name, p4_class, z3_args):
-        self.types[name] = z3.Datatype(name)
-        fixed_args = handle_type_stack(z3_args)
-        self.types[name].declare(f"mk_{name}", *fixed_args)
-        self.types[name] = self.types[name].create()
-
-        self._classes[name] = type(name, (p4_class,), {})
-        self._ref_count[name] = 0
-
-    def register_extern(self, name, method):
-        self.externs[name] = method
-
-    def reset(self):
-        self.types.clear()
-        self._classes.clear()
-        self._ref_count.clear()
-
-    def instance(self, type_name):
-        args = [self, self._ref_count[type_name]]
-        z3_cls = self._classes[type_name](*args)
-        self._ref_count[type_name] += 1
-        return z3_cls
-
-
 class Z3P4Class():
     def __init__(self, z3_reg, z3_id=0):
         cls_name = self.__class__.__name__
@@ -189,3 +145,56 @@ class Struct(Z3P4Class):
 
     def __init__(self, z3_reg, z3_id=0):
         super(Struct, self).__init__(z3_reg, z3_id)
+
+
+class TypeDef(Z3P4Class):
+
+    def __init__(self, z3_reg, z3_id=0):
+        super(TypeDef, self).__init__(z3_reg, z3_id)
+
+
+def handle_type_stack(z3_args):
+    fixed_args = []
+    for z3_arg in z3_args:
+        z3_name = z3_arg[0]
+        z3_type = z3_arg[1]
+        if isinstance(z3_type, list):
+            for index, val in enumerate(z3_type):
+                z3_tuple = (z3_name + "_%d" % index, val)
+                fixed_args.append(z3_tuple)
+        else:
+            fixed_args.append(z3_arg)
+    return fixed_args
+
+
+class Z3Reg():
+    types = {}
+    externs = {}
+    _classes = {}
+    _ref_count = {}
+
+    def register_z3_type(self, name, p4_class, z3_args):
+        if p4_class == TypeDef:
+            self.types[name] = z3_args[0][1]
+        else:
+            self.types[name] = z3.Datatype(name)
+            fixed_args = handle_type_stack(z3_args)
+            self.types[name].declare(f"mk_{name}", *fixed_args)
+            self.types[name] = self.types[name].create()
+
+        self._classes[name] = type(name, (p4_class,), {})
+        self._ref_count[name] = 0
+
+    def register_extern(self, name, method):
+        self.externs[name] = method
+
+    def reset(self):
+        self.types.clear()
+        self._classes.clear()
+        self._ref_count.clear()
+
+    def instance(self, type_name):
+        args = [self, self._ref_count[type_name]]
+        z3_cls = self._classes[type_name](*args)
+        self._ref_count[type_name] += 1
+        return z3_cls

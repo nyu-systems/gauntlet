@@ -47,6 +47,7 @@ bmv2_tests = [
     "drop-bmv2.p4",
     "array-copy-bmv2.p4",
     "empty-bmv2.p4",
+    "inline-bmv2.p4",
 ]
 
 
@@ -69,7 +70,6 @@ skipped_tests = [
     "fabric.p4",
     "free-form-annotation.p4",
     "hit-expr.p4",
-    "inline-bmv2.p4",
     "inline-stack-bmv2.p4",
 ]
 
