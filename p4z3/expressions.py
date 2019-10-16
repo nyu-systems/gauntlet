@@ -268,16 +268,13 @@ class P4Cast(P4Z3Type):
 
 class P4Declaration(P4Z3Type):
     # TODO: Add some more declaration checks here.
-    def __init__(self, name, opt_init=None):
-        self.name = name
-        self.opt_init = opt_init
+    def __init__(self, lval, rval):
+        self.lval = lval
+        self.rval = rval
 
     def eval(self, p4_vars, expr_chain):
-        if self.opt_init is None:
-            return step(p4_vars, expr_chain)
-        else:
-            assign = AssignmentStatement(self.name, self.opt_init)
-            return step(p4_vars, [assign] + expr_chain)
+        assign = AssignmentStatement(self.lval, self.rval)
+        return step(p4_vars, [assign] + expr_chain)
 
 
 class P4StructInitializer():
@@ -390,7 +387,7 @@ class P4Action(P4Z3Type):
         for param in self.parameters:
             arg_name = param[0]
             arg_type = param[1]
-            if isinstance(arg_type, z3.AstRef):
+            if isinstance(arg_type, z3.SortRef):
                 action_args.append(
                     z3.Const(f"{arg_prefix}{arg_name}", arg_type))
             else:

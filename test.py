@@ -48,6 +48,10 @@ bmv2_tests = [
     "array-copy-bmv2.p4",
     "empty-bmv2.p4",
     "inline-bmv2.p4",
+    "def-use.p4",
+    "equality-varbit-bmv2.p4",
+    "checksum1-bmv2.p4",
+    "flag_lost-bmv2.p4",
 ]
 
 
@@ -58,7 +62,6 @@ def test_bmv2(test_name):
 
 # ***** working tests but do not generate passes *****
 skipped_tests = [
-    "concat-bmv2.p4",
     "action-synth.p4",
     "arith-bmv2.p4",
     "arith1-bmv2.p4",
@@ -93,22 +96,18 @@ def test_issue1863_broken():
 xfails = [
     "issue1863.p4",  # Struct initializer not implemented
     "equality-bmv2.p4",  # header stacks not implemented
-    "def-use.p4",       # typedef
-    "flag_lost-bmv2.p4",  # type bool not supported
     "action-two-params.p4",  # Vector arguments
     "action_profile-bmv2.p4",  # Action profile
     "action_profile_max_group_size_annotation.p4",  # Action profile
     "action_selector_shared-bmv2.p4",  # Action selector
     "action_selector_unused-bmv2.p4",  # Action selector
     "bvec-hdr-bmv2.p4",  # Vector arguments
-    "checksum1-bmv2.p4",  # externs
     "checksum2-bmv2.p4",  # externs
     "checksum3-bmv2.p4",  # externs
     "crc32-bmv2.p4",  # externs
-    "equality-varbit-bmv2.p4",  # varbits
     "flowlet_switching-bmv2.p4",  # externs
     "hash-bmv2.p4",  # externs
-    "header-bool-bmv2.p4",  # type bool not supported
+    "header-bool-bmv2.p4",  # type union not supported
 ]
 
 

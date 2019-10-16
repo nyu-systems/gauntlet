@@ -5,8 +5,7 @@ from p4z3.expressions import *
 
 
 def register(z3_reg):
-    z3_args = [("", z3.BitVecSort(1))]
-    z3_reg.register_z3_type("error", TypeDef, z3_args)
+    z3_reg.register_typedef("error", z3.BitVecSort(1))
     z3_args = [('ingress_port', z3.BitVecSort(9)),
                ('egress_spec', z3.BitVecSort(9)),
                ('egress_port', z3.BitVecSort(9)),
@@ -24,10 +23,10 @@ def register(z3_reg):
                ('parser_error', z3.BitVecSort(1)),
                ('priority', z3.BitVecSort(3)),
                ]
-    z3_reg.register_z3_type("standard_metadata_t", Struct, z3_args)
+    z3_reg.register_structlike("standard_metadata_t", Struct, z3_args)
 
     mark_to_drop = P4Action()
-    mark_to_drop.add_parameter("smeta", z3_reg.types["standard_metadata_t"])
+    mark_to_drop.add_parameter("smeta", z3_reg.type("standard_metadata_t"))
 
     def BLOCK():
         block = BlockStatement()

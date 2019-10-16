@@ -6,7 +6,7 @@ class Z3P4Class():
     def __init__(self, z3_reg, z3_id=0):
         cls_name = self.__class__.__name__
         self.name = "%s%d" % (cls_name, z3_id)
-        self.z3_type = z3_reg.types[cls_name]
+        self.z3_type = z3_reg.type(cls_name)
         self.const = z3.Const(f"{self.name}_0", self.z3_type)
         self.constructor = self.z3_type.constructor(0)
         # self.revisions = [self.const]
@@ -147,10 +147,10 @@ class Struct(Z3P4Class):
         super(Struct, self).__init__(z3_reg, z3_id)
 
 
-class TypeDef(Z3P4Class):
+class TypeDef():
 
     def __init__(self, z3_reg, z3_id=0):
-        super(TypeDef, self).__init__(z3_reg, z3_id)
+        pass
 
 
 def handle_type_stack(z3_args):
@@ -168,33 +168,42 @@ def handle_type_stack(z3_args):
 
 
 class Z3Reg():
-    types = {}
-    externs = {}
+    _types = {}
+    _externs = {}
     _classes = {}
     _ref_count = {}
 
-    def register_z3_type(self, name, p4_class, z3_args):
-        if p4_class == TypeDef:
-            self.types[name] = z3_args[0][1]
-        else:
-            self.types[name] = z3.Datatype(name)
-            fixed_args = handle_type_stack(z3_args)
-            self.types[name].declare(f"mk_{name}", *fixed_args)
-            self.types[name] = self.types[name].create()
-
+    def register_structlike(self, name, p4_class, z3_args):
+        self._types[name] = z3.Datatype(name)
+        fixed_args = handle_type_stack(z3_args)
+        self._types[name].declare(f"mk_{name}", *fixed_args)
+        self._types[name] = self._types[name].create()
         self._classes[name] = type(name, (p4_class,), {})
         self._ref_count[name] = 0
 
+    def register_typedef(self, name, target):
+        self._types[name] = target
+        self._classes[name] = target
+        self._ref_count[name] = 0
+
     def register_extern(self, name, method):
-        self.externs[name] = method
+        self._externs[name] = method
 
     def reset(self):
-        self.types.clear()
+        self._types.clear()
         self._classes.clear()
         self._ref_count.clear()
 
+    def type(self, type_name):
+        return self._types[type_name]
+
+    def extern(self, extern_name):
+        return self._externs[extern_name]
+
     def instance(self, type_name):
-        args = [self, self._ref_count[type_name]]
-        z3_cls = self._classes[type_name](*args)
+        z3_cls = self._classes[type_name]
         self._ref_count[type_name] += 1
-        return z3_cls
+        if isinstance(z3_cls, z3.AstRef):
+            return z3.Const(f"{type_name}{self._ref_count[type_name]}", z3_cls)
+        else:
+            return z3_cls(self, self._ref_count[type_name])
