@@ -47,7 +47,6 @@ bmv2_tests = [
     "drop-bmv2.p4",
     "array-copy-bmv2.p4",
     "empty-bmv2.p4",
-    "inline-bmv2.p4",
     "def-use.p4",
     "equality-varbit-bmv2.p4",
     "checksum1-bmv2.p4",
@@ -63,6 +62,7 @@ def test_bmv2(test_name):
 # ***** working tests but do not generate passes *****
 skipped_tests = [
     "action-synth.p4",
+    "inline-bmv2.p4",
     "arith-bmv2.p4",
     "arith1-bmv2.p4",
     "arith2-bmv2.p4",
@@ -108,6 +108,7 @@ xfails = [
     "flowlet_switching-bmv2.p4",  # externs
     "hash-bmv2.p4",  # externs
     "header-bool-bmv2.p4",  # type union not supported
+    "ternary2-bmv2.p4",  # action types not properly handled
 ]
 
 

@@ -1,9 +1,10 @@
 from copy import deepcopy
 from collections import OrderedDict
+import logging as log
 from p4z3.base import *
 
 
-def step(p4_vars, expr_chain, expr=None) -> z3.AstRef:
+def step(p4_vars, expr_chain, expr=None) -> z3.ExprRef:
     ''' The step function ensures that modifications are propagated to
     all subsequent operations. This is important to guarantee correctness with
     branching or local modification. '''
@@ -16,7 +17,7 @@ def step(p4_vars, expr_chain, expr=None) -> z3.AstRef:
         expr_chain = list(expr_chain)
         # iterate through all the remaining functions in the chain
         fun_expr = next_expr.eval(p4_vars, expr_chain)
-        if not isinstance(fun_expr, z3.AstRef):
+        if not isinstance(fun_expr, z3.ExprRef):
             raise TypeError(f"Expression {fun_expr} is not a z3 expression!")
         # eval should always return an expression
         if expr is not None:
@@ -37,7 +38,7 @@ def step(p4_vars, expr_chain, expr=None) -> z3.AstRef:
         return p4_vars.const == z3_copy
 
 
-def resolve_expr(p4_vars, expr_chain, val) -> z3.AstRef:
+def resolve_expr(p4_vars, expr_chain, val) -> z3.SortRef:
     # Resolves to z3 and z3p4 expressions, bools and int are also okay
     val_str = val
     # resolve potential string references first
@@ -46,13 +47,13 @@ def resolve_expr(p4_vars, expr_chain, val) -> z3.AstRef:
     if val is None:
         raise RuntimeError(
             f"Variable {val_str} does not exist in current environment!")
-    if isinstance(val, (z3.AstRef, bool, int)):
+    if isinstance(val, (z3.ExprRef, bool, int)):
         # These are z3 types and can be returned
         return val
     if isinstance(val, P4Z3Type):
         # We got a P4 type, recurse...
         return step(p4_vars, [val] + expr_chain)
-    if isinstance(val, Z3P4Class):
+    if isinstance(val, P4ComplexType):
         # If we get a whole class return the complex z3 type
         return val
     raise RuntimeError(f"Value of type {type(val)} cannot be resolved!")
@@ -292,7 +293,7 @@ class P4StructInitializer():
         return self.p4z3_type
 
 
-def slice_assign(lval, rval, slice_l, slice_r) -> z3.AstRef:
+def slice_assign(lval, rval, slice_l, slice_r) -> z3.SortRef:
     lval_max = lval.size() - 1
     if slice_l == lval_max and slice_r == 0:
         return rval
