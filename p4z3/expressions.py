@@ -1,6 +1,5 @@
 from copy import deepcopy
 from collections import OrderedDict
-import logging as log
 from p4z3.base import *
 
 
@@ -11,9 +10,6 @@ def step(p4_vars, expr_chain, expr=None) -> z3.ExprRef:
     if expr_chain:
         # pop the first function in the list
         next_expr = expr_chain.pop(0)
-        # emulate pass-by-value behavior
-        # this is necessary to for state branches
-        # p4_vars = deepcopy(p4_vars)
         expr_chain = list(expr_chain)
         # iterate through all the remaining functions in the chain
         fun_expr = next_expr.eval(p4_vars, expr_chain)
