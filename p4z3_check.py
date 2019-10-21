@@ -57,7 +57,7 @@ def check_equivalence(prog_before, prog_after):
     ''' SOLVER '''
     s = z3.Solver()
     # the equivalence equation
-    tv_equiv = z3.simplify(prog_before != prog_after)
+    tv_equiv = z3.Not(z3.eq(z3.simplify(prog_before), z3.simplify(prog_after)))
     s.add(tv_equiv)
     log.debug(s.sexpr())
     ret = s.check()
@@ -68,7 +68,7 @@ def check_equivalence(prog_before, prog_after):
         log.error("PROGRAM AFTER\n%s", prog_after)
         log.error(s.model())
         log.error("Detected an equivalence violation!")
-        return util.EXIT_FAILURE
+        return util.EXIT_VIOLATION
     else:
         return util.EXIT_SUCCESS
 
@@ -93,7 +93,7 @@ def z3_check(prog_paths, fail_dir=None):
     for i in range(1, len(prog_paths)):
         # We do not support the flatten passes right now
         # Reason is they generate entirely new variables
-        # which cause z3 to crash
+        # which cause z3 to generate a false positive
         if "Flatten" in prog_paths[i - 1] or "Flatten" in prog_paths[i]:
             log.warning("Skipping \"Flatten\" passes because of z3 crash...")
             continue

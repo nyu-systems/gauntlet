@@ -7,6 +7,7 @@ import re
 EXIT_SUCCESS = 0
 EXIT_FAILURE = -1
 EXIT_SKIPPED = -10
+EXIT_VIOLATION = -20
 
 
 def check_dir(directory):

@@ -88,7 +88,7 @@ def test_issue1863_broken():
     p4_dir = Path("p4z3/p4files/issue1863/")
     p4_file, target_dir = prep_test("issue1863-bmv2.p4", p4_dir)
     result = pa.validate_translation(p4_file, target_dir, P4C_BIN_1863)
-    assert result == util.EXIT_FAILURE
+    assert result == util.EXIT_VIOLATION
 
 
 # ***** broken tests, need fixing *****
