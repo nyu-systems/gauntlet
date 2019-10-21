@@ -2,6 +2,29 @@ import operator as op
 import z3
 
 
+def step(p4_vars, expr_chain, expr=None) -> z3.ExprRef:
+    ''' The step function ensures that modifications are propagated to
+    all subsequent operations. This is important to guarantee correctness with
+    branching or local modification. '''
+    if expr_chain:
+        # pop the first function in the list
+        next_expr = expr_chain.pop(0)
+        expr_chain = list(expr_chain)
+        # iterate through all the remaining functions in the chain
+        fun_expr = next_expr.eval(p4_vars, expr_chain)
+        # eval should always return an expression
+        if not isinstance(fun_expr, z3.ExprRef):
+            raise TypeError(f"Expression {fun_expr} is not a z3 expression!")
+        return fun_expr
+    if expr is not None:
+        # end of chain, just mirror the passed expressions
+        return expr
+    else:
+        # empty statement, just return the final update assignment
+        z3_copy = p4_vars._make(p4_vars.const)
+        return p4_vars.const == z3_copy
+
+
 class P4ComplexType():
     """
     A P4ComplexType is a wrapper for any type that is not a simple Z3 type
@@ -81,6 +104,20 @@ class P4ComplexType():
         # generate the new z3 complex type out of all the sub constructors
         self.const = self.constructor(*members)
 
+    def set_or_add_var(self, lstring, rvalue):
+        # update the internal representation of the attribute
+        if '.' in lstring:
+            # this means we are accessing a complex member
+            # get the parent class and update its value
+            # we do not want to recurse here
+            prefix, suffix = lstring.rsplit(".", 1)
+            target_class = self.get_var(prefix)
+            target_class.set_or_add_var(suffix, rvalue)
+        else:
+            setattr(self, lstring, rvalue)
+        # generate a new version of the z3 datatype
+        self.propagate_type(self._make(self.const))
+
 
 class P4State(P4ComplexType):
 
@@ -101,7 +138,7 @@ class P4State(P4ComplexType):
             # we do not want to recurse here
             prefix, suffix = lstring.rsplit(".", 1)
             target_class = self.get_var(prefix)
-            setattr(target_class, suffix, rvalue)
+            target_class.set_or_add_var(suffix, rvalue)
         else:
             setattr(self, lstring, rvalue)
         # generate a new version of the z3 datatype
@@ -145,11 +182,13 @@ class Header(P4ComplexType):
     def isValid(self, *args):
         return self.valid
 
-    def setValid(self, *args):
+    def setValid(self, p4_vars, expr_chain):
         self.valid = z3.BoolVal(True)
+        return step(p4_vars, expr_chain)
 
-    def setInvalid(self, *args):
+    def setInvalid(self, p4_vars, expr_chain):
         self.valid = z3.BoolVal(False)
+        return step(p4_vars, expr_chain)
 
 
 class Struct(P4ComplexType):
@@ -164,9 +203,9 @@ class Z3Reg():
     _ref_count = {}
 
     def register_structlike(self, name, p4_class, z3_args):
-        fixed_args = self.handle_type_stack(z3_args)
+        # fixed_args = self.handle_type_stack(z3_args)
         self._types[name] = z3.Datatype(name)
-        self._types[name].declare(f"mk_{name}", *fixed_args)
+        self._types[name].declare(f"mk_{name}", *z3_args)
         self._types[name] = self._types[name].create()
         self._classes[name] = p4_class
         self._ref_count[name] = 0
@@ -183,18 +222,6 @@ class Z3Reg():
         # TODO: Implement
         pass
 
-    def handle_type_stack(self, z3_args):
-        fixed_args = []
-        for z3_arg in z3_args:
-            z3_name = z3_arg[0]
-            z3_type = z3_arg[1]
-            if isinstance(z3_type, list):
-                for index, val in enumerate(z3_type):
-                    fixed_args.append((f"{z3_name}_{index}", val))
-            else:
-                fixed_args.append(z3_arg)
-        return fixed_args
-
     def reset(self):
         self._types.clear()
         self._classes.clear()
@@ -203,8 +230,14 @@ class Z3Reg():
     def type(self, type_name):
         return self._types[type_name]
 
-    def stack(self, type_name):
-        return self._types[type_name]
+    def stack(self, z3_type, num):
+        type_name = str(z3_type)
+        z3_name = f"{type_name}{num}"
+        stack_args = []
+        for val in range(num):
+            stack_args.append((f"{val}", z3_type))
+        self.register_structlike(z3_name, Struct, stack_args)
+        return self.type(z3_name)
 
     def extern(self, extern_name):
         return self._externs[extern_name]
@@ -216,7 +249,9 @@ class Z3Reg():
             name = "%s%d" % (type_name, z3_id)
             z3_cls = self._classes[type_name]
             self._ref_count[type_name] += 1
-            return z3_cls(self, p4z3_type, name)
+            instance = z3_cls(self, p4z3_type, name)
+            instance.propagate_type(instance.const)
+            return instance
         else:
             return z3.Const(f"{var_name}", p4z3_type)
 

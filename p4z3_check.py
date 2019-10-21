@@ -48,9 +48,6 @@ def get_z3_repr(p4_module, p4_path, fail_dir):
 
 
 def check_equivalence(prog_before, prog_after):
-    # z3 is keeping some weird state
-    # this causes it to crash in more complex scenarios
-    imp.reload(z3)
     # The equivalence check of the solver
     # For all input packets and possible table matches the programs should
     # be the same

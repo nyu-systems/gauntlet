@@ -6,37 +6,6 @@ import operator as op
 from p4z3.base import *
 
 
-def step(p4_vars, expr_chain, expr=None) -> z3.ExprRef:
-    ''' The step function ensures that modifications are propagated to
-    all subsequent operations. This is important to guarantee correctness with
-    branching or local modification. '''
-    if expr_chain:
-        # pop the first function in the list
-        next_expr = expr_chain.pop(0)
-        expr_chain = list(expr_chain)
-        # iterate through all the remaining functions in the chain
-        fun_expr = next_expr.eval(p4_vars, expr_chain)
-        if not isinstance(fun_expr, z3.ExprRef):
-            raise TypeError(f"Expression {fun_expr} is not a z3 expression!")
-        # eval should always return an expression
-        if expr is not None:
-            # concatenate chain result with the provided expression
-            # return z3.And(expr, fun_expr)
-            # actually, there is no need to chain.
-            # so let's return the normal expression for now
-            return fun_expr
-        else:
-            # extract the chained result
-            return fun_expr
-    if expr is not None:
-        # end of chain, just mirror the passed expressions
-        return expr
-    else:
-        # empty statement, just return the final update assignment
-        z3_copy = p4_vars._make(p4_vars.const)
-        return p4_vars.const == z3_copy
-
-
 def resolve_expr(p4_vars, expr_chain, val) -> z3.SortRef:
     # Resolves to z3 and z3p4 expressions, bools and int are also okay
     val_str = val
@@ -49,7 +18,7 @@ def resolve_expr(p4_vars, expr_chain, val) -> z3.SortRef:
     if isinstance(val, (z3.ExprRef, bool, int)):
         # These are z3 types and can be returned
         return val
-    if isinstance(val, P4Z3Type):
+    if isinstance(val, P4Z3Class):
         # We got a P4 type, recurse...
         return step(p4_vars, [val] + expr_chain)
     if isinstance(val, P4ComplexType):
@@ -58,12 +27,12 @@ def resolve_expr(p4_vars, expr_chain, val) -> z3.SortRef:
     raise TypeError(f"Value of type {type(val)} cannot be resolved!")
 
 
-class P4Z3Type():
+class P4Z3Class():
     def eval(self, p4_vars, expr_chain):
         raise NotImplementedError("Method eval not implemented!")
 
 
-class MethodCallExpr(P4Z3Type):
+class MethodCallExpr(P4Z3Class):
 
     def __init__(self, expr, *args):
         self.expr = expr
@@ -85,7 +54,7 @@ class MethodCallExpr(P4Z3Type):
         raise TypeError(f"Unsupported method type {type(p4_method)}!")
 
 
-class P4BinaryOp(P4Z3Type):
+class P4BinaryOp(P4Z3Class):
     def __init__(self, lval, rval, operator):
         self.lval = lval
         self.rval = rval
@@ -94,10 +63,16 @@ class P4BinaryOp(P4Z3Type):
     def eval(self, p4_vars, expr_chain):
         lval_expr = resolve_expr(p4_vars, expr_chain, self.lval)
         rval_expr = resolve_expr(p4_vars, expr_chain, self.rval)
+
+        # We need to convert P4ComplexTypes to their z3 representation
+        if isinstance(lval_expr, P4ComplexType):
+            lval_expr = lval_expr.const
+        if isinstance(rval_expr, P4ComplexType):
+            rval_expr = rval_expr.const
         return self.operator(lval_expr, rval_expr)
 
 
-class P4UnaryOp(P4Z3Type):
+class P4UnaryOp(P4Z3Class):
     def __init__(self, val, operator):
         self.val = val
         self.operator = operator
@@ -155,15 +130,27 @@ class P4pow(P4BinaryOp):
         P4BinaryOp.__init__(self, lval, rval, operator)
 
 
-class P4and(P4BinaryOp):
+class P4band(P4BinaryOp):
     def __init__(self, lval, rval):
         operator = op.and_
         P4BinaryOp.__init__(self, lval, rval, operator)
 
 
-class P4or(P4BinaryOp):
+class P4bor(P4BinaryOp):
     def __init__(self, lval, rval):
         operator = op.or_
+        P4BinaryOp.__init__(self, lval, rval, operator)
+
+
+class P4land(P4BinaryOp):
+    def __init__(self, lval, rval):
+        operator = z3.And
+        P4BinaryOp.__init__(self, lval, rval, operator)
+
+
+class P4lor(P4BinaryOp):
+    def __init__(self, lval, rval):
+        operator = z3.Or
         P4BinaryOp.__init__(self, lval, rval, operator)
 
 
@@ -227,7 +214,7 @@ class P4gt(P4BinaryOp):
         P4BinaryOp.__init__(self, lval, rval, operator)
 
 
-class P4Slice(P4Z3Type):
+class P4Slice(P4Z3Class):
     def __init__(self, val, slice_l, slice_r):
         self.val = val
         self.slice_l = slice_l
@@ -238,7 +225,7 @@ class P4Slice(P4Z3Type):
         return z3.Extract(self.slice_l, self.slice_r, val_expr)
 
 
-class P4Concat(P4Z3Type):
+class P4Concat(P4Z3Class):
     def __init__(self, lval, rval):
         self.lval = lval
         self.rval = rval
@@ -249,7 +236,7 @@ class P4Concat(P4Z3Type):
         return z3.Concat(lval_expr, rval_expr)
 
 
-class P4Cast(P4Z3Type):
+class P4Cast(P4Z3Class):
     # TODO: need to take a closer look on how to do this correctly...
     # If we cast do we add/remove the least or most significant bits?
     def __init__(self, val, to_size):
@@ -266,7 +253,7 @@ class P4Cast(P4Z3Type):
             return z3.Extract(slice_l, slice_r, expr)
 
 
-class P4Declaration(P4Z3Type):
+class P4Declaration(P4Z3Class):
     # TODO: Add some more declaration checks here.
     def __init__(self, lval, rval):
         self.lval = lval
@@ -305,7 +292,7 @@ def slice_assign(lval, rval, slice_l, slice_r) -> z3.SortRef:
     return z3.Concat(*assemble)
 
 
-class SliceAssignment(P4Z3Type):
+class SliceAssignment(P4Z3Class):
     def __init__(self, lval, rval, slice_l, slice_r):
         self.lval = lval
         self.rval = rval
@@ -321,7 +308,7 @@ class SliceAssignment(P4Z3Type):
         return step(p4_vars, [assign] + expr_chain)
 
 
-class AssignmentStatement(P4Z3Type):
+class AssignmentStatement(P4Z3Class):
 
     def __init__(self, lval, rval):
         self.lval = lval
@@ -333,16 +320,13 @@ class AssignmentStatement(P4Z3Type):
             for val in self.rval:
                 list_expr.append(resolve_expr(p4_vars, expr_chain, val))
             assign_expr = p4_vars.set_list(self.lval, list_expr)
-        elif isinstance(self.rval, P4StructInitializer):
-            rval_expr = self.rval.get_struct(p4_vars, expr_chain)
-            assign_expr = p4_vars.set_or_add_var(self.lval, rval_expr)
         else:
             rval_expr = resolve_expr(p4_vars, expr_chain, self.rval)
             assign_expr = p4_vars.set_or_add_var(self.lval, rval_expr)
         return step(p4_vars, expr_chain, assign_expr)
 
 
-class MethodCallStmt(P4Z3Type):
+class MethodCallStmt(P4Z3Class):
 
     def __init__(self, method_expr):
         self.method_expr = method_expr
@@ -351,7 +335,7 @@ class MethodCallStmt(P4Z3Type):
         return step(p4_vars, [self.method_expr] + expr_chain)
 
 
-class BlockStatement(P4Z3Type):
+class BlockStatement(P4Z3Class):
 
     def __init__(self):
         self.exprs = []
@@ -363,7 +347,7 @@ class BlockStatement(P4Z3Type):
         return step(p4_vars, self.exprs + expr_chain)
 
 
-class P4Action(P4Z3Type):
+class P4Action(P4Z3Class):
 
     def __init__(self):
         self.block = None
@@ -431,7 +415,7 @@ class P4Action(P4Z3Type):
         return expr
 
 
-class IfStatement(P4Z3Type):
+class IfStatement(P4Z3Class):
 
     def __init__(self):
         self.condition = None
@@ -463,7 +447,7 @@ class IfStatement(P4Z3Type):
                                    [self.then_block] + expr_chain))
 
 
-class SwitchStatement(P4Z3Type):
+class SwitchStatement(P4Z3Class):
 
     def __init__(self, table):
         self.table = table
@@ -509,7 +493,7 @@ class SwitchStatement(P4Z3Type):
                       step(p4_vars, [switch_if] + expr_chain))
 
 
-class P4Table(P4Z3Type):
+class P4Table(P4Z3Class):
 
     def __init__(self, name):
         self.name = name
