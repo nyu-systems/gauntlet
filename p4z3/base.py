@@ -3,7 +3,20 @@ import z3
 
 
 class P4ComplexType():
-    def __init__(self, z3_reg, z3_type, name):
+    """
+    A P4ComplexType is a wrapper for any type that is not a simple Z3 type
+    such as IntSort, BitVecSort or BoolSort.
+    A P4ComplexType creates an instance of a Z3 DataTypeRef, all subtypes
+    become members of this class and be accessed in dot-notation
+    (e.g., headers.eth.srcmac).
+    If one of the children is a DataTypeRef a new P4ComplexType will be
+    instantiated and attached as member.
+    Every member of this class should either be a P4ComplexType or a z3.SortRef
+     if it is a basic type. A DataTypeRef should never be a member and always
+    needs to be converted to a P4ComplexType.
+    """
+
+    def __init__(self, z3_reg, z3_type: z3.SortRef, name):
         self.name = name
         self.z3_type = z3_type
         self.const = z3.Const(f"{name}_0", z3_type)
@@ -26,7 +39,7 @@ class P4ComplexType():
                 member_cls = z3_reg.instance("", arg_type)
                 # and add it to the members, this is a little inefficient...
                 setattr(self, accessor.name(), member_cls)
-                # since the type is dependent on its parent
+                # since the child type is dependent on its parent
                 # we propagate the parent constant down to all members
                 member_cls.propagate_type(accessor(self.const))
             else:
@@ -39,7 +52,7 @@ class P4ComplexType():
             member_make = op.attrgetter(accessor.name())(self)
             if isinstance(member_make, P4ComplexType):
                 # it is a complex type
-                # retrieve the accessor and call the c
+                # retrieve the accessor and call the constructor
                 sub_const = accessor(parent_const)
                 # call the constructor of the complex type
                 members.append(member_make._make(sub_const))
@@ -47,7 +60,7 @@ class P4ComplexType():
                 members.append(member_make)
         return self.constructor(*members)
 
-    def set_member(self, accessor_name, val):
+    def _set_member(self, accessor_name, val):
         # retrieve the member we are accessing
         member = op.attrgetter(accessor_name)(self)
         if isinstance(member, P4ComplexType):
@@ -63,7 +76,7 @@ class P4ComplexType():
         for accessor in self.accessors:
             # a z3 constructor dependent on the parent constant
             z3_accessor = accessor(parent_const)
-            self.set_member(accessor.name(), z3_accessor)
+            self._set_member(accessor.name(), z3_accessor)
             members.append(z3_accessor)
         # generate the new z3 complex type out of all the sub constructors
         self.const = self.constructor(*members)
@@ -87,7 +100,7 @@ class P4State(P4ComplexType):
             # get the parent class and update its value
             # we do not want to recurse here
             prefix, suffix = lstring.rsplit(".", 1)
-            target_class = op.attrgetter(prefix)(self)
+            target_class = self.get_var(prefix)
             setattr(target_class, suffix, rvalue)
         else:
             setattr(self, lstring, rvalue)
@@ -101,9 +114,9 @@ class P4State(P4ComplexType):
     def set_list(self, lstring, rvals):
         if '.' in lstring:
             prefix, suffix = lstring.rsplit(".", 1)
-            target_class = op.attrgetter(prefix)(self)
+            target_class = self.get_var(prefix)
         else:
-            target_class = op.attrgetter(lstring)(self)
+            target_class = self.get_var(lstring)
         if not isinstance(target_class, P4ComplexType):
             raise RuntimeError(
                 "Trying to assign values to a non-complex type!")
@@ -133,29 +146,15 @@ class Header(P4ComplexType):
         return self.valid
 
     def setValid(self, *args):
-        self.valid = True
+        self.valid = z3.BoolVal(True)
 
     def setInvalid(self, *args):
-        self.valid = False
+        self.valid = z3.BoolVal(False)
 
 
 class Struct(P4ComplexType):
 
     pass
-
-
-def handle_type_stack(z3_args):
-    fixed_args = []
-    for z3_arg in z3_args:
-        z3_name = z3_arg[0]
-        z3_type = z3_arg[1]
-        if isinstance(z3_type, list):
-            for index, val in enumerate(z3_type):
-                z3_tuple = (z3_name + "_%d" % index, val)
-                fixed_args.append(z3_tuple)
-        else:
-            fixed_args.append(z3_arg)
-    return fixed_args
 
 
 class Z3Reg():
@@ -165,11 +164,10 @@ class Z3Reg():
     _ref_count = {}
 
     def register_structlike(self, name, p4_class, z3_args):
+        fixed_args = self.handle_type_stack(z3_args)
         self._types[name] = z3.Datatype(name)
-        fixed_args = handle_type_stack(z3_args)
         self._types[name].declare(f"mk_{name}", *fixed_args)
         self._types[name] = self._types[name].create()
-        # Add the
         self._classes[name] = p4_class
         self._ref_count[name] = 0
 
@@ -181,9 +179,21 @@ class Z3Reg():
     def register_extern(self, name, method):
         self._externs[name] = method
 
-    def register_stack(self, name, method):
-        #TODO: Implement
+    def register_inouts(self, name, method):
+        # TODO: Implement
         pass
+
+    def handle_type_stack(self, z3_args):
+        fixed_args = []
+        for z3_arg in z3_args:
+            z3_name = z3_arg[0]
+            z3_type = z3_arg[1]
+            if isinstance(z3_type, list):
+                for index, val in enumerate(z3_type):
+                    fixed_args.append((f"{z3_name}_{index}", val))
+            else:
+                fixed_args.append(z3_arg)
+        return fixed_args
 
     def reset(self):
         self._types.clear()
@@ -191,6 +201,9 @@ class Z3Reg():
         self._ref_count.clear()
 
     def type(self, type_name):
+        return self._types[type_name]
+
+    def stack(self, type_name):
         return self._types[type_name]
 
     def extern(self, extern_name):
@@ -206,3 +219,22 @@ class Z3Reg():
             return z3_cls(self, p4z3_type, name)
         else:
             return z3.Const(f"{var_name}", p4z3_type)
+
+    # def instance(self, var_name, p4z3_type: z3.SortRef):
+    #     if isinstance(p4z3_type, z3.DatatypeSortRef):
+    #         type_name = str(p4z3_type)
+    #         z3_id = self._ref_count[type_name]
+    #         name = "%s%d" % (type_name, z3_id)
+    #         z3_cls = self._classes[type_name]
+    #         self._ref_count[type_name] += 1
+    #         return z3_cls(self, p4z3_type, name)
+    #     elif isinstance(p4z3_type, list):
+    #         instances = []
+    #         for index, sub_type in enumerate(p4z3_type):
+    #             type_name = f"{var_name}[{index}]"
+    #             instance = self.instance(index, sub_type),
+    #             instances.append(instance)
+    #         return instances
+    #         return self.instance(var_name, p4z3_type[0])
+    #     else:
+    #         return z3.Const(f"{var_name}", p4z3_type)

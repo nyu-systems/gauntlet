@@ -1,5 +1,8 @@
 from copy import deepcopy
 from collections import OrderedDict
+import z3
+import operator as op
+
 from p4z3.base import *
 
 
@@ -52,7 +55,7 @@ def resolve_expr(p4_vars, expr_chain, val) -> z3.SortRef:
     if isinstance(val, P4ComplexType):
         # If we get a whole class return the complex z3 type
         return val
-    raise RuntimeError(f"Value of type {type(val)} cannot be resolved!")
+    raise TypeError(f"Value of type {type(val)} cannot be resolved!")
 
 
 class P4Z3Type():
@@ -79,7 +82,7 @@ class MethodCallExpr(P4Z3Type):
             p4_method.set_param_args(arg_prefix="")
             p4_method.merge_args(p4_vars, expr_chain, self.args)
             return step(p4_vars, [p4_method] + expr_chain)
-        raise RuntimeError(f"Unsupported method type {type(p4_method)}!")
+        raise TypeError(f"Unsupported method type {type(p4_method)}!")
 
 
 class P4BinaryOp(P4Z3Type):
@@ -534,20 +537,20 @@ class P4Table(P4Z3Type):
         #  super annoying...
         expr_name = action_expr.expr
         if not isinstance(expr_name, str):
-            raise RuntimeError(f"Expected a string, got {type(expr_name)}!")
+            raise TypeError(f"Expected a string, got {type(expr_name)}!")
         p4_action = p4_vars.get_var(expr_name)
         if not isinstance(p4_action, P4Action):
-            raise RuntimeError(f"Expected a P4Action got {type(p4_action)}!")
+            raise TypeError(f"Expected a P4Action got {type(p4_action)}!")
         index = len(self.actions) + 1
         self.actions[expr_name] = (index, p4_action, action_expr.args)
 
     def add_default(self, p4_vars, action_expr):
         expr_name = action_expr.expr
         if not isinstance(expr_name, str):
-            raise RuntimeError(f"Expected a string, got {type(expr_name)}!")
+            raise TypeError(f"Expected a string, got {type(expr_name)}!")
         p4_action = p4_vars.get_var(expr_name)
         if not isinstance(p4_action, P4Action):
-            raise RuntimeError(f"Expected a P4Action got {type(p4_action)}!")
+            raise TypeError(f"Expected a P4Action got {type(p4_action)}!")
         self.actions["default"] = (0, p4_action, action_expr.args)
 
     def add_match(self, table_key):
