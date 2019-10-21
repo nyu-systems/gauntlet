@@ -181,17 +181,16 @@ xfails = [
     "action_profile_max_group_size_annotation.p4",  # Action profile
     "action_selector_shared-bmv2.p4",  # Action selector
     "action_selector_unused-bmv2.p4",  # Action selector
-    "issue297-bmv2.p4",
-    "issue298-bmv2.p4",
-    "psa-portid-using-newtype2.p4",
-    "issue561-2-bmv2.p4",
+    "issue297-bmv2.p4",  # Action profile
+    "issue298-bmv2.p4",  # register
+    "issue561-2-bmv2.p4", # header union
     "bvec-hdr-bmv2.p4",  # Vector arguments
-    "bvec_union-bmv2.p4",
-    "checksum2-bmv2.p4",  # externs
-    "checksum3-bmv2.p4",  # externs
-    "crc32-bmv2.p4",  # externs
-    "equality-bmv2.p4",  # header stacks not implemented
-    "fabric_20190420/fabric.p4",
+    "bvec_union-bmv2.p4", # Vector arguments
+    "checksum2-bmv2.p4",  # parser error
+    "checksum3-bmv2.p4",  # parser error
+    "crc32-bmv2.p4",  # HashAlgorithm
+    "equality-bmv2.p4",  # Weir dbug
+    "fabric_20190420/fabric.p4", # direct_counter
     "flowlet_switching-bmv2.p4",  # externs
     "hash-bmv2.p4",  # externs
     "header-bool-bmv2.p4",  # type union not supported
