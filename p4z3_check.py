@@ -54,7 +54,7 @@ def check_equivalence(prog_before, prog_after):
     ''' SOLVER '''
     s = z3.Solver()
     # the equivalence equation
-    tv_equiv = z3.Not(z3.eq(z3.simplify(prog_before), z3.simplify(prog_after)))
+    tv_equiv = z3.simplify(prog_before) != z3.simplify(prog_after)
     s.add(tv_equiv)
     log.debug(s.sexpr())
     ret = s.check()

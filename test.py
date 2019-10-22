@@ -183,15 +183,15 @@ xfails = [
     "action_selector_unused-bmv2.p4",  # Action selector
     "issue297-bmv2.p4",  # Action profile
     "issue298-bmv2.p4",  # register
-    "issue561-2-bmv2.p4", # header union
+    "issue561-2-bmv2.p4",  # header union
     "bvec-hdr-bmv2.p4",  # Vector arguments
-    "bvec_union-bmv2.p4", # Vector arguments
+    "bvec_union-bmv2.p4",  # Vector arguments
     "checksum2-bmv2.p4",  # parser error
     "checksum3-bmv2.p4",  # parser error
     "crc32-bmv2.p4",  # HashAlgorithm
     "equality-bmv2.p4",  # Weir dbug
-    "fabric_20190420/fabric.p4", # direct_counter
-    "flowlet_switching-bmv2.p4",  # externs
+    "fabric_20190420/fabric.p4",  # direct_counter
+    "flowlet_switching-bmv2.p4",  # register
     "hash-bmv2.p4",  # externs
     "header-bool-bmv2.p4",  # type union not supported
     "header-stack-ops-bmv2.p4",

@@ -23,7 +23,7 @@ def register(z3_reg):
                ('parser_error', z3.BitVecSort(1)),
                ('priority', z3.BitVecSort(3)),
                ]
-    z3_reg.register_structlike("standard_metadata_t", Struct, z3_args)
+    z3_reg.register_struct("standard_metadata_t", z3_args)
 
     mark_to_drop = P4Action()
     mark_to_drop.add_parameter("smeta", z3_reg.type("standard_metadata_t"))

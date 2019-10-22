@@ -64,11 +64,6 @@ class P4BinaryOp(P4Z3Class):
         lval_expr = resolve_expr(p4_vars, expr_chain, self.lval)
         rval_expr = resolve_expr(p4_vars, expr_chain, self.rval)
 
-        # We need to convert P4ComplexTypes to their z3 representation
-        if isinstance(lval_expr, P4ComplexType):
-            lval_expr = lval_expr.const
-        if isinstance(rval_expr, P4ComplexType):
-            rval_expr = rval_expr.const
         return self.operator(lval_expr, rval_expr)
 
 
