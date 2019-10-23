@@ -2,11 +2,11 @@ import argparse
 from pathlib import Path
 import os
 import imp
-import logging as log
-
+import logging
 from p4z3.base import Z3Reg, z3
 import p4z3.util as util
 
+log = logging.getLogger(__name__)
 FILE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 

@@ -4,15 +4,18 @@ from pathlib import Path
 import pytest
 import p4z3.util as util
 import pass_analysis as pa
+import p4z3_check as z3check
 
 # configure logging
-logging.basicConfig(format="%(levelname)s:%(message)s",
+logging.basicConfig(filename="test.log",
+                    format="%(levelname)s:%(message)s",
                     level=logging.INFO)
 log = logging.getLogger(__name__)
 
 # some folder definitions
 FILE_DIR = Path.resolve(Path(__file__)).parent
 TARGET_DIR = FILE_DIR.joinpath("generated")
+VIOLATION_DIR = FILE_DIR.joinpath("violated")
 P4_DIR = FILE_DIR.joinpath("p4c/testdata/p4_16_samples/")
 
 # p4c binaries
@@ -38,6 +41,7 @@ def run_z3p4_test(test_name):
 
 # ***** working tests *****
 bmv2_tests = [
+    "key-bmv2.p4",
     "issue232-bmv2.p4",
     "issue242.p4",
     "issue249.p4",
@@ -109,6 +113,30 @@ def test_bmv2(test_name):
     assert run_z3p4_test(test_name) == util.EXIT_SUCCESS
 
 
+# ***** violation tests*****
+violation_tests = [
+    "key-bmv2",
+]
+
+def run_violation_test(test_folder):
+    test_folder = Path("violated").joinpath(test_folder)
+    src_p4_file = test_folder.joinpath("orig.p4")
+    src_py_file = test_folder.joinpath(f"{src_p4_file.stem}.py")
+    pa.run_p4_to_py(src_p4_file, src_py_file)
+    for p4_file in list(test_folder.glob("**/[0-9]*.p4")):
+        py_file = test_folder.joinpath(f"{p4_file.stem}.py")
+        pa.run_p4_to_py(p4_file, py_file)
+        result = z3check.z3_check([str(src_py_file), str(py_file)])
+        if result != util.EXIT_VIOLATION:
+            return util.EXIT_FAILURE
+    return util.EXIT_SUCCESS
+
+
+@pytest.mark.parametrize("test_folder", violation_tests)
+def test_violation(test_folder):
+    assert run_violation_test(test_folder) == util.EXIT_SUCCESS
+
+
 # ***** working tests but do not generate passes *****
 skipped_tests = [
     "action-synth.p4",
@@ -167,7 +195,7 @@ def test_skipped(test_name):
 
 
 def test_issue1863_broken():
-    p4_dir = Path("p4z3/p4files/issue1863/")
+    p4_dir = Path("violated/issue1863/")
     p4_file, target_dir = prep_test("issue1863-bmv2.p4", p4_dir)
     result = pa.validate_translation(p4_file, target_dir, P4C_BIN_1863)
     assert result == util.EXIT_VIOLATION

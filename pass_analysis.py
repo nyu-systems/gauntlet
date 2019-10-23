@@ -10,7 +10,8 @@ import p4z3.util as util
 import p4z3_check as z3check
 
 # configure logging
-logging.basicConfig(format="%(levelname)s:%(message)s",
+logging.basicConfig(filename="analysis.log",
+                    format="%(levelname)s:%(message)s",
                     level=logging.INFO)
 log = logging.getLogger(__name__)
 
@@ -22,7 +23,7 @@ P4Z3_BIN = FILE_DIR + "/p4c/build/p4toz3"
 def generate_p4_dump(p4c_bin, p4_file, p4_dmp_dir):
     p4_cmd = f"{p4c_bin} "
     p4_cmd += " --top4 MidEnd "
-    # disable midend for now
+    # disable frontend for now
     # p4_cmd += "--top4 FrontEnd,MidEnd "
     p4_cmd += f"--dump {p4_dmp_dir} {p4_file}"
     log.debug("Running dumps with command %s ", p4_cmd)
@@ -130,6 +131,7 @@ def prune_passes(p4_passes):
 
 
 def validate_translation(p4_file, target_dir, p4c_bin):
+    util.check_dir(target_dir)
     fail_dir = target_dir.joinpath("failed")
     # run the p4 compiler and dump all the passes for this file
     passes = gen_p4_passes(p4c_bin, target_dir, p4_file)
@@ -155,7 +157,8 @@ def validate_translation(p4_file, target_dir, p4c_bin):
     return result
 
 
-def main():
+def generate_analysis():
+
     parser = argparse.ArgumentParser()
     parser.add_argument("-i", "--p4_input", dest="p4_input",
                         default="p4c/testdata/p4_16_samples",
@@ -175,6 +178,27 @@ def main():
         open(f"{pass_dir}/no_passes.txt", 'w+')
         for p4_file in glob.glob(f"{p4_input}/*.p4"):
             analyse_p4_file(p4_file, pass_dir)
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-i", "--p4_input", dest="p4_input",
+                        default="p4c/testdata/p4_16_samples",
+                        required=True,
+                        help="A P4 file or path to a "
+                        "directory which contains P4 files.")
+    # Parse options and process argv
+    args = parser.parse_args()
+    p4_input = Path(args.p4_input)
+    pass_dir = Path("validated")
+    if os.path.isfile(p4_input):
+        pass_dir = pass_dir.joinpath(p4_input.stem)
+        validate_translation(p4_input, pass_dir, P4C_BIN)
+    else:
+        util.check_dir(pass_dir)
+        for p4_file in list(p4_input.glob("**/*.p4")):
+            pass_dir = pass_dir.joinpath(p4_file.stem)
+            validate_translation(p4_file, pass_dir, P4C_BIN)
 
 
 if __name__ == '__main__':
