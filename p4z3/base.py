@@ -13,7 +13,7 @@ def step(p4_vars, expr_chain, expr=None) -> z3.ExprRef:
         # iterate through all the remaining functions in the chain
         fun_expr = next_expr.eval(p4_vars, expr_chain)
         # eval should always return an expression
-        if not isinstance(fun_expr, z3.ExprRef):
+        if not isinstance(fun_expr, (z3.ExprRef)):
             raise TypeError(f"Expression {fun_expr} is not a z3 expression!")
         return fun_expr
     if expr is not None:
@@ -126,10 +126,19 @@ class P4ComplexType():
         self.const = self._make(self.const)
 
     def __eq__(self, other):
-        """Overrides the default implementation"""
         if isinstance(other, P4ComplexType):
-            return self.const == other.const
-        return False
+            if len(self.accessors) != len(other.accessors):
+                return z3.BoolVal(False)
+            eq_accessors = []
+            for index in range(len(self.accessors)):
+                self_access = self.accessors[index]
+                other_access = other.accessors[index]
+                self_member = op.attrgetter(self_access.name())(self)
+                other_member = op.attrgetter(other_access.name())(other)
+                z3_eq = self_member == other_member
+                eq_accessors.append(z3_eq)
+            return z3.And(*eq_accessors)
+        return z3.BoolVal(False)
 
 
 class P4State(P4ComplexType):
@@ -198,7 +207,7 @@ class Header(P4ComplexType):
         if isinstance(other, Header):
             check_valid = z3.And(z3.Not(self.valid), z3.Not(other.valid))
             return z3.Or(check_valid, self.const == other.const)
-        return False
+        return z3.BoolVal(False)
 
 
 class Struct(P4ComplexType):

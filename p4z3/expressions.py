@@ -15,8 +15,10 @@ def resolve_expr(p4_vars, expr_chain, val) -> z3.SortRef:
     if val is None:
         raise RuntimeError(
             f"Variable {val_str} does not exist in current environment!")
-    if isinstance(val, (z3.ExprRef, bool, int)):
+    if isinstance(val, (z3.ExprRef, int)):
         # These are z3 types and can be returned
+        # Unfortunately int is part of it because z3 is very inconsistent
+        # about var handling...
         return val
     if isinstance(val, P4Z3Class):
         # We got a P4 type, recurse...
@@ -234,9 +236,9 @@ class P4Concat(P4Z3Class):
 class P4Cast(P4Z3Class):
     # TODO: need to take a closer look on how to do this correctly...
     # If we cast do we add/remove the least or most significant bits?
-    def __init__(self, val, to_size):
+    def __init__(self, val, to_size: z3.BitVecSortRef):
         self.val = val
-        self.to_size = to_size
+        self.to_size = to_size.size()
 
     def eval(self, p4_vars, expr_chain):
         expr = resolve_expr(p4_vars, expr_chain, self.val)
@@ -507,7 +509,7 @@ class P4Table(P4Z3Class):
             if p4_action_id == 0:
                 continue
             action_expr = self.execute_action(p4_vars, expr_chain, f_tuple)
-            expr = z3.Implies(action == p4_action_id, action_expr)
+            expr = z3.Implies(action == z3.IntVal(p4_action_id), action_expr)
             actions.append(expr)
         return z3.And(*actions)
 
@@ -539,7 +541,7 @@ class P4Table(P4Z3Class):
         key_pairs = []
         if not self.keys:
             # there is nothing to match with...
-            return False
+            return z3.BoolVal(False)
         for index, key in enumerate(self.keys):
             key_eval = resolve_expr(p4_vars, expr_chain, key)
             key_match = z3.Const(f"{self.name}_key_{index}", key_eval.sort())

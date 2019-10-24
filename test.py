@@ -105,6 +105,8 @@ bmv2_tests = [
     "issue1937-2-bmv2.p4",
     "issue1937-3-bmv2.p4",
     "issue1955.p4",
+    "equality-bmv2.p4"
+    "issue1538.p4",
 ]
 
 
@@ -117,6 +119,7 @@ def test_bmv2(test_name):
 violation_tests = [
     "key-bmv2",
 ]
+
 
 def run_violation_test(test_folder):
     test_folder = Path("violated").joinpath(test_folder)
@@ -217,7 +220,6 @@ xfails = [
     "checksum2-bmv2.p4",  # parser error
     "checksum3-bmv2.p4",  # parser error
     "crc32-bmv2.p4",  # HashAlgorithm
-    "equality-bmv2.p4",  # Weir dbug
     "fabric_20190420/fabric.p4",  # direct_counter
     "flowlet_switching-bmv2.p4",  # register
     "hash-bmv2.p4",  # externs
@@ -270,7 +272,6 @@ xfails = [
     "issue1478-bmv2.p4",
     "issue1520-bmv2.p4",
     "issue1535.p4",
-    "issue1538.p4",
     "issue1566-bmv2.p4",
     "issue1566.p4",
     "issue1642-bmv2.p4",
