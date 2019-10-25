@@ -25,6 +25,16 @@ def step(p4_vars, expr_chain, expr=None) -> z3.ExprRef:
         return p4_vars.const == z3_copy
 
 
+class V1Switch():
+    def __init__(self, p, vr, ig, eg, ck, dep):
+        self.parser = p
+        self.verify = vr
+        self.ingress = ig
+        self.egress = eg
+        self.compute = ck
+        self.deparser = dep
+
+
 class P4ComplexType():
     """
     A P4ComplexType is a wrapper for any type that is not a simple Z3 type

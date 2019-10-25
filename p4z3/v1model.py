@@ -6,6 +6,9 @@ from p4z3.expressions import *
 
 def register(z3_reg):
     z3_reg.register_typedef("error", z3.BitVecSort(1))
+    z3_reg.register_typedef("packet_out", z3.BitVecSort(1))
+    z3_reg.register_typedef("packet_in", z3.BitVecSort(1))
+
     z3_args = [('ingress_port', z3.BitVecSort(9)),
                ('egress_spec', z3.BitVecSort(9)),
                ('egress_port', z3.BitVecSort(9)),
