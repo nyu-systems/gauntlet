@@ -48,7 +48,7 @@ RUN cd p4c && \
 
 RUN cd p4c/extensions/toz3/ && \
     # link the compiler
-    ln -sf /home/p4c/build/p4toz3 toz3
+    ln -sf /home/p4c/build/p4toz3 toz3  && \
     cd ../../..
 
 # done

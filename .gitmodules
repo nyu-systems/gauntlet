@@ -1,5 +1,5 @@
 [submodule "p4c"]
-	url = https://github.com/p4lang/p4c
+    url = https://github.com/p4lang/p4c
     path = p4c
     ignore = dirty
 
