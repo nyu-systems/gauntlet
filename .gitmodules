@@ -1,13 +1,13 @@
 [submodule "p4c"]
-	url = https://github.com/p4bughunt/p4c
+	url = https://github.com/p4lang/p4c
     path = p4c
     ignore = dirty
 
+
 [submodule "p4_gen"]
-    url = https://github.com/p4bughunt/p4-compiler-fuzzer
+    url = https://github.com/p4gauntlet/p4-compiler-fuzzer
     path = p4_gen
     ignore = dirty
-
 
 [submodule "p4_tv.wiki"]
     url = https://github.com/fruffy/p4_tv.wiki

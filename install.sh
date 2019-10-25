@@ -35,6 +35,11 @@ sudo apt install -y libprotoc-dev protobuf-compiler
 # install python packages using pip
 pip3 install --user wheel
 pip3 install --user pyroute2 ipaddr ply==3.8 scapy==2.4.0
+
+# grab the toz3 extension for the p4 compiler
+mkdir -p p4c/extensions
+git clone https://github.com/p4gauntlet/toz3 p4c/extensions/toz3
+
 # build the p4 compiler
 cd p4c
 mkdir -p build
@@ -42,6 +47,11 @@ cd build
 cmake ..
 make -j `getconf _NPROCESSORS_ONLN`
 cd ../..
+
+# link the extension
+cd p4c/extensions/toz3/
+ln -sf /home/p4c/build/p4toz3 toz3
+cd ../../..
 
 # Install z3 locally
 pip3 install --upgrade --user z3-solver
