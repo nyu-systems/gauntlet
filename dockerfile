@@ -32,23 +32,20 @@ RUN pip3 install --user $PIP_PACKAGES
 RUN git clone https://github.com/p4gauntlet/p4_tv && \
     cd /home/p4_tv && \
     git submodule update --init --recursive --remote && \
-    mkdir p4c/extensions
-
-# Grab the p4c-z3 compiler extension into the extension folder
-RUN git clone https://github.com/p4gauntlet/toz3 p4c/extensions/toz3
+    mkdir /home/p4_tv/p4c/extensions && \
+    # Grab the p4c-z3 compiler extension into the extension folder
+    git clone https://github.com/p4gauntlet/toz3 /home/p4_tv/p4c/extensions/toz3
 
 # build p4c and p4c-toz3
-RUN cd p4c && \
+RUN cd /home/p4_tv/p4c && \
     mkdir -p build && \
     cd build && \
     cmake .. && \
     make -j `getconf _NPROCESSORS_ONLN` && \
     make install && \
-    cd ../..
-
-RUN cd p4c/extensions/toz3/ && \
-    # link the compiler
-    ln -sf /home/p4c/build/p4toz3 toz3  && \
-    cd ../../..
+    # link the toz3 extension
+    cd /home/p4_tv/p4c/extensions/toz3/ && \
+    ln -sf /home/p4_tv/p4c/build/p4toz3 toz3  && \
+    cd /home/p4_tv/
 
 # done
