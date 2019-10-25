@@ -105,7 +105,7 @@ bmv2_tests = [
     "issue1937-2-bmv2.p4",
     "issue1937-3-bmv2.p4",
     "issue1955.p4",
-    "equality-bmv2.p4"
+    "equality-bmv2.p4",
     "issue1538.p4",
 ]
 
