@@ -7,7 +7,7 @@ from pathlib import Path
 import hashlib
 
 import p4z3.util as util
-import p4z3_check as z3check
+import check_p4_pair as z3check
 
 # configure logging
 logging.basicConfig(filename="analysis.log",

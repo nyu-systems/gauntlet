@@ -3,8 +3,8 @@ from pathlib import Path
 
 import pytest
 import p4z3.util as util
-import pass_analysis as pa
-import p4z3_check as z3check
+import check_p4_compilation as p4c_check
+import check_p4_pair as z3_check
 
 # configure logging
 logging.basicConfig(filename="test.log",
@@ -33,7 +33,7 @@ def prep_test(p4_name, p4_dir=P4_DIR):
 
 def run_z3p4_test(test_name):
     p4_file, target_dir = prep_test(test_name)
-    result = pa.validate_translation(p4_file, target_dir, P4C_BIN)
+    result = p4c_check.validate_translation(p4_file, target_dir, P4C_BIN)
     if result == util.EXIT_SKIPPED:
         pytest.skip(f"Skipping file {p4_file}.")
     return result
@@ -125,11 +125,11 @@ def run_violation_test(test_folder):
     test_folder = Path("violated").joinpath(test_folder)
     src_p4_file = test_folder.joinpath("orig.p4")
     src_py_file = test_folder.joinpath(f"{src_p4_file.stem}.py")
-    pa.run_p4_to_py(src_p4_file, src_py_file)
+    p4c_check.run_p4_to_py(src_p4_file, src_py_file)
     for p4_file in list(test_folder.glob("**/[0-9]*.p4")):
         py_file = test_folder.joinpath(f"{p4_file.stem}.py")
-        pa.run_p4_to_py(p4_file, py_file)
-        result = z3check.z3_check([str(src_py_file), str(py_file)])
+        p4c_check.run_p4_to_py(p4_file, py_file)
+        result = z3_check.z3_check([str(src_py_file), str(py_file)])
         if result != util.EXIT_VIOLATION:
             return util.EXIT_FAILURE
     return util.EXIT_SUCCESS
@@ -200,7 +200,7 @@ def test_skipped(test_name):
 def test_issue1863_broken():
     p4_dir = Path("violated/issue1863/")
     p4_file, target_dir = prep_test("issue1863-bmv2.p4", p4_dir)
-    result = pa.validate_translation(p4_file, target_dir, P4C_BIN_1863)
+    result = p4c_check.validate_translation(p4_file, target_dir, P4C_BIN_1863)
     assert result == util.EXIT_VIOLATION
 
 
