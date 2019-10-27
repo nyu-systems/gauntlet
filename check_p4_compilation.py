@@ -14,6 +14,9 @@ logging.basicConfig(filename="analysis.log",
                     format="%(levelname)s:%(message)s",
                     level=logging.INFO)
 log = logging.getLogger(__name__)
+stderr_log = logging.StreamHandler()
+stderr_log.setFormatter(logging.Formatter("%(levelname)s:%(message)s"))
+log.addHandler(stderr_log)
 
 FILE_DIR = os.path.dirname(os.path.abspath(__file__))
 P4C_BIN = FILE_DIR + "/p4c/build/p4c-bm2-ss"
@@ -96,8 +99,7 @@ def run_p4_to_py(p4_file, py_file):
     cmd = P4Z3_BIN + " "
     cmd += f"{p4_file} "
     cmd += f"--output {py_file} "
-    result = util.exec_process(cmd)
-    return result.returncode
+    return util.exec_process(cmd)
 
 
 def gen_p4_passes(p4c_bin, p4_dmp_dir, p4_file):
@@ -143,12 +145,14 @@ def validate_translation(p4_file, target_dir, p4c_bin):
         p4_path = Path(p4_pass).stem
         py_file = f"{target_dir}/{p4_path}.py"
         result = run_p4_to_py(p4_pass, py_file)
-        if result != util.EXIT_SUCCESS:
+        if result.returncode != util.EXIT_SUCCESS:
             log.error("Failed to translate P4 to Python.")
             log.error("Compiler crashed!")
             util.check_dir(fail_dir)
+            with open(f"{fail_dir}/error.txt", 'w+') as err_file:
+                err_file.write(str(result.stderr))
             util.copy_file([p4_pass, py_file], fail_dir)
-            return result
+            return result.returncode
         p4_py_files.append(f"{target_dir}/{p4_path}")
     if len(p4_py_files) < 2:
         log.warning("P4 file did not generate enough passes!")
