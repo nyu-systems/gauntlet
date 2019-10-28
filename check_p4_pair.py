@@ -36,8 +36,12 @@ def handle_pyz3_error(fail_dir, p4_file):
 
 def get_z3_repr(p4_module, p4_path, fail_dir):
     try:
-        p4_ctrl, p4_ctrl_args = p4_module(Z3Reg()).ingress
-        z3_ast = p4_ctrl(p4_ctrl_args)
+        z3_reg, v1model = p4_module(Z3Reg())
+        p4_ctrl = v1model.ig
+        z3_reg.register_inouts("inouts", p4_ctrl.args)
+        p4_vars = z3_reg.instance("", z3_reg.type("inouts"))
+        p4_vars.add_externs(z3_reg._externs)
+        z3_ast = p4_ctrl.eval(p4_vars, [])
     except Exception:
         log.exception("Failed to compile Python to Z3:\n")
         if fail_dir:

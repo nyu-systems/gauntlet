@@ -344,6 +344,25 @@ class BlockStatement(P4Z3Class):
         return step(p4_vars, self.exprs + expr_chain)
 
 
+class P4Control(P4Z3Class):
+
+    def __init__(self):
+        self.apply = BlockStatement()
+        self.locals = []
+        self.args = []
+
+    def declare_local(self, local_name, local):
+        self.locals.append((local_name, local))
+
+    def add_args(self, args):
+        self.args = args
+
+    def eval(self, p4_vars, expr_chain):
+        for local in self.locals:
+            p4_vars.set_or_add_var(local[0], local[1])
+        return self.apply.eval(p4_vars, expr_chain)
+
+
 class P4Action(P4Z3Class):
 
     def __init__(self):
@@ -446,17 +465,15 @@ class IfStatement(P4Z3Class):
 
 class SwitchStatement(P4Z3Class):
     # TODO: Fix fall through for switch statement, purge this terrible code
-    def __init__(self, table):
-        self.table = table
+    def __init__(self, table_str):
+        self.table_str = table_str
+        self.table = None
         self.default_case = BlockStatement()
         self.cases = OrderedDict()
 
     def add_case(self, action_str):
-        table = self.table
-        action = table.actions[action_str]
-        action_var = z3.Int(f"{table.name}_action")
         case = {}
-        case["match"] = (action_var == action[0])
+        case["match_var"] = z3.Int(f"{self.table_str}_action")
         # case["action_fun"] = action[1]
         case["case_block"] = BlockStatement()
         self.cases[action_str] = case
@@ -483,6 +500,12 @@ class SwitchStatement(P4Z3Class):
                         deepcopy(p4_vars), [case["case_block"]] + expr_chain)
                     case_exprs.append(z3.Implies(case["match"], case_block))
                 return z3.And(*case_exprs)
+
+        self.table = p4_vars.get_var(self.table_str)
+        for case_name, case in self.cases.items():
+            match_var = self.cases[case_name]["match_var"]
+            action = self.table.actions[case_name][0]
+            self.cases[case_name]["match"] = (match_var == action)
         switch_hit = SwitchHit(self.cases)
         switch_default = self.default_case
         switch_if = IfStatement()
@@ -521,7 +544,7 @@ class P4Table(P4Z3Class):
             actions.append(expr)
         return z3.And(*actions)
 
-    def add_action(self, p4_vars, action_expr):
+    def add_action(self, action_expr):
         # TODO Fix this roundabout way of getting a P4 Action,
         #  super annoying...
         if not isinstance(action_expr, MethodCallExpr):
@@ -530,7 +553,7 @@ class P4Table(P4Z3Class):
         index = len(self.actions) + 1
         self.actions[expr_name] = (index, expr_name, action_expr.args)
 
-    def add_default(self, p4_vars, action_expr):
+    def add_default(self, action_expr):
         expr_name = action_expr.expr
         if not isinstance(expr_name, str):
             raise TypeError(f"Expected a string, got {type(expr_name)}!")
