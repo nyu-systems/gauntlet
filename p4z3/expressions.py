@@ -245,11 +245,17 @@ class P4Cast(P4Z3Class):
 
     def eval(self, p4_vars, expr_chain):
         expr = resolve_expr(p4_vars, expr_chain, self.val)
-        if expr.size() < self.to_size:
-            return z3.ZeroExt(self.to_size - expr.size(), expr)
+
+        if isinstance(expr, z3.BoolRef):
+            # Convert boolean variables to a bit vector representation
+            # TODO: Make all bools a bitvector of size 1
+            expr = z3.If(expr, z3.BitVecVal(1, 1), z3.BitVecVal(0, 1))
+        expr_size = expr.size()
+        if expr_size < self.to_size:
+            return z3.ZeroExt(self.to_size - expr_size, expr)
         else:
-            slice_l = expr.size() - 1
-            slice_r = expr.size() - self.to_size
+            slice_l = expr_size - 1
+            slice_r = expr_size - self.to_size
             return z3.Extract(slice_l, slice_r, expr)
 
 

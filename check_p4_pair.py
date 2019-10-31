@@ -6,8 +6,16 @@ import logging
 from p4z3.base import Z3Reg, z3
 import p4z3.util as util
 
-log = logging.getLogger(__name__)
 FILE_DIR = os.path.dirname(os.path.abspath(__file__))
+# configure logging
+logging.basicConfig(filename="analysis.log",
+                    format="%(levelname)s:%(message)s",
+                    level=logging.INFO,
+                    filemode='w')
+log = logging.getLogger(__name__)
+stderr_log = logging.StreamHandler()
+stderr_log.setFormatter(logging.Formatter("%(levelname)s:%(message)s"))
+log.addHandler(stderr_log)
 
 
 def import_prog(ctrl_dir, ctrl_name, prog_name):

@@ -105,6 +105,7 @@ bmv2_tests = [
     "v1model-special-ops-bmv2.p4",
     "ternary2-bmv2.p4",
     "issue1937-1-bmv2.p4",
+    "issue1025-bmv2.p4",
 ]
 
 
@@ -272,7 +273,6 @@ xfails = [
     "union4-bmv2.p4",
     "unused-counter-bmv2.p4",
     "v1model-p4runtime-most-types1.p4",
-    "issue1025-bmv2.p4",
     "issue1049-bmv2.p4",
     "issue1062-bmv2.p4",
     "issue1107.p4",
