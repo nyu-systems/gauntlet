@@ -119,6 +119,9 @@ violation_tests = [
     "issue1544-bmv2-1",
     "issue1544-bmv2-2",
     "out-params-1",
+    "out-params-2",
+    "drop-bmv2",
+    "basic_routing",
 ]
 
 
