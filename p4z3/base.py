@@ -1,5 +1,9 @@
 import operator as op
+import os
 import z3
+import logging
+log = logging.getLogger(__name__)
+FILE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
 def step(p4_vars, expr_chain, expr=None) -> z3.ExprRef:
@@ -11,6 +15,7 @@ def step(p4_vars, expr_chain, expr=None) -> z3.ExprRef:
         next_expr = expr_chain.pop(0)
         expr_chain = list(expr_chain)
         # iterate through all the remaining functions in the chain
+        log.debug("Evaluating %s", next_expr.__class__)
         fun_expr = next_expr.eval(p4_vars, expr_chain)
         # eval should always return an expression
         if not isinstance(fun_expr, (z3.ExprRef)):
@@ -38,6 +43,7 @@ class P4ComplexType():
      if it is a basic type. A DataTypeRef should never be a member and always
     needs to be converted to a P4ComplexType.
     """
+    ref_vars = []
 
     def __init__(self, z3_reg, z3_type: z3.SortRef, name):
         self.name = name
@@ -105,24 +111,57 @@ class P4ComplexType():
         self.const = self.constructor(*members)
 
     def get_var(self, var_string):
-        return op.attrgetter(var_string)(self)
+        try:
+            var = op.attrgetter(var_string)(self)
+        except AttributeError:
+            return None
+        return var
 
     def del_var(self, var_string):
         delattr(self, var_string)
 
-    def set_or_add_var(self, lstring, rvalue):
-        # generate a new version of the z3 datatype
-        # update the internal representation of the attribute
+    def resolve_reference(self, var):
+        if isinstance(var, str):
+            var = self.get_var(var)
+            var = self.resolve_reference(var)
+        return var
+
+    def set_or_add_var(self, lstring, rval):
+        # Check if the assigned variable is already a reference
+        var = self.get_var(lstring)
+        if var is None:
+            # nothing found, just set the variable to whatever
+            pass
+        elif isinstance(var, str):
+            # the target variable exists and is a string
+            # this means it is a reference (i.e., pointer) to another
+            # variable, so we need to resolve it
+            log.debug("Found reference from %s to %s ", lstring, var)
+            # because it is a reference  we are setting the actual target
+            lstring = var
+            # do not allow nested references, resolve the rvalue
+            rval = self.resolve_reference(rval)
+        else:
+            # the target variable exists and is not a string
+            # do not override an existing variable with a reference!
+            # resolve any possible rvalue reference
+            log.debug("Recursing with %s and %s ", lstring, rval)
+            rval = self.resolve_reference(rval)
+
+        log.debug("Setting %s(%s) to %s(%s) ",
+                 lstring, type(lstring), rval, type(rval))
         if '.' in lstring:
             # this means we are accessing a complex member
             # get the parent class and update its value
-            # we do not want to recurse here
             prefix, suffix = lstring.rsplit(".", 1)
-            target_class = self.get_var(prefix)
-            target_class.set_or_add_var(suffix, rvalue)
+            # prefix may be a pointer to an actual complex type, resolve it
+            target_class = self.resolve_reference(prefix)
+            target_class.set_or_add_var(suffix, rval)
         else:
-            setattr(self, lstring, rvalue)
-        # self.propagate_type(self.const)
+            setattr(self, lstring, rval)
+
+        # generate a new version of the z3 datatype
+        # update the internal representation of the attribute.
         self.const = self._make(self.const)
 
     def __eq__(self, other):
@@ -146,20 +185,8 @@ class P4State(P4ComplexType):
     def _update(self):
         self.const = z3.Const(f"{self.name}_1", self.z3_type)
 
-    def set_or_add_var(self, lstring, rvalue):
-        # update the internal representation of the attribute
-        if '.' in lstring:
-            # this means we are accessing a complex member
-            # get the parent class and update its value
-            # we do not want to recurse here
-            prefix, suffix = lstring.rsplit(".", 1)
-            target_class = self.get_var(prefix)
-            target_class.set_or_add_var(suffix, rvalue)
-        else:
-            setattr(self, lstring, rvalue)
-        # generate a new version of the z3 datatype
-        # self.const = self._make(self.const)
-        # update the SSA version
+    def set_or_add_var(self, lstring, rval):
+        P4ComplexType.set_or_add_var(self, lstring, rval)
         self._update()
 
     def set_list(self, lstring, rvals):

@@ -3,8 +3,8 @@ import glob
 import argparse
 import subprocess
 import logging
-from pathlib import Path
 import hashlib
+from pathlib import Path
 
 import p4z3.util as util
 import check_p4_pair as z3check
@@ -12,7 +12,8 @@ import check_p4_pair as z3check
 # configure logging
 logging.basicConfig(filename="analysis.log",
                     format="%(levelname)s:%(message)s",
-                    level=logging.INFO)
+                    level=logging.INFO,
+                    filemode='w')
 log = logging.getLogger(__name__)
 stderr_log = logging.StreamHandler()
 stderr_log.setFormatter(logging.Formatter("%(levelname)s:%(message)s"))

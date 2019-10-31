@@ -8,13 +8,10 @@ from p4z3.base import *
 
 def resolve_expr(p4_vars, expr_chain, val) -> z3.SortRef:
     # Resolves to z3 and z3p4 expressions, bools and int are also okay
-    val_str = val
     # resolve potential string references first
     if isinstance(val, str):
-        val = p4_vars.get_var(val)
-    if val is None:
-        raise RuntimeError(
-            f"Variable {val_str} does not exist in current environment!")
+        val = p4_vars.resolve_reference(val)
+
     if isinstance(val, (z3.ExprRef, int)):
         # These are z3 types and can be returned
         # Unfortunately int is part of it because z3 is very inconsistent
@@ -106,6 +103,12 @@ class P4neg(P4UnaryOp):
 class P4add(P4BinaryOp):
     def __init__(self, lval, rval):
         operator = op.add
+        P4BinaryOp.__init__(self, lval, rval, operator)
+
+
+class P4sub(P4BinaryOp):
+    def __init__(self, lval, rval):
+        operator = op.sub
         P4BinaryOp.__init__(self, lval, rval, operator)
 
 
@@ -252,13 +255,17 @@ class P4Cast(P4Z3Class):
 
 class P4Declaration(P4Z3Class):
     # TODO: Add some more declaration checks here.
+    # the difference between a P4Declaration and a P4Assignment is that
+    # we resolve the variable in the P4Assignment
+    # in the declaration we assign variables as is
+    # they are resolved at runtime by other classes
     def __init__(self, lval, rval):
         self.lval = lval
         self.rval = rval
 
     def eval(self, p4_vars, expr_chain):
-        assign = AssignmentStatement(self.lval, self.rval)
-        return step(p4_vars, [assign] + expr_chain)
+        p4_vars.set_or_add_var(self.lval, self.rval)
+        return step(p4_vars, expr_chain)
 
 
 class P4StructInitializer():
@@ -312,15 +319,23 @@ class AssignmentStatement(P4Z3Class):
         self.rval = rval
 
     def eval(self, p4_vars, expr_chain):
+        log.debug("Assigning %s to %s ", self.rval, self.lval)
         if isinstance(self.rval, list):
             list_expr = []
             for val in self.rval:
+                rval_expr = resolve_expr(p4_vars, expr_chain, val)
+                # any assignment copies the variable
+                # do not pass references
+                rval_expr = deepcopy(rval_expr)
                 list_expr.append(resolve_expr(p4_vars, expr_chain, val))
-            assign_expr = p4_vars.set_list(self.lval, list_expr)
+            p4_vars.set_list(self.lval, list_expr)
         else:
             rval_expr = resolve_expr(p4_vars, expr_chain, self.rval)
-            assign_expr = p4_vars.set_or_add_var(self.lval, rval_expr)
-        return step(p4_vars, expr_chain, assign_expr)
+            # any assignment copies the variable
+            # do not pass references
+            rval_expr = deepcopy(rval_expr)
+            p4_vars.set_or_add_var(self.lval, rval_expr)
+        return step(p4_vars, expr_chain)
 
 
 class MethodCallStmt(P4Z3Class):
@@ -347,7 +362,7 @@ class BlockStatement(P4Z3Class):
 class P4Control(P4Z3Class):
 
     def __init__(self):
-        self.apply = BlockStatement()
+        self.apply_block = []
         self.locals = []
         self.args = []
 
@@ -357,10 +372,20 @@ class P4Control(P4Z3Class):
     def add_args(self, args):
         self.args = args
 
+    def add_apply_stmt(self, stmt):
+        self.apply_block.append(stmt)
+
+    def apply(self, p4_vars, expr_chain, *p4_args):
+        return step(p4_vars, [self] + expr_chain)
+
     def eval(self, p4_vars, expr_chain):
+        local_decls = []
         for local in self.locals:
-            p4_vars.set_or_add_var(local[0], local[1])
-        return self.apply.eval(p4_vars, expr_chain)
+            decl = P4Declaration(local[0], local[1])
+            local_decls.append(decl)
+            # p4_vars.set_or_add_var(local[0], local[1])
+        expr_chain = local_decls + self.apply_block + expr_chain
+        return step(p4_vars, expr_chain)
 
 
 class P4Action(P4Z3Class):
@@ -370,8 +395,8 @@ class P4Action(P4Z3Class):
         self.parameters = []
         self.args = []
 
-    def add_parameter(self, arg_name, arg_type):
-        self.parameters.append((arg_name, arg_type))
+    def add_parameter(self, is_ref, arg_name, arg_type):
+        self.parameters.append((is_ref, arg_name, arg_type))
 
     def add_stmt(self, block):
         if not isinstance(block, BlockStatement):
@@ -385,8 +410,9 @@ class P4Action(P4Z3Class):
 
         action_args = []
         for param in self.parameters:
-            arg_name = param[0]
-            arg_type = param[1]
+            is_ref = param[0]
+            arg_name = param[1]
+            arg_type = param[2]
             if isinstance(arg_type, z3.SortRef):
                 action_args.append(
                     z3.Const(f"{arg_prefix}{arg_name}", arg_type))
@@ -399,35 +425,47 @@ class P4Action(P4Z3Class):
             raise RuntimeError(
                 f"Provided arguments {args} exceeds possible number of parameters.")
         for index, runtime_arg in enumerate(*args):
-            self.args[index] = resolve_expr(p4_vars, expr_chain, runtime_arg)
+            self.args[index] = runtime_arg
 
     def eval(self, p4_vars, expr_chain):
-        # var_buffer = {}
-        # for action_arg in self.parameters:
-        #     arg_name = action_arg[0]
-        #     # previous previous variables in the environment
-        #     try:
-        #         prev_val = p4_vars.get_var(arg_name)
-        #         var_buffer[arg_name] = prev_val
-        #     except AttributeError:
-        #         # ignore variables that do not exist
-        #         pass
+        var_buffer = {}
+        for action_arg in self.parameters:
+            is_ref = action_arg[0]
+            arg_name = action_arg[1]
+            # previous previous variables in the environment
+            try:
+                prev_val = p4_vars.get_var(arg_name)
+                # only record variables that were not pass by reference
+                if not is_ref:
+                    var_buffer[arg_name] = deepcopy(prev_val)
+            except AttributeError:
+                # ignore variables that do not exist
+                pass
 
         # override the symbolic entries if we have concrete
         # arguments from the table
         for index, arg in enumerate(self.args):
-            arg_name = self.parameters[index][0]
-            p4_vars.set_or_add_var(arg_name, arg)
-
+            is_ref = self.parameters[index][0]
+            param_name = self.parameters[index][1]
+            if not is_ref:
+                arg = resolve_expr(p4_vars, expr_chain, arg)
+            p4_vars.set_or_add_var(param_name, arg)
+            # if is_ref:
+            #     p4_vars.set_or_add_var(arg_name, arg)
         # execute the action expression with the new environment
         expr = step(p4_vars, [self.block] + expr_chain)
-
         # reset the variables that were overwritten to their previous value
         # apparently p4 actions are pass by reference? So ignore that...
         # for action_arg in self.parameters:
-        #     p4_vars.del_var(action_arg[0])
-        # for arg_name, arg_expr in var_buffer.items():
-        #     p4_vars.set_or_add_var(arg_name, arg_expr)
+        # p4_vars.del_var(action_arg[1])
+        # for index, arg in enumerate(self.args):
+        #     is_ref = self.parameters[index][0]
+        #     param_name = self.parameters[index][1]
+        #     if isinstance(arg, str):
+        #         p4_var = p4_vars.get_var(param_name)
+        #         p4_vars.set_or_add_var(arg, p4_var)
+        for arg_name, arg_expr in var_buffer.items():
+            p4_vars.set_or_add_var(arg_name, arg_expr)
         return expr
 
 
@@ -547,17 +585,29 @@ class P4Table(P4Z3Class):
     def add_action(self, action_expr):
         # TODO Fix this roundabout way of getting a P4 Action,
         #  super annoying...
-        if not isinstance(action_expr, MethodCallExpr):
+        if isinstance(action_expr, MethodCallExpr):
+            expr_name = action_expr.expr
+            action_args = action_expr.args
+        elif isinstance(action_expr, str):
+            expr_name = action_expr
+            action_args = []
+        else:
             raise TypeError(f"Expected a method call, got {type(expr_name)}!")
-        expr_name = action_expr.expr
         index = len(self.actions) + 1
-        self.actions[expr_name] = (index, expr_name, action_expr.args)
+        self.actions[expr_name] = (index, expr_name, action_args)
 
     def add_default(self, action_expr):
-        expr_name = action_expr.expr
-        if not isinstance(expr_name, str):
-            raise TypeError(f"Expected a string, got {type(expr_name)}!")
-        self.actions["default_action"] = (0, expr_name, action_expr.args)
+        # TODO Fix this roundabout way of getting a P4 Action,
+        #  super annoying...
+        if isinstance(action_expr, MethodCallExpr):
+            expr_name = action_expr.expr
+            action_args = action_expr.args
+        elif isinstance(action_expr, str):
+            expr_name = action_expr
+            action_args = []
+        else:
+            raise TypeError(f"Expected a method call, got {type(expr_name)}!")
+        self.actions["default_action"] = (0, expr_name, action_args)
 
     def add_match(self, table_key):
         self.keys.append(table_key)

@@ -5,7 +5,7 @@ from p4z3.expressions import *
 
 
 def register(z3_reg):
-    z3_reg.register_typedef("error", z3.BitVecSort(1))
+    z3_reg.register_typedef("error", z3.BitVecSort(8))
     z3_reg.register_typedef("packet_out", z3.BitVecSort(1))
     z3_reg.register_typedef("packet_in", z3.BitVecSort(1))
 
@@ -29,7 +29,7 @@ def register(z3_reg):
     z3_reg.register_struct("standard_metadata_t", z3_args)
 
     mark_to_drop = P4Action()
-    mark_to_drop.add_parameter("smeta", z3_reg.type("standard_metadata_t"))
+    mark_to_drop.add_parameter("out", "smeta", z3_reg.type("standard_metadata_t"))
 
     def BLOCK():
         block = BlockStatement()
@@ -46,4 +46,14 @@ def register(z3_reg):
     stmt = BLOCK()
     mark_to_drop.add_stmt(stmt)
     z3_reg.register_extern("mark_to_drop", mark_to_drop)
+
+    NoAction = P4Action()
+
+    def BLOCK():
+        block = BlockStatement()
+        return block
+    stmt = BLOCK()
+    NoAction.add_stmt(stmt)
+    z3_reg.register_extern("NoAction", NoAction)
+
     return z3_reg

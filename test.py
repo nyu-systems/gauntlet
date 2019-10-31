@@ -103,6 +103,8 @@ bmv2_tests = [
     "issue1824-bmv2.p4",
     "issue1325-bmv2.p4",
     "v1model-special-ops-bmv2.p4",
+    "ternary2-bmv2.p4",
+    "issue1937-1-bmv2.p4",
 ]
 
 
@@ -114,6 +116,9 @@ def test_bmv2(test_name):
 # ***** violation tests*****
 violation_tests = [
     "key-bmv2",
+    "issue1544-bmv2-1",
+    "issue1544-bmv2-2",
+    "out-params-1",
 ]
 
 
@@ -186,6 +191,8 @@ skipped_tests = [
     "same_name_for_table_and_action.p4",
     "junk-prop-bmv2.p4",
     "parser-locals2.p4",
+    "issue793.p4",
+    "issue1205-bmv2.p4",
 ]
 
 
@@ -241,7 +248,6 @@ xfails = [
     "issue461-bmv2.p4",
     "issue512.p4",
     "issue561-1-bmv2.p4",
-    "issue793.p4",
     "issue907-bmv2.p4",
     "issue949.p4",
     "named_meter_bmv2.p4",
@@ -269,7 +275,6 @@ xfails = [
     "issue1107.p4",
     "issue1127-bmv2.p4",
     "issue1193-bmv2.p4",
-    "issue1205-bmv2.p4",
     "issue1210.p4",
     "issue1352-bmv2.p4",
     "issue1478-bmv2.p4",
@@ -291,7 +296,6 @@ xfails = [
     "issue1882-1-bmv2.p4",
     "issue1882-bmv2.p4",
     "issue1897-bmv2.p4",
-    "issue1937-1-bmv2.p4",
     "issue1989-bmv2.p4",
     "issue561-3-bmv2.p4",
     "issue561-4-bmv2.p4",
@@ -303,7 +307,6 @@ xfails = [
     "p416-type-use3.p4",
     "parser_error-bmv2.p4",
     "table-entries-valid-bmv2.p4",
-    "ternary2-bmv2.p4",  # action types not properly handled
     "test-parserinvalidargument-error-bmv2.p4",
     "union-bmv2.p4",
 ]
