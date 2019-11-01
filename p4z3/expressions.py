@@ -6,11 +6,15 @@ import operator as op
 from p4z3.base import *
 
 
-def resolve_expr(p4_vars, expr_chain, val) -> z3.SortRef:
+def resolve_expr(p4_vars, expr_chain, expr) -> z3.SortRef:
     # Resolves to z3 and z3p4 expressions, bools and int are also okay
     # resolve potential string references first
-    if isinstance(val, str):
-        val = p4_vars.resolve_reference(val)
+    if isinstance(expr, str):
+        val = p4_vars.resolve_reference(expr)
+        if val is None:
+            raise RuntimeError(f"Value {expr} could not be found!")
+    else:
+        val = expr
 
     if isinstance(val, (z3.ExprRef, int)):
         # These are z3 types and can be returned
@@ -365,57 +369,27 @@ class BlockStatement(P4Z3Class):
         return step(p4_vars, self.exprs + expr_chain)
 
 
-class P4Control(P4Z3Class):
-
-    def __init__(self):
-        self.apply_block = []
-        self.locals = []
-        self.args = []
-
-    def declare_local(self, local_name, local):
-        self.locals.append((local_name, local))
-
-    def add_args(self, args):
-        self.args = args
-
-    def add_apply_stmt(self, stmt):
-        self.apply_block.append(stmt)
-
-    def apply(self, p4_vars, expr_chain, *p4_args):
-        return step(p4_vars, [self] + expr_chain)
-
-    def eval(self, p4_vars, expr_chain):
-        local_decls = []
-        for local in self.locals:
-            decl = P4Declaration(local[0], local[1])
-            local_decls.append(decl)
-            # p4_vars.set_or_add_var(local[0], local[1])
-        expr_chain = local_decls + self.apply_block + expr_chain
-        return step(p4_vars, expr_chain)
-
-
 class P4Action(P4Z3Class):
 
     def __init__(self):
-        self.block = None
-        self.parameters = []
+        self.block = []
+        self.params = []
         self.args = []
 
     def add_parameter(self, is_ref, arg_name, arg_type):
-        self.parameters.append((is_ref, arg_name, arg_type))
+        self.params.append((is_ref, arg_name, arg_type))
 
     def add_stmt(self, block):
         if not isinstance(block, BlockStatement):
             raise RuntimeError(f"Expected a block, got {block}!")
-        self.block = block
+        self.block.append(block)
 
     def get_parameters(self):
-        return self.parameters
+        return self.params
 
     def set_param_args(self, arg_prefix):
-
         action_args = []
-        for param in self.parameters:
+        for param in self.params:
             is_ref = param[0]
             arg_name = param[1]
             arg_type = param[2]
@@ -435,44 +409,71 @@ class P4Action(P4Z3Class):
 
     def eval(self, p4_vars, expr_chain):
         var_buffer = {}
-        for action_arg in self.parameters:
+        for action_arg in self.params:
             is_ref = action_arg[0]
             arg_name = action_arg[1]
             # previous previous variables in the environment
-            try:
-                prev_val = p4_vars.get_var(arg_name)
-                # only record variables that were not pass by reference
-                if not is_ref:
-                    var_buffer[arg_name] = deepcopy(prev_val)
-            except AttributeError:
+            prev_val = p4_vars.get_var(arg_name)
+            if prev_val is not None and not is_ref:
                 # ignore variables that do not exist
-                pass
+                # only record variables that were not pass by reference
+                var_buffer[arg_name] = deepcopy(prev_val)
 
         # override the symbolic entries if we have concrete
         # arguments from the table
         for index, arg in enumerate(self.args):
-            is_ref = self.parameters[index][0]
-            param_name = self.parameters[index][1]
+            is_ref = self.params[index][0]
+            param_name = self.params[index][1]
             if not is_ref:
                 arg = resolve_expr(p4_vars, expr_chain, arg)
             p4_vars.set_or_add_var(param_name, arg)
             # if is_ref:
             #     p4_vars.set_or_add_var(arg_name, arg)
         # execute the action expression with the new environment
-        expr = step(p4_vars, [self.block] + expr_chain)
-        # reset the variables that were overwritten to their previous value
-        # apparently p4 actions are pass by reference? So ignore that...
-        # for action_arg in self.parameters:
-        # p4_vars.del_var(action_arg[1])
-        # for index, arg in enumerate(self.args):
-        #     is_ref = self.parameters[index][0]
-        #     param_name = self.parameters[index][1]
-        #     if isinstance(arg, str):
-        #         p4_var = p4_vars.get_var(param_name)
-        #         p4_vars.set_or_add_var(arg, p4_var)
+        expr = step(p4_vars, self.block)
+        # # delete all the local variables
+        # for action_arg in self.params:
+        #     is_ref = action_arg[0]
+        #     arg_name = action_arg[1]
+        #     if not is_ref:
+        #         p4_vars.del_var(arg_name)
+        # # for index, arg in enumerate(self.args):
+        # #     is_ref = self.params[index][0]
+        # #     param_name = self.params[index][1]
+        # #     if isinstance(arg, str):
+        # #         p4_var = p4_vars.get_var(param_name)
+        # #         p4_vars.set_or_add_var(arg, p4_var)
         for arg_name, arg_expr in var_buffer.items():
             p4_vars.set_or_add_var(arg_name, arg_expr)
-        return expr
+        return step(p4_vars, expr_chain, expr)
+
+
+class P4Control(P4Action):
+
+    def __init__(self):
+        super(P4Control, self).__init__()
+        self.locals = []
+
+    def declare_local(self, local_name, local):
+        self.locals.append((local_name, local))
+
+    def add_args(self, params):
+        self.params = params
+
+    def add_apply_stmt(self, stmt):
+        self.block.append(stmt)
+
+    def apply(self, p4_vars, expr_chain, *p4_args):
+        self.args = p4_args
+        return self.eval(p4_vars, expr_chain)
+
+    def eval(self, p4_vars, expr_chain):
+        local_decls = []
+        for local in self.locals:
+            decl = P4Declaration(local[0], local[1])
+            local_decls.append(decl)
+        self.block = local_decls + self.block
+        return P4Action.eval(self, p4_vars, expr_chain)
 
 
 class IfStatement(P4Z3Class):
@@ -634,8 +635,7 @@ class P4Table(P4Z3Class):
         p4_vars = deepcopy(p4_vars)
         p4_action.set_param_args(arg_prefix=self.name)
         p4_action.merge_args(p4_vars, expr_chain, action_tuple[1])
-        action_expr = step(p4_vars, [p4_action] + expr_chain)
-        return action_expr
+        return step(p4_vars, [p4_action] + expr_chain)
 
     def apply(self, p4_vars, expr_chain):
         return step(p4_vars, [self] + expr_chain)

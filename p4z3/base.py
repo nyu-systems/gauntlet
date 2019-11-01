@@ -43,7 +43,6 @@ class P4ComplexType():
      if it is a basic type. A DataTypeRef should never be a member and always
     needs to be converted to a P4ComplexType.
     """
-    ref_vars = []
 
     def __init__(self, z3_reg, z3_type: z3.SortRef, name):
         self.name = name
@@ -149,7 +148,7 @@ class P4ComplexType():
             rval = self.resolve_reference(rval)
 
         log.debug("Setting %s(%s) to %s(%s) ",
-                 lstring, type(lstring), rval, type(rval))
+                  lstring, type(lstring), rval, type(rval))
         if '.' in lstring:
             # this means we are accessing a complex member
             # get the parent class and update its value
@@ -232,6 +231,8 @@ class Header(P4ComplexType):
 
     def __eq__(self, other):
         if isinstance(other, Header):
+            # correspond to the P4 semantics for comparing headers
+            # when both headers are invalid return true
             check_valid = z3.And(z3.Not(self.valid), z3.Not(other.valid))
             return z3.Or(check_valid, self.const == other.const)
         return z3.BoolVal(False)
@@ -264,6 +265,15 @@ class Z3Reg():
 
     def register_inouts(self, name, z3_args):
         self._register_structlike(name, P4State, z3_args)
+
+    def init_p4_state(self, name, z3_args):
+        stripped_args = []
+        for arg in z3_args:
+            stripped_args.append((arg[1], arg[2]))
+        self._register_structlike(name, P4State, stripped_args)
+        p4_state = self.instance("", self.type(name))
+        p4_state.add_externs(self._externs)
+        return p4_state
 
     def register_typedef(self, name, target):
         self._types[name] = target
