@@ -42,19 +42,22 @@ def handle_pyz3_error(fail_dir, p4_file):
     util.copy_file(failed, fail_dir)
 
 
-def get_z3_repr(p4_module, p4_path, fail_dir):
+def get_z3_asts(p4_module, p4_path, fail_dir):
+    z3_asts = {}
     try:
-        z3_reg, v1model = p4_module(Z3Reg())
-        p4_ctrl = v1model.ig
-        p4_vars = z3_reg.init_p4_state("inouts", p4_ctrl.params)
-        z3_ast = p4_ctrl.eval(p4_vars, [])
+        z3_reg, package = p4_module(Z3Reg())
+        for pipe_name, pipe in package.__dict__.items():
+            if pipe_name != "ig":
+                continue
+            p4_vars = z3_reg.init_p4_state("inouts", pipe.params)
+            z3_asts[pipe_name] = pipe.eval(p4_vars, [])
     except Exception:
         log.exception("Failed to compile Python to Z3:\n")
         if fail_dir:
             handle_pyz3_error(fail_dir, p4_path)
             debug_msg([p4_path, p4_path])
         return None
-    return z3_ast
+    return z3_asts
 
 
 def check_equivalence(prog_before, prog_after):
@@ -80,7 +83,7 @@ def check_equivalence(prog_before, prog_after):
         return util.EXIT_SUCCESS
 
 
-def get_ctrl_module(prog_path):
+def get_py_module(prog_path):
     ctrl_dir = prog_path.parent
     ctrl_name = prog_path.stem
     ctrl_function = "p4_program"
@@ -107,23 +110,27 @@ def z3_check(prog_paths, fail_dir=None):
         p4_pre_path = Path(prog_paths[i - 1])
         p4_post_path = Path(prog_paths[i])
 
-        p4_pre = get_ctrl_module(p4_pre_path)
-        p4_post = get_ctrl_module(p4_post_path)
+        p4_pre = get_py_module(p4_pre_path)
+        p4_post = get_py_module(p4_post_path)
         if p4_pre is None or p4_post is None:
             return util.EXIT_FAILURE
         log.info("Comparing programs\n%s\n%s\n########",
                  p4_pre_path.stem, p4_post_path.stem)
-        ctrl_fun_pre = get_z3_repr(p4_pre, p4_pre_path, fail_dir)
-        ctrl_fun_post = get_z3_repr(p4_post, p4_post_path, fail_dir)
-        if ctrl_fun_pre is None or ctrl_fun_post is None:
+        pipes_pre = get_z3_asts(p4_pre, p4_pre_path, fail_dir)
+        pipes_post = get_z3_asts(p4_post, p4_post_path, fail_dir)
+        if len(pipes_pre) != len(pipes_post):
+            log.error("Pre and post model differ in size!")
             return util.EXIT_FAILURE
-        ret = check_equivalence(ctrl_fun_pre, ctrl_fun_post)
-        if ret != util.EXIT_SUCCESS:
-            if fail_dir:
-                handle_pyz3_error(fail_dir, p4_pre_path)
-                handle_pyz3_error(fail_dir, p4_post_path)
-                debug_msg([p4_pre_path, p4_post_path])
-            return ret
+        for pipe_name in pipes_pre:
+            pipe_pre = pipes_pre[pipe_name]
+            pipe_post = pipes_post[pipe_name]
+            ret = check_equivalence(pipe_pre, pipe_post)
+            if ret != util.EXIT_SUCCESS:
+                if fail_dir:
+                    handle_pyz3_error(fail_dir, p4_pre_path)
+                    handle_pyz3_error(fail_dir, p4_post_path)
+                    debug_msg([p4_pre_path, p4_post_path])
+                return ret
     return util.EXIT_SUCCESS
 
 

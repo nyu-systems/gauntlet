@@ -54,8 +54,10 @@ def exec_process(cmd, out_file=subprocess.STDOUT):
         if result.stdout:
             log.debug("Process output: %s" % result.stdout)
         if result.returncode != 0:
-            log.error("Failed while executing:\n%s" % cmd)
-            log.error(result.stderr)
+            log.error("##################################")
+            log.error("Failed while executing:\n%s\n" % cmd)
+            log.error("Output:\n%s" % str(result.stderr))
+            log.error("##################################\n\n")
         return result
     err = out_file + ".err"
     out = out_file + ".out"

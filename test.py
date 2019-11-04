@@ -22,23 +22,6 @@ P4_DIR = FILE_DIR.joinpath("p4c/testdata/p4_16_samples/")
 P4C_BIN = FILE_DIR.joinpath("p4c/build/p4c-bm2-ss")
 P4C_BIN_1863 = FILE_DIR.joinpath("p4c_bins/issue1863")
 
-
-def prep_test(p4_name, p4_dir=P4_DIR):
-    p4_file = p4_dir.joinpath(p4_name)
-    target_dir = TARGET_DIR.joinpath(p4_file.stem)
-    util.del_dir(target_dir)
-    util.check_dir(target_dir)
-    return p4_file, target_dir
-
-
-def run_z3p4_test(test_name):
-    p4_file, target_dir = prep_test(test_name)
-    result = p4c_check.validate_translation(p4_file, target_dir, P4C_BIN)
-    if result == util.EXIT_SKIPPED:
-        pytest.skip(f"Skipping file {p4_file}.")
-    return result
-
-
 # ***** working tests *****
 bmv2_tests = [
     "key-bmv2.p4",
@@ -107,13 +90,6 @@ bmv2_tests = [
     "issue1937-1-bmv2.p4",
     "issue1025-bmv2.p4",
 ]
-
-
-@pytest.mark.parametrize("test_name", bmv2_tests)
-def test_bmv2(test_name):
-    assert run_z3p4_test(test_name) == util.EXIT_SUCCESS
-
-
 # ***** violation tests*****
 violation_tests = [
     "key-bmv2",
@@ -124,26 +100,6 @@ violation_tests = [
     "drop-bmv2",
     "basic_routing",
 ]
-
-
-def run_violation_test(test_folder):
-    test_folder = Path("violated").joinpath(test_folder)
-    src_p4_file = test_folder.joinpath("orig.p4")
-    src_py_file = test_folder.joinpath(f"{src_p4_file.stem}.py")
-    p4c_check.run_p4_to_py(src_p4_file, src_py_file)
-    for p4_file in list(test_folder.glob("**/[0-9]*.p4")):
-        py_file = test_folder.joinpath(f"{p4_file.stem}.py")
-        p4c_check.run_p4_to_py(p4_file, py_file)
-        result = z3_check.z3_check([str(src_py_file), str(py_file)])
-        if result != util.EXIT_VIOLATION:
-            return util.EXIT_FAILURE
-    return util.EXIT_SUCCESS
-
-
-@pytest.mark.parametrize("test_folder", violation_tests)
-def test_violation(test_folder):
-    assert run_violation_test(test_folder) == util.EXIT_SUCCESS
-
 
 # ***** working tests but do not generate passes *****
 skipped_tests = [
@@ -198,21 +154,6 @@ skipped_tests = [
     "issue793.p4",
     "issue1205-bmv2.p4",
 ]
-
-
-@pytest.mark.parametrize("test_name", skipped_tests)
-def test_skipped(test_name):
-    assert run_z3p4_test(test_name) == util.EXIT_SKIPPED
-
-# ***** actual violation *****
-
-
-def test_issue1863_broken():
-    p4_dir = Path("violated/issue1863/")
-    p4_file, target_dir = prep_test("issue1863-bmv2.p4", p4_dir)
-    result = p4c_check.validate_translation(p4_file, target_dir, P4C_BIN_1863)
-    assert result == util.EXIT_VIOLATION
-
 
 # ***** broken tests, need fixing *****
 
@@ -314,8 +255,69 @@ xfails = [
     "union-bmv2.p4",
 ]
 
+# bmv2_tests = []
+# all_tests = list(P4_DIR.glob("*.p4"))
+# for test in all_tests:
+#     bmv2_tests.append(str(test.name))
+
+
+def prep_test(p4_name, p4_dir=P4_DIR):
+    p4_file = p4_dir.joinpath(p4_name)
+    target_dir = TARGET_DIR.joinpath(p4_file.stem)
+    util.del_dir(target_dir)
+    util.check_dir(target_dir)
+    return p4_file, target_dir
+
+
+def run_z3p4_test(test_name):
+    p4_file, target_dir = prep_test(test_name)
+    result = p4c_check.validate_translation(p4_file, target_dir, P4C_BIN)
+    if result == util.EXIT_SKIPPED:
+        pytest.skip(f"Skipping file {p4_file}.")
+    return result
+
+
+def run_violation_test(test_folder):
+    test_folder = Path("violated").joinpath(test_folder)
+    src_p4_file = test_folder.joinpath("orig.p4")
+    src_py_file = test_folder.joinpath(f"{src_p4_file.stem}.py")
+    p4c_check.run_p4_to_py(src_p4_file, src_py_file)
+    for p4_file in list(test_folder.glob("**/[0-9]*.p4")):
+        py_file = test_folder.joinpath(f"{p4_file.stem}.py")
+        p4c_check.run_p4_to_py(p4_file, py_file)
+        result = z3_check.z3_check([str(src_py_file), str(py_file)])
+        if result != util.EXIT_VIOLATION:
+            return util.EXIT_FAILURE
+    return util.EXIT_SUCCESS
+
+
+@pytest.mark.parametrize("test_name", bmv2_tests)
+def test_bmv2(test_name):
+    assert run_z3p4_test(test_name) == util.EXIT_SUCCESS
+
+
+@pytest.mark.parametrize("test_folder", violation_tests)
+def test_violation(test_folder):
+    assert run_violation_test(test_folder) == util.EXIT_SUCCESS
+
+
+@pytest.mark.parametrize("test_name", skipped_tests)
+def test_skipped(test_name):
+    assert run_z3p4_test(test_name) == util.EXIT_SKIPPED
+
 
 @pytest.mark.xfail
 @pytest.mark.parametrize("test_name", xfails)
 def test_xfails(test_name):
     assert run_z3p4_test(test_name) == util.EXIT_SUCCESS
+
+
+def test_issue1863_broken():
+    # ***** actual custom violation *****
+    p4_dir = Path("violated/issue1863/")
+    p4_file, target_dir = prep_test("issue1863-bmv2.p4", p4_dir)
+    result = p4c_check.validate_translation(p4_file, target_dir, P4C_BIN_1863)
+    assert result == util.EXIT_VIOLATION
+
+# cat analysis.log |
+# grep -Po '(?<=(Node )).*(?=not implemented)' | sort | uniq -c

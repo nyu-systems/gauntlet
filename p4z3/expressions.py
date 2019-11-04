@@ -476,6 +476,22 @@ class P4Control(P4Action):
         return P4Action.eval(self, p4_vars, expr_chain)
 
 
+class P4Parser(P4Action):
+
+    def __init__(self):
+        super(P4Parser, self).__init__()
+
+    def add_args(self, params):
+        self.params = params
+
+    def apply(self, p4_vars, expr_chain, *p4_args):
+        self.args = p4_args
+        return self.eval(p4_vars, expr_chain)
+
+    def eval(self, p4_vars, expr_chain):
+        return P4Action.eval(self, p4_vars, expr_chain)
+
+
 class IfStatement(P4Z3Class):
 
     def __init__(self):
