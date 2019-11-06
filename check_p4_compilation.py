@@ -27,9 +27,9 @@ P4Z3_BIN = FILE_DIR + "/p4c/build/p4toz3"
 def generate_p4_dump(p4c_bin, p4_file, p4_dmp_dir):
     p4_cmd = f"{p4c_bin} "
     p4_cmd += " --top4 MidEnd "
-    # disable frontend for now
     # p4_cmd += "-vvvv --top4 MidEnd "
-    # p4_cmd += " --top4 FrontEnd,MidEnd "
+    # p4_cmd += " -vvvv --top4 FrontEnd "
+    # p4_cmd += " --top4 FrontEnd "
     p4_cmd += f"--dump {p4_dmp_dir} {p4_file}"
     log.debug("Running dumps with command %s ", p4_cmd)
     return util.exec_process(p4_cmd)

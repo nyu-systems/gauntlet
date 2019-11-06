@@ -118,6 +118,8 @@ def z3_check(prog_paths, fail_dir=None):
                  p4_pre_path.stem, p4_post_path.stem)
         pipes_pre = get_z3_asts(p4_pre, p4_pre_path, fail_dir)
         pipes_post = get_z3_asts(p4_post, p4_post_path, fail_dir)
+        if not pipes_pre or not pipes_post:
+            return util.EXIT_FAILURE
         if len(pipes_pre) != len(pipes_post):
             log.error("Pre and post model differ in size!")
             return util.EXIT_FAILURE
