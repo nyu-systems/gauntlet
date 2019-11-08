@@ -1,8 +1,0 @@
---- before_pass
-+++ after_pass
-@@ -25,4 +25,4 @@ control ctrl(inout struct_t input, out b
- }
- control MyControl<S, H>(inout S i, out bit<8> o1, out H o2);
- package MyPackage<S, H>(MyControl<S, H> c);
--MyPackage(ctrl()) main;
-+MyPackage<struct_t, header_h>(ctrl()) main;

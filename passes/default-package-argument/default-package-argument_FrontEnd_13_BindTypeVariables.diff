@@ -1,8 +1,0 @@
---- before_pass
-+++ after_pass
-@@ -14,4 +14,4 @@ struct hdr_t {
- }
- struct meta_t {
- }
--P(c = nothing()) main;
-+P<empty_t, empty_t>(c = nothing()) main;

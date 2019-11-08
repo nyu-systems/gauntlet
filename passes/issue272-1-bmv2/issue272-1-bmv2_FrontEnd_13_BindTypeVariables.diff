@@ -1,8 +1,0 @@
---- before_pass
-+++ after_pass
-@@ -35,4 +35,4 @@ control EgressI(inout H hdr, inout M met
-     apply {
-     }
- }
--V1Switch(ParserI(), VerifyChecksumI(), IngressI(), EgressI(), ComputeChecksumI(), DeparserI()) main;
-+V1Switch<H, M>(ParserI(), VerifyChecksumI(), IngressI(), EgressI(), ComputeChecksumI(), DeparserI()) main;

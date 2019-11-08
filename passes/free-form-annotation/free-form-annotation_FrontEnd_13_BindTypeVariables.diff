@@ -1,8 +1,0 @@
---- before_pass
-+++ after_pass
-@@ -29,4 +29,4 @@ control deparser(packet_out b, in Header
-     apply {
-     }
- }
--V1Switch(p(), c(), ingress(), egress(), c(), deparser()) main;
-+V1Switch<Header_t, Meta_t>(p(), c(), ingress(), egress(), c(), deparser()) main;

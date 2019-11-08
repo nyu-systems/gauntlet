@@ -1,9 +1,0 @@
---- before_pass
-+++ after_pass
-@@ -1,6 +1,5 @@
- #include <core.p4>
- #include <v1model.p4>
--typedef bit<48> EthernetAddress;
- header X {
-     bit<32> add1;
- }

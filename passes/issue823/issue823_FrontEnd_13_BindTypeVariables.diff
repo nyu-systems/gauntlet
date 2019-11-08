@@ -1,8 +1,0 @@
---- before_pass
-+++ after_pass
-@@ -24,4 +24,4 @@ control MyC1() {
-     apply {
-     }
- }
--S(MyP1(), MyC1()) main;
-+S<headers_t>(MyP1(), MyC1()) main;

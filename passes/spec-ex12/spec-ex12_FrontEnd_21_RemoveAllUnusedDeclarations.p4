@@ -1,2 +1,0 @@
-header Empty_h {
-}

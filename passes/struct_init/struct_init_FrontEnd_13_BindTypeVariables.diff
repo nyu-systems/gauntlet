@@ -1,8 +1,0 @@
---- before_pass
-+++ after_pass
-@@ -14,4 +14,4 @@ control I(inout metadata_t meta) {
- }
- control C<M>(inout M m);
- package top<M>(C<M> c);
--top(I()) main;
-+top<metadata_t>(I()) main;

@@ -1,7 +1,0 @@
---- before_pass
-+++ after_pass
-@@ -1,4 +1,2 @@
- extern packet_in {
- }
--parser filter(packet_in packet, out bool drop);
--package Filter(filter f);

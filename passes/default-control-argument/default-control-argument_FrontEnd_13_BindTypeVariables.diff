@@ -1,8 +1,0 @@
---- before_pass
-+++ after_pass
-@@ -14,4 +14,4 @@ control MyC(inout hdr_t hdr, inout meta_
-     apply {
-     }
- }
--P(MyC()) main;
-+P<hdr_t, meta_t>(MyC()) main;

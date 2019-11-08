@@ -1,8 +1,0 @@
---- before_pass
-+++ after_pass
-@@ -28,4 +28,4 @@ control MyED(packet_out buffer, out EMPT
-     apply {
-     }
- }
--PSA_Switch(IngressPipeline(MyIP(), MyIC(), MyID()), PacketReplicationEngine(), EgressPipeline(MyEP(), MyEC(), MyED()), BufferingQueueingEngine()) main;
-+PSA_Switch<EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY>(IngressPipeline<EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY>(MyIP(), MyIC(), MyID()), PacketReplicationEngine(), EgressPipeline<EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY>(MyEP(), MyEC(), MyED()), BufferingQueueingEngine()) main;

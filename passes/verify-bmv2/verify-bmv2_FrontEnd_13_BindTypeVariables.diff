@@ -1,8 +1,0 @@
---- before_pass
-+++ after_pass
-@@ -37,4 +37,4 @@ control MyDeparser(packet_out b, in h hd
-     apply {
-     }
- }
--V1Switch(MyParser(), MyVerifyChecksum(), MyIngress(), MyEgress(), MyComputeChecksum(), MyDeparser()) main;
-+V1Switch<h, m>(MyParser(), MyVerifyChecksum(), MyIngress(), MyEgress(), MyComputeChecksum(), MyDeparser()) main;

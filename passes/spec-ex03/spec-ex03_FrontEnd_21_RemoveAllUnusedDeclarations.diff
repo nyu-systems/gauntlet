@@ -1,9 +1,0 @@
---- before_pass
-+++ after_pass
-@@ -1,6 +0,0 @@
--typedef bit<3> bi;
--control dp() {
--    apply {
--        bi t;
--    }
--}

@@ -1,8 +1,0 @@
---- before_pass
-+++ after_pass
-@@ -1,5 +0,0 @@
--parser p() {
--    state start {
--        transition reject;
--    }
--}

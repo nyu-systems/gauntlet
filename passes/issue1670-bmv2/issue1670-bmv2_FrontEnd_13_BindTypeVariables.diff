@@ -1,8 +1,0 @@
---- before_pass
-+++ after_pass
-@@ -38,4 +38,4 @@ control compute_checksum(inout parsed_pa
-     apply {
-     }
- }
--V1Switch(parse(), verifyChecksum(), ingress(), egress(), compute_checksum(), deparser()) main;
-+V1Switch<parsed_packet_t, local_metadata_t>(parse(), verifyChecksum(), ingress(), egress(), compute_checksum(), deparser()) main;

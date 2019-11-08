@@ -1,8 +1,0 @@
---- before_pass
-+++ after_pass
-@@ -43,4 +43,4 @@ control computeChecksum(inout headers_t
-     apply {
-     }
- }
--V1Switch(ParserImpl(), verifyChecksum(), ingress(), egress(), computeChecksum(), DeparserImpl()) main;
-+V1Switch<headers_t, metadata_t>(ParserImpl(), verifyChecksum(), ingress(), egress(), computeChecksum(), DeparserImpl()) main;

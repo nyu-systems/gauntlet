@@ -1,8 +1,0 @@
---- before_pass
-+++ after_pass
-@@ -64,4 +64,4 @@ control ingress(inout headers hdr, inout
-         acl_table.apply();
-     }
- }
--V1Switch(parser_stub(), verify_checksum_stub(), ingress(), egress_stub(), compute_checksum_stub(), deparser_stub()) main;
-+V1Switch<headers, test_metadata_t>(parser_stub(), verify_checksum_stub(), ingress(), egress_stub(), compute_checksum_stub(), deparser_stub()) main;

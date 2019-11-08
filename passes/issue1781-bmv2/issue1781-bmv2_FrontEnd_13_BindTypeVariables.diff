@@ -1,8 +1,0 @@
---- before_pass
-+++ after_pass
-@@ -38,4 +38,4 @@ control DeparserImpl(packet_out packet,
-     apply {
-     }
- }
--V1Switch(ParserImpl(), VerifyChecksumImpl(), IngressImpl(), EgressImpl(), ComputeChecksumImpl(), DeparserImpl()) main;
-+V1Switch<headers, metadata>(ParserImpl(), VerifyChecksumImpl(), IngressImpl(), EgressImpl(), ComputeChecksumImpl(), DeparserImpl()) main;

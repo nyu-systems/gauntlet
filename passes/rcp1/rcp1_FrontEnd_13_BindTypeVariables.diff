@@ -1,8 +1,0 @@
---- before_pass
-+++ after_pass
-@@ -34,4 +34,4 @@ control ingress(inout H pkt_hdr, in Meta
-         }
-     }
- }
--top(ingress()) main;
-+top<H, Metadata>(ingress()) main;

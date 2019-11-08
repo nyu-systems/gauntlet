@@ -14,8 +14,8 @@ parser ParserI(packet_in pk, out H hdr, inout M meta, inout standard_metadata_t 
 }
 
 control IngressI(inout H hdr, inout M meta, inout standard_metadata_t smeta) {
-    @name(".drop") action drop(inout standard_metadata_t smeta_1) {
-        mark_to_drop(smeta_1);
+    @name(".drop") action drop(inout standard_metadata_t smeta) {
+        mark_to_drop(smeta);
     }
     @name("IngressI.forward") table forward_0 {
         key = {
@@ -27,6 +27,7 @@ control IngressI(inout H hdr, inout M meta, inout standard_metadata_t smeta) {
     }
     apply {
         forward_0.apply();
+        smeta.egress_spec = 9;
     }
 }
 
