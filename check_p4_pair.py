@@ -17,6 +17,18 @@ stderr_log = logging.StreamHandler()
 stderr_log.setFormatter(logging.Formatter("%(levelname)s:%(message)s"))
 log.addHandler(stderr_log)
 
+# We maintain a list of passes that causes segmentation faults
+# TODO: Fix these, likely by using simulation relations
+SKIPPED_PASSES = ["Flatten", "UniqueNames", "Inline"]
+
+
+def needs_skipping(pre, post):
+    for skip_pass in SKIPPED_PASSES:
+        if skip_pass in pre or skip_pass in post:
+            log.warning("Skipping \"%s\" pass to avoid crashes...", skip_pass)
+            return True
+    return False
+
 
 def import_prog(ctrl_dir, ctrl_name, prog_name):
     """ Try to import a module and class directly instead of the typical
@@ -101,11 +113,10 @@ def z3_check(prog_paths, fail_dir=None):
         log.error("The equivalence check requires at least two input programs!")
         return util.EXIT_FAILURE
     for i in range(1, len(prog_paths)):
-        # We do not support the flatten passes right now
+        # We do not support the passes which rename variables right now
         # Reason is they generate entirely new variables
-        # which cause z3 to generate a false positive
-        if "Flatten" in prog_paths[i - 1] or "Flatten" in prog_paths[i]:
-            log.warning("Skipping \"Flatten\" passes because of z3 crash...")
+        # which cause z3 to crash for some reason...
+        if needs_skipping(prog_paths[i - 1], prog_paths[i]):
             continue
         p4_pre_path = Path(prog_paths[i - 1])
         p4_post_path = Path(prog_paths[i])

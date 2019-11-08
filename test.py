@@ -25,14 +25,8 @@ P4C_BIN_1863 = FILE_DIR.joinpath("p4c_bins/issue1863")
 # ***** working tests *****
 bmv2_tests = [
     "key-bmv2.p4",
-    "issue249.p4",
-    "issue270-bmv2.p4",
-    "issue272-1-bmv2.p4",
-    "issue281.p4",
     "array-copy-bmv2.p4",
     "basic_routing-bmv2.p4",
-    "issue323.p4",
-    "issue447-3-bmv2.p4",
     "pvs-nested-struct.p4",
     "checksum1-bmv2.p4",
     "def-use.p4",
@@ -41,18 +35,6 @@ bmv2_tests = [
     "equality-varbit-bmv2.p4",
     "flag_lost-bmv2.p4",
     "ipv6-switch-ml-bmv2.p4",
-    "issue355-bmv2.p4",
-    "issue361-bmv2.p4",
-    "issue447-2-bmv2.p4",
-    "issue447-bmv2.p4",
-    "issue486-bmv2.p4",
-    "issue655-bmv2.p4",
-    "issue655.p4",
-    "issue692-bmv2.p4",
-    "issue774-4-bmv2.p4",
-    "issue887.p4",
-    "issue891-bmv2.p4",
-    "issue983-bmv2.p4",
     "match-on-exprs-bmv2.p4",
     "match-on-exprs2-bmv2.p4",
     "multicast-bmv2.p4",
@@ -65,10 +47,54 @@ bmv2_tests = [
     "subparser-with-header-stack-bmv2.p4",
     "verify-bmv2.p4",
     "x-bmv2.p4",
-    "issue1079-bmv2.p4",
+    "equality-bmv2.p4",
+    "v1model-special-ops-bmv2.p4",
+    "ternary2-bmv2.p4",
+    "union-valid-bmv2.p4",
+    "union-bmv2.p4",
+    "union1-bmv2.p4",
+    "union2-bmv2.p4",
+    "union3-bmv2.p4",
+    "union4-bmv2.p4",
+    "bvec_union-bmv2.p4",
+    "header-bool-bmv2.p4",
+    "header-stack-ops-bmv2.p4",
     "issue134-bmv2.p4",
+    "issue249.p4",
+    "issue270-bmv2.p4",
+    "issue272-1-bmv2.p4",
+    "issue281.p4",
+    "issue323.p4",
+    "issue355-bmv2.p4",
+    "issue361-bmv2.p4",
+    "issue430-1-bmv2.p4",
+    "issue447-bmv2.p4",
+    "issue447-2-bmv2.p4",
+    "issue447-3-bmv2.p4",
+    "issue486-bmv2.p4",
+    "issue561-bmv2.p4",
+    "issue561-1-bmv2.p4",
+    "issue561-2-bmv2.p4",
+    "issue561-3-bmv2.p4",
+    "issue561-4-bmv2.p4",
+    "issue561-5-bmv2.p4",
+    "issue561-6-bmv2.p4",
+    "issue561-7-bmv2.p4",
+    "issue655-bmv2.p4",
+    "issue655.p4",
+    "issue692-bmv2.p4",
+    "issue774-4-bmv2.p4",
+    "issue841.p4",
+    "issue887.p4",
+    "issue891-bmv2.p4",
+    "issue983-bmv2.p4",
+    "issue1025-bmv2.p4",
+    "issue1079-bmv2.p4",
+    "issue1127-bmv2.p4",
+    "issue1325-bmv2.p4",
     "issue1409-bmv2.p4",
     "issue1470-bmv2.p4",
+    "issue1538.p4",
     "issue1544-1-bmv2.p4",
     "issue1544-2-bmv2.p4",
     "issue1544-bmv2.p4",
@@ -80,16 +106,14 @@ bmv2_tests = [
     "issue1781-bmv2.p4",
     "issue1937-2-bmv2.p4",
     "issue1937-3-bmv2.p4",
-    "issue1955.p4",
-    "equality-bmv2.p4",
-    "issue1538.p4",
+    "issue1765-1-bmv2.p4",
+    "issue1879-bmv2.p4",
+    "issue1897-bmv2.p4",
     "issue1824-bmv2.p4",
-    "issue1325-bmv2.p4",
-    "v1model-special-ops-bmv2.p4",
-    "ternary2-bmv2.p4",
     "issue1937-1-bmv2.p4",
-    "issue1025-bmv2.p4",
+    "issue1955.p4",
 ]
+
 # ***** violation tests*****
 violation_tests = [
     "key-bmv2",
@@ -165,34 +189,27 @@ xfails = [
     "action_selector_unused-bmv2.p4",  # Action selector
     "issue297-bmv2.p4",  # Action profile
     "issue298-bmv2.p4",  # register
-    "issue561-2-bmv2.p4",  # header union
     "bvec-hdr-bmv2.p4",  # Vector arguments
-    "bvec_union-bmv2.p4",  # Vector arguments
     "checksum2-bmv2.p4",  # parser error
     "checksum3-bmv2.p4",  # parser error
     "crc32-bmv2.p4",  # HashAlgorithm
     "fabric_20190420/fabric.p4",  # direct_counter
     "flowlet_switching-bmv2.p4",  # register
     "hash-bmv2.p4",  # externs
-    "header-bool-bmv2.p4",  # type union not supported
     "issue1097-2-bmv2.p4",
     "issue1097-bmv2.p4",
-    "header-stack-ops-bmv2.p4",
     "issue232-bmv2.p4",
     "issue242.p4",
     "issue1412-bmv2.p4",
     "issue696-bmv2.p4",
-    "issue841.p4",
     "mux-bmv2.p4",
     "named_meter_1-bmv2.p4",
     "issue364-bmv2.p4",
     "issue383-bmv2.p4",
     "issue420.p4",
-    "issue430-1-bmv2.p4",
     "issue430-bmv2.p4",
     "issue461-bmv2.p4",
     "issue512.p4",
-    "issue561-1-bmv2.p4",
     "issue907-bmv2.p4",
     "issue949.p4",
     "named_meter_bmv2.p4",
@@ -207,17 +224,11 @@ xfails = [
     "table-entries-range-bmv2.p4",
     "table-entries-ser-enum-bmv2.p4",
     "table-entries-ternary-bmv2.p4",
-    "union-valid-bmv2.p4",
-    "union1-bmv2.p4",
-    "union2-bmv2.p4",
-    "union3-bmv2.p4",
-    "union4-bmv2.p4",
     "unused-counter-bmv2.p4",
     "v1model-p4runtime-most-types1.p4",
     "issue1049-bmv2.p4",
     "issue1062-bmv2.p4",
     "issue1107.p4",
-    "issue1127-bmv2.p4",
     "issue1193-bmv2.p4",
     "issue1210.p4",
     "issue1352-bmv2.p4",
@@ -230,29 +241,19 @@ xfails = [
     "issue1653-complex-bmv2.p4",
     "issue1670-bmv2.p4",
     "issue1739-bmv2.p4",
-    "issue1765-1-bmv2.p4",
     "issue1768-bmv2.p4",
     "issue1814-1-bmv2.p4",
     "issue1814-bmv2.p4",
     "issue1829-4-bmv2.p4",
     "issue1834-bmv2.p4",
-    "issue1879-bmv2.p4",
     "issue1882-1-bmv2.p4",
     "issue1882-bmv2.p4",
-    "issue1897-bmv2.p4",
     "issue1989-bmv2.p4",
-    "issue561-3-bmv2.p4",
-    "issue561-4-bmv2.p4",
-    "issue561-5-bmv2.p4",
-    "issue561-6-bmv2.p4",
-    "issue561-7-bmv2.p4",
-    "issue561-bmv2.p4",
     "issue562-bmv2.p4",
     "p416-type-use3.p4",
     "parser_error-bmv2.p4",
     "table-entries-valid-bmv2.p4",
     "test-parserinvalidargument-error-bmv2.p4",
-    "union-bmv2.p4",
 ]
 
 # bmv2_tests = []
@@ -292,24 +293,27 @@ def run_violation_test(test_folder):
 
 
 @pytest.mark.parametrize("test_name", bmv2_tests)
-def test_bmv2(test_name):
-    assert run_z3p4_test(test_name) == util.EXIT_SUCCESS
+def test_bmv2(request, test_name):
+    request.node.custom_err = run_z3p4_test(test_name)
+    assert request.node.custom_err == util.EXIT_SUCCESS
+
+
+@pytest.mark.parametrize("test_name", skipped_tests)
+def test_skipped(request, test_name):
+    request.node.custom_err = run_z3p4_test(test_name)
+    assert request.node.custom_err == util.EXIT_SKIPPED
+
+
+@pytest.mark.xfail
+@pytest.mark.parametrize("test_name", xfails)
+def test_xfails(request, test_name):
+    request.node.custom_err = run_z3p4_test(test_name)
+    assert request.node.custom_err == util.EXIT_SUCCESS
 
 
 @pytest.mark.parametrize("test_folder", violation_tests)
 def test_violation(test_folder):
     assert run_violation_test(test_folder) == util.EXIT_SUCCESS
-
-
-@pytest.mark.parametrize("test_name", skipped_tests)
-def test_skipped(test_name):
-    assert run_z3p4_test(test_name) == util.EXIT_SKIPPED
-
-
-@pytest.mark.xfail
-@pytest.mark.parametrize("test_name", xfails)
-def test_xfails(test_name):
-    assert run_z3p4_test(test_name) == util.EXIT_SUCCESS
 
 
 def test_issue1863_broken():

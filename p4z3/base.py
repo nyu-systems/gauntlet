@@ -238,9 +238,57 @@ class Header(P4ComplexType):
         return z3.BoolVal(False)
 
 
+class HeaderUnion(P4ComplexType):
+
+    def __init__(self, z3_reg, z3_type, const):
+        # These are special for headers
+        self.valid = None
+        super(Header, self).__init__(z3_reg, z3_type, const)
+
+    def isValid(self, *args):
+        return self.valid
+
+    def setValid(self, p4_vars, expr_chain):
+        self.valid = z3.BoolVal(True)
+        return step(p4_vars, expr_chain)
+
+    def setInvalid(self, p4_vars, expr_chain):
+        self.valid = z3.BoolVal(False)
+        return step(p4_vars, expr_chain)
+
+    def __eq__(self, other):
+        if isinstance(other, Header):
+            # correspond to the P4 semantics for comparing headers
+            # when both headers are invalid return true
+            check_valid = z3.And(z3.Not(self.valid), z3.Not(other.valid))
+            return z3.Or(check_valid, self.const == other.const)
+        return z3.BoolVal(False)
+
+
 class Struct(P4ComplexType):
 
     pass
+
+
+class Enum(P4ComplexType):
+    def __init__(self, z3_reg, z3_type: z3.SortRef, name):
+        self.name = name
+        self.z3_type = z3_type
+        self.const = z3.Const(f"{name}_0", z3_type)
+        self.constructor = z3_type.constructor(0)
+        # These are special for state
+        self._set_z3_accessors(z3_type, self.constructor)
+        self._init_members(z3_reg, self.accessors)
+
+    def _set_z3_accessors(self, z3_type, constructor):
+        self.accessors = []
+        for type_index in range(constructor.arity()):
+            accessor = z3_type.accessor(0, type_index)
+            self.accessors.append(accessor)
+
+    def _init_members(self, z3_reg, accessors):
+        for idx, accessor in enumerate(accessors):
+            setattr(self, accessor.name(), z3.IntVal(idx))
 
 
 class Z3Reg():
@@ -262,6 +310,11 @@ class Z3Reg():
 
     def register_struct(self, name, z3_args):
         self._register_structlike(name, Struct, z3_args)
+
+    def register_enum(self, name, z3_type):
+        self._types[name] = z3_type[0]
+        self._classes[name] = Enum
+        self._ref_count[name] = 0
 
     def register_inouts(self, name, z3_args):
         self._register_structlike(name, P4State, z3_args)

@@ -581,6 +581,19 @@ class IfStatement(P4Z3Class):
                                    [self.then_block] + expr_chain))
 
 
+class SwitchHit(P4Z3Class):
+    def __init__(self, cases):
+        self.cases = cases
+
+    def eval(self, p4_vars, expr_chain):
+        case_exprs = []
+        for case_name, case in self.cases.items():
+            case_block = step(
+                deepcopy(p4_vars), [case["case_block"]] + expr_chain)
+            case_exprs.append(z3.Implies(case["match"], case_block))
+        return z3.And(*case_exprs)
+
+
 class SwitchStatement(P4Z3Class):
     # TODO: Fix fall through for switch statement, purge this terrible code
     def __init__(self, table_str):
@@ -607,18 +620,6 @@ class SwitchStatement(P4Z3Class):
         self.default_case.add(default_stmt)
 
     def eval(self, p4_vars, expr_chain):
-        class SwitchHit():
-            def __init__(self, cases):
-                self.cases = cases
-
-            def eval(self, p4_vars, expr_chain):
-                case_exprs = []
-                for case_name, case in self.cases.items():
-                    case_block = step(
-                        deepcopy(p4_vars), [case["case_block"]] + expr_chain)
-                    case_exprs.append(z3.Implies(case["match"], case_block))
-                return z3.And(*case_exprs)
-
         self.table = p4_vars.get_var(self.table_str)
         for case_name, case in self.cases.items():
             match_var = self.cases[case_name]["match_var"]
@@ -627,7 +628,7 @@ class SwitchStatement(P4Z3Class):
         switch_hit = SwitchHit(self.cases)
         switch_default = self.default_case
         switch_if = IfStatement()
-        switch_if.add_condition(self.table.table_match(p4_vars, expr_chain))
+        switch_if.add_condition(self.table.eval_keys(p4_vars, expr_chain))
         switch_if.add_then_stmt(switch_hit)
         switch_if.add_else_stmt(switch_default)
         return z3.And(step(p4_vars, [self.table] + expr_chain),
@@ -639,9 +640,10 @@ class P4Table(P4Z3Class):
     def __init__(self, name):
         self.name = name
         self.keys = []
+        self.const_entries = []
         self.actions = OrderedDict()
 
-    def table_action(self, p4_vars, expr_chain):
+    def eval_table_actions(self, p4_vars, expr_chain):
         action = z3.Int(f"{self.name}_action")
         ''' This is a special macro to define action selection. We treat
         selection as a chain of implications. If we match, then the clause
@@ -656,43 +658,43 @@ class P4Table(P4Z3Class):
             p4_action = p4_vars.get_var(f_name)
             if not isinstance(p4_action, P4Action):
                 raise TypeError(f"Expected a P4Action got {type(p4_action)}!")
-            action_expr = self.execute_action(
+            action_expr = self.eval_action(
                 p4_vars, expr_chain, (p4_action, p4_action_args))
             expr = z3.Implies(action == z3.IntVal(p4_action_id), action_expr)
             actions.append(expr)
         return z3.And(*actions)
 
-    def add_action(self, action_expr):
+    def resolve_action(self, action_expr):
         # TODO Fix this roundabout way of getting a P4 Action,
         #  super annoying...
         if isinstance(action_expr, MethodCallExpr):
-            expr_name = action_expr.expr
+            action_name = action_expr.expr
             action_args = action_expr.args
         elif isinstance(action_expr, str):
-            expr_name = action_expr
+            action_name = action_expr
             action_args = []
         else:
-            raise TypeError(f"Expected a method call, got {type(expr_name)}!")
+            raise TypeError(
+                f"Expected a method call, got {type(action_name)}!")
+        return action_name, action_args
+
+    def add_action(self, action_expr):
+        action_name, action_args = self.resolve_action(action_expr)
         index = len(self.actions) + 1
-        self.actions[expr_name] = (index, expr_name, action_args)
+        self.actions[action_name] = (index, action_name, action_args)
 
     def add_default(self, action_expr):
-        # TODO Fix this roundabout way of getting a P4 Action,
-        #  super annoying...
-        if isinstance(action_expr, MethodCallExpr):
-            expr_name = action_expr.expr
-            action_args = action_expr.args
-        elif isinstance(action_expr, str):
-            expr_name = action_expr
-            action_args = []
-        else:
-            raise TypeError(f"Expected a method call, got {type(expr_name)}!")
-        self.actions["default_action"] = (0, expr_name, action_args)
+        action_name, action_args = self.resolve_action(action_expr)
+        self.actions["default_action"] = (0, action_name, action_args)
 
     def add_match(self, table_key):
         self.keys.append(table_key)
 
-    def table_match(self, p4_vars, expr_chain):
+    def add_const_entry(self, action_expr, key):
+        action_name, action_args = self.resolve_action(action_expr)
+        self.const_entries.append(key, (action_name, action_args))
+
+    def eval_keys(self, p4_vars, expr_chain):
         key_pairs = []
         if not self.keys:
             # there is nothing to match with...
@@ -703,7 +705,7 @@ class P4Table(P4Z3Class):
             key_pairs.append(key_eval == key_match)
         return z3.And(key_pairs)
 
-    def execute_action(self, p4_vars, expr_chain, action_tuple):
+    def eval_action(self, p4_vars, expr_chain, action_tuple):
         p4_action = action_tuple[0]
         p4_vars = deepcopy(p4_vars)
         p4_action.set_param_args(arg_prefix=self.name)
@@ -713,10 +715,7 @@ class P4Table(P4Z3Class):
     def apply(self, p4_vars, expr_chain):
         return step(p4_vars, [self] + expr_chain)
 
-    def eval(self, p4_vars, expr_chain):
-        # This is a table match where we look up the provided key
-        # If we match select the associated action,
-        # else use the default action
+    def eval_default(self, p4_vars, expr_chain):
         if "default_action" not in self.actions:
             # In case there is no default action, the first action is default
             self.actions["default_action"] = 0, "NoAction", []
@@ -724,8 +723,15 @@ class P4Table(P4Z3Class):
         p4_action = p4_vars.get_var(expr_name)
         if not isinstance(p4_action, P4Action):
             raise TypeError(f"Expected a P4Action got {type(p4_action)}!")
-        def_expr = self.execute_action(
+        def_expr = self.eval_action(
             p4_vars, expr_chain, (p4_action, expr_args))
-        return z3.If(self.table_match(p4_vars, expr_chain),
-                     self.table_action(p4_vars, expr_chain),
+        return def_expr
+
+    def eval(self, p4_vars, expr_chain):
+        # This is a table match where we look up the provided key
+        # If we match select the associated action,
+        # else use the default action
+        def_expr = self.eval_default(p4_vars, expr_chain)
+        return z3.If(self.eval_keys(p4_vars, expr_chain),
+                     self.eval_table_actions(p4_vars, expr_chain),
                      def_expr)
