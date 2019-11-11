@@ -263,6 +263,21 @@ class P4Cast(P4Z3Class):
             return z3.Extract(slice_l, slice_r, expr)
 
 
+class P4Mux(P4Z3Class):
+    # TODO: need to take a closer look on how to do this correctly...
+    def __init__(self, cond, then_val, else_val):
+        self.cond = cond
+        self.then_val = then_val
+        self.else_val = else_val
+
+    def eval(self, p4_vars, expr_chain):
+        mux_if = IfStatement()
+        mux_if.add_condition(self.cond)
+        mux_if.add_then_stmt(self.then_val)
+        mux_if.add_else_stmt(self.else_val)
+        return mux_if
+
+
 class P4Declaration(P4Z3Class):
     # TODO: Add some more declaration checks here.
     # the difference between a P4Declaration and a P4Assignment is that
@@ -278,19 +293,19 @@ class P4Declaration(P4Z3Class):
         return step(p4_vars, expr_chain)
 
 
-class P4StructInitializer():
-    def __init__(self, p4z3_type, **kwargs):
+class P4StructInitializer(P4Z3Class):
+    def __init__(self, instance, **kwargs):
         if len(kwargs) != len(p4z3_type.accessors):
             raise RuntimeError(
                 "Invalid number of arguments for struct initialization!")
-        self.p4z3_type = p4z3_type
+        self.instance = instance
         self.members = kwargs
 
-    def get_struct(self, p4_vars, expr_chain):
+    def eval(self, p4_vars, expr_chain):
         for name, val in self.members.items():
             val_expr = resolve_expr(p4_vars, expr_chain, val)
-            self.p4z3_type.set_member(name, val_expr)
-        return self.p4z3_type
+            self.instance.set_or_add_var(name, val_expr)
+        return self.instance
 
 
 def slice_assign(lval, rval, slice_l, slice_r) -> z3.SortRef:

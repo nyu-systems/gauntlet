@@ -161,6 +161,7 @@ class P4ComplexType():
 
         # generate a new version of the z3 datatype
         # update the internal representation of the attribute.
+        # this also checks the validity of the new assignment
         self.const = self._make(self.const)
 
     def __eq__(self, other):
