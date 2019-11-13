@@ -26,6 +26,7 @@ P4C_BIN_1863 = FILE_DIR.joinpath("p4c_bins/issue1863")
 bmv2_tests = [
     "array-copy-bmv2.p4",
     "basic_routing-bmv2.p4",
+    "bvec-hdr-bmv2.p4",
     "bvec_union-bmv2.p4",
     "checksum1-bmv2.p4",
     "def-use.p4",
@@ -71,6 +72,7 @@ bmv2_tests = [
     "issue323.p4",
     "issue355-bmv2.p4",
     "issue361-bmv2.p4",
+    "issue420.p4",
     "issue430-1-bmv2.p4",
     "issue447-bmv2.p4",
     "issue447-2-bmv2.p4",
@@ -126,10 +128,13 @@ violation_tests = [
     "key-bmv2",
     "issue1544-bmv2-1",
     "issue1544-bmv2-2",
+    "equality-1",
+    "equality-2",
     "out-params-1",
     "out-params-2",
     "drop-bmv2",
     "basic_routing",
+    "mux",
 ]
 
 # ***** working tests but do not generate passes *****
@@ -184,19 +189,24 @@ skipped_tests = [
     "parser-locals2.p4",
     "issue793.p4",
     "issue1205-bmv2.p4",
+    "action-two-params.p4",
+    "table-entries-exact-bmv2.p4",
+    "issue1062-bmv2.p4",
+    "issue1478-bmv2.p4",
+    "issue1834-bmv2.p4",
+    "table-entries-valid-bmv2.p4",
+    "issue1107.p4",
 ]
 
 # ***** broken tests, need fixing *****
 
 xfails = [
-    "action-two-params.p4",  # Vector arguments
     "action_profile-bmv2.p4",  # Action profile
     "action_profile_max_group_size_annotation.p4",  # Action profile
     "action_selector_shared-bmv2.p4",  # Action selector
     "action_selector_unused-bmv2.p4",  # Action selector
     "issue297-bmv2.p4",  # Action profile
     "issue298-bmv2.p4",  # register
-    "bvec-hdr-bmv2.p4",  # Vector arguments
     "checksum2-bmv2.p4",  # parser error
     "checksum3-bmv2.p4",  # parser error
     "crc32-bmv2.p4",  # HashAlgorithm
@@ -210,7 +220,6 @@ xfails = [
     "named_meter_1-bmv2.p4",
     "issue364-bmv2.p4",
     "issue383-bmv2.p4",
-    "issue420.p4",
     "issue430-bmv2.p4",
     "issue461-bmv2.p4",
     "issue512.p4",
@@ -220,7 +229,6 @@ xfails = [
     "saturated-bmv2.p4",
     "slice-def-use.p4",
     "slice-def-use1.p4",
-    "table-entries-exact-bmv2.p4",
     "table-entries-exact-ternary-bmv2.p4",
     "table-entries-lpm-bmv2.p4",
     "table-entries-priority-bmv2.p4",
@@ -230,12 +238,9 @@ xfails = [
     "unused-counter-bmv2.p4",
     "v1model-p4runtime-most-types1.p4",
     "issue1049-bmv2.p4",
-    "issue1062-bmv2.p4",
-    "issue1107.p4",
     "issue1193-bmv2.p4",
     "issue1210.p4",
     "issue1352-bmv2.p4",
-    "issue1478-bmv2.p4",
     "issue1520-bmv2.p4",
     "issue1566-bmv2.p4",
     "issue1566.p4",
@@ -246,13 +251,11 @@ xfails = [
     "issue1814-1-bmv2.p4",
     "issue1814-bmv2.p4",
     "issue1829-4-bmv2.p4",
-    "issue1834-bmv2.p4",
     "issue1882-1-bmv2.p4",
     "issue1882-bmv2.p4",
     "issue1989-bmv2.p4",
     "issue562-bmv2.p4",
     "parser_error-bmv2.p4",
-    "table-entries-valid-bmv2.p4",
     "test-parserinvalidargument-error-bmv2.p4",
 ]
 

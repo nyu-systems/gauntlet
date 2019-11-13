@@ -264,18 +264,16 @@ class P4Cast(P4Z3Class):
 
 
 class P4Mux(P4Z3Class):
-    # TODO: need to take a closer look on how to do this correctly...
-    def __init__(self, cond, then_val, else_val):
-        self.cond = cond
+    def __init__(self, condition, then_val, else_val):
+        self.condition = condition
         self.then_val = then_val
         self.else_val = else_val
 
     def eval(self, p4_vars, expr_chain):
-        mux_if = IfStatement()
-        mux_if.add_condition(self.cond)
-        mux_if.add_then_stmt(self.then_val)
-        mux_if.add_else_stmt(self.else_val)
-        return mux_if
+        condition = resolve_expr(p4_vars, expr_chain, self.condition)
+        then_val = resolve_expr(p4_vars, expr_chain, self.then_val)
+        else_val = resolve_expr(p4_vars, expr_chain, self.else_val)
+        return z3.If(condition, then_val, else_val)
 
 
 class P4Declaration(P4Z3Class):
@@ -295,7 +293,7 @@ class P4Declaration(P4Z3Class):
 
 class P4StructInitializer(P4Z3Class):
     def __init__(self, instance, **kwargs):
-        if len(kwargs) != len(p4z3_type.accessors):
+        if len(kwargs) != len(instance.accessors):
             raise RuntimeError(
                 "Invalid number of arguments for struct initialization!")
         self.instance = instance
@@ -658,27 +656,6 @@ class P4Table(P4Z3Class):
         self.const_entries = []
         self.actions = OrderedDict()
 
-    def eval_table_actions(self, p4_vars, expr_chain):
-        action = z3.Int(f"{self.name}_action")
-        ''' This is a special macro to define action selection. We treat
-        selection as a chain of implications. If we match, then the clause
-        returned by the action must be valid.
-        '''
-        actions = []
-        for f_name, f_tuple in self.actions.items():
-            p4_action_id = f_tuple[0]
-            p4_action_args = f_tuple[2]
-            if p4_action_id == 0:
-                continue
-            p4_action = p4_vars.get_var(f_name)
-            if not isinstance(p4_action, P4Action):
-                raise TypeError(f"Expected a P4Action got {type(p4_action)}!")
-            action_expr = self.eval_action(
-                p4_vars, expr_chain, (p4_action, p4_action_args))
-            expr = z3.Implies(action == z3.IntVal(p4_action_id), action_expr)
-            actions.append(expr)
-        return z3.And(*actions)
-
     def resolve_action(self, action_expr):
         # TODO Fix this roundabout way of getting a P4 Action,
         #  super annoying...
@@ -705,9 +682,15 @@ class P4Table(P4Z3Class):
     def add_match(self, table_key):
         self.keys.append(table_key)
 
-    def add_const_entry(self, action_expr, key):
+    def add_const_entry(self, const_keys, action_expr):
+
+        if len(self.keys) != len(const_keys):
+            raise RuntimeError("Constant keys must match table keys!")
         action_name, action_args = self.resolve_action(action_expr)
-        self.const_entries.append(key, (action_name, action_args))
+        self.const_entries.append((const_keys, (action_name, action_args)))
+
+    def apply(self, p4_vars, expr_chain):
+        return step(p4_vars, [self] + expr_chain)
 
     def eval_keys(self, p4_vars, expr_chain):
         key_pairs = []
@@ -722,31 +705,65 @@ class P4Table(P4Z3Class):
 
     def eval_action(self, p4_vars, expr_chain, action_tuple):
         p4_action = action_tuple[0]
+        p4_action_args = action_tuple[1]
+        p4_action = p4_vars.get_var(p4_action)
+        if not isinstance(p4_action, P4Action):
+            raise TypeError(f"Expected a P4Action got {type(p4_action)}!")
         p4_vars = deepcopy(p4_vars)
         p4_action.set_param_args(arg_prefix=self.name)
-        p4_action.merge_args(p4_vars, expr_chain, action_tuple[1])
+        p4_action.merge_args(p4_vars, expr_chain, p4_action_args)
         return step(p4_vars, [p4_action] + expr_chain)
 
-    def apply(self, p4_vars, expr_chain):
-        return step(p4_vars, [self] + expr_chain)
+    def eval_table_actions(self, p4_vars, expr_chain):
+        action = z3.Int(f"{self.name}_action")
+        ''' This is a special macro to define action selection. We treat
+        selection as a chain of implications. If we match, then the clause
+        returned by the action must be valid.
+        '''
+        actions = []
+        for f_name, f_tuple in self.actions.items():
+            p4_action = f_name
+            p4_action_id = f_tuple[0]
+            p4_action_args = f_tuple[2]
+            if p4_action_id == 0:
+                continue
+            action_expr = self.eval_action(
+                p4_vars, expr_chain, (p4_action, p4_action_args))
+            expr = z3.Implies(action == z3.IntVal(p4_action_id), action_expr)
+            actions.append(expr)
+        return z3.And(*actions)
 
     def eval_default(self, p4_vars, expr_chain):
         if "default_action" not in self.actions:
             # In case there is no default action, the first action is default
             self.actions["default_action"] = 0, "NoAction", []
-        _, expr_name, expr_args = self.actions["default_action"]
-        p4_action = p4_vars.get_var(expr_name)
-        if not isinstance(p4_action, P4Action):
-            raise TypeError(f"Expected a P4Action got {type(p4_action)}!")
-        def_expr = self.eval_action(
-            p4_vars, expr_chain, (p4_action, expr_args))
+        _, action_name, action_args = self.actions["default_action"]
+        def_expr = self.eval_action(p4_vars, expr_chain,
+                                    (action_name, action_args))
         return def_expr
+
+    def eval_const_entries(self, p4_vars, expr_chain):
+        const_matches = []
+        for const_keys, action in self.const_entries:
+            p4_action = action[0]
+            p4_action_args = action[1]
+            matches = []
+            for index, key in enumerate(self.keys):
+                key_eval = resolve_expr(p4_vars, expr_chain, key)
+                matches.append(key_eval == const_keys[index])
+            match_exprs = z3.And(*matches)
+            action_expr = self.eval_action(
+                p4_vars, expr_chain, (p4_action, p4_action_args))
+            const_matches.append(z3.Implies(match_exprs, action_expr))
+        return z3.And(*const_matches)
 
     def eval(self, p4_vars, expr_chain):
         # This is a table match where we look up the provided key
         # If we match select the associated action,
         # else use the default action
         def_expr = self.eval_default(p4_vars, expr_chain)
-        return z3.If(self.eval_keys(p4_vars, expr_chain),
-                     self.eval_table_actions(p4_vars, expr_chain),
-                     def_expr)
+        normal_match = z3.If(self.eval_keys(p4_vars, expr_chain),
+                             self.eval_table_actions(p4_vars, expr_chain),
+                             def_expr)
+        const_matches = self.eval_const_entries(p4_vars, expr_chain)
+        return z3.And(normal_match, const_matches)

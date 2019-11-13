@@ -214,10 +214,10 @@ class P4State(P4ComplexType):
 
 class Header(P4ComplexType):
 
-    def __init__(self, z3_reg, z3_type, const):
+    def __init__(self, z3_reg, z3_type, name):
         # These are special for headers
-        self.valid = None
-        super(Header, self).__init__(z3_reg, z3_type, const)
+        self.valid = z3.Bool(f"{name}_valid")
+        super(Header, self).__init__(z3_reg, z3_type, name)
 
     def isValid(self, *args):
         return self.valid
@@ -234,17 +234,22 @@ class Header(P4ComplexType):
         if isinstance(other, Header):
             # correspond to the P4 semantics for comparing headers
             # when both headers are invalid return true
-            check_valid = z3.And(z3.Not(self.valid), z3.Not(other.valid))
-            return z3.Or(check_valid, self.const == other.const)
+            check_invalid = z3.And(z3.Not(self.isValid()),
+                                   z3.Not(other.isValid()))
+            # when both headers are valid compare the values
+            check_valid = z3.And(self.isValid(), other.isValid())
+            comparison = z3.And(check_valid, self.const == other.const)
+            return z3.Or(check_invalid, comparison)
         return z3.BoolVal(False)
 
 
 class HeaderUnion(P4ComplexType):
+    # TODO: Implement this class correctly...
 
     def __init__(self, z3_reg, z3_type, const):
         # These are special for headers
-        self.valid = None
-        super(Header, self).__init__(z3_reg, z3_type, const)
+        self.valid = z3.BoolSort()
+        super(HeaderUnion, self).__init__(z3_reg, z3_type, const)
 
     def isValid(self, *args):
         return self.valid
@@ -256,14 +261,6 @@ class HeaderUnion(P4ComplexType):
     def setInvalid(self, p4_vars, expr_chain):
         self.valid = z3.BoolVal(False)
         return step(p4_vars, expr_chain)
-
-    def __eq__(self, other):
-        if isinstance(other, Header):
-            # correspond to the P4 semantics for comparing headers
-            # when both headers are invalid return true
-            check_valid = z3.And(z3.Not(self.valid), z3.Not(other.valid))
-            return z3.Or(check_valid, self.const == other.const)
-        return z3.BoolVal(False)
 
 
 class Struct(P4ComplexType):
@@ -306,7 +303,7 @@ class Z3Reg():
         self._ref_count[name] = 0
 
     def register_header(self, name, z3_args):
-        z3_args.append(("valid", z3.BoolSort()))
+        # z3_args.append(("valid", z3.BoolSort()))
         self._register_structlike(name, Header, z3_args)
 
     def register_struct(self, name, z3_args):
