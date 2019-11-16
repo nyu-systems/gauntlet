@@ -25,10 +25,10 @@ P4C_BIN_1863 = FILE_DIR.joinpath("p4c_bins/issue1863")
 # ***** working tests *****
 bmv2_tests = [
     "array-copy-bmv2.p4",
-    "basic_routing-bmv2.p4",
     "bvec-hdr-bmv2.p4",
     "bvec_union-bmv2.p4",
     "checksum1-bmv2.p4",
+    "crc32-bmv2.p4",
     "def-use.p4",
     "drop-bmv2.p4",
     "empty-bmv2.p4",
@@ -36,7 +36,7 @@ bmv2_tests = [
     "equality-varbit-bmv2.p4",
     "flag_lost-bmv2.p4",
     "header-bool-bmv2.p4",
-    "header-stack-ops-bmv2.p4",
+    "hash-bmv2.p4",
     "ipv6-switch-ml-bmv2.p4",
     "key-bmv2.p4",
     "match-on-exprs2-bmv2.p4",
@@ -45,6 +45,7 @@ bmv2_tests = [
     "mux-bmv2.p4",
     "newtype2.p4",
     "p416-type-use3.p4",
+    "parser_error-bmv2.p4",
     "pvs-nested-struct.p4",
     "pvs-struct.p4",
     "scalarmeta-bmv2.p4",
@@ -54,6 +55,7 @@ bmv2_tests = [
     "strength4.p4",
     "subparser-with-header-stack-bmv2.p4",
     "ternary2-bmv2.p4",
+    "test-parserinvalidargument-error-bmv2.p4",
     "union1-bmv2.p4",
     "union2-bmv2.p4",
     "union3-bmv2.p4",
@@ -73,6 +75,7 @@ bmv2_tests = [
     "issue355-bmv2.p4",
     "issue361-bmv2.p4",
     "issue420.p4",
+    "issue430-bmv2.p4",
     "issue430-1-bmv2.p4",
     "issue447-bmv2.p4",
     "issue447-2-bmv2.p4",
@@ -95,6 +98,7 @@ bmv2_tests = [
     "issue891-bmv2.p4",
     "issue983-bmv2.p4",
     "issue1025-bmv2.p4",
+    "issue1049-bmv2.p4",
     "issue1079-bmv2.p4",
     "issue1127-bmv2.p4",
     "issue1325-bmv2.p4",
@@ -121,6 +125,9 @@ bmv2_tests = [
     "issue1824-bmv2.p4",
     "issue1937-1-bmv2.p4",
     "issue1955.p4",
+    # very slow tests
+    "basic_routing-bmv2.p4",
+    "header-stack-ops-bmv2.p4",
 ]
 
 # ***** violation tests*****
@@ -209,10 +216,8 @@ xfails = [
     "issue298-bmv2.p4",  # register
     "checksum2-bmv2.p4",  # parser error
     "checksum3-bmv2.p4",  # parser error
-    "crc32-bmv2.p4",  # HashAlgorithm
     "fabric_20190420/fabric.p4",  # direct_counter
     "flowlet_switching-bmv2.p4",  # register
-    "hash-bmv2.p4",  # externs
     "issue1097-2-bmv2.p4",
     "issue1097-bmv2.p4",
     "issue242.p4",
@@ -220,7 +225,6 @@ xfails = [
     "named_meter_1-bmv2.p4",
     "issue364-bmv2.p4",
     "issue383-bmv2.p4",
-    "issue430-bmv2.p4",
     "issue461-bmv2.p4",
     "issue512.p4",
     "issue907-bmv2.p4",
@@ -237,7 +241,6 @@ xfails = [
     "table-entries-ternary-bmv2.p4",
     "unused-counter-bmv2.p4",
     "v1model-p4runtime-most-types1.p4",
-    "issue1049-bmv2.p4",
     "issue1193-bmv2.p4",
     "issue1210.p4",
     "issue1352-bmv2.p4",
@@ -255,8 +258,6 @@ xfails = [
     "issue1882-bmv2.p4",
     "issue1989-bmv2.p4",
     "issue562-bmv2.p4",
-    "parser_error-bmv2.p4",
-    "test-parserinvalidargument-error-bmv2.p4",
 ]
 
 # bmv2_tests = []

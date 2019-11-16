@@ -1,7 +1,7 @@
 from copy import deepcopy
 from collections import OrderedDict
-import z3
 import operator as op
+import z3
 
 from p4z3.base import *
 
@@ -9,13 +9,13 @@ from p4z3.base import *
 def resolve_expr(p4_vars, expr_chain, expr) -> z3.SortRef:
     # Resolves to z3 and z3p4 expressions, bools and int are also okay
     # resolve potential string references first
+    log.debug("Resolving %s", expr)
     if isinstance(expr, str):
         val = p4_vars.resolve_reference(expr)
         if val is None:
             raise RuntimeError(f"Value {expr} could not be found!")
     else:
         val = expr
-
     if isinstance(val, (z3.ExprRef, int)):
         # These are z3 types and can be returned
         # Unfortunately int is part of it because z3 is very inconsistent
@@ -28,6 +28,21 @@ def resolve_expr(p4_vars, expr_chain, expr) -> z3.SortRef:
         # If we get a whole class return the complex z3 type
         return val
     raise TypeError(f"Value of type {type(val)} cannot be resolved!")
+
+
+def get_type(p4_vars, expr_chain, expr):
+    ''' Return the type of an expression, Resolve, if needed'''
+    arg_expr = resolve_expr(p4_vars, expr_chain, expr)
+    if isinstance(arg_expr, P4ComplexType):
+        arg_type = arg_expr.const.sort()
+    else:
+        arg_type = arg_expr.sort()
+    return arg_type
+
+
+def z3_implies(p4_vars, expr_chain, cond, then_expr):
+    no_match = step(p4_vars, expr_chain)
+    return z3.If(cond, then_expr, no_match)
 
 
 class P4Z3Class():
@@ -458,6 +473,7 @@ class P4Action(P4Z3Class):
 
 
 class P4Extern(P4Action):
+    # TODO: This is quite shaky, requires concrete examination
     def __init__(self, name, z3_reg):
         super(P4Extern, self).__init__()
         self.name = name
@@ -468,13 +484,22 @@ class P4Extern(P4Action):
         for index, arg in enumerate(self.args):
             is_ref = self.params[index][0]
             param_name = self.params[index][1]
-            param_type = self.params[index][2]
+
             log.debug("Setting %s as %s ", param_name, arg)
+            # Because we do not know what the extern is doing
+            # we initiate a new z3 const and just overwrite all reference types
             if is_ref:
-                extern_mod = z3.Const(f"{self.name}_{param_name}", param_type)
+                # Externs often have generic types until they are called
+                # This call resolves the argument and gets its z3 type
+                arg_type = get_type(p4_vars, expr_chain, arg)
+                extern_mod = z3.Const(f"{self.name}_{param_name}", arg_type)
                 instance = self.z3_reg.instance(
-                    f"{self.name}_{param_name}", param_type)
-                instance.propagate_type(extern_mod)
+                    f"{self.name}_{param_name}", arg_type)
+                # In the case that the instance is a complex type make sure
+                # to propagate the variable through all its members
+                if isinstance(instance, P4ComplexType):
+                    instance.propagate_type(extern_mod)
+                # Finally, assign a new value to the pass-by-reference argument
                 p4_vars.set_or_add_var(arg, instance)
 
         return step(p4_vars, expr_chain)
@@ -541,7 +566,7 @@ class P4Control(P4Action):
             else:
                 log.debug("Deleting %s", param_name)
                 p4_vars.del_var(param_name)
-        return z3.And(expr, step(p4_vars, expr_chain, expr))
+        return step(p4_vars, expr_chain, expr)
 
 
 class P4Parser(P4Action):
@@ -563,12 +588,12 @@ class P4Parser(P4Action):
 class IfStatement(P4Z3Class):
 
     def __init__(self):
-        self.condition = None
+        self.cond = None
         self.then_block = None
         self.else_block = None
 
-    def add_condition(self, condition):
-        self.condition = condition
+    def add_condition(self, cond):
+        self.cond = cond
 
     def add_then_stmt(self, stmt):
         self.then_block = stmt
@@ -577,21 +602,17 @@ class IfStatement(P4Z3Class):
         self.else_block = stmt
 
     def eval(self, p4_vars, expr_chain):
-        if self.condition is None:
+        if self.cond is None:
             raise RuntimeError("Missing condition!")
-        condition = resolve_expr(p4_vars, expr_chain, self.condition)
+        cond = resolve_expr(p4_vars, expr_chain, self.cond)
         then_p4_vars = deepcopy(p4_vars)
-        else_p4_vars = deepcopy(p4_vars)
+        then_expr = step(then_p4_vars, [self.then_block] + expr_chain)
         if self.else_block:
-            if_expr = step(then_p4_vars, [
-                self.then_block] + expr_chain)
-            then_expr = step(else_p4_vars, [
-                self.then_block] + expr_chain)
-            return z3.If(condition, if_expr, then_expr)
+            else_p4_vars = deepcopy(p4_vars)
+            else_expr = step(else_p4_vars, [self.else_block] + expr_chain)
+            return z3.If(cond, then_expr, else_expr)
         else:
-            return z3.Implies(condition,
-                              step(then_p4_vars,
-                                   [self.then_block] + expr_chain))
+            return z3_implies(p4_vars, expr_chain, cond, then_expr)
 
 
 class SwitchHit(P4Z3Class):
@@ -601,9 +622,10 @@ class SwitchHit(P4Z3Class):
     def eval(self, p4_vars, expr_chain):
         case_exprs = []
         for case_name, case in self.cases.items():
-            case_block = step(
-                deepcopy(p4_vars), [case["case_block"]] + expr_chain)
-            case_exprs.append(z3.Implies(case["match"], case_block))
+            p4_vars_copy = deepcopy(p4_vars)
+            case_block = step(p4_vars_copy, [case["case_block"]] + expr_chain)
+            expr = z3_implies(p4_vars, expr_chain, case["match"], case_block)
+            case_exprs.append(expr)
         return z3.And(*case_exprs)
 
 
@@ -616,21 +638,20 @@ class SwitchStatement(P4Z3Class):
         self.cases = OrderedDict()
 
     def add_case(self, action_str):
+        # skip default statements, they are handled separately
+        if action_str == "default":
+            return
         case = {}
         case["match_var"] = z3.Int(f"{self.table_str}_action")
-        # case["action_fun"] = action[1]
         case["case_block"] = BlockStatement()
         self.cases[action_str] = case
 
     def add_stmt_to_case(self, action_str, case_stmt):
         if action_str == "default":
-            self.add_stmt_to_default(case_stmt)
+            self.default_case.add(case_stmt)
         else:
             case_block = self.cases[action_str]["case_block"]
             case_block.add(case_stmt)
-
-    def add_stmt_to_default(self, default_stmt):
-        self.default_case.add(default_stmt)
 
     def eval(self, p4_vars, expr_chain):
         self.table = p4_vars.get_var(self.table_str)

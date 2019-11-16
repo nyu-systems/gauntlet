@@ -59,8 +59,10 @@ def get_z3_asts(p4_module, p4_path, fail_dir):
     try:
         z3_reg, package = p4_module(Z3Reg())
         for pipe_name, pipe in package.__dict__.items():
+            # ignore everything that is not ingress for now
             if pipe_name != "ig":
                 continue
+            log.info("Evaluating %s...", pipe_name)
             p4_vars = z3_reg.init_p4_state("inouts", pipe.params)
             z3_asts[pipe_name] = pipe.eval(p4_vars, [])
     except Exception:
@@ -79,8 +81,8 @@ def check_equivalence(prog_before, prog_after):
     ''' SOLVER '''
     s = z3.Solver()
     # the equivalence equation
-    tv_equiv = z3.eq(z3.simplify(prog_before), z3.simplify(prog_after))
-    s.add(z3.Not(tv_equiv))
+    tv_equiv = z3.simplify(prog_before) != z3.simplify(prog_after)
+    s.add(tv_equiv)
     log.debug(s.sexpr())
     ret = s.check()
     log.debug(tv_equiv)

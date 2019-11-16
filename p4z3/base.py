@@ -274,7 +274,7 @@ class Enum(P4ComplexType):
         self.z3_type = z3_type
         self.const = z3.Const(f"{name}_0", z3_type)
         self.constructor = z3_type.constructor(0)
-        # These are special for state
+        # These are special for enums
         self._set_z3_accessors(z3_type, self.constructor)
         self._init_members(z3_reg, self.accessors)
 
@@ -285,6 +285,7 @@ class Enum(P4ComplexType):
             self.accessors.append(accessor)
 
     def _init_members(self, z3_reg, accessors):
+        # Instead of a z3 variable we assign a concrete number to each member
         for idx, accessor in enumerate(accessors):
             setattr(self, accessor.name(), z3.IntVal(idx))
 
@@ -303,16 +304,19 @@ class Z3Reg():
         self._ref_count[name] = 0
 
     def register_header(self, name, z3_args):
-        # z3_args.append(("valid", z3.BoolSort()))
         self._register_structlike(name, Header, z3_args)
 
     def register_struct(self, name, z3_args):
         self._register_structlike(name, Struct, z3_args)
 
-    def register_enum(self, name, z3_type):
-        self._types[name] = z3_type[0]
-        self._classes[name] = Enum
-        self._ref_count[name] = 0
+    def register_enum(self, name, enum_args):
+        # Enums are a bit weird... we first create a type
+        enum_types = []
+        for enum_name in enum_args:
+            enum_types.append((enum_name, z3.IntSort()))
+        self._register_structlike(name, Enum, enum_types)
+        # And then actually instantiate it so we can reference it later
+        self._externs[name] = self.instance(name, self._types[name])
 
     def register_inouts(self, name, z3_args):
         self._register_structlike(name, P4State, z3_args)
@@ -332,6 +336,10 @@ class Z3Reg():
         self._ref_count[name] = 0
 
     def register_extern(self, name, method):
+        self._types[name] = z3.DeclareSort(name)
+        self._externs[name] = method
+
+    def register_method(self, name, method):
         self._externs[name] = method
 
     def reset(self):
