@@ -397,6 +397,12 @@ class BlockStatement(P4Z3Class):
         return step(p4_vars, self.exprs + expr_chain)
 
 
+class P4Noop(P4Z3Class):
+
+    def eval(self, p4_vars, expr_chain):
+        return step(p4_vars, expr_chain)
+
+
 class P4Action(P4Z3Class):
 
     def __init__(self):
