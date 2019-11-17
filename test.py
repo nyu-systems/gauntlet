@@ -81,6 +81,7 @@ bmv2_tests = [
     "issue447-2-bmv2.p4",
     "issue447-3-bmv2.p4",
     "issue486-bmv2.p4",
+    "issue512.p4",
     "issue561-bmv2.p4",
     "issue561-1-bmv2.p4",
     "issue561-2-bmv2.p4",
@@ -127,7 +128,6 @@ bmv2_tests = [
     "issue1955.p4",
     # very slow tests
     "basic_routing-bmv2.p4",
-    "header-stack-ops-bmv2.p4",
 ]
 
 # ***** violation tests*****
@@ -208,6 +208,7 @@ skipped_tests = [
 # ***** broken tests, need fixing *****
 
 xfails = [
+    "header-stack-ops-bmv2.p4",  # push and pop operations
     "action_profile-bmv2.p4",  # Action profile
     "action_profile_max_group_size_annotation.p4",  # Action profile
     "action_selector_shared-bmv2.p4",  # Action selector
@@ -226,7 +227,6 @@ xfails = [
     "issue364-bmv2.p4",
     "issue383-bmv2.p4",
     "issue461-bmv2.p4",
-    "issue512.p4",
     "issue907-bmv2.p4",
     "issue949.p4",
     "named_meter_bmv2.p4",
