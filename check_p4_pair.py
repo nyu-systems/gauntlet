@@ -90,6 +90,7 @@ def check_equivalence(prog_before, prog_after):
     if ret == z3.sat:
         log.error("PROGRAM BEFORE\n%s", prog_before)
         log.error("PROGRAM AFTER\n%s", prog_after)
+        log.error("Proposed solution:")
         log.error(s.model())
         log.error("Detected an equivalence violation!")
         return util.EXIT_VIOLATION
@@ -112,7 +113,7 @@ def get_py_module(prog_path):
 
 def z3_check(prog_paths, fail_dir=None):
     if len(prog_paths) < 2:
-        log.error("The equivalence check requires at least two input programs!")
+        log.error("Equivalence checks require at least two input programs!")
         return util.EXIT_FAILURE
     for i in range(1, len(prog_paths)):
         # We do not support the passes which rename variables right now
