@@ -142,6 +142,7 @@ violation_tests = [
     "drop-bmv2",
     "basic_routing",
     "mux",
+    "const_entries",
 ]
 
 # ***** working tests but do not generate passes *****
