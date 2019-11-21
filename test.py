@@ -81,6 +81,7 @@ bmv2_tests = [
     "issue447-2-bmv2.p4",
     "issue447-3-bmv2.p4",
     "issue486-bmv2.p4",
+    "issue512.p4",
     "issue561-bmv2.p4",
     "issue561-1-bmv2.p4",
     "issue561-2-bmv2.p4",
@@ -93,6 +94,7 @@ bmv2_tests = [
     "issue655.p4",
     "issue692-bmv2.p4",
     "issue774-4-bmv2.p4",
+    "issue841.p4",
     "issue887.p4",
     "issue891-bmv2.p4",
     "issue983-bmv2.p4",
@@ -134,9 +136,9 @@ violation_tests = [
     "key-bmv2",
     "issue1544-bmv2-1",
     "issue1544-bmv2-2",
-    "equality-1",
-    "equality-2",
-    "out-params-1",
+    # "equality-1",
+    # "equality-2",
+    # "out-params-1",
     "out-params-2",
     "drop-bmv2",
     "basic_routing_stripped",
@@ -208,8 +210,6 @@ skipped_tests = [
 # ***** broken tests, need fixing *****
 
 xfails = [
-    "issue512.p4",  # wrong handling of the predicate pass
-    "issue841.p4",
     "header-stack-ops-bmv2.p4",  # push and pop operations
     "action_profile-bmv2.p4",  # Action profile
     "action_profile_max_group_size_annotation.p4",  # Action profile
