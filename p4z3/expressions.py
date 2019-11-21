@@ -485,6 +485,9 @@ class P4Extern(P4Action):
         self.name = name
         self.z3_reg = z3_reg
 
+    def add_method(self, name, method):
+        setattr(self, name, method)
+
     def eval(self, p4_vars, expr_chain):
 
         for index, arg in enumerate(self.args):
@@ -535,8 +538,12 @@ class P4Control(P4Action):
         self.args = p4_args
         return self.eval(p4_vars, expr_chain)
 
-    def eval(self, p4_vars, expr_chain):
+    def eval(self, p4_vars=None, expr_chain=[]):
+        if not p4_vars:
+            # There is no state yet, so use the state of the function
+            p4_vars = self.p4_vars
         p4_vars_tmp = self.p4_vars
+
         local_decls = []
         for local in self.locals:
             decl = P4Declaration(local[0], local[1])
