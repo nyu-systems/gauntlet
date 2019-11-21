@@ -93,7 +93,6 @@ bmv2_tests = [
     "issue655.p4",
     "issue692-bmv2.p4",
     "issue774-4-bmv2.p4",
-    "issue841.p4",
     "issue887.p4",
     "issue891-bmv2.p4",
     "issue983-bmv2.p4",
@@ -116,14 +115,15 @@ bmv2_tests = [
     "issue1630-bmv2.p4",
     "issue1739-bmv2.p4",
     "issue1765-bmv2.p4",
+    "issue1765-1-bmv2.p4",
     "issue1781-bmv2.p4",
+    "issue1824-bmv2.p4",
+    "issue1879-bmv2.p4",
+    "issue1882-bmv2.p4",
+    "issue1897-bmv2.p4",
+    "issue1937-1-bmv2.p4",
     "issue1937-2-bmv2.p4",
     "issue1937-3-bmv2.p4",
-    "issue1765-1-bmv2.p4",
-    "issue1879-bmv2.p4",
-    "issue1897-bmv2.p4",
-    "issue1824-bmv2.p4",
-    "issue1937-1-bmv2.p4",
     "issue1955.p4",
     # very slow tests
     "basic_routing-bmv2.p4",
@@ -168,7 +168,6 @@ skipped_tests = [
     "issue447-1-bmv2.p4",
     "issue447-4-bmv2.p4",
     "issue447-5-bmv2.p4",
-    "issue512.p4",
     "issue496.p4",
     "issue510-bmv2.p4",
     "issue635-bmv2.p4",
@@ -192,7 +191,6 @@ skipped_tests = [
     "issue1755-bmv2.p4",
     "issue1755-1-bmv2.p4",
     "issue1876.p4",
-    "issue1882-bmv2.p4",
     "same_name_for_table_and_action.p4",
     "junk-prop-bmv2.p4",
     "parser-locals2.p4",
@@ -210,6 +208,8 @@ skipped_tests = [
 # ***** broken tests, need fixing *****
 
 xfails = [
+    "issue512.p4",  # wrong handling of the predicate pass
+    "issue841.p4",
     "header-stack-ops-bmv2.p4",  # push and pop operations
     "action_profile-bmv2.p4",  # Action profile
     "action_profile_max_group_size_annotation.p4",  # Action profile

@@ -55,16 +55,16 @@ def handle_pyz3_error(fail_dir, p4_file):
 
 
 def get_z3_asts(p4_module, p4_path, fail_dir):
+    log.info("Loading %s ASTs...", p4_path.name)
     z3_asts = {}
     try:
         package = p4_module(Z3Reg())
-        for pipe_name, pipe in package.__dict__.items():
-            # ignore everything that is not ingress for now
+        for pipe_name, p4_pipe in package.pipes.items():
+            # ignore deparser and emit because externs are hard...
             if pipe_name != "ig":
                 continue
             log.info("Evaluating %s...", pipe_name)
-            # p4_vars = z3_reg.init_p4_state("inouts", pipe.params)
-            z3_asts[pipe_name] = pipe.eval()
+            z3_asts[pipe_name] = p4_pipe.eval()
     except Exception:
         log.exception("Failed to compile Python to Z3:\n")
         if fail_dir:
@@ -81,7 +81,9 @@ def check_equivalence(prog_before, prog_after):
     ''' SOLVER '''
     s = z3.Solver()
     # the equivalence equation
-    tv_equiv = z3.Not(z3.eq(z3.simplify(prog_before), z3.simplify(prog_after)))
+    prog_before_simpl = z3.simplify(prog_before)
+    prog_after_simpl = z3.simplify(prog_after)
+    tv_equiv = prog_before_simpl != prog_after_simpl
     s.add(tv_equiv)
     log.debug(s.sexpr())
     ret = s.check()
@@ -104,9 +106,9 @@ def get_py_module(prog_path):
     ctrl_function = "p4_program"
     try:
         ctrl_module = import_prog(ctrl_dir, ctrl_name, ctrl_function)
-    except ImportError as e:
-        log.error(("Could not import the"
-                   "requested control function: %s", e))
+    except (ImportError, SyntaxError) as e:
+        log.error(("Could not import the "
+                   "requested module: %s", e))
         return None
     return ctrl_module
 
@@ -133,6 +135,7 @@ def z3_check(prog_paths, fail_dir=None):
         pipes_pre = get_z3_asts(p4_pre, p4_pre_path, fail_dir)
         pipes_post = get_z3_asts(p4_post, p4_post_path, fail_dir)
         if not pipes_pre or not pipes_post:
+            log.error("Pipes did not generate any AST!")
             return util.EXIT_FAILURE
         if len(pipes_pre) != len(pipes_post):
             log.error("Pre and post model differ in size!")
@@ -147,6 +150,7 @@ def z3_check(prog_paths, fail_dir=None):
                     handle_pyz3_error(fail_dir, p4_post_path)
                     debug_msg([p4_pre_path, p4_post_path])
                 return ret
+    log.info("Passed all checks!")
     return util.EXIT_SUCCESS
 
 

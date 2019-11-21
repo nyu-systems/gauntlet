@@ -30,6 +30,20 @@ def resolve_expr(p4_vars, expr_chain, expr) -> z3.SortRef:
     raise TypeError(f"Value of type {type(val)} cannot be resolved!")
 
 
+def resolve_action(action_expr):
+    # TODO Fix this roundabout way of getting a P4 Action, super annoying...
+    if isinstance(action_expr, MethodCallExpr):
+        action_name = action_expr.expr
+        action_args = action_expr.args
+    elif isinstance(action_expr, str):
+        action_name = action_expr
+        action_args = []
+    else:
+        raise TypeError(
+            f"Expected a method call, got {type(action_name)}!")
+    return action_name, action_args
+
+
 def get_type(p4_vars, expr_chain, expr):
     ''' Return the type of an expression, Resolve, if needed'''
     arg_expr = resolve_expr(p4_vars, expr_chain, expr)
@@ -62,7 +76,7 @@ class MethodCallExpr(P4Z3Class):
     def eval(self, p4_vars, expr_chain):
         p4_method = self.expr
         if isinstance(self.expr, str):
-            p4_method = p4_vars.get_var(self.expr)
+            p4_method = p4_vars.resolve_reference(self.expr)
         if callable(p4_method):
             return p4_method(p4_vars, expr_chain, *self.args)
         if isinstance(p4_method, P4Action):
@@ -582,20 +596,10 @@ class P4Control(P4Action):
         return step(p4_vars, expr_chain, expr)
 
 
-class P4Parser(P4Action):
+class P4Parser(P4Control):
 
     def __init__(self):
         super(P4Parser, self).__init__()
-
-    def add_args(self, params):
-        self.params = params
-
-    def apply(self, p4_vars, expr_chain, *p4_args):
-        self.args = p4_args
-        return self.eval(p4_vars, expr_chain)
-
-    def eval(self, p4_vars, expr_chain):
-        return P4Action.eval(self, p4_vars, expr_chain)
 
 
 class IfStatement(P4Z3Class):
@@ -700,20 +704,6 @@ class SwitchStatement(P4Z3Class):
         table = p4_vars.get_var(self.table_str)
         switch_hit = SwitchHit(table, self.cases.copy(), self.default_case)
         return step(p4_vars, [table, switch_hit] + expr_chain)
-
-
-def resolve_action(action_expr):
-    # TODO Fix this roundabout way of getting a P4 Action, super annoying...
-    if isinstance(action_expr, MethodCallExpr):
-        action_name = action_expr.expr
-        action_args = action_expr.args
-    elif isinstance(action_expr, str):
-        action_name = action_expr
-        action_args = []
-    else:
-        raise TypeError(
-            f"Expected a method call, got {type(action_name)}!")
-    return action_name, action_args
 
 
 class P4Table(P4Z3Class):

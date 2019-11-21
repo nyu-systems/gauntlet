@@ -1,7 +1,8 @@
 import operator as op
 import os
-import z3
 import logging
+import z3
+
 log = logging.getLogger(__name__)
 FILE_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -27,7 +28,7 @@ def step(p4_vars, expr_chain, expr=None) -> z3.ExprRef:
     else:
         # empty statement, just return the final update assignment
         z3_copy = p4_vars._make(p4_vars.const)
-        return p4_vars.const == z3_copy
+        return z3_copy
 
 
 class P4ComplexType():
@@ -289,12 +290,17 @@ class Enum(P4ComplexType):
         for idx, accessor in enumerate(accessors):
             setattr(self, accessor.name(), z3.IntVal(idx))
 
+    def propagate_type(self, parent_const: z3.AstRef):
+        # Enums are static so they do not have variable types.
+        pass
+
 
 class Z3Reg():
-    _types = {}
-    _externs = {}
-    _classes = {}
-    _ref_count = {}
+    def __init__(self):
+        self._types = {}
+        self._externs = {}
+        self._classes = {}
+        self._ref_count = {}
 
     def _register_structlike(self, name, p4_class, z3_args):
         self._types[name] = z3.Datatype(name)
