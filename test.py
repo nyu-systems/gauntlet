@@ -7,10 +7,15 @@ import check_p4_compilation as p4c_check
 import check_p4_pair as z3_check
 
 # configure logging
-logging.basicConfig(filename="test.log",
+logging.basicConfig(filename="analysis.log",
                     format="%(levelname)s:%(message)s",
-                    level=logging.INFO)
+                    level=logging.INFO,
+                    filemode='w')
 log = logging.getLogger(__name__)
+stderr_log = logging.StreamHandler()
+stderr_log.setFormatter(logging.Formatter("%(levelname)s:%(message)s"))
+log.addHandler(stderr_log)
+
 
 # some folder definitions
 FILE_DIR = Path.resolve(Path(__file__)).parent
@@ -136,9 +141,10 @@ violation_tests = [
     "key-bmv2",
     "issue1544-bmv2-1",
     "issue1544-bmv2-2",
-    # "equality-1",
-    # "equality-2",
-    # "out-params-1",
+    "equality-1",
+    "equality-2",
+    "equality_stripped",
+    "out-params-1",
     "out-params-2",
     "drop-bmv2",
     "basic_routing_stripped",

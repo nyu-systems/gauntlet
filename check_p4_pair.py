@@ -64,7 +64,8 @@ def get_z3_asts(p4_module, p4_path, fail_dir):
             if pipe_name != "ig":
                 continue
             log.info("Evaluating %s...", pipe_name)
-            z3_asts[pipe_name] = p4_pipe.eval()
+            p4_pipe_ast = p4_pipe()
+            z3_asts[pipe_name] = p4_pipe_ast.eval()
     except Exception:
         log.exception("Failed to compile Python to Z3:\n")
         if fail_dir:
@@ -84,14 +85,15 @@ def check_equivalence(prog_before, prog_after):
     prog_before_simpl = z3.simplify(prog_before)
     prog_after_simpl = z3.simplify(prog_after)
     tv_equiv = prog_before_simpl != prog_after_simpl
+    # tv_equiv = z3.Not(z3.eq(prog_before_simpl, prog_after_simpl))
     s.add(tv_equiv)
     log.debug(s.sexpr())
     ret = s.check()
     log.debug(tv_equiv)
     log.debug(ret)
     if ret == z3.sat:
-        log.error("PROGRAM BEFORE\n%s", prog_before)
-        log.error("PROGRAM AFTER\n%s", prog_after)
+        log.error("PROGRAM BEFORE\n%s", prog_before_simpl)
+        log.error("PROGRAM AFTER\n%s", prog_after_simpl)
         log.error("Proposed solution:")
         log.error(s.model())
         log.error("Detected an equivalence violation!")

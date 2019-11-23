@@ -386,6 +386,9 @@ class AssignmentStatement(P4Z3Class):
             # any assignment copies the variable
             # do not pass references
             rval_expr = deepcopy(rval_expr)
+            if isinstance(rval_expr, int):
+                lval = p4_vars.resolve_reference(self.lval)
+                rval_expr = z3.BitVecVal(rval_expr, lval.size())
             p4_vars.set_or_add_var(self.lval, rval_expr)
         return step(p4_vars, expr_chain)
 

@@ -203,10 +203,8 @@ class P4State(P4ComplexType):
             accessor = target_class.accessors[index]
             setattr(target_class, accessor.name(), rval)
         # generate a new version of the z3 datatype
-        const_copy = self._make(self.const)
+        self.const = self._make(self.const)
         self._update()
-        # return the update expression
-        return self.const == const_copy
 
     def add_externs(self, externs):
         for extern_name, extern_method in externs.items():
