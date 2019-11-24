@@ -139,9 +139,23 @@ class P4add(P4BinaryOp):
         P4BinaryOp.__init__(self, lval, rval, operator)
 
 
+class P4addsat(P4BinaryOp):
+    # TODO: Not sure if this is right, check eventually
+    def __init__(self, lval, rval):
+        operator = z3.BVAddNoOverflow
+        P4BinaryOp.__init__(self, lval, rval, operator)
+
+
 class P4sub(P4BinaryOp):
     def __init__(self, lval, rval):
         operator = op.sub
+        P4BinaryOp.__init__(self, lval, rval, operator)
+
+
+class P4subsat(P4BinaryOp):
+    # TODO: Not sure if this is right, check eventually
+    def __init__(self, lval, rval):
+        operator = z3.BVSubNoUnderflow
         P4BinaryOp.__init__(self, lval, rval, operator)
 
 
@@ -321,18 +335,27 @@ class P4Declaration(P4Z3Class):
 
 
 class P4StructInitializer(P4Z3Class):
-    def __init__(self, instance, **kwargs):
-        if len(kwargs) != len(instance.accessors):
-            raise RuntimeError(
-                "Invalid number of arguments for struct initialization!")
-        self.instance = instance
-        self.members = kwargs
+    def __init__(self, z3_reg, name, z3_type, members):
+        self.name = name
+        self.z3_reg = z3_reg
+        self.z3_type = z3_type
+        self.members = members
 
     def eval(self, p4_vars, expr_chain):
-        for name, val in self.members.items():
-            val_expr = resolve_expr(p4_vars, expr_chain, val)
-            self.instance.set_or_add_var(name, val_expr)
-        return self.instance
+        instance = self.z3_reg.instance(self.name, self.z3_type)
+        if isinstance(self.members, dict):
+            for name, val in self.members.items():
+                val_expr = resolve_expr(p4_vars, expr_chain, val)
+                instance.set_or_add_var(name, val_expr)
+        elif isinstance(self.members, list):
+            for index, rval in enumerate(self.members):
+                accessor = instance.accessors[index]
+                val_expr = resolve_expr(p4_vars, expr_chain, rval)
+                instance.set_or_add_var(accessor.name(), val_expr)
+        else:
+            raise RuntimeError(
+                "P4StructInitializer members {members} not supported!")
+        return instance
 
 
 def slice_assign(lval, rval, slice_l, slice_r) -> z3.SortRef:
@@ -418,6 +441,13 @@ class P4Noop(P4Z3Class):
 
     def eval(self, p4_vars, expr_chain):
         return step(p4_vars, expr_chain)
+
+
+class P4Exit(P4Z3Class):
+
+    def eval(self, p4_vars, expr_chain):
+        # Exit the chain early
+        return eval(p4_vars, [])
 
 
 class P4Action(P4Z3Class):

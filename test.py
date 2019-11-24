@@ -48,6 +48,8 @@ bmv2_tests = [
     "match-on-exprs-bmv2.p4",
     "multicast-bmv2.p4",
     "mux-bmv2.p4",
+    "named_meter_bmv2.p4",
+    "named_meter_1-bmv2.p4",
     "newtype2.p4",
     "p416-type-use3.p4",
     "parser_error-bmv2.p4",
@@ -72,6 +74,7 @@ bmv2_tests = [
     "x-bmv2.p4",
     "issue134-bmv2.p4",
     "issue232-bmv2.p4",
+    "issue242.p4",
     "issue249.p4",
     "issue270-bmv2.p4",
     "issue272-1-bmv2.p4",
@@ -79,6 +82,7 @@ bmv2_tests = [
     "issue323.p4",
     "issue355-bmv2.p4",
     "issue361-bmv2.p4",
+    "issue383-bmv2.p4",
     "issue420.p4",
     "issue430-bmv2.p4",
     "issue430-1-bmv2.p4",
@@ -95,6 +99,7 @@ bmv2_tests = [
     "issue561-5-bmv2.p4",
     "issue561-6-bmv2.p4",
     "issue561-7-bmv2.p4",
+    "issue562-bmv2.p4",
     "issue655-bmv2.p4",
     "issue655.p4",
     "issue692-bmv2.p4",
@@ -108,6 +113,7 @@ bmv2_tests = [
     "issue1079-bmv2.p4",
     "issue1127-bmv2.p4",
     "issue1325-bmv2.p4",
+    "issue1352-bmv2.p4",
     "issue1409-bmv2.p4",
     "issue1412-bmv2.p4",
     "issue1470-bmv2.p4",
@@ -120,6 +126,7 @@ bmv2_tests = [
     "issue1595.p4",
     "issue1607-bmv2.p4",
     "issue1630-bmv2.p4",
+    "issue1642-bmv2.p4",
     "issue1739-bmv2.p4",
     "issue1765-bmv2.p4",
     "issue1765-1-bmv2.p4",
@@ -163,6 +170,17 @@ skipped_tests = [
     "arith4-bmv2.p4",
     "arith5-bmv2.p4",
     "concat-bmv2.p4",
+    "unused-counter-bmv2.p4",
+    "issue1193-bmv2.p4",
+    "issue1829-4-bmv2.p4",
+    "issue1520-bmv2.p4",
+    "issue1566-bmv2.p4",
+    "issue1566.p4",
+    "action_profile_max_group_size_annotation.p4",
+    "action_selector_shared-bmv2.p4",
+    "action_selector_unused-bmv2.p4",
+    "action_profile-bmv2.p4",
+    "issue297-bmv2.p4",
     "free-form-annotation.p4",
     "hit-expr.p4",
     "inline-bmv2.p4",
@@ -211,34 +229,25 @@ skipped_tests = [
     "issue1834-bmv2.p4",
     "table-entries-valid-bmv2.p4",
     "issue1107.p4",
+    "issue1097-2-bmv2.p4",
+    "issue1097-bmv2.p4",
+    "issue364-bmv2.p4",
+    "saturated-bmv2.p4",
 ]
 
 # ***** broken tests, need fixing *****
 
 xfails = [
     "header-stack-ops-bmv2.p4",  # push and pop operations
-    "action_profile-bmv2.p4",  # Action profile
-    "action_profile_max_group_size_annotation.p4",  # Action profile
-    "action_selector_shared-bmv2.p4",  # Action selector
-    "action_selector_unused-bmv2.p4",  # Action selector
-    "issue297-bmv2.p4",  # Action profile
     "issue298-bmv2.p4",  # register
     "checksum2-bmv2.p4",  # parser error
     "checksum3-bmv2.p4",  # parser error
     "fabric_20190420/fabric.p4",  # direct_counter
     "flowlet_switching-bmv2.p4",  # register
-    "issue1097-2-bmv2.p4",
-    "issue1097-bmv2.p4",
-    "issue242.p4",
     "issue696-bmv2.p4",
-    "named_meter_1-bmv2.p4",
-    "issue364-bmv2.p4",
-    "issue383-bmv2.p4",
     "issue461-bmv2.p4",
     "issue907-bmv2.p4",
     "issue949.p4",
-    "named_meter_bmv2.p4",
-    "saturated-bmv2.p4",
     "slice-def-use.p4",
     "slice-def-use1.p4",
     "table-entries-exact-ternary-bmv2.p4",
@@ -247,24 +256,15 @@ xfails = [
     "table-entries-range-bmv2.p4",
     "table-entries-ser-enum-bmv2.p4",
     "table-entries-ternary-bmv2.p4",
-    "unused-counter-bmv2.p4",
     "v1model-p4runtime-most-types1.p4",
-    "issue1193-bmv2.p4",
     "issue1210.p4",
-    "issue1352-bmv2.p4",
-    "issue1520-bmv2.p4",
-    "issue1566-bmv2.p4",
-    "issue1566.p4",
-    "issue1642-bmv2.p4",
     "issue1653-complex-bmv2.p4",
     "issue1670-bmv2.p4",
     "issue1768-bmv2.p4",
     "issue1814-1-bmv2.p4",
     "issue1814-bmv2.p4",
-    "issue1829-4-bmv2.p4",
     "issue1882-1-bmv2.p4",
     "issue1989-bmv2.p4",
-    "issue562-bmv2.p4",
 ]
 
 # bmv2_tests = []
