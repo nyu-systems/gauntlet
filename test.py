@@ -33,6 +33,8 @@ bmv2_tests = [
     "bvec-hdr-bmv2.p4",
     "bvec_union-bmv2.p4",
     "checksum1-bmv2.p4",
+    "checksum2-bmv2.p4",
+    "checksum3-bmv2.p4",
     "crc32-bmv2.p4",
     "def-use.p4",
     "drop-bmv2.p4",
@@ -130,10 +132,10 @@ bmv2_tests = [
     "issue1739-bmv2.p4",
     "issue1765-bmv2.p4",
     "issue1765-1-bmv2.p4",
+    "issue1768-bmv2.p4",
     "issue1781-bmv2.p4",
     "issue1824-bmv2.p4",
     "issue1879-bmv2.p4",
-    "issue1882-bmv2.p4",
     "issue1897-bmv2.p4",
     "issue1937-1-bmv2.p4",
     "issue1937-2-bmv2.p4",
@@ -157,6 +159,7 @@ violation_tests = [
     "basic_routing_stripped",
     "mux",
     "const_entries",
+    "checksum2",
 ]
 
 # ***** working tests but do not generate passes *****
@@ -240,8 +243,6 @@ skipped_tests = [
 xfails = [
     "header-stack-ops-bmv2.p4",  # push and pop operations
     "issue298-bmv2.p4",  # register
-    "checksum2-bmv2.p4",  # parser error
-    "checksum3-bmv2.p4",  # parser error
     "fabric_20190420/fabric.p4",  # direct_counter
     "flowlet_switching-bmv2.p4",  # register
     "issue696-bmv2.p4",
@@ -260,9 +261,9 @@ xfails = [
     "issue1210.p4",
     "issue1653-complex-bmv2.p4",
     "issue1670-bmv2.p4",
-    "issue1768-bmv2.p4",
     "issue1814-1-bmv2.p4",
     "issue1814-bmv2.p4",
+    "issue1882-bmv2.p4",
     "issue1882-1-bmv2.p4",
     "issue1989-bmv2.p4",
 ]

@@ -59,6 +59,29 @@ def z3_implies(p4_vars, expr_chain, cond, then_expr):
     return z3.If(cond, then_expr, no_match)
 
 
+def check_bool(expr):
+    if isinstance(expr, z3.BoolRef):
+        # Convert boolean variables to a bit vector representation
+        # TODO: Make all bools a bitvector of size 1
+        expr = z3.If(expr, z3.BitVecVal(1, 1), z3.BitVecVal(0, 1))
+    return expr
+
+
+def check_enum(expr):
+    if isinstance(expr, Enum):
+        expr = expr.const
+    return expr
+
+
+def align_bitvecs(bitvec1, bitvec2, p4_vars, expr_chain):
+    if isinstance(bitvec1, z3.BitVecRef) and isinstance(bitvec2, z3.BitVecRef):
+        if bitvec1.size() < bitvec2.size():
+            bitvec1 = P4Cast(bitvec1, bitvec2).eval(p4_vars, expr_chain)
+        if bitvec1.size() > bitvec2.size():
+            bitvec2 = P4Cast(bitvec2, bitvec1).eval(p4_vars, expr_chain)
+    return bitvec1, bitvec2
+
+
 class P4Z3Class():
     def eval(self, p4_vars, expr_chain):
         raise NotImplementedError("Method eval not implemented!")
@@ -96,6 +119,13 @@ class P4BinaryOp(P4Z3Class):
         lval_expr = resolve_expr(p4_vars, expr_chain, self.lval)
         rval_expr = resolve_expr(p4_vars, expr_chain, self.rval)
 
+        # if we have enums, do not use them for operations
+        # for some reason, overloading equality does not work here...
+        # instead use their current representation...
+        lval_expr = check_enum(lval_expr)
+        rval_expr = check_enum(rval_expr)
+        lval_expr, rval_expr = align_bitvecs(
+            lval_expr, rval_expr, p4_vars, expr_chain)
         return self.operator(lval_expr, rval_expr)
 
 
@@ -142,7 +172,8 @@ class P4add(P4BinaryOp):
 class P4addsat(P4BinaryOp):
     # TODO: Not sure if this is right, check eventually
     def __init__(self, lval, rval):
-        operator = z3.BVAddNoOverflow
+        operator = (lambda x, y: z3.BVAddNoOverflow(x, y, False))
+        operator = op.add
         P4BinaryOp.__init__(self, lval, rval, operator)
 
 
@@ -155,7 +186,8 @@ class P4sub(P4BinaryOp):
 class P4subsat(P4BinaryOp):
     # TODO: Not sure if this is right, check eventually
     def __init__(self, lval, rval):
-        operator = z3.BVSubNoUnderflow
+        operator = (lambda x, y: z3.BVSubNoUnderflow(x, y, False))
+        operator = op.sub
         P4BinaryOp.__init__(self, lval, rval, operator)
 
 
@@ -292,11 +324,8 @@ class P4Cast(P4Z3Class):
 
     def eval(self, p4_vars, expr_chain):
         expr = resolve_expr(p4_vars, expr_chain, self.val)
+        expr = check_bool(expr)
 
-        if isinstance(expr, z3.BoolRef):
-            # Convert boolean variables to a bit vector representation
-            # TODO: Make all bools a bitvector of size 1
-            expr = z3.If(expr, z3.BitVecVal(1, 1), z3.BitVecVal(0, 1))
         expr_size = expr.size()
         if expr_size < self.to_size:
             return z3.ZeroExt(self.to_size - expr_size, expr)
@@ -447,7 +476,7 @@ class P4Exit(P4Z3Class):
 
     def eval(self, p4_vars, expr_chain):
         # Exit the chain early
-        return eval(p4_vars, [])
+        return step(p4_vars, [])
 
 
 class P4Action(P4Z3Class):

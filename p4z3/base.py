@@ -271,7 +271,7 @@ class Enum(P4ComplexType):
     def __init__(self, z3_reg, z3_type: z3.SortRef, name):
         self.name = name
         self.z3_type = z3_type
-        self.const = z3.Const(f"{name}_0", z3_type)
+        self.const = z3.BitVec(f"{self.name}", 8)
         self.constructor = z3_type.constructor(0)
         # These are special for enums
         self._set_z3_accessors(z3_type, self.constructor)
@@ -286,7 +286,7 @@ class Enum(P4ComplexType):
     def _init_members(self, z3_reg, accessors):
         # Instead of a z3 variable we assign a concrete number to each member
         for idx, accessor in enumerate(accessors):
-            setattr(self, accessor.name(), z3.IntVal(idx))
+            setattr(self, accessor.name(), z3.BitVecVal(idx, 8))
 
     def propagate_type(self, parent_const: z3.AstRef):
         # Enums are static so they do not have variable types.
@@ -317,7 +317,7 @@ class Z3Reg():
         # Enums are a bit weird... we first create a type
         enum_types = []
         for enum_name in enum_args:
-            enum_types.append((enum_name, z3.IntSort()))
+            enum_types.append((enum_name, z3.BitVecSort(8)))
         self._register_structlike(name, Enum, enum_types)
         # And then actually instantiate it so we can reference it later
         self._externs[name] = self.instance(name, self._types[name])
