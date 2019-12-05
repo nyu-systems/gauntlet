@@ -1,8 +1,6 @@
 #include <core.p4>
 #include <v1model.p4>
 
-
-
 control c() {
     bit<16> FHaSkb = 0;
     bit<128> YIafjU = 0;
@@ -11,7 +9,7 @@ control c() {
 
     }
     action vKNsz() {
-        return;
+        return; // the return comes before the action call
         rxNET();
     }
     apply {
