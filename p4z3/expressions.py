@@ -776,6 +776,7 @@ class P4Table(P4Z3Class):
         self.const_entries = []
         self.actions = OrderedDict()
         self.default_action = None
+        self.tbl_action = z3.Int(f"{self.name}_action")
 
     def add_action(self, action_expr):
         action_name, action_args = resolve_action(action_expr)
@@ -840,7 +841,8 @@ class P4Table(P4Z3Class):
         matches = []
         for index, key in enumerate(self.keys):
             key_eval = resolve_expr(p4_vars, expr_chain, key)
-            matches.append(key_eval == const_keys[index])
+            c_key_eval = resolve_expr(p4_vars, expr_chain, const_keys[index])
+            matches.append(key_eval == c_key_eval)
         action_match = z3.And(*matches)
         action_expr = self.eval_action(p4_vars, expr_chain,
                                        (p4_action, p4_action_args))
@@ -852,14 +854,13 @@ class P4Table(P4Z3Class):
         if not actions:
             const_entries = self.const_entries.copy()
             return self.eval_const_loop(p4_vars, expr_chain, const_entries)
-        action = z3.Int(f"{self.name}_action")
         _, f_tuple = actions.popitem(last=False)
         p4_action_id = f_tuple[0]
         action_name = f_tuple[1]
         p4_action_args = f_tuple[2]
         action_expr = self.eval_action(p4_vars, expr_chain,
                                        (action_name, p4_action_args))
-        action_match = (action == z3.IntVal(p4_action_id))
+        action_match = (self.tbl_action == z3.IntVal(p4_action_id))
         then_expr = self.eval_table_loop(p4_vars, expr_chain, actions)
         return z3.If(action_match, action_expr, then_expr)
 
