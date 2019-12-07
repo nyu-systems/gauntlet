@@ -39,7 +39,7 @@ pip3 install --user pyroute2 ipaddr ply==3.8 scapy==2.4.0
 # grab the toz3 extension for the p4 compiler
 mkdir -p p4c/extensions
 git clone https://github.com/p4gauntlet/toz3 p4c/extensions/toz3
-git clone https://github.com/p4gauntlet/cdg-backend p4c/extensions/bludgeon
+git clone https://github.com/p4gauntlet/bludgeon p4c/extensions/bludgeon
 
 # build the p4 compiler
 cd p4c

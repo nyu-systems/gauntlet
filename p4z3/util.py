@@ -25,8 +25,6 @@ def del_dir(directory):
 
 
 def copy_file(src, dst):
-    src = str(src)
-    dst = str(dst)
     if isinstance(src, list):
         for src_file in src:
             shutil.copy2(src_file, dst)
