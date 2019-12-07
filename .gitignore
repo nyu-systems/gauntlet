@@ -136,5 +136,6 @@ dumps
 
 
 generated/
+random/
 validate/
 violated/**/*.py

@@ -25,11 +25,23 @@ def del_dir(directory):
 
 
 def copy_file(src, dst):
+    src = str(src)
+    dst = str(dst)
     if isinstance(src, list):
         for src_file in src:
             shutil.copy2(src_file, dst)
     else:
         shutil.copy2(src, dst)
+
+
+def move_file(src, dst):
+    src = str(src)
+    dst = str(dst)
+    if isinstance(src, list):
+        for src_file in src:
+            src.move(src_file, dst)
+    else:
+        shutil.move(src, dst)
 
 
 def convert(text):

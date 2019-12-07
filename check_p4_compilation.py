@@ -151,7 +151,7 @@ def validate_translation(p4_file, target_dir, p4c_bin):
             log.error("Compiler crashed!")
             util.check_dir(fail_dir)
             with open(f"{fail_dir}/error.txt", 'w+') as err_file:
-                err_file.write(str(result.stderr))
+                err_file.write(result.stderr.decode("utf-8"))
             util.copy_file([p4_pass, py_file], fail_dir)
             return result.returncode
         p4_py_files.append(f"{target_dir}/{p4_path}")
