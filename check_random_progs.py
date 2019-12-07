@@ -27,6 +27,7 @@ VALIDATION_BUG_DIR = OUTPUT_DIR.joinpath("validation_bugs")
 
 KNOWN_BUGS = [
     "no locations known for <Mux>",
+    "visitor returned non-Statement type: <Vector<StatOrDecl>>",
 ]
 
 
@@ -90,11 +91,10 @@ def main():
         if result.returncode != util.EXIT_SUCCESS:
             log.info("Failed to compile P4.")
             log.info("Compiler crashed!")
-            if is_known_bug(result):
+            if not is_known_bug(result):
+                dump_result(result, CRASH_BUG_DIR, p4_file)
+                dump_p4_file(CRASH_BUG_DIR, p4_file)
                 continue
-            dump_result(result, CRASH_BUG_DIR, p4_file)
-            dump_p4_file(CRASH_BUG_DIR, p4_file)
-            continue
         p4_file.unlink()
     return util.EXIT_SUCCESS
 
