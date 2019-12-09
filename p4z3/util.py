@@ -21,7 +21,7 @@ def del_dir(directory):
     try:
         shutil.rmtree(directory)
     except OSError as e:
-        log.warning("%s - %s." % (e.filename, e.strerror))
+        log.warning("%s - %s.", e.filename, e.strerror)
 
 
 def copy_file(src, dst):
@@ -57,16 +57,16 @@ def natural_sort(l):
 
 
 def exec_process(cmd, out_file=subprocess.STDOUT):
-    log.debug("Executing %s " % cmd)
+    log.debug("Executing %s ", cmd)
     if out_file is subprocess.STDOUT:
         result = subprocess.run(
             cmd.split(), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         if result.stdout:
-            log.debug("Process output: %s" % result.stdout)
+            log.debug("Process output: %s", result.stdout)
         if result.returncode != 0:
             log.error("##################################")
-            log.error("Failed while executing:\n%s\n" % cmd)
-            log.error("Output:\n%s" % str(result.stderr))
+            log.error("Failed while executing:\n%s\n", cmd)
+            log.error("Output:\n%s", str(result.stderr))
             log.error("##################################\n\n")
         return result
     err = out_file + ".err"
