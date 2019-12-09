@@ -72,7 +72,7 @@ def dump_p4_file(target_dir, p4_file):
 def is_known_bug(result):
     for bug in KNOWN_BUGS:
         if bug in result.stderr.decode("utf-8"):
-            log.info("Bug \"%s\" already known. Skipping...", bug)
+            log.info("Error \"%s\" already known. Skipping...", bug)
             return True
     return False
 
@@ -92,8 +92,8 @@ def main():
 
         result = compile_p4_prog(P4C_BIN, p4_file)
         if result.returncode != util.EXIT_SUCCESS:
-            log.info("Failed to compile the P4 code!")
             if not is_known_bug(result):
+                log.info("Failed to compile the P4 code!")
                 log.info("Found a new bug!")
                 dump_result(result, CRASH_BUG_DIR, p4_file)
                 dump_p4_file(CRASH_BUG_DIR, p4_file)
