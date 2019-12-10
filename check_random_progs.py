@@ -26,7 +26,6 @@ VALIDATION_BUG_DIR = OUTPUT_DIR.joinpath("validation_bugs")
 
 
 KNOWN_BUGS = [
-    "no locations known for <Mux>",
     "could not evaluate at compilation time",
     "Conditional execution in actions is not supported on this target",
     "Number of errors exceeded set maximum of",
