@@ -7,7 +7,7 @@ log = logging.getLogger(__name__)
 FILE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
-def step(p4_vars, expr_chain, expr=None) -> z3.ExprRef:
+def step(p4_state, expr_chain, expr=None) -> z3.ExprRef:
     ''' The step function ensures that modifications are propagated to
     all subsequent operations. This is important to guarantee correctness with
     branching or local modification. '''
@@ -17,7 +17,7 @@ def step(p4_vars, expr_chain, expr=None) -> z3.ExprRef:
         expr_chain = list(expr_chain)
         # iterate through all the remaining functions in the chain
         log.debug("Evaluating %s", next_expr.__class__)
-        fun_expr = next_expr.eval(p4_vars, expr_chain)
+        fun_expr = next_expr.eval(p4_state, expr_chain)
         # eval should always return an expression
         if not isinstance(fun_expr, (z3.ExprRef)):
             raise TypeError(f"Expression {fun_expr} is not a z3 expression!")
@@ -27,7 +27,7 @@ def step(p4_vars, expr_chain, expr=None) -> z3.ExprRef:
         return expr
     else:
         # empty statement, just return the final update assignment
-        z3_copy = p4_vars._make(p4_vars.const)
+        z3_copy = p4_state._make(p4_state.const)
         return z3_copy
 
 
@@ -221,13 +221,13 @@ class Header(P4ComplexType):
     def isValid(self, *args):
         return self.valid
 
-    def setValid(self, p4_vars, expr_chain):
+    def setValid(self, p4_state, expr_chain):
         self.valid = z3.BoolVal(True)
-        return step(p4_vars, expr_chain)
+        return step(p4_state, expr_chain)
 
-    def setInvalid(self, p4_vars, expr_chain):
+    def setInvalid(self, p4_state, expr_chain):
         self.valid = z3.BoolVal(False)
-        return step(p4_vars, expr_chain)
+        return step(p4_state, expr_chain)
 
     def __eq__(self, other):
         if isinstance(other, Header):
@@ -253,13 +253,13 @@ class HeaderUnion(P4ComplexType):
     def isValid(self, *args):
         return self.valid
 
-    def setValid(self, p4_vars, expr_chain):
+    def setValid(self, p4_state, expr_chain):
         self.valid = z3.BoolVal(True)
-        return step(p4_vars, expr_chain)
+        return step(p4_state, expr_chain)
 
-    def setInvalid(self, p4_vars, expr_chain):
+    def setInvalid(self, p4_state, expr_chain):
         self.valid = z3.BoolVal(False)
-        return step(p4_vars, expr_chain)
+        return step(p4_state, expr_chain)
 
 
 class Struct(P4ComplexType):
