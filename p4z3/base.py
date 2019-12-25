@@ -126,11 +126,24 @@ class P4ComplexType():
             var = self.resolve_reference(var)
         return var
 
+    def set_list(self, lstring, rvals):
+        if '.' in lstring:
+            prefix, suffix = lstring.rsplit(".", 1)
+            target_class = self.get_var(prefix)
+        else:
+            target_class = self.get_var(lstring)
+        if not isinstance(target_class, P4ComplexType):
+            raise RuntimeError(
+                "Trying to assign values to a non-complex type!")
+        for index, rval in enumerate(rvals):
+            accessor = target_class.accessors[index]
+            target_class.set_or_add_var(accessor.name(), rval)
+
     def set_or_add_var(self, lstring, rval):
         # Check if the assigned variable is already a reference
         var = self.get_var(lstring)
         if var is None:
-            # nothing found, just set the variable to whatever
+            # nothing found, just set the variable to the reference
             pass
         elif isinstance(var, str):
             # the target variable exists and is a string
@@ -147,6 +160,15 @@ class P4ComplexType():
             # resolve any possible rvalue reference
             log.debug("Recursing with %s and %s ", lstring, rval)
             rval = self.resolve_reference(rval)
+
+        # We also must handle integer values and convert them to bitvectors
+        # For that we have to match the type
+        if isinstance(rval, int):
+            lval = self.resolve_reference(lstring)
+            rval = z3.BitVecVal(rval, lval.size())
+        elif isinstance(rval, list):
+            self.set_list(lstring, rval)
+            return
 
         log.debug("Setting %s(%s) to %s(%s) ",
                   lstring, type(lstring), rval, type(rval))
@@ -178,6 +200,20 @@ class P4ComplexType():
                 z3_eq = self_member == other_member
                 eq_accessors.append(z3_eq)
             return z3.And(*eq_accessors)
+        elif isinstance(other, list):
+            # It can happen that we compare to a list
+            # comparisons are almost the same just do not use accessors
+            if len(self.accessors) != len(other):
+                return z3.BoolVal(False)
+            eq_accessors = []
+            for index in range(len(self.accessors)):
+                self_access = self.accessors[index]
+                other_member = other[index]
+                self_member = op.attrgetter(self_access.name())(self)
+                z3_eq = self_member == other_member
+                eq_accessors.append(z3_eq)
+            return z3.And(*eq_accessors)
+
         return z3.BoolVal(False)
 
 
@@ -188,22 +224,6 @@ class P4State(P4ComplexType):
 
     def set_or_add_var(self, lstring, rval):
         P4ComplexType.set_or_add_var(self, lstring, rval)
-        self._update()
-
-    def set_list(self, lstring, rvals):
-        if '.' in lstring:
-            prefix, suffix = lstring.rsplit(".", 1)
-            target_class = self.get_var(prefix)
-        else:
-            target_class = self.get_var(lstring)
-        if not isinstance(target_class, P4ComplexType):
-            raise RuntimeError(
-                "Trying to assign values to a non-complex type!")
-        for index, rval in enumerate(rvals):
-            accessor = target_class.accessors[index]
-            setattr(target_class, accessor.name(), rval)
-        # generate a new version of the z3 datatype
-        self.const = self._make(self.const)
         self._update()
 
     def add_externs(self, externs):
