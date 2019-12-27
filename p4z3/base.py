@@ -185,36 +185,32 @@ class P4ComplexType():
         # generate a new version of the z3 datatype
         # update the internal representation of the attribute.
         # this also checks the validity of the new assignment
+        # if there is a type error, z3 will complain
         self.const = self._make(self.const)
 
     def __eq__(self, other):
-        if isinstance(other, P4ComplexType):
-            if len(self.accessors) != len(other.accessors):
-                return z3.BoolVal(False)
-            eq_accessors = []
-            for index in range(len(self.accessors)):
-                self_access = self.accessors[index]
-                other_access = other.accessors[index]
-                self_member = op.attrgetter(self_access.name())(self)
-                other_member = op.attrgetter(other_access.name())(other)
-                z3_eq = self_member == other_member
-                eq_accessors.append(z3_eq)
-            return z3.And(*eq_accessors)
-        elif isinstance(other, list):
-            # It can happen that we compare to a list
-            # comparisons are almost the same just do not use accessors
-            if len(self.accessors) != len(other):
-                return z3.BoolVal(False)
-            eq_accessors = []
-            for index in range(len(self.accessors)):
-                self_access = self.accessors[index]
-                other_member = other[index]
-                self_member = op.attrgetter(self_access.name())(self)
-                z3_eq = self_member == other_member
-                eq_accessors.append(z3_eq)
-            return z3.And(*eq_accessors)
 
-        return z3.BoolVal(False)
+        # It can happen that we compare to a list
+        # comparisons are almost the same just do not use accessors
+        if isinstance(other, P4ComplexType):
+            other_list = other.accessors
+        elif isinstance(other, list):
+            other_list = other
+        else:
+            return z3.BoolVal(False)
+
+        if len(self.accessors) != len(other_list):
+            return z3.BoolVal(False)
+        eq_accessors = []
+        for index, self_access in enumerate(self.accessors):
+            self_member = op.attrgetter(self_access.name())(self)
+            other_member = other_list[index]
+            if isinstance(other, P4ComplexType):
+                other_member = op.attrgetter(other_member.name())(other)
+            # we compare the members of each complex type
+            z3_eq = self_member == other_member
+            eq_accessors.append(z3_eq)
+        return z3.And(*eq_accessors)
 
 
 class P4State(P4ComplexType):
@@ -259,7 +255,7 @@ class Header(P4ComplexType):
             check_valid = z3.And(self.isValid(), other.isValid())
             comparison = z3.And(check_valid, self.const == other.const)
             return z3.Or(check_invalid, comparison)
-        return z3.BoolVal(False)
+        return super().__eq__(other)
 
 
 class HeaderUnion(P4ComplexType):
