@@ -32,7 +32,7 @@ def resolve_expr(p4_state, expr_chain, expr) -> z3.SortRef:
         return list_expr
     if isinstance(val, P4Z3Class):
         # We got a P4 type, recurse...
-        return base.step(p4_state, [val] + expr_chain)
+        return val.eval(p4_state, expr_chain)
     if isinstance(val, base.P4ComplexType):
         # If we get a whole class return the complex z3 type
         return val
@@ -422,7 +422,7 @@ class SliceAssignment(P4Z3Class):
         rval_expr = slice_assign(lval_expr, rval_expr,
                                  self.slice_l, self.slice_r)
         assign = AssignmentStatement(self.lval, rval_expr)
-        return base.step(p4_state, [assign] + expr_chain)
+        return assign.eval(p4_state, expr_chain)
 
 
 class AssignmentStatement(P4Z3Class):
@@ -450,7 +450,7 @@ class MethodCallStmt(P4Z3Class):
         self.method_expr = method_expr
 
     def eval(self, p4_state, expr_chain):
-        return base.step(p4_state, [self.method_expr] + expr_chain)
+        return self.method_expr.eval(p4_state, expr_chain)
 
 
 class BlockStatement(P4Z3Class):
@@ -617,7 +617,7 @@ class P4Control(P4Action):
         if not p4_state:
             # There is no state yet, so use the state of the function
             p4_state = self.p4_state
-        p4_state_tmp = self.p4_state
+        p4_state_tmp = p4_state
 
         local_decls = []
         for local in self.locals:
@@ -684,11 +684,10 @@ class IfStatement(P4Z3Class):
         # conditional branching requires a copy of the state for each branch
         # in some sense this copy acts as a phi function
         then_p4_state = deepcopy(p4_state)
-        then_expr = base.step(then_p4_state, [self.then_block] + expr_chain)
+        then_expr = self.then_block.eval(then_p4_state, expr_chain)
         if self.else_block:
             else_p4_state = deepcopy(p4_state)
-            else_expr = base.step(
-                else_p4_state, [self.else_block] + expr_chain)
+            else_expr = self.else_block.eval(else_p4_state, expr_chain)
             return z3.If(cond, then_expr, else_expr)
         else:
             return z3_implies(p4_state, expr_chain, cond, then_expr)
@@ -700,16 +699,14 @@ class SwitchHit(P4Z3Class):
         self.default_case = default_case
         self.cases = cases
 
-    def eval_loop(self, p4_state, expr_chain, cases):
-        p4_state_copy = deepcopy(p4_state)
-        if cases:
-            _, case = cases.popitem(last=False)
-            case_expr = base.step(
-                p4_state_copy, [case["case_block"]] + expr_chain)
-            then_expr = self.eval_loop(p4_state, expr_chain, cases)
-            return z3.If(case["match"], case_expr, then_expr)
-        else:
-            return base.step(p4_state_copy, [self.default_case] + expr_chain)
+    def eval_cases(self, p4_state, expr_chain, cases):
+        expr = self.default_case.eval(p4_state, expr_chain)
+        for case in reversed(cases.values()):
+            p4_state = deepcopy(p4_state)
+            case_expr = case["case_block"].eval(p4_state,
+                                                expr_chain)
+            expr = z3.If(case["match"], case_expr, expr)
+        return expr
 
     def eval_switch_matches(self, table):
         for case_name, case in self.cases.items():
@@ -719,12 +716,12 @@ class SwitchHit(P4Z3Class):
 
     def eval(self, p4_state, expr_chain):
         self.eval_switch_matches(self.table)
-        switch_hit = self.eval_loop(p4_state, expr_chain, self.cases)
+        switch_hit = self.eval_cases(p4_state, expr_chain, self.cases)
         return switch_hit
 
 
 class SwitchStatement(P4Z3Class):
-    # TODO: Fix fall through for switch statement, purge this terrible code
+    # TODO: Fix fall through for switch statement
     def __init__(self, table_str):
         self.table_str = table_str
         self.default_case = BlockStatement()
@@ -783,7 +780,7 @@ class P4Table(P4Z3Class):
         self.const_entries.append((const_keys, (action_name, action_args)))
 
     def apply(self, p4_state, expr_chain):
-        return base.step(p4_state, [self] + expr_chain)
+        return self.eval(p4_state, expr_chain)
 
     def eval_keys(self, p4_state, expr_chain):
         key_pairs = []
@@ -818,45 +815,47 @@ class P4Table(P4Z3Class):
         return self.eval_action(p4_state, expr_chain,
                                 (action_name, p4_action_args))
 
-    def eval_const_loop(self, p4_state, expr_chain, const_entries):
-        if not const_entries:
-            return self.eval_default(p4_state, expr_chain)
+    def eval_table(self, p4_state, expr_chain):
+        actions = self.actions
+        const_entries = self.const_entries
 
-        const_keys, action = const_entries.pop(0)
-        p4_action = action[0]
-        p4_action_args = action[1]
-        matches = []
-        for index, key in enumerate(self.keys):
-            key_eval = resolve_expr(p4_state, expr_chain, key)
-            c_key_eval = resolve_expr(p4_state, expr_chain, const_keys[index])
-            matches.append(key_eval == c_key_eval)
-        action_match = z3.And(*matches)
-        action_expr = self.eval_action(p4_state, expr_chain,
-                                       (p4_action, p4_action_args))
-        then_expr = self.eval_const_loop(
-            p4_state, expr_chain, const_entries)
-        return z3.If(action_match, action_expr, then_expr)
-
-    def eval_table_loop(self, p4_state, expr_chain, actions):
-        if not actions:
-            const_entries = self.const_entries.copy()
-            return self.eval_const_loop(p4_state, expr_chain, const_entries)
-        _, f_tuple = actions.popitem(last=False)
-        p4_action_id = f_tuple[0]
-        action_name = f_tuple[1]
-        p4_action_args = f_tuple[2]
-        action_expr = self.eval_action(p4_state, expr_chain,
-                                       (action_name, p4_action_args))
-        action_match = (self.tbl_action == z3.IntVal(p4_action_id))
-        then_expr = self.eval_table_loop(p4_state, expr_chain, actions)
-        return z3.If(action_match, action_expr, then_expr)
+        # first evaluate the default entry
+        expr = self.eval_default(p4_state, expr_chain)
+        # then wrap constant entries around it
+        for const_keys, action in reversed(const_entries):
+            action_name = action[0]
+            p4_action_args = action[1]
+            matches = []
+            # match the constant keys with the normal table keys
+            # this generates the match expression for a specific constant entry
+            for index, key in enumerate(self.keys):
+                key_eval = resolve_expr(p4_state, expr_chain, key)
+                c_key_eval = resolve_expr(
+                    p4_state, expr_chain, const_keys[index])
+                matches.append(key_eval == c_key_eval)
+            action_match = z3.And(*matches)
+            action_tuple = (action_name, p4_action_args)
+            action_expr = self.eval_action(p4_state, expr_chain, action_tuple)
+            expr = z3.If(action_match, action_expr, expr)
+        # then wrap dynamic table entries around the constant entries
+        for action in reversed(actions.values()):
+            p4_action_id = action[0]
+            action_name = action[1]
+            p4_action_args = action[2]
+            action_match = (self.tbl_action == z3.IntVal(p4_action_id))
+            action_tuple = (action_name, p4_action_args)
+            action_expr = self.eval_action(p4_state, expr_chain, action_tuple)
+            expr = z3.If(action_match, action_expr, expr)
+        # finally return a nested set of if expressions
+        return expr
 
     def eval(self, p4_state, expr_chain):
         # This is a table match where we look up the provided key
         # If we match select the associated action,
         # else use the default action
+        # TODO: Check the exact semantics how default actions can be called
+        # Right now, they can be called in either the table match or miss
         tbl_match = self.eval_keys(p4_state, expr_chain)
-        actions = self.actions.copy()
-        table_expr = self.eval_table_loop(p4_state, expr_chain, actions)
+        table_expr = self.eval_table(p4_state, expr_chain)
         def_expr = self.eval_default(p4_state, expr_chain)
         return z3.If(tbl_match, table_expr, def_expr)

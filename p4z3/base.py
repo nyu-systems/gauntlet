@@ -17,11 +17,10 @@ def step(p4_state, expr_chain, expr=None) -> z3.ExprRef:
         expr_chain = list(expr_chain)
         # iterate through all the remaining functions in the chain
         log.debug("Evaluating %s", next_expr.__class__)
-        fun_expr = next_expr.eval(p4_state, expr_chain)
+        expr = next_expr.eval(p4_state, expr_chain)
         # eval should always return an expression
-        if not isinstance(fun_expr, (z3.ExprRef)):
-            raise TypeError(f"Expression {fun_expr} is not a z3 expression!")
-        return fun_expr
+        if not isinstance(expr, (z3.ExprRef)):
+            raise TypeError(f"Expression {expr} is not a z3 expression!")
     if expr is not None:
         # end of chain, just mirror the passed expressions
         return expr
