@@ -719,7 +719,7 @@ class SwitchHit(P4Z3Class):
 
     def eval(self, p4_state, expr_chain):
         self.eval_switch_matches(self.table)
-        switch_hit = self.eval_loop(p4_state, expr_chain, self.cases.copy())
+        switch_hit = self.eval_loop(p4_state, expr_chain, self.cases)
         return switch_hit
 
 
@@ -746,26 +746,10 @@ class SwitchStatement(P4Z3Class):
             case_block = self.cases[action_str]["case_block"]
             case_block.add(case_stmt)
 
-    def eval_loop(self, p4_state, expr_chain, cases):
-        p4_state_copy = deepcopy(p4_state)
-        if cases:
-            _, case = cases.popitem(last=False)
-            case_expr = base.step(
-                p4_state_copy, [case["case_block"]] + expr_chain)
-            then_expr = self.eval_loop(p4_state, expr_chain, cases)
-            return z3.If(case["match"], case_expr, then_expr)
-        else:
-            return base.step(p4_state_copy, [self.default_case] + expr_chain)
-
-    def eval_switch_matches(self, table):
-        for case_name, case in self.cases.items():
-            match_var = case["match_var"]
-            action = table.actions[case_name][0]
-            self.cases[case_name]["match"] = (match_var == action)
-
     def eval(self, p4_state, expr_chain):
         table = p4_state.get_var(self.table_str)
-        switch_hit = SwitchHit(table, self.cases.copy(), self.default_case)
+        # instantiate the hit expression
+        switch_hit = SwitchHit(table, self.cases, self.default_case)
         return base.step(p4_state, [table, switch_hit] + expr_chain)
 
 
@@ -818,6 +802,8 @@ class P4Table(P4Z3Class):
         p4_action = p4_state.get_var(p4_action)
         if not isinstance(p4_action, P4Action):
             raise TypeError(f"Expected a P4Action got {type(p4_action)}!")
+        # evaluating an action may modify the state of the class
+        # so we have to make a copy here for both state and action
         p4_state = deepcopy(p4_state)
         p4_action = deepcopy(p4_action)
         p4_action.set_param_args(arg_prefix=self.name)
