@@ -30,6 +30,16 @@ def step(p4_state, expr_chain, expr=None) -> z3.ExprRef:
         return z3_copy
 
 
+def z3_cast(val, to_size):
+    val_size = val.size()
+    if val_size < to_size:
+        return z3.ZeroExt(to_size - val_size, val)
+    else:
+        slice_l = val_size - 1
+        slice_r = val_size - to_size
+        return z3.Extract(slice_l, slice_r, val)
+
+
 class P4ComplexType():
     """
     A P4ComplexType is a wrapper for any type that is not a simple Z3 type

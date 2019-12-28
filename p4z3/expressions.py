@@ -23,6 +23,13 @@ def resolve_expr(p4_state, expr_chain, expr) -> z3.SortRef:
         # Unfortunately int is part of it because z3 is very inconsistent
         # about var handling...
         return val
+    if isinstance(val, base.P4ComplexType):
+        # If we get a whole class return the complex z3 type
+        return val
+    if isinstance(val, P4Z3Class):
+        # We got a P4 type, recurse...
+        val = val.eval(p4_state, expr_chain)
+        return resolve_expr(p4_state, expr_chain, val)
     if isinstance(val, list):
         # For lists, resolve each value individually and return a new list
         list_expr = []
@@ -30,19 +37,13 @@ def resolve_expr(p4_state, expr_chain, expr) -> z3.SortRef:
             rval_expr = resolve_expr(p4_state, expr_chain, val_expr)
             list_expr.append(rval_expr)
         return list_expr
-    if isinstance(val, P4Z3Class):
-        # We got a P4 type, recurse...
-        return val.eval(p4_state, expr_chain)
-    if isinstance(val, base.P4ComplexType):
-        # If we get a whole class return the complex z3 type
-        return val
     raise TypeError(f"Value of type {type(val)} cannot be resolved!")
 
 
 def resolve_action(action_expr):
     # TODO Fix this roundabout way of getting a P4 Action, super annoying...
     if isinstance(action_expr, MethodCallExpr):
-        action_name = action_expr.expr
+        action_name = action_expr.p4_method
         action_args = action_expr.args
     elif isinstance(action_expr, str):
         action_name = action_expr
@@ -98,20 +99,21 @@ class P4Z3Class():
 
 class MethodCallExpr(P4Z3Class):
 
-    def __init__(self, expr, *args):
-        self.expr = expr
+    def __init__(self, p4_method, *args):
+        self.p4_method = p4_method
         self.args = args
 
     def set_args(self, args):
         self.args = args
 
     def eval(self, p4_state, expr_chain):
-        p4_method = self.expr
-        if isinstance(self.expr, str):
-            p4_method = p4_state.resolve_reference(self.expr)
+        p4_method = self.p4_method
+        if isinstance(p4_method, str):
+            # if we get a reference just try to find the method in the state
+            p4_method = p4_state.resolve_reference(p4_method)
         if callable(p4_method):
             return p4_method(p4_state, expr_chain, *self.args)
-        if isinstance(p4_method, P4Action):
+        elif isinstance(p4_method, P4Action):
             p4_method.set_param_args(arg_prefix="")
             p4_method.merge_args(p4_state, expr_chain, self.args)
             return base.step(p4_state, [p4_method] + expr_chain)
@@ -302,6 +304,13 @@ class P4gt(P4BinaryOp):
         P4BinaryOp.__init__(self, lval, rval, operator)
 
 
+class P4Mask(P4BinaryOp):
+    # TODO: Check if this mask operator is right
+    def __init__(self, lval, rval):
+        operator = op.and_
+        P4BinaryOp.__init__(self, lval, rval, operator)
+
+
 class P4Slice(P4Z3Class):
     def __init__(self, val, slice_l, slice_r):
         self.val = val
@@ -324,6 +333,47 @@ class P4Concat(P4Z3Class):
         return z3.Concat(lval_expr, rval_expr)
 
 
+class P4Member(P4Z3Class):
+    def __init__(self, lval, member):
+        self.lval = lval
+        self.member = member
+
+    def eval(self, p4_state, expr_chain):
+        # lval_expr = resolve_expr(p4_state, expr_chain, self.lval)
+        # return getattr(lval_expr, self.member)
+        if isinstance(self.lval, P4Z3Class):
+            lval = self.lval.eval(p4_state, expr_chain)
+        else:
+            lval = self.lval
+        if isinstance(self.member, P4Z3Class):
+            member = self.member.eval(p4_state, expr_chain)
+        else:
+            member = self.member
+        return f"{lval}.{member}"
+
+
+class P4Path(P4Z3Class):
+    def __init__(self, val):
+        self.val = val
+
+    def eval(self, p4_state, expr_chain):
+        val_expr = resolve_expr(p4_state, expr_chain, self.val)
+        return val_expr
+
+
+class P4Index(P4Z3Class):
+    def __init__(self, lval, index):
+        self.lval = lval
+        self.index = index
+
+    def eval(self, p4_state, expr_chain):
+        lval_expr = resolve_expr(p4_state, expr_chain, self.lval)
+        index = resolve_expr(p4_state, expr_chain, self.index)
+        expr = lval_expr.get_var(str(index))
+        return expr
+
+
+
 class P4Cast(P4Z3Class):
     # TODO: need to take a closer look on how to do this correctly...
     # If we cast do we add/remove the least or most significant bits?
@@ -335,13 +385,7 @@ class P4Cast(P4Z3Class):
         expr = resolve_expr(p4_state, expr_chain, self.val)
         expr = check_bool(expr)
 
-        expr_size = expr.size()
-        if expr_size < self.to_size:
-            return z3.ZeroExt(self.to_size - expr_size, expr)
-        else:
-            slice_l = expr_size - 1
-            slice_r = expr_size - self.to_size
-            return z3.Extract(slice_l, slice_r, expr)
+        return base.z3_cast(expr, self.val)
 
 
 class P4Mux(P4Z3Class):

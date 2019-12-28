@@ -7,15 +7,8 @@ from p4z3.base import Z3Reg, z3
 import p4z3.util as util
 
 FILE_DIR = os.path.dirname(os.path.abspath(__file__))
-# configure logging
-logging.basicConfig(filename="analysis.log",
-                    format="%(levelname)s:%(message)s",
-                    level=logging.INFO,
-                    filemode='w')
 log = logging.getLogger(__name__)
-stderr_log = logging.StreamHandler()
-stderr_log.setFormatter(logging.Formatter("%(levelname)s:%(message)s"))
-log.addHandler(stderr_log)
+
 
 # We maintain a list of passes that causes segmentation faults
 # TODO: Fix these, likely by using simulation relations
@@ -166,4 +159,13 @@ def main(args=None):
 
 
 if __name__ == '__main__':
+    # configure logging
+    logging.basicConfig(filename="analysis.log",
+                        format="%(levelname)s:%(message)s",
+                        level=logging.INFO,
+                        filemode='w')
+    stderr_log = logging.StreamHandler()
+    stderr_log.setFormatter(logging.Formatter("%(levelname)s:%(message)s"))
+    log.addHandler(stderr_log)
+
     main()

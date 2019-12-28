@@ -5,14 +5,7 @@ from pathlib import Path
 import p4z3.util as util
 
 # configure logging
-logging.basicConfig(filename="random.log",
-                    format="%(levelname)s:%(message)s",
-                    level=logging.INFO,
-                    filemode='w')
 log = logging.getLogger(__name__)
-stderr_log = logging.StreamHandler()
-stderr_log.setFormatter(logging.Formatter("%(levelname)s:%(message)s"))
-log.addHandler(stderr_log)
 
 FILE_DIR = Path(__file__).parent.resolve()
 P4C_BIN = FILE_DIR.joinpath("p4c/build/p4c-bm2-ss")
@@ -102,4 +95,12 @@ def main():
 
 
 if __name__ == '__main__':
+    # configure logging
+    logging.basicConfig(filename="random.log",
+                        format="%(levelname)s:%(message)s",
+                        level=logging.INFO,
+                        filemode='w')
+    stderr_log = logging.StreamHandler()
+    stderr_log.setFormatter(logging.Formatter("%(levelname)s:%(message)s"))
+    log.addHandler(stderr_log)
     main()
