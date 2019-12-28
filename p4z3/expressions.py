@@ -661,7 +661,8 @@ class P4Control(P4Action):
         if not p4_state:
             # There is no state yet, so use the state of the function
             p4_state = self.p4_state
-        p4_state_tmp = p4_state
+        # initialize the new context of the function for execution
+        p4_state_context = self.p4_state
 
         local_decls = []
         for local in self.locals:
@@ -685,7 +686,7 @@ class P4Control(P4Action):
             var = p4_state.get_var(arg)
             log.debug("Setting %s as %s ", param_name, arg)
             param_name = self.params[index][1]
-            p4_state_tmp.set_or_add_var(param_name, var)
+            p4_state_context.set_or_add_var(param_name, var)
         # p4_state_tmp.propagate_type(p4_state.const)
         # execute the action expression with the new environment
         expr = base.step(p4_state_tmp, self.block)
