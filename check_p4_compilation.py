@@ -15,13 +15,15 @@ FILE_DIR = os.path.dirname(os.path.abspath(__file__))
 P4C_BIN = FILE_DIR + "/p4c/build/p4c-bm2-ss"
 P4Z3_BIN = FILE_DIR + "/p4c/build/p4toz3"
 
+PASSES = "--top4 "
+PASSES += "FrontEnd,MidEnd "
+# PASSES += "-vvvv --top4 MidEnd "
+# PASSES += " -vvvv --top4 FrontEnd "
+
 
 def generate_p4_dump(p4c_bin, p4_file, p4_dmp_dir):
     p4_cmd = f"{p4c_bin} "
-    p4_cmd += " --top4 MidEnd "
-    # p4_cmd += "-vvvv --top4 MidEnd "
-    # p4_cmd += " --top4 FrontEnd "
-    # p4_cmd += " -vvvv --top4 FrontEnd "
+    p4_cmd += f"{PASSES} "
     p4_cmd += f"--dump {p4_dmp_dir} {p4_file}"
     log.debug("Running dumps with command %s ", p4_cmd)
     return util.exec_process(p4_cmd)
@@ -65,17 +67,6 @@ def diff_files(passes, pass_dir, p4_file):
     return util.EXIT_SUCCESS
 
 
-def list_passes(p4_file):
-    p4_pass_cmd = f"{P4C_BIN} -v "
-    p4_pass_cmd += f"{p4_file} 2>&1 "
-    p4_pass_cmd += "| sed -e \'/FrontEnd_0_/,$!d\' | "
-    p4_pass_cmd += "sed -e \'/MidEndLast/q\' "
-    log.debug("Grabbing passes with command %s", p4_pass_cmd)
-    output = subprocess.check_output(p4_pass_cmd, shell=True)
-    passes = output.decode('ascii').strip().split('\n')
-    return passes
-
-
 def analyse_p4_file(p4_file, pass_dir):
     p4_dmp_dir = f"dumps"
     p4_prune_dir = f"{p4_dmp_dir}/pruned"
@@ -95,13 +86,27 @@ def run_p4_to_py(p4_file, py_file):
     return util.exec_process(cmd)
 
 
+def list_passes(p4c_bin, p4_file):
+    p4_pass_cmd = f"{p4c_bin} -v "
+    p4_pass_cmd += f"{p4_file} 2>&1 "
+    p4_pass_cmd += "| sed -e '/FrontEnd\\|MidEnd/!d' | "
+    p4_pass_cmd += "sed -e '/Writing program to/d' "
+    log.debug("Grabbing passes with command %s", p4_pass_cmd)
+    output = subprocess.check_output(p4_pass_cmd, shell=True)
+    passes = output.decode('ascii').strip().split('\n')
+    return passes
+
+
 def gen_p4_passes(p4c_bin, p4_dmp_dir, p4_file):
     util.check_dir(p4_dmp_dir)
     generate_p4_dump(p4c_bin, p4_file, p4_dmp_dir)
-    p4_passes = list(p4_dmp_dir.glob("**/*.p4"))
-    # Sort the pass list before returning
-    # TODO: Find a better way to maintain order
-    return util.natural_sort(p4_passes)
+    p4_passes = list_passes(p4c_bin, p4_file)
+    full_p4_passes = []
+    for p4_pass in p4_passes:
+        p4_name = f"{p4_file.stem}-{p4_pass}.p4"
+        full_p4_pass = p4_dmp_dir.joinpath(p4_name)
+        full_p4_passes.append(full_p4_pass)
+    return full_p4_passes
 
 
 def prune_passes(p4_passes):

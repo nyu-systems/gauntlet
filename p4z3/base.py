@@ -30,16 +30,6 @@ def step(p4_state, expr_chain, expr=None) -> z3.ExprRef:
         return z3_copy
 
 
-def z3_cast(val, to_size):
-    val_size = val.size()
-    if val_size < to_size:
-        return z3.ZeroExt(to_size - val_size, val)
-    else:
-        slice_l = val_size - 1
-        slice_r = val_size - to_size
-        return z3.Extract(slice_l, slice_r, val)
-
-
 class P4ComplexType():
     """
     A P4ComplexType is a wrapper for any type that is not a simple Z3 type
@@ -170,17 +160,20 @@ class P4ComplexType():
             log.debug("Recursing with %s and %s ", lstring, rval)
             rval = self.resolve_reference(rval)
 
+        log.debug("Setting %s(%s) to %s(%s) ",
+                  lstring, type(lstring), rval, type(rval))
+
         # We also must handle integer values and convert them to bitvectors
         # For that we have to match the type
         if isinstance(rval, int):
             lval = self.resolve_reference(lstring)
-            rval = z3.BitVecVal(rval, lval.size())
+            # if the lvalue exists, try to cast it
+            # otherwise set the variable to int, it is not relevant for now
+            if lval is not None:
+                rval = z3.BitVecVal(rval, lval.size())
         elif isinstance(rval, list):
             self.set_list(lstring, rval)
             return
-
-        log.debug("Setting %s(%s) to %s(%s) ",
-                  lstring, type(lstring), rval, type(rval))
         if '.' in lstring:
             # this means we are accessing a complex member
             # get the parent class and update its value
@@ -231,8 +224,8 @@ class P4State(P4ComplexType):
         P4ComplexType.set_or_add_var(self, lstring, rval)
         self._update()
 
-    def add_externs(self, externs):
-        for extern_name, extern_method in externs.items():
+    def add_globals(self, globals):
+        for extern_name, extern_method in globals.items():
             self.set_or_add_var(extern_name, extern_method)
 
 
@@ -288,7 +281,6 @@ class HeaderUnion(P4ComplexType):
 
 
 class Struct(P4ComplexType):
-
     pass
 
 
@@ -321,7 +313,7 @@ class Enum(P4ComplexType):
 class Z3Reg():
     def __init__(self):
         self._types = {}
-        self._externs = {}
+        self._globals = {}
         self._classes = {}
         self._ref_count = {}
 
@@ -345,7 +337,7 @@ class Z3Reg():
             enum_types.append((enum_name, z3.BitVecSort(8)))
         self._register_structlike(name, Enum, enum_types)
         # And then actually instantiate it so we can reference it later
-        self._externs[name] = self.instance(name, self._types[name])
+        self._globals[name] = self.instance(name, self._types[name])
 
     def register_inouts(self, name, z3_args):
         self._register_structlike(name, P4State, z3_args)
@@ -356,7 +348,7 @@ class Z3Reg():
             stripped_args.append((arg[1], arg[2]))
         self._register_structlike(name, P4State, stripped_args)
         p4_state = self.instance("", self.type(name))
-        p4_state.add_externs(self._externs)
+        p4_state.add_globals(self._globals)
         return p4_state
 
     def register_typedef(self, name, target):
@@ -364,12 +356,13 @@ class Z3Reg():
         self._classes[name] = target
         self._ref_count[name] = 0
 
-    def register_extern(self, name, method):
+    def register_extern(self, name, extern):
+        # Extern also serve as types, so we need to register them too
         self._types[name] = z3.DeclareSort(name)
-        self._externs[name] = method
+        self.register_global(name, extern)
 
-    def register_method(self, name, method):
-        self._externs[name] = method
+    def register_global(self, name, global_val):
+        self._globals[name] = global_val
 
     def reset(self):
         self._types.clear()
@@ -389,7 +382,7 @@ class Z3Reg():
         return self.type(z3_name)
 
     def extern(self, extern_name):
-        return self._externs[extern_name]
+        return self._globals[extern_name]
 
     def instance(self, var_name, p4z3_type: z3.SortRef):
         if isinstance(p4z3_type, z3.DatatypeSortRef):

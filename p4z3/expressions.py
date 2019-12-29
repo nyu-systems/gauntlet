@@ -373,6 +373,19 @@ class P4Index(P4Z3Class):
         return expr
 
 
+def z3_cast(val, to_size):
+
+    if isinstance(val, int):
+        # It can happen that we get an int, cast it to a bit vector.
+        return z3.BitVecVal(val, to_size)
+    val_size = val.size()
+    if val_size < to_size:
+        return z3.ZeroExt(to_size - val_size, val)
+    else:
+        slice_l = val_size - 1
+        slice_r = val_size - to_size
+        return z3.Extract(slice_l, slice_r, val)
+
 
 class P4Cast(P4Z3Class):
     # TODO: need to take a closer look on how to do this correctly...
@@ -384,8 +397,7 @@ class P4Cast(P4Z3Class):
     def eval(self, p4_state, expr_chain):
         expr = resolve_expr(p4_state, expr_chain, self.val)
         expr = check_bool(expr)
-
-        return base.z3_cast(expr, self.val)
+        return z3_cast(expr, self.to_size)
 
 
 class P4Mux(P4Z3Class):
@@ -443,12 +455,17 @@ class P4StructInitializer(P4Z3Class):
 def slice_assign(lval, rval, slice_l, slice_r) -> z3.SortRef:
     lval_max = lval.size() - 1
     if slice_l == lval_max and slice_r == 0:
+        # slice is full lvalue, nothing to do
         return rval
     assemble = []
     if slice_l < lval_max:
+        # left slice is smaller than the max, leave that chunk unchanged
         assemble.append(z3.Extract(lval_max, slice_l + 1, lval))
+    # fill the rval into the slice
+    rval = z3_cast(rval, slice_l + 1 - slice_r)
     assemble.append(rval)
     if slice_r > 0:
+        # right slice is larger than zero, leave that chunk unchanged
         assemble.append(z3.Extract(slice_r - 1, 0, lval))
     return z3.Concat(*assemble)
 
@@ -689,7 +706,7 @@ class P4Control(P4Action):
             p4_state_context.set_or_add_var(param_name, var)
         # p4_state_tmp.propagate_type(p4_state.const)
         # execute the action expression with the new environment
-        expr = base.step(p4_state_tmp, self.block)
+        expr = base.step(p4_state_context, self.block)
         for param in self.params:
             is_ref = param[0]
             param_name = param[1]
