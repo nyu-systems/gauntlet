@@ -24,7 +24,8 @@ def resolve_expr(p4_state, expr_chain, expr) -> z3.SortRef:
         # about var handling...
         return val
     if isinstance(val, base.P4ComplexType):
-        # If we get a whole class return the complex z3 type
+        # If we get a whole class return the object
+        # Do not return the z3 type because we may assign a complete structure
         return val
     if isinstance(val, P4Z3Class):
         # We got a P4 type, recurse...

@@ -125,20 +125,23 @@ class P4ComplexType():
             var = self.resolve_reference(var)
         return var
 
-    def set_list(self, lstring, rvals):
-        if '.' in lstring:
-            prefix, suffix = lstring.rsplit(".", 1)
-            target_class = self.get_var(prefix)
-        else:
-            target_class = self.get_var(lstring)
-        if not isinstance(target_class, P4ComplexType):
-            raise RuntimeError(
-                "Trying to assign values to a non-complex type!")
-        for index, rval in enumerate(rvals):
-            accessor = target_class.accessors[index]
-            target_class.set_or_add_var(accessor.name(), rval)
+    def set_list(self, lstring, rval):
+        for index, rval in enumerate(rval):
+            accessor = self.accessors[index]
+            self.set_or_add_var(accessor.name(), rval)
 
     def set_or_add_var(self, lstring, rval):
+        lval = self.resolve_reference(lstring)
+        if lval is not None:
+            if isinstance(rval, list):
+                return lval.set_list(lstring, rval)
+            # We also must handle integer values and convert them to bitvectors
+            # For that we have to match the type
+            if isinstance(rval, int):
+                # if the lvalue exists, try to cast it
+                # otherwise set the variable to int, it is not relevant for now
+                rval = z3.BitVecVal(rval, lval.size())
+
         # Check if the assigned variable is already a reference
         var = self.get_var(lstring)
         if var is None:
@@ -163,17 +166,6 @@ class P4ComplexType():
         log.debug("Setting %s(%s) to %s(%s) ",
                   lstring, type(lstring), rval, type(rval))
 
-        # We also must handle integer values and convert them to bitvectors
-        # For that we have to match the type
-        if isinstance(rval, int):
-            lval = self.resolve_reference(lstring)
-            # if the lvalue exists, try to cast it
-            # otherwise set the variable to int, it is not relevant for now
-            if lval is not None:
-                rval = z3.BitVecVal(rval, lval.size())
-        elif isinstance(rval, list):
-            self.set_list(lstring, rval)
-            return
         if '.' in lstring:
             # this means we are accessing a complex member
             # get the parent class and update its value
@@ -384,6 +376,10 @@ class Z3Reg():
 
     def extern(self, extern_name):
         return self._globals[extern_name]
+
+    def exec(self, method_name, *args):
+        return self._globals[method_name](*args)
+
 
     def instance(self, var_name, p4z3_type: z3.SortRef):
         if isinstance(p4z3_type, z3.DatatypeSortRef):
