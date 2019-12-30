@@ -17,8 +17,7 @@ P4Z3_BIN = FILE_DIR + "/p4c/build/p4toz3"
 
 PASSES = "--top4 "
 PASSES += "FrontEnd,MidEnd "
-# PASSES += "-vvvv --top4 MidEnd "
-# PASSES += " -vvvv --top4 FrontEnd "
+# PASSES += "-vvvv "
 
 
 def generate_p4_dump(p4c_bin, p4_file, p4_dmp_dir):

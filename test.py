@@ -29,6 +29,8 @@ P4C_BIN_1863 = FILE_DIR.joinpath("p4c_bins/issue1863")
 
 # ***** working tests *****
 bmv2_tests = [
+    "action_profile-bmv2.p4",
+    "action_profile_max_group_size_annotation.p4",
     "action-synth.p4",
     "action-two-params.p4",
     "arith-bmv2.p4",
@@ -38,7 +40,6 @@ bmv2_tests = [
     "arith4-bmv2.p4",
     "arith5-bmv2.p4",
     "array-copy-bmv2.p4",
-    "basic_routing-bmv2.p4",
     "bvec-hdr-bmv2.p4",
     "bvec_union-bmv2.p4",
     "concat-bmv2.p4",
@@ -141,6 +142,8 @@ bmv2_tests = [
     "issue986-1-bmv2.p4",
     "issue986-bmv2.p4",
     "issue995-bmv2.p4",
+    "issue1062-bmv2.p4",
+    "issue1062-1-bmv2.p4",
     "key-bmv2.p4",
     "match-on-exprs-bmv2.p4",
     "match-on-exprs2-bmv2.p4",
@@ -173,6 +176,8 @@ bmv2_tests = [
     "union4-bmv2.p4",
     "verify-bmv2.p4",
     "x-bmv2.p4",
+    # very slow tests
+    "basic_routing-bmv2.p4",
 ]
 
 # ***** violation tests*****
@@ -200,8 +205,6 @@ skipped_tests = [
 
 # ***** broken tests, need fixing *****
 xfails = [
-    "action_profile-bmv2.p4",
-    "action_profile_max_group_size_annotation.p4",
     "action_selector_shared-bmv2.p4",
     "action_selector_unused-bmv2.p4",
     "checksum1-bmv2.p4",
@@ -210,9 +213,7 @@ xfails = [
     "fabric_20190420/fabric.p4",
     "flowlet_switching-bmv2.p4",
     "header-stack-ops-bmv2.p4",
-    "hit-expr.p4",
-    "issue1062-1-bmv2.p4",
-    "issue1062-bmv2.p4",
+    "hit-expr-bmv2.p4",
     "issue1097-2-bmv2.p4",
     "issue1097-bmv2.p4",
     "issue1107.p4",

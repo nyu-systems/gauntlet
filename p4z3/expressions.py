@@ -334,22 +334,37 @@ class P4Concat(P4Z3Class):
 
 
 class P4Member(P4Z3Class):
-    def __init__(self, lval, member):
-        self.lval = lval
-        self.member = member
 
-    def eval(self, p4_state, expr_chain):
-        # lval_expr = resolve_expr(p4_state, expr_chain, self.lval)
-        # return getattr(lval_expr, self.member)
-        if isinstance(self.lval, P4Z3Class):
-            lval = self.lval.eval(p4_state, expr_chain)
-        else:
-            lval = self.lval
-        if isinstance(self.member, P4Z3Class):
-            member = self.member.eval(p4_state, expr_chain)
-        else:
-            member = self.member
+    def __new__(cls, lval, member):
+        cls.lval = lval
+        cls.member = member
         return f"{lval}.{member}"
+
+    def eval(cls, p4_state, expr_chain):
+        # lval_expr = resolve_expr(p4_state, expr_chain, cls.lval)
+        # return getattr(lval_expr, cls.member)
+        if isinstance(cls.lval, P4Z3Class):
+            lval = cls.lval.eval(p4_state, expr_chain)
+        else:
+            lval = cls.lval
+        if isinstance(cls.member, P4Z3Class):
+            member = cls.member.eval(p4_state, expr_chain)
+        else:
+            member = cls.member
+        return f"{lval}.{member}"
+
+
+class P4Index(P4Z3Class):
+    def __new__(cls, lval, index):
+        cls.lval = lval
+        cls.index = index
+        return f"{lval}.{index}"
+
+    def eval(cls, p4_state, expr_chain):
+        lval_expr = resolve_expr(p4_state, expr_chain, cls.lval)
+        index = resolve_expr(p4_state, expr_chain, cls.index)
+        expr = lval_expr.get_var(str(index))
+        return expr
 
 
 class P4Path(P4Z3Class):
@@ -359,18 +374,6 @@ class P4Path(P4Z3Class):
     def eval(self, p4_state, expr_chain):
         val_expr = resolve_expr(p4_state, expr_chain, self.val)
         return val_expr
-
-
-class P4Index(P4Z3Class):
-    def __init__(self, lval, index):
-        self.lval = lval
-        self.index = index
-
-    def eval(self, p4_state, expr_chain):
-        lval_expr = resolve_expr(p4_state, expr_chain, self.lval)
-        index = resolve_expr(p4_state, expr_chain, self.index)
-        expr = lval_expr.get_var(str(index))
-        return expr
 
 
 def z3_cast(val, to_size):
@@ -624,6 +627,9 @@ class P4Extern(P4Action):
     def add_method(self, name, method):
         setattr(self, name, method)
 
+    # def __call__(self, *args):
+    #     return self
+
     def eval(self, p4_state, expr_chain):
 
         for index, arg in enumerate(self.args):
@@ -844,6 +850,9 @@ class P4Table(P4Z3Class):
     def apply(self, p4_state, expr_chain):
         return self.eval(p4_state, expr_chain)
 
+    def __call__(self, p4_state, expr_chain):
+        return self.eval(p4_state, expr_chain)
+
     def eval_keys(self, p4_state, expr_chain):
         key_pairs = []
         if not self.keys:
@@ -851,7 +860,8 @@ class P4Table(P4Z3Class):
             return z3.BoolVal(False)
         for index, key in enumerate(self.keys):
             key_eval = resolve_expr(p4_state, expr_chain, key)
-            key_match = z3.Const(f"{self.name}_key_{index}", key_eval.sort())
+            key_sort = get_type(p4_state, expr_chain, key_eval)
+            key_match = z3.Const(f"{self.name}_key_{index}", key_sort)
             key_pairs.append(key_eval == key_match)
         return z3.And(key_pairs)
 

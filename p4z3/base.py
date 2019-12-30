@@ -285,6 +285,7 @@ class Struct(P4ComplexType):
 
 
 class Enum(P4ComplexType):
+
     def __init__(self, z3_reg, z3_type: z3.SortRef, name):
         self.name = name
         self.z3_type = z3_type

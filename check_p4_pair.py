@@ -56,8 +56,9 @@ def get_z3_asts(p4_module, p4_path, fail_dir):
             # ignore deparser and emit because externs are hard...
             if pipe_name != "ig":
                 continue
-            log.info("Evaluating %s...", pipe_name)
+            log.info("Loading %s...", pipe_name)
             p4_pipe_ast = p4_pipe()
+            log.info("Evaluating %s...", pipe_name)
             z3_asts[pipe_name] = p4_pipe_ast.eval()
     except Exception:
         log.exception("Failed to compile Python to Z3:\n")

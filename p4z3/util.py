@@ -14,7 +14,7 @@ def check_dir(directory):
     # create the folder if it does not exit
     if not directory == "" and not os.path.exists(directory):
         log.warning(f"Folder {directory} does not exist! Creating...")
-        os.makedirs(directory)
+        directory.mkdir(parents=True, exist_ok=True)
 
 
 def del_dir(directory):
