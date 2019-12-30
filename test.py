@@ -326,12 +326,12 @@ def test_violation(test_folder):
     assert run_violation_test(test_folder) == util.EXIT_SUCCESS
 
 
-def test_issue1863_broken():
-    # ***** actual custom violation *****
-    p4_dir = Path("violated/issue1863/")
-    p4_file, target_dir = prep_test("issue1863-bmv2.p4", p4_dir)
-    result = p4c_check.validate_translation(p4_file, target_dir, P4C_BIN_1863)
-    assert result == util.EXIT_VIOLATION
+# def test_issue1863_broken():
+#     # ***** actual custom violation *****
+#     p4_dir = Path("violated/issue1863/")
+#     p4_file, target_dir = prep_test("issue1863-bmv2.p4", p4_dir)
+#     result = p4c_check.validate_translation(p4_file, target_dir, P4C_BIN_1863)
+#     assert result == util.EXIT_VIOLATION
 
 # cat analysis.log |
 # grep -Po '(?<=(Node )).*(?=not implemented)' | sort | uniq -c
