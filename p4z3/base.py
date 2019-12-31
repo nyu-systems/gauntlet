@@ -7,17 +7,16 @@ log = logging.getLogger(__name__)
 FILE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
-def step(p4_state, expr_chain, expr=None) -> z3.ExprRef:
+def step(p4_state, expr=None) -> z3.ExprRef:
     ''' The step function ensures that modifications are propagated to
     all subsequent operations. This is important to guarantee correctness with
     branching or local modification. '''
-    if expr_chain:
+    if p4_state.expr_chain:
         # pop the first function in the list
-        next_expr = expr_chain.pop(0)
-        expr_chain = list(expr_chain)
+        next_expr = p4_state.expr_chain.pop(0)
         # iterate through all the remaining functions in the chain
         log.debug("Evaluating %s", next_expr.__class__)
-        expr = next_expr.eval(p4_state, expr_chain)
+        expr = next_expr.eval(p4_state)
         # eval should always return an expression
         if not isinstance(expr, (z3.ExprRef)):
             raise TypeError(f"Expression {expr} is not a z3 expression!")
@@ -208,6 +207,7 @@ class P4ComplexType():
 
 
 class P4State(P4ComplexType):
+    expr_chain = []
 
     def _update(self):
         self.const = z3.Const(f"{self.name}_1", self.z3_type)
@@ -220,6 +220,9 @@ class P4State(P4ComplexType):
         for extern_name, extern_method in globals.items():
             self.set_or_add_var(extern_name, extern_method)
 
+    def insert_exprs(self, exprs):
+        self.expr_chain = exprs + self.expr_chain
+
 
 class Header(P4ComplexType):
 
@@ -231,13 +234,13 @@ class Header(P4ComplexType):
     def isValid(self, *args):
         return self.valid
 
-    def setValid(self, p4_state, expr_chain):
+    def setValid(self, p4_state):
         self.valid = z3.BoolVal(True)
-        return step(p4_state, expr_chain)
+        return step(p4_state)
 
-    def setInvalid(self, p4_state, expr_chain):
+    def setInvalid(self, p4_state):
         self.valid = z3.BoolVal(False)
-        return step(p4_state, expr_chain)
+        return step(p4_state)
 
     def __eq__(self, other):
         if isinstance(other, Header):
@@ -263,13 +266,13 @@ class HeaderUnion(P4ComplexType):
     def isValid(self, *args):
         return self.valid
 
-    def setValid(self, p4_state, expr_chain):
+    def setValid(self, p4_state):
         self.valid = z3.BoolVal(True)
-        return step(p4_state, expr_chain)
+        return step(p4_state)
 
-    def setInvalid(self, p4_state, expr_chain):
+    def setInvalid(self, p4_state):
         self.valid = z3.BoolVal(False)
-        return step(p4_state, expr_chain)
+        return step(p4_state)
 
 
 class Struct(P4ComplexType):
@@ -377,9 +380,8 @@ class Z3Reg():
     def extern(self, extern_name):
         return self._globals[extern_name]
 
-    def exec(self, method_name, *args):
-        return self._globals[method_name](*args)
-
+    def exec(self, method_name, *args, **kwargs):
+        return self._globals[method_name](*args, **kwargs)
 
     def instance(self, var_name, p4z3_type: z3.SortRef):
         if isinstance(p4z3_type, z3.DatatypeSortRef):
