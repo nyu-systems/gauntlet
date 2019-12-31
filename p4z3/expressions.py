@@ -1,7 +1,6 @@
 from copy import deepcopy
 from collections import OrderedDict
 import operator as op
-
 import z3
 
 import p4z3.base as base
@@ -117,16 +116,39 @@ class MethodCallExpr(P4Z3Class):
         elif isinstance(p4_method, P4Action):
             p4_method.set_param_args(arg_prefix="")
             p4_method.merge_args(p4_state, self.args)
-            p4_state.insert_exprs([p4_method])
+            p4_state.insert_exprs(p4_method)
             return base.step(p4_state)
         raise TypeError(f"Unsupported method type {type(p4_method)}!")
 
 
-class P4BinaryOp(P4Z3Class):
+class P4Op(P4Z3Class):
+    def get_value():
+        raise NotImplementedError("get_value")
+
+    def eval(self, p4_state):
+        raise NotImplementedError("eval")
+
+
+class P4BinaryOp(P4Op):
     def __init__(self, lval, rval, operator):
         self.lval = lval
         self.rval = rval
         self.operator = operator
+
+    def get_value(self):
+        # TODO: This is a kind of hacky function to work around bitvectors
+        # There must be a better way to implement this
+        lval = self.lval
+        rval = self.rval
+        if isinstance(lval, P4Op):
+            lval = lval.get_value()
+        if isinstance(rval, P4Op):
+            rval = rval.get_value()
+        if isinstance(lval, int) and isinstance(rval, int):
+            return self.operator(lval, rval)
+        else:
+            raise RuntimeError(
+                f"Operations on {lval} or {rval} not supported!")
 
     def eval(self, p4_state):
         lval_expr = resolve_expr(p4_state, self.lval)
@@ -142,10 +164,19 @@ class P4BinaryOp(P4Z3Class):
         return self.operator(lval_expr, rval_expr)
 
 
-class P4UnaryOp(P4Z3Class):
+class P4UnaryOp(P4Op):
     def __init__(self, val, operator):
         self.val = val
         self.operator = operator
+
+    def get_value(self):
+        val = self.val
+        if isinstance(val, P4Op):
+            val = val.get_value()
+        if isinstance(val, int):
+            return self.operator(val)
+        else:
+            raise RuntimeError(f"Operations on {val}not supported!")
 
     def eval(self, p4_state):
         expr = resolve_expr(p4_state, self.val)
@@ -542,7 +573,7 @@ class P4Exit(P4Z3Class):
 
     def eval(self, p4_state):
         # Exit the chain early
-        p4_state.expr_chain = []
+        p4_state.clear_expr_chain()
         return base.step(p4_state)
 
 
@@ -606,11 +637,13 @@ class P4Action(P4Z3Class):
             param_name = self.params[index][1]
             p4_state.set_or_add_var(param_name, arg)
         # execute the action expression with the new environment
-        expr_chain = p4_state.expr_chain
-        p4_state.expr_chain = self.block
+        expr_chain = p4_state.copy_expr_chain()
+        p4_state.set_expr_chain(self.block)
         expr = base.step(p4_state)
-        p4_state.expr_chain = expr_chain
+        # reset to the previous execution chain
+        p4_state.set_expr_chain(expr_chain)
 
+        # restore any variables that may have been overridden
         for param in self.params:
             is_ref = param[0]
             param_name = param[1]
@@ -660,6 +693,7 @@ class P4Extern(P4Action):
                 # Finally, assign a new value to the pass-by-reference argument
                 p4_state.set_or_add_var(arg, instance)
 
+
         return base.step(p4_state)
 
 
@@ -692,7 +726,7 @@ class P4Control(P4Action):
             # There is no state yet, so use the state of the function
             p4_state = self.p4_state
         # save the current execution chain
-        expr_chain = p4_state.expr_chain
+        expr_chain = p4_state.copy_expr_chain()
         # initialize the new context of the function for execution
         p4_state_context = self.p4_state
 
@@ -719,9 +753,9 @@ class P4Control(P4Action):
             log.debug("Setting %s as %s ", param_name, arg)
             param_name = self.params[index][1]
             p4_state_context.set_or_add_var(param_name, var)
-        # p4_state_tmp.propagate_type(p4_state.const)
         # execute the action expression with the new environment
-        p4_state_context.expr_chain = self.block
+
+        p4_state_context.insert_exprs(self.block)
         expr = base.step(p4_state_context)
         for param in self.params:
             is_ref = param[0]
@@ -827,7 +861,7 @@ class SwitchStatement(P4Z3Class):
         # instantiate the hit expression
         switch_hit = SwitchHit(table, self.cases, self.default_case)
         p4_state.insert_exprs([table, switch_hit])
-        return base.step(p4_state, [table, switch_hit])
+        return base.step(p4_state)
 
 
 class P4Table(P4Z3Class):
@@ -889,7 +923,7 @@ class P4Table(P4Z3Class):
         p4_action = deepcopy(p4_action)
         p4_action.set_param_args(arg_prefix=self.name)
         p4_action.merge_args(p4_state, p4_action_args)
-        p4_state.insert_exprs([p4_action])
+        p4_state.insert_exprs(p4_action)
         return base.step(p4_state)
 
     def eval_default(self, p4_state):

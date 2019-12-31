@@ -1,10 +1,9 @@
 import operator as op
-import os
+from collections import deque
 import logging
 import z3
 
 log = logging.getLogger(__name__)
-FILE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
 def step(p4_state, expr=None) -> z3.ExprRef:
@@ -13,7 +12,7 @@ def step(p4_state, expr=None) -> z3.ExprRef:
     branching or local modification. '''
     if p4_state.expr_chain:
         # pop the first function in the list
-        next_expr = p4_state.expr_chain.pop(0)
+        next_expr = p4_state.expr_chain.popleft()
         # iterate through all the remaining functions in the chain
         log.debug("Evaluating %s", next_expr.__class__)
         expr = next_expr.eval(p4_state)
@@ -136,9 +135,9 @@ class P4ComplexType():
                 return lval.set_list(lstring, rval)
             # We also must handle integer values and convert them to bitvectors
             # For that we have to match the type
-            if isinstance(rval, int):
-                # if the lvalue exists, try to cast it
-                # otherwise set the variable to int, it is not relevant for now
+            if isinstance(rval, int) and isinstance(lval, z3.BitVecRef):
+                # if the lvalue is a bit vector, try to cast it
+                # otherwise ignore and hope that keeping it as an int works out
                 rval = z3.BitVecVal(rval, lval.size())
 
         # Check if the assigned variable is already a reference
@@ -207,7 +206,11 @@ class P4ComplexType():
 
 
 class P4State(P4ComplexType):
-    expr_chain = []
+    def __init__(self, z3_reg, z3_type, name):
+        # deques allow for much more efficient pop and append operations
+        # this is all we do so this works well
+        self.expr_chain = deque()
+        super(P4State, self).__init__(z3_reg, z3_type, name)
 
     def _update(self):
         self.const = z3.Const(f"{self.name}_1", self.z3_type)
@@ -220,8 +223,20 @@ class P4State(P4ComplexType):
         for extern_name, extern_method in globals.items():
             self.set_or_add_var(extern_name, extern_method)
 
+    def clear_expr_chain(self):
+        self.expr_chain.clear()
+
+    def copy_expr_chain(self):
+        return self.expr_chain.copy()
+
+    def set_expr_chain(self, expr_chain):
+        self.expr_chain = deque(expr_chain)
+
     def insert_exprs(self, exprs):
-        self.expr_chain = exprs + self.expr_chain
+        if isinstance(exprs, list):
+            self.expr_chain.extendleft(reversed(exprs))
+        else:
+            self.expr_chain.appendleft(exprs)
 
 
 class Header(P4ComplexType):
