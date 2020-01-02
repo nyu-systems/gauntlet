@@ -52,12 +52,10 @@ def get_z3_asts(p4_module, p4_path, fail_dir):
     z3_asts = {}
     try:
         package = p4_module(Z3Reg())
-        for pipe_name, p4_pipe in package.pipes.items():
+        for pipe_name, p4_pipe_ast in package.pipes.items():
             # ignore deparser and emit because externs are hard...
             if pipe_name != "ig":
                 continue
-            log.info("Loading %s...", pipe_name)
-            p4_pipe_ast = p4_pipe()
             log.info("Evaluating %s...", pipe_name)
             z3_asts[pipe_name] = p4_pipe_ast.eval()
     except Exception:

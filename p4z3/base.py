@@ -6,28 +6,6 @@ import z3
 log = logging.getLogger(__name__)
 
 
-def step(p4_state, expr=None) -> z3.ExprRef:
-    ''' The step function ensures that modifications are propagated to
-    all subsequent operations. This is important to guarantee correctness with
-    branching or local modification. '''
-    if p4_state.expr_chain:
-        # pop the first function in the list
-        next_expr = p4_state.expr_chain.popleft()
-        # iterate through all the remaining functions in the chain
-        log.debug("Evaluating %s", next_expr.__class__)
-        expr = next_expr.eval(p4_state)
-        # eval should always return an expression
-        if not isinstance(expr, (z3.ExprRef)):
-            raise TypeError(f"Expression {expr} is not a z3 expression!")
-    if expr is not None:
-        # end of chain, just mirror the passed expressions
-        return expr
-    else:
-        # empty statement, just return the final update assignment
-        z3_copy = p4_state.get_z3_repr()
-        return z3_copy
-
-
 class P4ComplexType():
     """
     A P4ComplexType is a wrapper for any type that is not a simple Z3 type
@@ -132,6 +110,7 @@ class P4ComplexType():
             self.set_or_add_var(accessor.name(), rval)
 
     def set_or_add_var(self, lstring, rval):
+        # TODO: Fix this, has hideous performance impact
         lval = self.resolve_reference(lstring)
         if lval is not None:
             if isinstance(rval, list):
@@ -208,40 +187,6 @@ class P4ComplexType():
         return z3.And(*eq_accessors)
 
 
-class P4State(P4ComplexType):
-    def __init__(self, z3_reg, z3_type, name):
-        # deques allow for much more efficient pop and append operations
-        # this is all we do so this works well
-        self.expr_chain = deque()
-        super(P4State, self).__init__(z3_reg, z3_type, name)
-
-    def _update(self):
-        self.const = z3.Const(f"{self.name}_1", self.z3_type)
-
-    def set_or_add_var(self, lstring, rval):
-        P4ComplexType.set_or_add_var(self, lstring, rval)
-        self._update()
-
-    def add_globals(self, globals):
-        for extern_name, extern_method in globals.items():
-            self.set_or_add_var(extern_name, extern_method)
-
-    def clear_expr_chain(self):
-        self.expr_chain.clear()
-
-    def copy_expr_chain(self):
-        return self.expr_chain.copy()
-
-    def set_expr_chain(self, expr_chain):
-        self.expr_chain = deque(expr_chain)
-
-    def insert_exprs(self, exprs):
-        if isinstance(exprs, list):
-            self.expr_chain.extendleft(reversed(exprs))
-        else:
-            self.expr_chain.appendleft(exprs)
-
-
 class Header(P4ComplexType):
 
     def __init__(self, z3_reg, z3_type, name):
@@ -254,11 +199,11 @@ class Header(P4ComplexType):
 
     def setValid(self, p4_state):
         self.valid = z3.BoolVal(True)
-        return step(p4_state)
+        return p4_state.step()
 
     def setInvalid(self, p4_state):
         self.valid = z3.BoolVal(False)
-        return step(p4_state)
+        return p4_state.step()
 
     def __eq__(self, other):
         if isinstance(other, Header):
@@ -286,11 +231,11 @@ class HeaderUnion(P4ComplexType):
 
     def setValid(self, p4_state):
         self.valid = z3.BoolVal(True)
-        return step(p4_state)
+        return p4_state.step()
 
     def setInvalid(self, p4_state):
         self.valid = z3.BoolVal(False)
-        return step(p4_state)
+        return p4_state.step()
 
 
 class Struct(P4ComplexType):
@@ -322,6 +267,68 @@ class Enum(P4ComplexType):
     def propagate_type(self, parent_const: z3.AstRef):
         # Enums are static so they do not have variable types.
         pass
+
+
+class P4State(P4ComplexType):
+    """
+    A P4State Object is a special, dynamic type of P4ComplexType. It represents
+    the execution environment and its z3 representation is ultimately used to
+    compare different programs. P4State is mostly just a wrapper for all inout
+    values. It also manages the execution chain of the program.
+    """
+
+    def __init__(self, z3_reg, z3_type, name):
+        # deques allow for much more efficient pop and append operations
+        # this is all we do so this works well
+        self.expr_chain = deque()
+        super(P4State, self).__init__(z3_reg, z3_type, name)
+
+    def _update(self):
+        self.const = z3.Const(f"{self.name}_1", self.z3_type)
+
+    def set_or_add_var(self, lstring, rval):
+        P4ComplexType.set_or_add_var(self, lstring, rval)
+        self._update()
+
+    def add_globals(self, globals):
+        for extern_name, extern_method in globals.items():
+            self.set_or_add_var(extern_name, extern_method)
+
+    def step(self, expr=None):
+        ''' The step function ensures that modifications are propagated to
+            all subsequent operations. This is important to guarantee
+            correctness with branching or local modification. '''
+        if self.expr_chain:
+            # pop the first function in the list
+            next_expr = self.expr_chain.popleft()
+            # iterate through all the remaining functions in the chain
+            log.debug("Evaluating %s", next_expr.__class__)
+            expr = next_expr.eval(self)
+            # eval should always return an expression
+            if not isinstance(expr, (z3.ExprRef)):
+                raise TypeError(f"Expression {expr} is not a z3 expression!")
+        if expr is not None:
+            # end of chain, just mirror the passed expressions
+            return expr
+        else:
+            # empty statement, just return the final update assignment
+            z3_copy = self.get_z3_repr()
+            return z3_copy
+
+    def clear_expr_chain(self):
+        self.expr_chain.clear()
+
+    def copy_expr_chain(self):
+        return self.expr_chain.copy()
+
+    def set_expr_chain(self, expr_chain):
+        self.expr_chain = deque(expr_chain)
+
+    def insert_exprs(self, exprs):
+        if isinstance(exprs, list):
+            self.expr_chain.extendleft(reversed(exprs))
+        else:
+            self.expr_chain.appendleft(exprs)
 
 
 class Z3Reg():
