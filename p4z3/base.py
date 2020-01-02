@@ -24,7 +24,7 @@ def step(p4_state, expr=None) -> z3.ExprRef:
         return expr
     else:
         # empty statement, just return the final update assignment
-        z3_copy = p4_state._make(p4_state.const)
+        z3_copy = p4_state.get_z3_repr()
         return z3_copy
 
 
@@ -72,8 +72,11 @@ class P4ComplexType():
                 # use the default z3 constructor
                 setattr(self, accessor.name(), accessor(self.const))
 
-    def _make(self, parent_const):
+    def get_z3_repr(self, parent_const=None):
         members = []
+        if parent_const is None:
+            parent_const = self.const
+
         for accessor in self.accessors:
             member_make = op.attrgetter(accessor.name())(self)
             if isinstance(member_make, P4ComplexType):
@@ -81,7 +84,7 @@ class P4ComplexType():
                 # retrieve the accessor and call the constructor
                 sub_const = accessor(parent_const)
                 # call the constructor of the complex type
-                members.append(member_make._make(sub_const))
+                members.append(member_make.get_z3_repr(sub_const))
             else:
                 members.append(member_make)
         return self.constructor(*members)
@@ -178,7 +181,7 @@ class P4ComplexType():
         # update the internal representation of the attribute.
         # this also checks the validity of the new assignment
         # if there is a type error, z3 will complain
-        self.const = self._make(self.const)
+        self.const = self.get_z3_repr()
 
     def __eq__(self, other):
 
@@ -370,9 +373,9 @@ class Z3Reg():
     def register_extern(self, name, extern):
         # Extern also serve as types, so we need to register them too
         self._types[name] = z3.DeclareSort(name)
-        self.register_global(name, extern)
+        self.declare_global(name, extern)
 
-    def register_global(self, name, global_val):
+    def declare_global(self, name, global_val):
         self._globals[name] = global_val
 
     def reset(self):

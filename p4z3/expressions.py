@@ -97,30 +97,6 @@ class P4Z3Class():
         raise NotImplementedError("Method eval not implemented!")
 
 
-class MethodCallExpr(P4Z3Class):
-
-    def __init__(self, p4_method, *args):
-        self.p4_method = p4_method
-        self.args = args
-
-    def set_args(self, args):
-        self.args = args
-
-    def eval(self, p4_state):
-        p4_method = self.p4_method
-        if isinstance(p4_method, str):
-            # if we get a reference just try to find the method in the state
-            p4_method = p4_state.resolve_reference(p4_method)
-        if callable(p4_method):
-            return p4_method(p4_state, *self.args)
-        elif isinstance(p4_method, P4Action):
-            p4_method.set_param_args(arg_prefix="")
-            p4_method.merge_args(p4_state, self.args)
-            p4_state.insert_exprs(p4_method)
-            return base.step(p4_state)
-        raise TypeError(f"Unsupported method type {type(p4_method)}!")
-
-
 class P4Op(P4Z3Class):
     def get_value():
         raise NotImplementedError("get_value")
@@ -541,6 +517,29 @@ class AssignmentStatement(P4Z3Class):
         return base.step(p4_state)
 
 
+class MethodCallExpr(P4Z3Class):
+
+    def __init__(self, p4_method, *args):
+        self.p4_method = p4_method
+        self.args = args
+
+    def set_args(self, args):
+        self.args = args
+
+    def eval(self, p4_state):
+        p4_method = self.p4_method
+        if isinstance(p4_method, str):
+            # if we get a reference just try to find the method in the state
+            p4_method = p4_state.resolve_reference(p4_method)
+        if callable(p4_method):
+            return p4_method(p4_state, *self.args)
+        elif isinstance(p4_method, P4Action):
+            p4_method.set_param_args(arg_prefix="")
+            p4_method.merge_args(p4_state, self.args)
+            return p4_method.eval(p4_state)
+        raise TypeError(f"Unsupported method type {type(p4_method)}!")
+
+
 class MethodCallStmt(P4Z3Class):
 
     def __init__(self, method_expr):
@@ -554,6 +553,9 @@ class BlockStatement(P4Z3Class):
 
     def __init__(self):
         self.exprs = []
+
+    def preprend(self, expr):
+        self.exprs.insert(0, expr)
 
     def add(self, expr):
         self.exprs.append(expr)
@@ -580,7 +582,7 @@ class P4Exit(P4Z3Class):
 class P4Action(P4Z3Class):
 
     def __init__(self):
-        self.block = []
+        self.block = None
         self.params = []
         self.args = []
 
@@ -593,7 +595,7 @@ class P4Action(P4Z3Class):
     def add_stmt(self, block):
         if not isinstance(block, BlockStatement):
             raise RuntimeError(f"Expected a block, got {block}!")
-        self.block.append(block)
+        self.block = block
 
     def get_parameters(self):
         return self.params
@@ -638,7 +640,7 @@ class P4Action(P4Z3Class):
             p4_state.set_or_add_var(param_name, arg)
         # execute the action expression with the new environment
         expr_chain = p4_state.copy_expr_chain()
-        p4_state.set_expr_chain(self.block)
+        p4_state.set_expr_chain([self.block])
         expr = base.step(p4_state)
         # reset to the previous execution chain
         p4_state.set_expr_chain(expr_chain)
@@ -693,7 +695,6 @@ class P4Extern(P4Action):
                 # Finally, assign a new value to the pass-by-reference argument
                 p4_state.set_or_add_var(arg, instance)
 
-
         return base.step(p4_state)
 
 
@@ -701,11 +702,16 @@ class P4Control(P4Action):
 
     def __init__(self):
         super(P4Control, self).__init__()
+        self.block = BlockStatement()
         self.locals = []
         self.p4_state = None
 
-    def declare_local(self, local_name, local):
-        self.locals.append((local_name, local))
+    def declare_local(self, local_name, local_var):
+        decl = P4Declaration(local_name, local_var)
+        self.block.add(decl)
+
+    def add_stmt(self, stmt):
+        self.block.add(stmt)
 
     def add_args(self, params):
         self.params = params
@@ -714,8 +720,6 @@ class P4Control(P4Action):
         self.params = params
         self.p4_state = z3_reg.init_p4_state(name, params)
 
-    def add_apply_stmt(self, stmt):
-        self.block.append(stmt)
 
     def apply(self, p4_state, *p4_args):
         self.args = p4_args
@@ -729,13 +733,6 @@ class P4Control(P4Action):
         expr_chain = p4_state.copy_expr_chain()
         # initialize the new context of the function for execution
         p4_state_context = self.p4_state
-
-        local_decls = []
-        for local in self.locals:
-            decl = P4Declaration(local[0], local[1])
-            local_decls.append(decl)
-        self.block = local_decls + self.block
-
         var_buffer = {}
 
         # save all the variables that may be overridden
