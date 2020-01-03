@@ -37,6 +37,13 @@ def resolve_expr(p4_state, expr) -> z3.SortRef:
             rval_expr = resolve_expr(p4_state, val_expr)
             list_expr.append(rval_expr)
         return list_expr
+    if isinstance(val, dict):
+        # For dicts, resolve each value individually and return a new dict
+        dict_expr = []
+        for name, val_expr in val.items():
+            rval_expr = resolve_expr(p4_state, val_expr)
+            dict_expr[name] = rval_expr
+        return dict_expr
     raise TypeError(f"Value of type {type(val)} cannot be resolved!")
 
 
@@ -65,7 +72,7 @@ def get_type(p4_state, expr):
 
 
 def z3_implies(p4_state, cond, then_expr):
-    no_match = p4_state.step()
+    no_match = base.step(p4_state)
     return z3.If(cond, then_expr, no_match)
 
 
@@ -261,7 +268,7 @@ class P4xor(P4BinaryOp):
 
 class P4div(P4BinaryOp):
     def __init__(self, lval, rval):
-        operator = op.floordiv
+        operator = op.truediv
         P4BinaryOp.__init__(self, lval, rval, operator)
 
 
@@ -437,31 +444,32 @@ class P4Declaration(P4Z3Class):
 
     def eval(self, p4_state):
         p4_state.set_or_add_var(self.lval, self.rval)
-        return p4_state.step()
+        return base.step(p4_state)
 
 
-class P4StructInitializer(P4Z3Class):
-    def __init__(self, z3_reg, name, z3_type, members):
-        self.name = name
-        self.z3_reg = z3_reg
-        self.z3_type = z3_type
-        self.members = members
+class P4Initializer(P4Z3Class):
+    def __init__(self, val, instance):
+        self.val = val
+        self.instance = instance
 
     def eval(self, p4_state):
-        instance = self.z3_reg.instance(self.name, self.z3_type)
-        if isinstance(self.members, dict):
-            for name, val in self.members.items():
-                val_expr = resolve_expr(p4_state, val)
-                instance.set_or_add_var(name, val_expr)
-        elif isinstance(self.members, list):
-            for index, rval in enumerate(self.members):
-                accessor = instance.accessors[index]
-                val_expr = resolve_expr(p4_state, rval)
-                instance.set_or_add_var(accessor.name(), val_expr)
+        instance = resolve_expr(p4_state, self.instance)
+        val = resolve_expr(p4_state, self.val)
+        if isinstance(val, base.P4ComplexType):
+            return val
+        if isinstance(instance, base.P4ComplexType):
+            if isinstance(val, dict):
+                for name, val in val.items():
+                    val_expr = resolve_expr(p4_state, val)
+                    instance.set_or_add_var(name, val_expr)
+            elif isinstance(val, list):
+                instance.set_list(val)
+            else:
+                raise RuntimeError(
+                    f"P4StructInitializer members {val} not supported!")
+            return instance
         else:
-            raise RuntimeError(
-                "P4StructInitializer members {members} not supported!")
-        return instance
+            return val
 
 
 def slice_assign(lval, rval, slice_l, slice_r) -> z3.SortRef:
@@ -514,7 +522,7 @@ class AssignmentStatement(P4Z3Class):
         # do not pass references, for example when assigning structs
         rval_expr = deepcopy(rval_expr)
         p4_state.set_or_add_var(self.lval, rval_expr)
-        return p4_state.step()
+        return base.step(p4_state)
 
 
 class MethodCallExpr(P4Z3Class):
@@ -562,13 +570,13 @@ class BlockStatement(P4Z3Class):
 
     def eval(self, p4_state):
         p4_state.insert_exprs(self.exprs)
-        return p4_state.step()
+        return base.step(p4_state)
 
 
 class P4Noop(P4Z3Class):
 
     def eval(self, p4_state):
-        return p4_state.step()
+        return base.step(p4_state)
 
 
 class P4Exit(P4Z3Class):
@@ -576,7 +584,7 @@ class P4Exit(P4Z3Class):
     def eval(self, p4_state):
         # Exit the chain early
         p4_state.clear_expr_chain()
-        return p4_state.step()
+        return base.step(p4_state)
 
 
 class P4Action(P4Z3Class):
@@ -645,11 +653,12 @@ class P4Action(P4Z3Class):
         # execute the action expression with the new environment
         expr_chain = p4_state.copy_expr_chain()
         p4_state.set_expr_chain([self.block])
-        expr = p4_state.step()
+        expr = base.step(p4_state)
         # reset to the previous execution chain
         p4_state.set_expr_chain(expr_chain)
 
         # restore any variables that may have been overridden
+        # TODO: Fix to handle state correctly
         for param in self.params:
             is_ref = param[0]
             param_name = param[1]
@@ -660,7 +669,7 @@ class P4Action(P4Z3Class):
                 log.debug("Deleting %s", param_name)
                 p4_state.del_var(param_name)
 
-        return p4_state.step(expr)
+        return base.step(p4_state, expr)
 
 
 class P4Extern(P4Action):
@@ -677,7 +686,6 @@ class P4Extern(P4Action):
         # for controls, the state is not required
         # controls can only be executed with apply statements
         return self
-
 
     def eval(self, p4_state):
 
@@ -702,7 +710,7 @@ class P4Extern(P4Action):
                 # Finally, assign a new value to the pass-by-reference argument
                 p4_state.set_or_add_var(arg, instance)
 
-        return p4_state.step()
+        return base.step(p4_state)
 
 
 class P4Control(P4Action):
@@ -767,7 +775,7 @@ class P4Control(P4Action):
         # save the current execution chain
         expr_chain = p4_state.copy_expr_chain()
         p4_state_context.insert_exprs(self.block)
-        expr = p4_state_context.step()
+        expr = base.step(p4_state_context)
         for param in self.params:
             is_ref = param[0]
             param_name = param[1]
@@ -779,7 +787,7 @@ class P4Control(P4Action):
                 p4_state.del_var(param_name)
         # restore the old execution chain
         p4_state.expr_chain = expr_chain
-        return p4_state.step(expr)
+        return base.step(p4_state, expr)
 
 
 class P4Parser(P4Control):
@@ -872,7 +880,7 @@ class SwitchStatement(P4Z3Class):
         # instantiate the hit expression
         switch_hit = SwitchHit(table, self.cases, self.default_case)
         p4_state.insert_exprs([table, switch_hit])
-        return p4_state.step()
+        return base.step(p4_state)
 
 
 class P4Table(P4Z3Class):
@@ -936,7 +944,7 @@ class P4Table(P4Z3Class):
         p4_action.set_param_args(arg_prefix=self.name)
         p4_action.merge_args(p4_state, p4_action_args)
         p4_state.insert_exprs(p4_action)
-        return p4_state.step()
+        return base.step(p4_state)
 
     def eval_default(self, p4_state):
         if self.default_action is None:

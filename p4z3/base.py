@@ -6,6 +6,28 @@ import z3
 log = logging.getLogger(__name__)
 
 
+def step(p4_state, expr=None):
+    ''' The step function ensures that modifications are propagated to
+        all subsequent operations. This is important to guarantee
+        correctness with branching or local modification. '''
+    if p4_state.expr_chain:
+        # pop the first function in the list
+        next_expr = p4_state.expr_chain.popleft()
+        # iterate through all the remaining functions in the chain
+        log.debug("Evaluating %s", next_expr.__class__)
+        expr = next_expr.eval(p4_state)
+        # eval should always return an expression
+        if not isinstance(expr, (z3.ExprRef)):
+            raise TypeError(f"Expression {expr} is not a z3 expression!")
+    if expr is not None:
+        # end of chain, just mirror the passed expressions
+        return expr
+    else:
+        # empty statement, just return the final update assignment
+        z3_copy = p4_state.get_z3_repr()
+        return z3_copy
+
+
 class P4ComplexType():
     """
     A P4ComplexType is a wrapper for any type that is not a simple Z3 type
@@ -104,7 +126,7 @@ class P4ComplexType():
             var = self.resolve_reference(var)
         return var
 
-    def set_list(self, lstring, rval):
+    def set_list(self, rval):
         for index, rval in enumerate(rval):
             accessor = self.accessors[index]
             self.set_or_add_var(accessor.name(), rval)
@@ -114,7 +136,7 @@ class P4ComplexType():
         lval = self.resolve_reference(lstring)
         if lval is not None:
             if isinstance(rval, list):
-                return lval.set_list(lstring, rval)
+                return lval.set_list(rval)
             # We also must handle integer values and convert them to bitvectors
             # For that we have to match the type
             if isinstance(rval, int) and isinstance(lval, z3.BitVecRef):
@@ -160,7 +182,7 @@ class P4ComplexType():
         # update the internal representation of the attribute.
         # this also checks the validity of the new assignment
         # if there is a type error, z3 will complain
-        self.const = self.get_z3_repr()
+        # self.const = self.get_z3_repr()
 
     def __eq__(self, other):
 
@@ -199,11 +221,11 @@ class Header(P4ComplexType):
 
     def setValid(self, p4_state):
         self.valid = z3.BoolVal(True)
-        return p4_state.step()
+        return step(p4_state)
 
     def setInvalid(self, p4_state):
         self.valid = z3.BoolVal(False)
-        return p4_state.step()
+        return step(p4_state)
 
     def __eq__(self, other):
         if isinstance(other, Header):
@@ -231,11 +253,11 @@ class HeaderUnion(P4ComplexType):
 
     def setValid(self, p4_state):
         self.valid = z3.BoolVal(True)
-        return p4_state.step()
+        return step(p4_state)
 
     def setInvalid(self, p4_state):
         self.valid = z3.BoolVal(False)
-        return p4_state.step()
+        return step(p4_state)
 
 
 class Struct(P4ComplexType):
@@ -293,27 +315,6 @@ class P4State(P4ComplexType):
     def add_globals(self, globals):
         for extern_name, extern_method in globals.items():
             self.set_or_add_var(extern_name, extern_method)
-
-    def step(self, expr=None):
-        ''' The step function ensures that modifications are propagated to
-            all subsequent operations. This is important to guarantee
-            correctness with branching or local modification. '''
-        if self.expr_chain:
-            # pop the first function in the list
-            next_expr = self.expr_chain.popleft()
-            # iterate through all the remaining functions in the chain
-            log.debug("Evaluating %s", next_expr.__class__)
-            expr = next_expr.eval(self)
-            # eval should always return an expression
-            if not isinstance(expr, (z3.ExprRef)):
-                raise TypeError(f"Expression {expr} is not a z3 expression!")
-        if expr is not None:
-            # end of chain, just mirror the passed expressions
-            return expr
-        else:
-            # empty statement, just return the final update assignment
-            z3_copy = self.get_z3_repr()
-            return z3_copy
 
     def clear_expr_chain(self):
         self.expr_chain.clear()

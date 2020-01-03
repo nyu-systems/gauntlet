@@ -53,7 +53,6 @@ bmv2_tests = [
     "equality-varbit-bmv2.p4",
     "flag_lost-bmv2.p4",
     "free-form-annotation.p4",
-    "flowlet_switching-bmv2.p4",
     "hash-bmv2.p4",
     "header-bool-bmv2.p4",
     "inline-bmv2.p4",
@@ -188,7 +187,6 @@ bmv2_tests = [
     "table-entries-exact-bmv2.p4",
     "table-entries-priority-bmv2.p4",
     "table-entries-valid-bmv2.p4",
-    "ternary2-bmv2.p4",
     "test-parserinvalidargument-error-bmv2.p4",
     "union-bmv2.p4",
     "union-valid-bmv2.p4",
@@ -199,7 +197,9 @@ bmv2_tests = [
     "verify-bmv2.p4",
     "x-bmv2.p4",
     # very slow tests
+    "ternary2-bmv2.p4",
     "basic_routing-bmv2.p4",
+    # "flowlet_switching-bmv2.p4",
 ]
 
 # ***** violation tests*****
