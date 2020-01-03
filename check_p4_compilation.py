@@ -66,18 +66,6 @@ def diff_files(passes, pass_dir, p4_file):
     return util.EXIT_SUCCESS
 
 
-def analyse_p4_file(p4_file, pass_dir):
-    p4_dmp_dir = f"dumps"
-    p4_prune_dir = f"{p4_dmp_dir}/pruned"
-
-    log.info("Analysing %s", p4_file)
-    p4_passes = gen_p4_passes(P4C_BIN, p4_dmp_dir, p4_file)
-    prune_files(p4_prune_dir, p4_passes)
-    err = diff_files(p4_passes, pass_dir, p4_file)
-    util.del_dir(p4_dmp_dir)
-    return err
-
-
 def run_p4_to_py(p4_file, py_file):
     cmd = P4Z3_BIN + " "
     cmd += f"{p4_file} "
@@ -157,6 +145,18 @@ def validate_translation(p4_file, target_dir, p4c_bin):
     # perform the actual comparison
     result = z3check.z3_check(p4_py_files, fail_dir)
     return result
+
+
+def analyse_p4_file(p4_file, pass_dir):
+    p4_dmp_dir = f"dumps"
+    p4_prune_dir = f"{p4_dmp_dir}/pruned"
+
+    log.info("Analysing %s", p4_file)
+    p4_passes = gen_p4_passes(P4C_BIN, p4_dmp_dir, p4_file)
+    prune_files(p4_prune_dir, p4_passes)
+    err = diff_files(p4_passes, pass_dir, p4_file)
+    util.del_dir(p4_dmp_dir)
+    return err
 
 
 def generate_analysis():

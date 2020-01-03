@@ -12,12 +12,12 @@ log = logging.getLogger(__name__)
 
 # We maintain a list of passes that causes segmentation faults
 # TODO: Fix these, likely by using simulation relations
-SKIPPED_PASSES = ["Flatten", "UniqueNames"]
+SKIPPED_PASSES = ["Flatten", "UniqueNames", "Inline"]
 
 
 def needs_skipping(pre, post):
     for skip_pass in SKIPPED_PASSES:
-        if skip_pass in pre or skip_pass in post:
+        if skip_pass in post:
             log.warning("Skipping \"%s\" pass to avoid crashes...", skip_pass)
             return True
     return False
