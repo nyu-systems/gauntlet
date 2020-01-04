@@ -7,8 +7,8 @@ import p4z3.base as base
 from p4z3.base import log
 
 
-def resolve_expr(p4_state, expr) -> z3.SortRef:
-    # Resolves to z3 and z3p4 expressions, bools and int are also okay
+def resolve_expr(p4_state, expr):
+    # Resolves to z3 and z3p4 expressions, ints, lists, and dicts are also okay
     # resolve potential string references first
     log.debug("Resolving %s", expr)
     if isinstance(expr, str):
@@ -196,17 +196,17 @@ class P4add(P4BinaryOp):
         P4BinaryOp.__init__(self, lval, rval, operator)
 
 
+class P4sub(P4BinaryOp):
+    def __init__(self, lval, rval):
+        operator = op.sub
+        P4BinaryOp.__init__(self, lval, rval, operator)
+
+
 class P4addsat(P4BinaryOp):
     # TODO: Not sure if this is right, check eventually
     def __init__(self, lval, rval):
         operator = (lambda x, y: z3.BVAddNoOverflow(x, y, False))
         operator = op.add
-        P4BinaryOp.__init__(self, lval, rval, operator)
-
-
-class P4sub(P4BinaryOp):
-    def __init__(self, lval, rval):
-        operator = op.sub
         P4BinaryOp.__init__(self, lval, rval, operator)
 
 
@@ -436,7 +436,7 @@ class P4Declaration(P4Z3Class):
     # TODO: Add some more declaration checks here.
     # the difference between a P4Declaration and a P4Assignment is that
     # we resolve the variable in the P4Assignment
-    # in the declaration we assign variables as is
+    # in the declaration we assign variables as is.
     # they are resolved at runtime by other classes
     def __init__(self, lval, rval):
         self.lval = lval
@@ -539,7 +539,7 @@ class MethodCallExpr(P4Z3Class):
         if isinstance(p4_method, str):
             # if we get a reference just try to find the method in the state
             p4_method = p4_state.resolve_reference(p4_method)
-        if isinstance(p4_method, P4Action):
+        if isinstance(p4_method, P4Callable):
             p4_method.set_param_args(arg_prefix="")
             p4_method.merge_args(p4_state, self.args)
             return p4_method.eval(p4_state)
@@ -587,30 +587,11 @@ class P4Exit(P4Z3Class):
         return base.step(p4_state)
 
 
-class P4Action(P4Z3Class):
-
+class P4Callable(P4Z3Class):
     def __init__(self):
-        self.block = None
+        self.block = BlockStatement()
         self.params = []
         self.args = []
-
-    def add_parameter(self, is_ref=None, arg_name=None, arg_type=None):
-        # TODO: Fix this hack
-        if is_ref is None or arg_name is None or arg_type is None:
-            return
-        self.params.append((is_ref, arg_name, arg_type))
-
-    def add_stmt(self, block):
-        if not isinstance(block, BlockStatement):
-            raise RuntimeError(f"Expected a block, got {block}!")
-        self.block = block
-
-    def get_parameters(self):
-        return self.params
-
-    def __call__(self, p4_state, *args, **kwargs):
-        self.args = args
-        return self.eval(p4_state)
 
     def set_param_args(self, arg_prefix):
         action_args = []
@@ -627,9 +608,31 @@ class P4Action(P4Z3Class):
     def merge_args(self, p4_state, *args):
         if len(*args) > len(self.args):
             raise RuntimeError(
-                f"Provided arguments {args} exceeds possible number of parameters.")
+                f"Provided arguments {args} exceeds"
+                f"possible number of parameters.")
         for index, runtime_arg in enumerate(*args):
             self.args[index] = runtime_arg
+
+    def add_parameter(self, is_ref=None, arg_name=None, arg_type=None):
+        self.params.append((is_ref, arg_name, arg_type))
+
+    def get_parameters(self):
+        return self.params
+
+
+class P4Action(P4Callable):
+
+    def __init__(self):
+        super(P4Action, self).__init__()
+
+    def add_stmt(self, block):
+        if not isinstance(block, BlockStatement):
+            raise RuntimeError(f"Expected a block, got {block}!")
+        self.block = block
+
+    def __call__(self, p4_state, *args, **kwargs):
+        self.args = args
+        return self.eval(p4_state)
 
     def eval(self, p4_state):
         var_buffer = {}
@@ -672,52 +675,10 @@ class P4Action(P4Z3Class):
         return base.step(p4_state, expr)
 
 
-class P4Extern(P4Action):
-    # TODO: This is quite brittle, requires concrete examination
-    def __init__(self, name, z3_reg):
-        super(P4Extern, self).__init__()
-        self.name = name
-        self.z3_reg = z3_reg
-
-    def add_method(self, name, method):
-        setattr(self, name, method)
-
-    def __call__(self, p4_state=None, *args, **kwargs):
-        # for controls, the state is not required
-        # controls can only be executed with apply statements
-        return self
-
-    def eval(self, p4_state):
-
-        for index, arg in enumerate(self.args):
-            is_ref = self.params[index][0]
-            param_name = self.params[index][1]
-
-            log.debug("Setting %s as %s ", param_name, arg)
-            # Because we do not know what the extern is doing
-            # we initiate a new z3 const and just overwrite all reference types
-            if is_ref:
-                # Externs often have generic types until they are called
-                # This call resolves the argument and gets its z3 type
-                arg_type = get_type(p4_state, arg)
-                extern_mod = z3.Const(f"{self.name}_{param_name}", arg_type)
-                instance = self.z3_reg.instance(
-                    f"{self.name}_{param_name}", arg_type)
-                # In the case that the instance is a complex type make sure
-                # to propagate the variable through all its members
-                if isinstance(instance, base.P4ComplexType):
-                    instance.propagate_type(extern_mod)
-                # Finally, assign a new value to the pass-by-reference argument
-                p4_state.set_or_add_var(arg, instance)
-
-        return base.step(p4_state)
-
-
-class P4Control(P4Action):
+class P4Control(P4Callable):
 
     def __init__(self):
         super(P4Control, self).__init__()
-        self.block = BlockStatement()
         self.locals = []
         self.state_initializer = None
 
@@ -727,6 +688,9 @@ class P4Control(P4Action):
 
     def add_args(self, params):
         self.params = params
+
+    def add_parameter(self, is_ref=None, arg_name=None, arg_type=None):
+        self.params.append((is_ref, arg_name, arg_type))
 
     def add_instance(self, z3_reg, name, params):
         self.params = params
@@ -792,6 +756,50 @@ class P4Control(P4Action):
 
 class P4Parser(P4Control):
     pass
+
+
+class P4Extern(P4Callable):
+    # TODO: This is quite brittle, requires concrete examination
+    def __init__(self, name, z3_reg):
+        super(P4Extern, self).__init__()
+        self.name = name
+        self.z3_reg = z3_reg
+
+    def add_method(self, name, method):
+        setattr(self, name, method)
+
+    def add_parameter(self, is_ref=None, arg_name=None, arg_type=None):
+        self.params.append((is_ref, arg_name, arg_type))
+
+    def __call__(self, p4_state=None, *args, **kwargs):
+        # for controls, the state is not required
+        # controls can only be executed with apply statements
+        return self
+
+    def eval(self, p4_state):
+
+        for index, arg in enumerate(self.args):
+            is_ref = self.params[index][0]
+            param_name = self.params[index][1]
+
+            log.debug("Setting %s as %s ", param_name, arg)
+            # Because we do not know what the extern is doing
+            # we initiate a new z3 const and just overwrite all reference types
+            if is_ref:
+                # Externs often have generic types until they are called
+                # This call resolves the argument and gets its z3 type
+                arg_type = get_type(p4_state, arg)
+                extern_mod = z3.Const(f"{self.name}_{param_name}", arg_type)
+                instance = self.z3_reg.instance(
+                    f"{self.name}_{param_name}", arg_type)
+                # In the case that the instance is a complex type make sure
+                # to propagate the variable through all its members
+                if isinstance(instance, base.P4ComplexType):
+                    instance.propagate_type(extern_mod)
+                # Finally, assign a new value to the pass-by-reference argument
+                p4_state.set_or_add_var(arg, instance)
+
+        return base.step(p4_state)
 
 
 class IfStatement(P4Z3Class):

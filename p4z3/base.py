@@ -132,7 +132,7 @@ class P4ComplexType():
             self.set_or_add_var(accessor.name(), rval)
 
     def set_or_add_var(self, lstring, rval):
-        # TODO: Fix this, has hideous performance impact
+        # TODO: Fix this method, has hideous performance impact
         lval = self.resolve_reference(lstring)
         if lval is not None:
             if isinstance(rval, list):
