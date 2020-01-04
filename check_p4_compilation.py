@@ -62,8 +62,10 @@ def diff_files(passes, pass_dir, p4_file):
         if os.stat(diff_file).st_size == 0:
             os.remove(diff_file)
         else:
-            util.copy_file(pass_after, f"{diff_dir}/{p4_name}_{p4_pass}.p4i")
-            util.copy_file(p4_file, f"{diff_dir}/{p4_name}_original.p4i")
+            after_name = f"{diff_dir}/{p4_name}_{p4_pass}{p4_file.suffix}"
+            util.copy_file(pass_after, after_name)
+            og_name = f"{diff_dir}/{p4_name}_original{p4_file.suffix}"
+            util.copy_file(p4_file, og_name)
     return util.EXIT_SUCCESS
 
 

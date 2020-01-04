@@ -24,6 +24,8 @@ def step(p4_state, expr=None):
         return expr
     else:
         # empty statement, just return the final update assignment
+        # this also checks the validity of the new assignment
+        # if there is a type error, z3 will complain
         z3_copy = p4_state.get_z3_repr()
         return z3_copy
 
@@ -107,8 +109,9 @@ class P4ComplexType():
             z3_accessor = accessor(parent_const)
             self._set_member(accessor.name(), z3_accessor)
             members.append(z3_accessor)
+        # this class is now dependent on its parent type
         # generate the new z3 complex type out of all the sub constructors
-        # self.const = self.constructor(*members)
+        self.const = self.constructor(*members)
 
     def get_var(self, var_string):
         try:
@@ -180,9 +183,8 @@ class P4ComplexType():
 
         # generate a new version of the z3 datatype
         # update the internal representation of the attribute.
-        # this also checks the validity of the new assignment
-        # if there is a type error, z3 will complain
-        # self.const = self.get_z3_repr()
+        # TODO: Evaluate if it is actually worth it to update every time
+        # self.const = self.get_z3_repr(self.const)
 
     def __eq__(self, other):
 
@@ -235,7 +237,9 @@ class Header(P4ComplexType):
                                    z3.Not(other.isValid()))
             # when both headers are valid compare the values
             check_valid = z3.And(self.isValid(), other.isValid())
-            comparison = z3.And(check_valid, self.const == other.const)
+            self_const = self.const
+            other_const = other.const
+            comparison = z3.And(check_valid, self_const == other_const)
             return z3.Or(check_invalid, comparison)
         return super().__eq__(other)
 
@@ -269,7 +273,7 @@ class Enum(P4ComplexType):
     def __init__(self, z3_reg, z3_type: z3.SortRef, name):
         self.name = name
         self.z3_type = z3_type
-        self.const = z3.BitVec(f"{self.name}", 8)
+        self.const = z3.Const(f"{self.name}", z3_type)
         self.constructor = z3_type.constructor(0)
         # These are special for enums
         self._set_z3_accessors(z3_type, self.constructor)
@@ -417,7 +421,6 @@ class Z3Reg():
             z3_cls = self._classes[type_name]
             self._ref_count[type_name] += 1
             instance = z3_cls(self, p4z3_type, name)
-            instance.propagate_type(instance.get_z3_repr())
             return instance
         else:
             return z3.Const(f"{var_name}", p4z3_type)

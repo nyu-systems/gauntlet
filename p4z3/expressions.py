@@ -65,7 +65,7 @@ def get_type(p4_state, expr):
     ''' Return the type of an expression, Resolve, if needed'''
     arg_expr = resolve_expr(p4_state, expr)
     if isinstance(arg_expr, base.P4ComplexType):
-        arg_type = arg_expr.get_z3_repr().sort()
+        arg_type = arg_expr.z3_type
     else:
         arg_type = arg_expr.sort()
     return arg_type
@@ -86,7 +86,7 @@ def check_bool(expr):
 
 def check_enum(expr):
     if isinstance(expr, base.Enum):
-        expr = expr.get_z3_repr()
+        expr = z3.BitVec("expr.name", 8)
     return expr
 
 
@@ -137,9 +137,10 @@ class P4BinaryOp(P4Op):
         lval_expr = resolve_expr(p4_state, self.lval)
         rval_expr = resolve_expr(p4_state, self.rval)
 
-        # if we have enums, do not use them for operations
+        # if we compare to enums, do not use them for operations
         # for some reason, overloading equality does not work here...
-        # instead use their current representation...
+        # instead reference a named bitvector of size 8
+        # this represents a choice
         lval_expr = check_enum(lval_expr)
         rval_expr = check_enum(rval_expr)
         lval_expr, rval_expr = align_bitvecs(
