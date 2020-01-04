@@ -49,7 +49,7 @@ class P4ComplexType():
         self.constructor = z3_type.constructor(0)
         # These are special for state
         self._set_z3_accessors(z3_type, self.constructor)
-        self._init_members(z3_reg, self.accessors)
+        self._init_members(z3_reg, self.const, self.accessors)
 
     def _set_z3_accessors(self, z3_type, constructor):
         self.accessors = []
@@ -57,7 +57,7 @@ class P4ComplexType():
             accessor = z3_type.accessor(0, type_index)
             self.accessors.append(accessor)
 
-    def _init_members(self, z3_reg, accessors):
+    def _init_members(self, z3_reg, const, accessors):
         for accessor in accessors:
             arg_type = accessor.range()
             if isinstance(arg_type, z3.DatatypeSortRef):
@@ -67,10 +67,10 @@ class P4ComplexType():
                 setattr(self, accessor.name(), member_cls)
                 # since the child type is dependent on its parent
                 # we propagate the parent constant down to all members
-                member_cls.propagate_type(accessor(self.const))
+                member_cls.propagate_type(accessor(const))
             else:
                 # use the default z3 constructor
-                setattr(self, accessor.name(), accessor(self.const))
+                setattr(self, accessor.name(), accessor(const))
 
     def get_z3_repr(self, parent_const=None):
         members = []
@@ -108,7 +108,7 @@ class P4ComplexType():
             self._set_member(accessor.name(), z3_accessor)
             members.append(z3_accessor)
         # generate the new z3 complex type out of all the sub constructors
-        self.const = self.constructor(*members)
+        # self.const = self.constructor(*members)
 
     def get_var(self, var_string):
         try:
@@ -417,7 +417,7 @@ class Z3Reg():
             z3_cls = self._classes[type_name]
             self._ref_count[type_name] += 1
             instance = z3_cls(self, p4z3_type, name)
-            instance.propagate_type(instance.const)
+            instance.propagate_type(instance.get_z3_repr())
             return instance
         else:
             return z3.Const(f"{var_name}", p4z3_type)

@@ -24,7 +24,7 @@ VIOLATION_DIR = FILE_DIR.joinpath("violated")
 P4_DIR = FILE_DIR.joinpath("p4c/testdata/p4_16_samples/")
 
 # p4c binaries
-P4C_BIN = FILE_DIR.joinpath("p4c/build/p4c-bm2-ss")
+P4C_BIN = FILE_DIR.joinpath("p4c/build/p4c")
 P4C_BIN_1863 = FILE_DIR.joinpath("p4c_bins/issue1863")
 
 # ***** working tests *****

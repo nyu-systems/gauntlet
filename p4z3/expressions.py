@@ -65,7 +65,7 @@ def get_type(p4_state, expr):
     ''' Return the type of an expression, Resolve, if needed'''
     arg_expr = resolve_expr(p4_state, expr)
     if isinstance(arg_expr, base.P4ComplexType):
-        arg_type = arg_expr.const.sort()
+        arg_type = arg_expr.get_z3_repr().sort()
     else:
         arg_type = arg_expr.sort()
     return arg_type
@@ -86,7 +86,7 @@ def check_bool(expr):
 
 def check_enum(expr):
     if isinstance(expr, base.Enum):
-        expr = expr.const
+        expr = expr.get_z3_repr()
     return expr
 
 
@@ -585,6 +585,19 @@ class P4Exit(P4Z3Class):
         # Exit the chain early
         p4_state.clear_expr_chain()
         return base.step(p4_state)
+
+
+class P4Return(P4Z3Class):
+    def __init__(self, expr=None):
+        self.expr = expr
+
+    def eval(self, p4_state):
+        # all subsequent operations are void
+        p4_state.clear_expr_chain()
+        if self.expr is None:
+            return base.step(p4_state)
+        else:
+            return self.expr.eval(p4_state)
 
 
 class P4Callable(P4Z3Class):

@@ -62,11 +62,11 @@ def exec_process(cmd, out_file=subprocess.STDOUT):
         result = subprocess.run(
             cmd.split(), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         if result.stdout:
-            log.debug("Process output: %s", result.stdout)
+            log.debug("Process output: %s", result.stdout.decode("utf-8"))
         if result.returncode != 0:
             log.error("##################################")
             log.error("Failed while executing:\n%s\n", cmd)
-            log.error("Output:\n%s", str(result.stderr))
+            log.error("Output:\n%s", result.stderr.decode("utf-8"))
             log.error("##################################\n\n")
         return result
     err = out_file + ".err"

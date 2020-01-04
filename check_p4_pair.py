@@ -43,7 +43,7 @@ def debug_msg(p4_files):
 
 def handle_pyz3_error(fail_dir, p4_file):
     util.check_dir(fail_dir)
-    failed = [f"{p4_file}.py", f"{p4_file}.p4"]
+    failed = [f"{p4_file}.py", f"{p4_file}.p4i"]
     util.copy_file(failed, fail_dir)
 
 

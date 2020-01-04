@@ -12,7 +12,7 @@ import check_p4_pair as z3check
 log = logging.getLogger(__name__)
 
 FILE_DIR = os.path.dirname(os.path.abspath(__file__))
-P4C_BIN = FILE_DIR + "/p4c/build/p4c-bm2-ss"
+P4C_BIN = FILE_DIR + "/p4c/build/p4c"
 P4Z3_BIN = FILE_DIR + "/p4c/build/p4toz3"
 
 PASSES = "--top4 "
@@ -23,7 +23,8 @@ PASSES += "FrontEnd,MidEnd "
 def generate_p4_dump(p4c_bin, p4_file, p4_dmp_dir):
     p4_cmd = f"{p4c_bin} "
     p4_cmd += f"{PASSES} "
-    p4_cmd += f"--dump {p4_dmp_dir} {p4_file}"
+    p4_cmd += f"--dump {p4_dmp_dir} {p4_file} "
+    p4_cmd += f"-o {p4_dmp_dir} "
     log.debug("Running dumps with command %s ", p4_cmd)
     return util.exec_process(p4_cmd)
 
@@ -61,8 +62,8 @@ def diff_files(passes, pass_dir, p4_file):
         if os.stat(diff_file).st_size == 0:
             os.remove(diff_file)
         else:
-            util.copy_file(pass_after, f"{diff_dir}/{p4_name}_{p4_pass}.p4")
-            util.copy_file(p4_file, f"{diff_dir}/{p4_name}_original.p4")
+            util.copy_file(pass_after, f"{diff_dir}/{p4_name}_{p4_pass}.p4i")
+            util.copy_file(p4_file, f"{diff_dir}/{p4_name}_original.p4i")
     return util.EXIT_SUCCESS
 
 
@@ -73,9 +74,10 @@ def run_p4_to_py(p4_file, py_file):
     return util.exec_process(cmd)
 
 
-def list_passes(p4c_bin, p4_file):
+def list_passes(p4c_bin, p4_file, p4_dmp_dir):
     p4_pass_cmd = f"{p4c_bin} -v "
     p4_pass_cmd += f"{p4_file} 2>&1 "
+    p4_pass_cmd += f"-o {p4_dmp_dir} "
     p4_pass_cmd += "| sed -e '/FrontEnd\\|MidEnd/!d' | "
     p4_pass_cmd += "sed -e '/Writing program to/d' "
     log.debug("Grabbing passes with command %s", p4_pass_cmd)
@@ -87,10 +89,10 @@ def list_passes(p4c_bin, p4_file):
 def gen_p4_passes(p4c_bin, p4_dmp_dir, p4_file):
     util.check_dir(p4_dmp_dir)
     generate_p4_dump(p4c_bin, p4_file, p4_dmp_dir)
-    p4_passes = list_passes(p4c_bin, p4_file)
+    p4_passes = list_passes(p4c_bin, p4_file, p4_dmp_dir)
     full_p4_passes = []
     for p4_pass in p4_passes:
-        p4_name = f"{p4_file.stem}-{p4_pass}.p4"
+        p4_name = f"{p4_file.stem}-{p4_pass}.p4i"
         full_p4_pass = p4_dmp_dir.joinpath(p4_name)
         full_p4_passes.append(full_p4_pass)
     return full_p4_passes
@@ -178,7 +180,7 @@ def generate_analysis():
         pass_dir = "passes"
         util.check_dir(pass_dir)
         open(f"{pass_dir}/no_passes.txt", 'w+')
-        for p4_file in glob.glob(f"{p4_input}/*.p4"):
+        for p4_file in glob.glob(f"{p4_input}/*.p4i"):
             analyse_p4_file(p4_file, pass_dir)
 
 
