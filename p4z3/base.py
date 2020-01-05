@@ -17,7 +17,7 @@ def step(p4_state, expr=None):
         log.debug("Evaluating %s", next_expr.__class__)
         expr = next_expr.eval(p4_state)
         # eval should always return an expression
-        if not isinstance(expr, (z3.ExprRef)):
+        if not isinstance(expr, (z3.ExprRef, int)):
             raise TypeError(f"Expression {expr} is not a z3 expression!")
     if expr is not None:
         # end of chain, just mirror the passed expressions

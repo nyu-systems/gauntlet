@@ -598,7 +598,8 @@ class P4Return(P4Z3Class):
         if self.expr is None:
             return base.step(p4_state)
         else:
-            return self.expr.eval(p4_state)
+            expr = resolve_expr(p4_state, self.expr)
+            return expr
 
 
 class P4Callable(P4Z3Class):
@@ -682,9 +683,9 @@ class P4Action(P4Callable):
             if param_name in var_buffer:
                 log.debug("Restoring %s", param_name)
                 p4_state.set_or_add_var(param_name, var_buffer[param_name])
-            elif not is_ref:
-                log.debug("Deleting %s", param_name)
-                p4_state.del_var(param_name)
+            # elif not is_ref:
+            #     log.debug("Deleting %s", param_name)
+            #     p4_state.del_var(param_name)
 
         return base.step(p4_state, expr)
 
@@ -760,9 +761,9 @@ class P4Control(P4Callable):
             if var_buffer[param_name] is not None:
                 log.debug("Restoring %s", param_name)
                 p4_state.set_or_add_var(param_name, var_buffer[param_name])
-            else:
-                log.debug("Deleting %s", param_name)
-                p4_state.del_var(param_name)
+            # else:
+            #     log.debug("Deleting %s", param_name)
+            #     p4_state.del_var(param_name)
         # restore the old execution chain
         p4_state.expr_chain = expr_chain
         return base.step(p4_state, expr)
