@@ -221,6 +221,7 @@ violation_tests = [
     "issue1544-bmv2-1",
     "issue1544-bmv2-2",
     "key-bmv2",
+    "issue1642",
     "mux",
     "out-params-1",
     "out-params-2",

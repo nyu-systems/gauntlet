@@ -199,11 +199,13 @@ def main():
     pass_dir = Path("validated")
     if os.path.isfile(p4_input):
         pass_dir = pass_dir.joinpath(p4_input.stem)
+        util.del_dir(pass_dir)
         validate_translation(p4_input, pass_dir, P4C_BIN)
     else:
         util.check_dir(pass_dir)
         for p4_file in list(p4_input.glob("**/*.p4")):
             pass_dir = pass_dir.joinpath(p4_file.stem)
+            util.del_dir(pass_dir)
             validate_translation(p4_file, pass_dir, P4C_BIN)
 
 
@@ -215,6 +217,5 @@ if __name__ == '__main__':
                         filemode='w')
     stderr_log = logging.StreamHandler()
     stderr_log.setFormatter(logging.Formatter("%(levelname)s:%(message)s"))
-    log.addHandler(stderr_log)
-
+    logging.getLogger().addHandler(stderr_log)
     main()

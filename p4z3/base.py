@@ -2,6 +2,7 @@ import operator as op
 from collections import deque
 import logging
 import z3
+from copy import deepcopy, copy
 
 log = logging.getLogger(__name__)
 
@@ -135,6 +136,7 @@ class P4ComplexType():
             self.set_or_add_var(accessor.name(), rval)
 
     def set_or_add_var(self, lstring, rval):
+
         # TODO: Fix this method, has hideous performance impact
         lval = self.resolve_reference(lstring)
         if lval is not None:
@@ -209,6 +211,18 @@ class P4ComplexType():
             z3_eq = self_member == other_member
             eq_accessors.append(z3_eq)
         return z3.And(*eq_accessors)
+
+    # def __deepcopy__(self, memo):
+    #     cls = self.__class__
+    #     result = cls.__new__(cls)
+    #     for k, v in self.__dict__.items():
+    #         if isinstance(v, (P4ComplexType)):
+    #             setattr(result, k, deepcopy(v, memo))
+    #         elif isinstance(v, z3.AstRef):
+    #             setattr(result, k, v)
+    #         else:
+    #             setattr(result, k, copy(v))
+    #     return result
 
 
 class Header(P4ComplexType):
@@ -306,8 +320,8 @@ class P4State(P4ComplexType):
     def __init__(self, z3_reg, z3_type, name):
         # deques allow for much more efficient pop and append operations
         # this is all we do so this works well
-        self.expr_chain = deque()
         super(P4State, self).__init__(z3_reg, z3_type, name)
+        self.expr_chain = deque()
 
     def _update(self):
         self.const = z3.Const(f"{self.name}_1", self.z3_type)
@@ -350,23 +364,32 @@ class Z3Reg():
         self._classes[name] = p4_class
         self._ref_count[name] = 0
 
-    def register_header(self, name, z3_args):
-        self._register_structlike(name, Header, z3_args)
-
-    def register_struct(self, name, z3_args):
-        self._register_structlike(name, Struct, z3_args)
-
-    def register_enum(self, name, enum_args):
-        # Enums are a bit weird... we first create a type
-        enum_types = []
-        for enum_name in enum_args:
-            enum_types.append((enum_name, z3.BitVecSort(8)))
-        self._register_structlike(name, Enum, enum_types)
-        # And then actually instantiate it so we can reference it later
-        self._globals[name] = self.instance(name, self._types[name])
-
-    def register_inouts(self, name, z3_args):
-        self._register_structlike(name, P4State, z3_args)
+    def declare_global(self, type_str, name, global_val):
+        type_str = type_str.lower()
+        if type_str == "header":
+            self._register_structlike(name, Header, global_val)
+        elif type_str == "struct":
+            self._register_structlike(name, Struct, global_val)
+        elif type_str == "header":
+            self._register_structlike(name, Header, global_val)
+        elif type_str == "enum":
+            # Enums are a bit weird... we first create a type
+            enum_types = []
+            for enum_name in global_val:
+                enum_types.append((enum_name, z3.BitVecSort(8)))
+            self._register_structlike(name, Enum, enum_types)
+            # And then actually instantiate it so we can reference it later
+            self._globals[name] = self.instance(name, self._types[name])
+        elif type_str == "typedef":
+            self._types[name] = global_val
+            self._classes[name] = global_val
+            self._ref_count[name] = 0
+        elif type_str == "extern":
+            # Extern also serve as types, so we need to register them too
+            self._types[name] = z3.DeclareSort(name)
+            self._globals[name] = global_val
+        else:
+            self._globals[name] = global_val
 
     def init_p4_state(self, name, z3_args):
         stripped_args = []
@@ -376,19 +399,6 @@ class Z3Reg():
         p4_state = self.instance("", self.type(name))
         p4_state.add_globals(self._globals)
         return p4_state
-
-    def register_typedef(self, name, target):
-        self._types[name] = target
-        self._classes[name] = target
-        self._ref_count[name] = 0
-
-    def register_extern(self, name, extern):
-        # Extern also serve as types, so we need to register them too
-        self._types[name] = z3.DeclareSort(name)
-        self.declare_global(name, extern)
-
-    def declare_global(self, name, global_val):
-        self._globals[name] = global_val
 
     def reset(self):
         self._types.clear()
@@ -404,7 +414,7 @@ class Z3Reg():
         stack_args = []
         for val in range(num):
             stack_args.append((f"{val}", z3_type))
-        self.register_struct(z3_name, stack_args)
+        self.declare_global("struct", z3_name, stack_args)
         return self.type(z3_name)
 
     def extern(self, extern_name):

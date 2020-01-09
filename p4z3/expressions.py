@@ -1,4 +1,4 @@
-from copy import deepcopy
+from copy import deepcopy, copy
 from collections import OrderedDict
 import operator as op
 import z3
@@ -23,10 +23,10 @@ def resolve_expr(p4_state, expr):
         # about var handling...
         return val
     if isinstance(val, base.P4ComplexType):
-        # If we get a whole class return the object
+        # If we get a whole class return a new reference to the object
         # Do not return the z3 type because we may assign a complete structure
-        return val
-    if isinstance(val, P4Z3Class):
+        return copy(val)
+    if isinstance(val, P4Expression):
         # We got a P4 type, recurse...
         val = val.eval(p4_state)
         return resolve_expr(p4_state, val)
@@ -76,17 +76,9 @@ def z3_implies(p4_state, cond, then_expr):
     return z3.If(cond, then_expr, no_match)
 
 
-def check_bool(expr):
-    if isinstance(expr, z3.BoolRef):
-        # Convert boolean variables to a bit vector representation
-        # TODO: Make all bools a bitvector of size 1
-        expr = z3.If(expr, z3.BitVecVal(1, 1), z3.BitVecVal(0, 1))
-    return expr
-
-
 def check_enum(expr):
     if isinstance(expr, base.Enum):
-        expr = z3.BitVec("expr.name", 8)
+        expr = z3.BitVec(f"{expr.name}", 8)
     return expr
 
 
@@ -99,12 +91,55 @@ def align_bitvecs(bitvec1, bitvec2, p4_state):
     return bitvec1, bitvec2
 
 
+def z3_cast(val, to_size):
+    if isinstance(val, z3.BoolRef):
+        # Convert boolean variables to a bit vector representation
+        # TODO: Make all bools a bitvector of size 1
+        val = z3.If(val, z3.BitVecVal(1, 1), z3.BitVecVal(0, 1))
+    if isinstance(val, int):
+        # It can happen that we get an int, cast it to a bit vector.
+        return z3.BitVecVal(val, to_size)
+    val_size = val.size()
+    if val_size < to_size:
+        return z3.ZeroExt(to_size - val_size, val)
+    else:
+        slice_l = val_size - 1
+        slice_r = val_size - to_size
+        return z3.Extract(slice_l, slice_r, val)
+
+
+def slice_assign(lval, rval, slice_l, slice_r) -> z3.SortRef:
+    lval_max = lval.size() - 1
+    if slice_l == lval_max and slice_r == 0:
+        # slice is full lvalue, nothing to do
+        return rval
+    assemble = []
+    if slice_l < lval_max:
+        # left slice is smaller than the max, leave that chunk unchanged
+        assemble.append(z3.Extract(lval_max, slice_l + 1, lval))
+    # fill the rval into the slice
+    rval = z3_cast(rval, slice_l + 1 - slice_r)
+    assemble.append(rval)
+    if slice_r > 0:
+        # right slice is larger than zero, leave that chunk unchanged
+        assemble.append(z3.Extract(slice_r - 1, 0, lval))
+    return z3.Concat(*assemble)
+
+
 class P4Z3Class():
     def eval(self, p4_state):
         raise NotImplementedError("Method eval not implemented!")
 
 
-class P4Op(P4Z3Class):
+class P4Expression(P4Z3Class):
+    pass
+
+
+class P4Statement(P4Z3Class):
+    pass
+
+
+class P4Op(P4Expression):
     def get_value():
         raise NotImplementedError("get_value")
 
@@ -328,7 +363,7 @@ class P4Mask(P4BinaryOp):
         P4BinaryOp.__init__(self, lval, rval, operator)
 
 
-class P4Slice(P4Z3Class):
+class P4Slice(P4Expression):
     def __init__(self, val, slice_l, slice_r):
         self.val = val
         self.slice_l = slice_l
@@ -339,7 +374,7 @@ class P4Slice(P4Z3Class):
         return z3.Extract(self.slice_l, self.slice_r, val_expr)
 
 
-class P4Concat(P4Z3Class):
+class P4Concat(P4Expression):
     def __init__(self, lval, rval):
         self.lval = lval
         self.rval = rval
@@ -350,28 +385,7 @@ class P4Concat(P4Z3Class):
         return z3.Concat(lval_expr, rval_expr)
 
 
-class P4Member(P4Z3Class):
-
-    def __new__(cls, lval, member):
-        cls.lval = lval
-        cls.member = member
-        return f"{lval}.{member}"
-
-    def eval(cls, p4_state):
-        # lval_expr = resolve_expr(p4_state, cls.lval)
-        # return getattr(lval_expr, cls.member)
-        if isinstance(cls.lval, P4Z3Class):
-            lval = cls.lval.eval(p4_state)
-        else:
-            lval = cls.lval
-        if isinstance(cls.member, P4Z3Class):
-            member = cls.member.eval(p4_state)
-        else:
-            member = cls.member
-        return f"{lval}.{member}"
-
-
-class P4Index(P4Z3Class):
+class P4Index(P4Expression):
     def __new__(cls, lval, index):
         cls.lval = lval
         cls.index = index
@@ -384,7 +398,7 @@ class P4Index(P4Z3Class):
         return expr
 
 
-class P4Path(P4Z3Class):
+class P4Path(P4Expression):
     def __init__(self, val):
         self.val = val
 
@@ -393,21 +407,26 @@ class P4Path(P4Z3Class):
         return val_expr
 
 
-def z3_cast(val, to_size):
+class P4Member(P4Expression):
 
-    if isinstance(val, int):
-        # It can happen that we get an int, cast it to a bit vector.
-        return z3.BitVecVal(val, to_size)
-    val_size = val.size()
-    if val_size < to_size:
-        return z3.ZeroExt(to_size - val_size, val)
-    else:
-        slice_l = val_size - 1
-        slice_r = val_size - to_size
-        return z3.Extract(slice_l, slice_r, val)
+    def __new__(cls, lval, member):
+        cls.lval = lval
+        cls.member = member
+        return f"{lval}.{member}"
+
+    def eval(cls, p4_state):
+        if isinstance(cls.lval, P4Expression):
+            lval = cls.lval.eval(p4_state)
+        else:
+            lval = cls.lval
+        if isinstance(cls.member, P4Expression):
+            member = cls.member.eval(p4_state)
+        else:
+            member = cls.member
+        return f"{lval}.{member}"
 
 
-class P4Cast(P4Z3Class):
+class P4Cast(P4Expression):
     # TODO: need to take a closer look on how to do this correctly...
     # If we cast do we add/remove the least or most significant bits?
     def __init__(self, val, to_size: z3.BitVecSortRef):
@@ -416,39 +435,23 @@ class P4Cast(P4Z3Class):
 
     def eval(self, p4_state):
         expr = resolve_expr(p4_state, self.val)
-        expr = check_bool(expr)
         return z3_cast(expr, self.to_size)
 
 
-class P4Mux(P4Z3Class):
-    def __init__(self, condition, then_val, else_val):
-        self.condition = condition
+class P4Mux(P4Expression):
+    def __init__(self, cond, then_val, else_val):
+        self.cond = cond
         self.then_val = then_val
         self.else_val = else_val
 
     def eval(self, p4_state):
-        condition = resolve_expr(p4_state, self.condition)
+        cond = resolve_expr(p4_state, self.cond)
         then_val = resolve_expr(p4_state, self.then_val)
         else_val = resolve_expr(p4_state, self.else_val)
-        return z3.If(condition, then_val, else_val)
+        return z3.If(cond, then_val, else_val)
 
 
-class P4Declaration(P4Z3Class):
-    # TODO: Add some more declaration checks here.
-    # the difference between a P4Declaration and a P4Assignment is that
-    # we resolve the variable in the P4Assignment
-    # in the declaration we assign variables as is.
-    # they are resolved at runtime by other classes
-    def __init__(self, lval, rval):
-        self.lval = lval
-        self.rval = rval
-
-    def eval(self, p4_state):
-        p4_state.set_or_add_var(self.lval, self.rval)
-        return base.step(p4_state)
-
-
-class P4Initializer(P4Z3Class):
+class P4Initializer(P4Expression):
     def __init__(self, val, instance):
         self.val = val
         self.instance = instance
@@ -473,60 +476,7 @@ class P4Initializer(P4Z3Class):
             return val
 
 
-def slice_assign(lval, rval, slice_l, slice_r) -> z3.SortRef:
-    lval_max = lval.size() - 1
-    if slice_l == lval_max and slice_r == 0:
-        # slice is full lvalue, nothing to do
-        return rval
-    assemble = []
-    if slice_l < lval_max:
-        # left slice is smaller than the max, leave that chunk unchanged
-        assemble.append(z3.Extract(lval_max, slice_l + 1, lval))
-    # fill the rval into the slice
-    rval = z3_cast(rval, slice_l + 1 - slice_r)
-    assemble.append(rval)
-    if slice_r > 0:
-        # right slice is larger than zero, leave that chunk unchanged
-        assemble.append(z3.Extract(slice_r - 1, 0, lval))
-    return z3.Concat(*assemble)
-
-
-class SliceAssignment(P4Z3Class):
-    def __init__(self, lval, rval, slice_l, slice_r):
-        self.lval = lval
-        self.rval = rval
-        self.slice_l = slice_l
-        self.slice_r = slice_r
-
-    def eval(self, p4_state):
-        lval_expr = resolve_expr(p4_state, self.lval)
-        rval_expr = resolve_expr(p4_state, self.rval)
-        rval_expr = slice_assign(lval_expr, rval_expr,
-                                 self.slice_l, self.slice_r)
-        assign = AssignmentStatement(self.lval, rval_expr)
-        return assign.eval(p4_state)
-
-
-class AssignmentStatement(P4Z3Class):
-    # AssignmentStatements are essentially just a wrapper class for the
-    # set_or_add_var ḿethod of the p4 state.
-    # All the important logic is handled there.
-
-    def __init__(self, lval, rval):
-        self.lval = lval
-        self.rval = rval
-
-    def eval(self, p4_state):
-        log.debug("Assigning %s to %s ", self.rval, self.lval)
-        rval_expr = resolve_expr(p4_state, self.rval)
-        # any assignment copies the variable
-        # do not pass references, for example when assigning structs
-        rval_expr = deepcopy(rval_expr)
-        p4_state.set_or_add_var(self.lval, rval_expr)
-        return base.step(p4_state)
-
-
-class MethodCallExpr(P4Z3Class):
+class MethodCallExpr(P4Expression):
 
     def __init__(self, p4_method, *args):
         self.p4_method = p4_method
@@ -541,15 +491,62 @@ class MethodCallExpr(P4Z3Class):
             # if we get a reference just try to find the method in the state
             p4_method = p4_state.resolve_reference(p4_method)
         if isinstance(p4_method, P4Callable):
-            p4_method.set_param_args(arg_prefix="")
-            p4_method.merge_args(p4_state, self.args)
+            p4_method.args = self.args
             return p4_method.eval(p4_state)
         elif callable(p4_method):
             return p4_method(p4_state, *self.args)
         raise TypeError(f"Unsupported method type {type(p4_method)}!")
 
 
-class MethodCallStmt(P4Z3Class):
+class P4Declaration(P4Statement):
+    # TODO: Add some more declaration checks here.
+    # the difference between a P4Declaration and a P4Assignment is that
+    # we resolve the variable in the P4Assignment
+    # in the declaration we assign variables as is.
+    # they are resolved at runtime by other classes
+    def __init__(self, lval, rval):
+        self.lval = lval
+        self.rval = rval
+
+    def eval(self, p4_state):
+        p4_state.set_or_add_var(self.lval, self.rval)
+        return base.step(p4_state)
+
+
+class SliceAssignment(P4Statement):
+    def __init__(self, lval, rval, slice_l, slice_r):
+        self.lval = lval
+        self.rval = rval
+        self.slice_l = slice_l
+        self.slice_r = slice_r
+
+    def eval(self, p4_state):
+        log.debug("Assigning %s to %s ", self.rval, self.lval)
+        lval_expr = resolve_expr(p4_state, self.lval)
+        rval_expr = resolve_expr(p4_state, self.rval)
+        rval_expr = slice_assign(lval_expr, rval_expr,
+                                 self.slice_l, self.slice_r)
+        p4_state.set_or_add_var(self.lval, rval_expr)
+        return base.step(p4_state)
+
+
+class AssignmentStatement(P4Statement):
+    # AssignmentStatements are essentially just a wrapper class for the
+    # set_or_add_var ḿethod of the p4 state.
+    # All the important logic is handled there.
+
+    def __init__(self, lval, rval):
+        self.lval = lval
+        self.rval = rval
+
+    def eval(self, p4_state):
+        log.debug("Assigning %s to %s ", self.rval, self.lval)
+        rval_expr = resolve_expr(p4_state, self.rval)
+        p4_state.set_or_add_var(self.lval, rval_expr)
+        return base.step(p4_state)
+
+
+class MethodCallStmt(P4Statement):
 
     def __init__(self, method_expr):
         self.method_expr = method_expr
@@ -558,7 +555,7 @@ class MethodCallStmt(P4Z3Class):
         return self.method_expr.eval(p4_state)
 
 
-class BlockStatement(P4Z3Class):
+class BlockStatement(P4Statement):
 
     def __init__(self):
         self.exprs = []
@@ -574,13 +571,102 @@ class BlockStatement(P4Z3Class):
         return base.step(p4_state)
 
 
-class P4Noop(P4Z3Class):
+class IfStatement(P4Statement):
+
+    def __init__(self):
+        self.cond = None
+        self.then_block = None
+        self.else_block = None
+
+    def add_condition(self, cond):
+        self.cond = cond
+
+    def add_then_stmt(self, stmt):
+        self.then_block = stmt
+
+    def add_else_stmt(self, stmt):
+        self.else_block = stmt
+
+    def eval(self, p4_state):
+        if self.cond is None:
+            raise RuntimeError("Missing condition!")
+        cond = resolve_expr(p4_state, self.cond)
+        # conditional branching requires a copy of the state for each branch
+        # in some sense this copy acts as a phi function
+        then_p4_state = deepcopy(p4_state)
+        then_expr = self.then_block.eval(then_p4_state)
+        if self.else_block:
+            else_p4_state = deepcopy(p4_state)
+            else_expr = self.else_block.eval(else_p4_state)
+            return z3.If(cond, then_expr, else_expr)
+        else:
+            return z3_implies(p4_state, cond, then_expr)
+
+
+class SwitchHit(P4Expression):
+    def __init__(self, table, cases, default_case):
+        self.table = table
+        self.default_case = default_case
+        self.cases = cases
+
+    def eval_cases(self, p4_state, cases):
+        expr = self.default_case.eval(p4_state)
+        for case in reversed(cases.values()):
+            p4_state = deepcopy(p4_state)
+            case_expr = case["case_block"].eval(p4_state)
+            expr = z3.If(case["match"], case_expr, expr)
+        return expr
+
+    def eval_switch_matches(self, table):
+        for case_name, case in self.cases.items():
+            match_var = case["match_var"]
+            action = table.actions[case_name][0]
+            self.cases[case_name]["match"] = (match_var == action)
+
+    def eval(self, p4_state):
+        self.eval_switch_matches(self.table)
+        switch_hit = self.eval_cases(p4_state, self.cases)
+        return switch_hit
+
+
+class SwitchStatement(P4Statement):
+    # TODO: Fix fall through for switch statement
+    def __init__(self, table_str):
+        self.table_str = table_str
+        self.default_case = BlockStatement()
+        self.cases = OrderedDict()
+
+    def add_case(self, action_str):
+        # skip default statements, they are handled separately
+        if action_str == "default":
+            return
+        case = {}
+        case["match_var"] = z3.Int(f"{self.table_str}_action")
+        case["case_block"] = BlockStatement()
+        self.cases[action_str] = case
+
+    def add_stmt_to_case(self, action_str, case_stmt):
+        if action_str == "default":
+            self.default_case.add(case_stmt)
+        else:
+            case_block = self.cases[action_str]["case_block"]
+            case_block.add(case_stmt)
+
+    def eval(self, p4_state):
+        table = p4_state.get_var(self.table_str)
+        # instantiate the hit expression
+        switch_hit = SwitchHit(table, self.cases, self.default_case)
+        p4_state.insert_exprs([table, switch_hit])
+        return base.step(p4_state)
+
+
+class P4Noop(P4Statement):
 
     def eval(self, p4_state):
         return base.step(p4_state)
 
 
-class P4Exit(P4Z3Class):
+class P4Exit(P4Statement):
 
     def eval(self, p4_state):
         # Exit the chain early
@@ -588,7 +674,7 @@ class P4Exit(P4Z3Class):
         return base.step(p4_state)
 
 
-class P4Return(P4Z3Class):
+class P4Return(P4Statement):
     def __init__(self, expr=None):
         self.expr = expr
 
@@ -608,22 +694,10 @@ class P4Callable(P4Z3Class):
         self.params = []
         self.args = []
 
-    def set_param_args(self, arg_prefix):
-        action_args = []
-        for param in self.params:
-            arg_name = param[1]
-            arg_type = param[2]
-            if isinstance(arg_type, z3.SortRef):
-                action_args.append(
-                    z3.Const(f"{arg_prefix}{arg_name}", arg_type))
-            else:
-                action_args.append(arg_type)
-        self.args = action_args
-
     def merge_args(self, p4_state, *args):
         if len(*args) > len(self.args):
             raise RuntimeError(
-                f"Provided arguments {args} exceeds"
+                f"Provided arguments {args} exceeds "
                 f"possible number of parameters.")
         for index, runtime_arg in enumerate(*args):
             self.args[index] = runtime_arg
@@ -633,6 +707,10 @@ class P4Callable(P4Z3Class):
 
     def get_parameters(self):
         return self.params
+
+    def __call__(self, p4_state, *args, **kwargs):
+        self.args = args
+        return self.eval(p4_state)
 
 
 class P4Action(P4Callable):
@@ -645,10 +723,6 @@ class P4Action(P4Callable):
             raise RuntimeError(f"Expected a block, got {block}!")
         self.block = block
 
-    def __call__(self, p4_state, *args, **kwargs):
-        self.args = args
-        return self.eval(p4_state)
-
     def eval(self, p4_state):
         var_buffer = {}
 
@@ -657,16 +731,35 @@ class P4Action(P4Callable):
             is_ref = param[0]
             param_name = param[1]
             # previous variables in the environment
-            prev_val = p4_state.get_var(param_name)
-            if not is_ref:
+            prev_val = p4_state.resolve_reference(param_name)
+            if is_ref == "in" and prev_val is not None:
                 # ignore variables that do not exist
                 var_buffer[param_name] = prev_val
 
         # override the symbolic entries if we have concrete
         # arguments from the table
         for index, arg in enumerate(self.args):
-            log.debug("Setting %s as %s ", param_name, arg)
+            is_ref = self.params[index][0]
             param_name = self.params[index][1]
+            param_sort = self.params[index][2]
+            log.debug("Setting %s as %s ", param_name, arg)
+            if is_ref == "out":
+                # outs are left-values so the arg must be a string
+                arg_name = arg
+                arg_const = z3.Const(f"{param_name}", param_sort)
+                # except slices can also be lvalues...
+                if isinstance(arg, P4Slice):
+                    # again the hope is that the slice value is a string...
+                    arg_name = arg.val
+                    arg_val = resolve_expr(p4_state, arg_name)
+                    slice_l = arg.slice_l
+                    slice_r = arg.slice_r
+                    arg_const = slice_assign(
+                        arg_val, arg_const, slice_l, slice_r)
+                p4_state.set_or_add_var(arg_name, arg_const)
+            elif isinstance(arg, P4Expression):
+                # Sometimes expressions are passed, resolve those first
+                arg = resolve_expr(p4_state, arg)
             p4_state.set_or_add_var(param_name, arg)
         # execute the action expression with the new environment
         expr_chain = p4_state.copy_expr_chain()
@@ -681,13 +774,54 @@ class P4Action(P4Callable):
             is_ref = param[0]
             param_name = param[1]
             if param_name in var_buffer:
-                log.debug("Restoring %s", param_name)
+                log.debug("Restoring %s with %s",
+                          param_name, var_buffer[param_name])
                 p4_state.set_or_add_var(param_name, var_buffer[param_name])
-            # elif not is_ref:
-            #     log.debug("Deleting %s", param_name)
-            #     p4_state.del_var(param_name)
-
+            elif is_ref == "in":
+                log.debug("Deleting %s", param_name)
+                p4_state.del_var(param_name)
+        self.args = []
         return base.step(p4_state, expr)
+
+
+class P4Extern(P4Callable):
+    # TODO: This is quite brittle, requires concrete examination
+    def __init__(self, name, z3_reg):
+        super(P4Extern, self).__init__()
+        self.name = name
+        self.z3_reg = z3_reg
+
+    def add_method(self, name, method):
+        setattr(self, name, method)
+
+    def __call__(self, p4_state=None, *args, **kwargs):
+        # for controls, the state is not required
+        # controls can only be executed with apply statements
+        return self
+
+    def eval(self, p4_state):
+        for index, arg in enumerate(self.args):
+            is_ref = self.params[index][0]
+            param_name = self.params[index][1]
+
+            log.debug("Setting %s as %s ", param_name, arg)
+            # Because we do not know what the extern is doing
+            # we initiate a new z3 const and just overwrite all reference types
+            if is_ref == "out" or is_ref == "inout":
+                # Externs often have generic types until they are called
+                # This call resolves the argument and gets its z3 type
+                arg_type = get_type(p4_state, arg)
+                extern_mod = z3.Const(f"{self.name}_{param_name}", arg_type)
+                instance = self.z3_reg.instance(
+                    f"{self.name}_{param_name}", arg_type)
+                # In the case that the instance is a complex type make sure
+                # to propagate the variable through all its members
+                if isinstance(instance, base.P4ComplexType):
+                    instance.propagate_type(extern_mod)
+                # Finally, assign a new value to the pass-by-reference argument
+                p4_state.set_or_add_var(arg, instance)
+
+        return base.step(p4_state)
 
 
 class P4Control(P4Callable):
@@ -739,8 +873,10 @@ class P4Control(P4Callable):
             is_ref = param[0]
             param_name = param[1]
             # previous variables in the environment
-            prev_val = p4_state.get_var(param_name)
-            var_buffer[param_name] = prev_val
+            prev_val = p4_state.resolve_reference(param_name)
+            if is_ref == "in" and prev_val is not None:
+                # ignore variables that do not exist
+                var_buffer[param_name] = prev_val
 
         # override the symbolic entries if we have concrete
         # arguments from the table
@@ -749,161 +885,28 @@ class P4Control(P4Callable):
             log.debug("Setting %s as %s ", param_name, arg)
             param_name = self.params[index][1]
             p4_state_context.set_or_add_var(param_name, var)
-        # execute the action expression with the new environment
 
-        # save the current execution chain
-        expr_chain = p4_state.copy_expr_chain()
+        # execute the action expression with the new environment
         p4_state_context.insert_exprs(self.block)
         expr = base.step(p4_state_context)
         for param in self.params:
             is_ref = param[0]
             param_name = param[1]
-            if var_buffer[param_name] is not None:
+            if param_name in var_buffer:
                 log.debug("Restoring %s", param_name)
                 p4_state.set_or_add_var(param_name, var_buffer[param_name])
-            # else:
-            #     log.debug("Deleting %s", param_name)
-            #     p4_state.del_var(param_name)
-        # restore the old execution chain
-        p4_state.expr_chain = expr_chain
-        return base.step(p4_state, expr)
+            elif is_ref == "in":
+                log.debug("Deleting %s", param_name)
+                p4_state.del_var(param_name)
+            else:
+                var = p4_state_context.get_var(param_name)
+                p4_state.set_or_add_var(param_name, var)
+
+        return expr
 
 
 class P4Parser(P4Control):
     pass
-
-
-class P4Extern(P4Callable):
-    # TODO: This is quite brittle, requires concrete examination
-    def __init__(self, name, z3_reg):
-        super(P4Extern, self).__init__()
-        self.name = name
-        self.z3_reg = z3_reg
-
-    def add_method(self, name, method):
-        setattr(self, name, method)
-
-    def add_parameter(self, is_ref=None, arg_name=None, arg_type=None):
-        self.params.append((is_ref, arg_name, arg_type))
-
-    def __call__(self, p4_state=None, *args, **kwargs):
-        # for controls, the state is not required
-        # controls can only be executed with apply statements
-        return self
-
-    def eval(self, p4_state):
-
-        for index, arg in enumerate(self.args):
-            is_ref = self.params[index][0]
-            param_name = self.params[index][1]
-
-            log.debug("Setting %s as %s ", param_name, arg)
-            # Because we do not know what the extern is doing
-            # we initiate a new z3 const and just overwrite all reference types
-            if is_ref:
-                # Externs often have generic types until they are called
-                # This call resolves the argument and gets its z3 type
-                arg_type = get_type(p4_state, arg)
-                extern_mod = z3.Const(f"{self.name}_{param_name}", arg_type)
-                instance = self.z3_reg.instance(
-                    f"{self.name}_{param_name}", arg_type)
-                # In the case that the instance is a complex type make sure
-                # to propagate the variable through all its members
-                if isinstance(instance, base.P4ComplexType):
-                    instance.propagate_type(extern_mod)
-                # Finally, assign a new value to the pass-by-reference argument
-                p4_state.set_or_add_var(arg, instance)
-
-        return base.step(p4_state)
-
-
-class IfStatement(P4Z3Class):
-
-    def __init__(self):
-        self.cond = None
-        self.then_block = None
-        self.else_block = None
-
-    def add_condition(self, cond):
-        self.cond = cond
-
-    def add_then_stmt(self, stmt):
-        self.then_block = stmt
-
-    def add_else_stmt(self, stmt):
-        self.else_block = stmt
-
-    def eval(self, p4_state):
-        if self.cond is None:
-            raise RuntimeError("Missing condition!")
-        cond = resolve_expr(p4_state, self.cond)
-        # conditional branching requires a copy of the state for each branch
-        # in some sense this copy acts as a phi function
-        then_p4_state = deepcopy(p4_state)
-        then_expr = self.then_block.eval(then_p4_state)
-        if self.else_block:
-            else_p4_state = deepcopy(p4_state)
-            else_expr = self.else_block.eval(else_p4_state)
-            return z3.If(cond, then_expr, else_expr)
-        else:
-            return z3_implies(p4_state, cond, then_expr)
-
-
-class SwitchHit(P4Z3Class):
-    def __init__(self, table, cases, default_case):
-        self.table = table
-        self.default_case = default_case
-        self.cases = cases
-
-    def eval_cases(self, p4_state, cases):
-        expr = self.default_case.eval(p4_state)
-        for case in reversed(cases.values()):
-            p4_state = deepcopy(p4_state)
-            case_expr = case["case_block"].eval(p4_state)
-            expr = z3.If(case["match"], case_expr, expr)
-        return expr
-
-    def eval_switch_matches(self, table):
-        for case_name, case in self.cases.items():
-            match_var = case["match_var"]
-            action = table.actions[case_name][0]
-            self.cases[case_name]["match"] = (match_var == action)
-
-    def eval(self, p4_state):
-        self.eval_switch_matches(self.table)
-        switch_hit = self.eval_cases(p4_state, self.cases)
-        return switch_hit
-
-
-class SwitchStatement(P4Z3Class):
-    # TODO: Fix fall through for switch statement
-    def __init__(self, table_str):
-        self.table_str = table_str
-        self.default_case = BlockStatement()
-        self.cases = OrderedDict()
-
-    def add_case(self, action_str):
-        # skip default statements, they are handled separately
-        if action_str == "default":
-            return
-        case = {}
-        case["match_var"] = z3.Int(f"{self.table_str}_action")
-        case["case_block"] = BlockStatement()
-        self.cases[action_str] = case
-
-    def add_stmt_to_case(self, action_str, case_stmt):
-        if action_str == "default":
-            self.default_case.add(case_stmt)
-        else:
-            case_block = self.cases[action_str]["case_block"]
-            case_block.add(case_stmt)
-
-    def eval(self, p4_state):
-        table = p4_state.get_var(self.table_str)
-        # instantiate the hit expression
-        switch_hit = SwitchHit(table, self.cases, self.default_case)
-        p4_state.insert_exprs([table, switch_hit])
-        return base.step(p4_state)
 
 
 class P4Table(P4Z3Class):
@@ -957,17 +960,25 @@ class P4Table(P4Z3Class):
     def eval_action(self, p4_state, action_tuple):
         p4_action = action_tuple[0]
         p4_action_args = action_tuple[1]
-        p4_action = p4_state.get_var(p4_action)
+        p4_action = p4_state.resolve_reference(p4_action)
         if not isinstance(p4_action, P4Action):
             raise TypeError(f"Expected a P4Action got {type(p4_action)}!")
-        # evaluating an action may modify the state of the class
-        # so we have to make a copy here for both state and action
+        action_args = []
+        p4_action_args_len = len(p4_action_args) - 1
+        for idx, param in enumerate(p4_action.params):
+            if idx > p4_action_args_len:
+                arg_name = param[1]
+                arg_type = param[2]
+                if isinstance(arg_type, z3.SortRef):
+                    action_args.append(
+                        z3.Const(f"{self.name}{arg_name}", arg_type))
+                else:
+                    action_args.append(arg_type)
+            else:
+                action_args.append(p4_action_args[idx])
+        # state forks here
         p4_state = deepcopy(p4_state)
-        p4_action = deepcopy(p4_action)
-        p4_action.set_param_args(arg_prefix=self.name)
-        p4_action.merge_args(p4_state, p4_action_args)
-        p4_state.insert_exprs(p4_action)
-        return base.step(p4_state)
+        return p4_action(p4_state, *action_args)
 
     def eval_default(self, p4_state):
         if self.default_action is None:

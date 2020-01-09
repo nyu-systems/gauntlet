@@ -58,7 +58,7 @@ control ingress(inout packet_t hdrs, inout Meta m, inout standard_metadata_t met
             hdrs.data.f2: exact @name("hdrs.data.f2") ;
         }
         actions = {
-            setbyte(hdrs.data.b2 + 2);
+            setbyte(hdrs.extra[3].h[15:8]);
             noop();
         }
         default_action = noop();

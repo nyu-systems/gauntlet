@@ -12,7 +12,8 @@ log = logging.getLogger(__name__)
 
 # We maintain a list of passes that causes segmentation faults
 # TODO: Fix these, likely by using simulation relations
-SKIPPED_PASSES = ["Flatten", "UniqueNames", "Inline", "SpecializeAll"]
+SKIPPED_PASSES = ["Flatten", "UniqueNames",
+                  "UniqueParameters", "Inline", "SpecializeAll"]
 
 
 def needs_skipping(pre, post):
@@ -56,7 +57,7 @@ def get_z3_asts(p4_module, p4_path, fail_dir):
             # ignore deparser and emit because externs are hard...
             if pipe_name != "ig":
                 continue
-            log.info("Evaluating %s...", pipe_name)
+            log.info("Evaluating %s Python pipe...", pipe_name)
             z3_asts[pipe_name] = p4_pipe_ast.eval()
     except Exception:
         log.exception("Failed to compile Python to Z3:\n")
@@ -72,6 +73,7 @@ def check_equivalence(prog_before, prog_after):
     # For all input packets and possible table matches the programs should
     # be the same
     ''' SOLVER '''
+    log.info("Checking z3 formula...")
     s = z3.Solver()
     # the equivalence equation
     prog_before_simpl = z3.simplify(prog_before)
@@ -124,7 +126,7 @@ def z3_check(prog_paths, fail_dir=None):
         p4_post = get_py_module(p4_post_path)
         if p4_pre is None or p4_post is None:
             return util.EXIT_FAILURE
-        log.info("Comparing programs\n%s\n%s\n########",
+        log.info("\nComparing programs\n%s\n%s\n########",
                  p4_pre_path.stem, p4_post_path.stem)
         pipes_pre = get_z3_asts(p4_pre, p4_pre_path, fail_dir)
         pipes_post = get_z3_asts(p4_post, p4_post_path, fail_dir)
@@ -165,6 +167,5 @@ if __name__ == '__main__':
                         filemode='w')
     stderr_log = logging.StreamHandler()
     stderr_log.setFormatter(logging.Formatter("%(levelname)s:%(message)s"))
-    log.addHandler(stderr_log)
-
+    logging.getLogger().addHandler(stderr_log)
     main()
