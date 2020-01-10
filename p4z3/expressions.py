@@ -339,7 +339,7 @@ class P4xor(P4BinaryOp):
 
 class P4div(P4BinaryOp):
     def __init__(self, lval, rval):
-        operator = op.truediv
+        operator = z3.UDiv
         P4BinaryOp.__init__(self, lval, rval, operator)
 
 
@@ -1020,7 +1020,7 @@ class P4Table(P4Z3Class):
     def eval_default(self, p4_state):
         if self.default_action is None:
             # In case there is no default action, the first action is default
-            self.default_action = (0, "NoAction", [])
+            self.default_action = (0, "NoAction", ())
         _, action_name, p4_action_args = self.default_action
         return self.eval_action(p4_state,
                                 (action_name, p4_action_args))
@@ -1028,7 +1028,6 @@ class P4Table(P4Z3Class):
     def eval_table(self, p4_state):
         actions = self.actions
         const_entries = self.const_entries
-
         # first evaluate the default entry
         expr = self.eval_default(p4_state)
         # then wrap constant entries around it

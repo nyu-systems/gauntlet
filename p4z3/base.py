@@ -394,7 +394,7 @@ class Z3Reg():
         for arg in z3_args:
             stripped_args.append((arg[1], arg[2]))
         self._register_structlike(name, P4State, stripped_args)
-        p4_state = self.instance("", self.type(name))
+        p4_state = self.instance(name, self.type(name))
         p4_state.add_globals(self._globals)
         return p4_state
 
