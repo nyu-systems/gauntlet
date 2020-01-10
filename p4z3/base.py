@@ -421,11 +421,9 @@ class Z3Reg():
     def instance(self, var_name, p4z3_type: z3.SortRef):
         if isinstance(p4z3_type, z3.DatatypeSortRef):
             type_name = str(p4z3_type)
-            z3_id = self._ref_count[type_name]
-            name = "%s%d" % (type_name, z3_id)
             z3_cls = self._classes[type_name]
             self._ref_count[type_name] += 1
-            instance = z3_cls(self, p4z3_type, name)
+            instance = z3_cls(self, p4z3_type, var_name)
             return instance
         else:
             return z3.Const(f"{var_name}", p4z3_type)

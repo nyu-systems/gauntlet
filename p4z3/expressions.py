@@ -601,7 +601,7 @@ class P4Action(P4Callable):
                     arg_const = slice_assign(
                         arg_val, arg_const, slice_l, slice_r)
                 p4_state.set_or_add_var(arg_name, arg_const)
-            elif isinstance(arg, P4Expression):
+            if isinstance(arg, P4Expression):
                 # Sometimes expressions are passed, resolve those first
                 arg = resolve_expr(p4_state, arg)
             p4_state.set_or_add_var(param_name, arg)
