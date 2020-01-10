@@ -12,7 +12,7 @@ log = logging.getLogger(__name__)
 
 # We maintain a list of passes that causes segmentation faults
 # TODO: Fix these, likely by using simulation relations
-SKIPPED_PASSES = ["Flatten", "UniqueNames",
+SKIPPED_PASSES = ["FlattenHeaders", "UniqueNames",
                   "UniqueParameters", "Inline", "SpecializeAll"]
 
 
@@ -49,6 +49,7 @@ def handle_pyz3_error(fail_dir, p4_file):
 
 
 def get_z3_asts(p4_module, p4_path, fail_dir):
+    z3.reset_params()
     log.info("Loading %s ASTs...", p4_path.name)
     z3_asts = {}
     try:

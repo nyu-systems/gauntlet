@@ -127,6 +127,40 @@ def slice_assign(lval, rval, slice_l, slice_r) -> z3.SortRef:
     return z3.Concat(*assemble)
 
 
+class P4Instance():
+    def __new__(cls, z3_reg, method_name, *args, **kwargs):
+        # parsed_args = []
+        # for arg in args:
+        #     arg = z3_reg._globals[arg]
+        #     parsed_args.append(arg)
+        # parsed_kwargs = {}
+        # for name, arg in kwargs:
+        #     arg = z3_reg._globals[arg]
+        #     parsed_kwargs[name] = arg
+        return z3_reg._globals[method_name](None, *args, **kwargs)
+
+
+class P4Package():
+
+    def __init__(self, z3_reg, name, *args, **kwargs):
+        self.pipes = OrderedDict()
+        self.name = name
+        self.z3_reg = z3_reg
+        for arg in args:
+            is_ref = arg[0]
+            param_name = arg[1]
+            param_sort = arg[2]
+            self.pipes[param_name] = None
+
+    def __call__(self, p4_state, *args, **kwargs):
+        for idx, arg in enumerate(args):
+            name = list(self.pipes.keys())[idx]
+            self.pipes[name] = self.z3_reg._globals[arg]
+        for name, arg in kwargs.items():
+            self.pipes[name] = self.z3_reg._globals[arg]
+        return self
+
+
 class P4Z3Class():
     def eval(self, p4_state):
         raise NotImplementedError("Method eval not implemented!")
@@ -449,6 +483,7 @@ class P4Mux(P4Expression):
         cond = resolve_expr(p4_state, self.cond)
         then_val = resolve_expr(p4_state, self.then_val)
         else_val = resolve_expr(p4_state, self.else_val)
+
         return z3.If(cond, then_val, else_val)
 
 
@@ -510,8 +545,9 @@ class P4Callable(P4Z3Class):
         for index, runtime_arg in enumerate(*args):
             self.args[index] = runtime_arg
 
-    def add_parameter(self, is_ref=None, arg_name=None, arg_type=None):
-        self.params.append((is_ref, arg_name, arg_type))
+    def add_parameter(self, param=None):
+        if param:
+            self.params.append(param)
 
     def get_parameters(self):
         return self.params
@@ -649,8 +685,8 @@ class P4Control(P4Callable):
     def add_args(self, params):
         self.params = params
 
-    def add_parameter(self, is_ref=None, arg_name=None, arg_type=None):
-        self.params.append((is_ref, arg_name, arg_type))
+    def add_parameter(self, param):
+        self.params.append(param)
 
     def add_instance(self, z3_reg, name, params):
         self.params = params

@@ -370,8 +370,6 @@ class Z3Reg():
             self._register_structlike(name, Header, global_val)
         elif type_str == "struct":
             self._register_structlike(name, Struct, global_val)
-        elif type_str == "header":
-            self._register_structlike(name, Header, global_val)
         elif type_str == "enum":
             # Enums are a bit weird... we first create a type
             enum_types = []
@@ -419,9 +417,6 @@ class Z3Reg():
 
     def extern(self, extern_name):
         return self._globals[extern_name]
-
-    def exec(self, method_name, *args, **kwargs):
-        return self._globals[method_name](None, *args, **kwargs)
 
     def instance(self, var_name, p4z3_type: z3.SortRef):
         if isinstance(p4z3_type, z3.DatatypeSortRef):
