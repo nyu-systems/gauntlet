@@ -421,7 +421,7 @@ class Z3Reg():
         return self._globals[extern_name]
 
     def exec(self, method_name, *args, **kwargs):
-        return self._globals[method_name](*args, **kwargs)
+        return self._globals[method_name](None, *args, **kwargs)
 
     def instance(self, var_name, p4z3_type: z3.SortRef):
         if isinstance(p4z3_type, z3.DatatypeSortRef):
