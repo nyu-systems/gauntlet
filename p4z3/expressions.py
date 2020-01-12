@@ -576,9 +576,11 @@ class P4Action(P4Callable):
             param_name = param[1]
             # previous variables in the environment
             prev_val = p4_state.resolve_reference(param_name)
-            if is_ref == "in" and prev_val is not None:
-                # ignore variables that do not exist
+            if is_ref == "in":
                 var_buffer[param_name] = prev_val
+            elif prev_val is None:
+                # variable name did not exist previously, also add it
+                var_buffer[param_name] = None
 
         # override the symbolic entries if we have concrete
         # arguments from the table
@@ -586,7 +588,7 @@ class P4Action(P4Callable):
             is_ref = self.params[index][0]
             param_name = self.params[index][1]
             param_sort = self.params[index][2]
-            log.debug("Setting %s as %s ", param_name, arg)
+            log.info("Setting %s as %s ", param_name, arg)
             if is_ref == "out":
                 # outs are left-values so the arg must be a string
                 arg_name = arg
@@ -614,16 +616,15 @@ class P4Action(P4Callable):
 
         # restore any variables that may have been overridden
         # TODO: Fix to handle state correctly
-        for param in self.params:
-            is_ref = param[0]
-            param_name = param[1]
-            if param_name in var_buffer:
+        for param_name, param_val in var_buffer.items():
+            if param_val is None:
+                # value has not existed previously, marked for deletion
+                log.debug("Deleting %s", param_name)
+                p4_state.del_var(param_name)
+            else:
                 log.debug("Restoring %s with %s",
                           param_name, var_buffer[param_name])
                 p4_state.set_or_add_var(param_name, var_buffer[param_name])
-            elif is_ref == "in":
-                log.debug("Deleting %s", param_name)
-                p4_state.del_var(param_name)
         self.args = []
         return base.step(p4_state, expr)
 
@@ -721,9 +722,11 @@ class P4Control(P4Callable):
             param_name = param[1]
             # previous variables in the environment
             prev_val = p4_state.resolve_reference(param_name)
-            if is_ref == "in" and prev_val is not None:
-                # ignore variables that do not exist
+            if is_ref == "in":
                 var_buffer[param_name] = prev_val
+            elif prev_val is None:
+                # variable name did not exist previously, also add it
+                var_buffer[param_name] = None
 
         # override the symbolic entries if we have concrete
         # arguments from the table
@@ -736,18 +739,18 @@ class P4Control(P4Callable):
         # execute the action expression with the new environment
         p4_state_context.insert_exprs(self.block)
         expr = base.step(p4_state_context)
-        for param in self.params:
-            is_ref = param[0]
-            param_name = param[1]
-            if param_name in var_buffer:
-                log.debug("Restoring %s", param_name)
-                p4_state.set_or_add_var(param_name, var_buffer[param_name])
-            elif is_ref == "in":
+
+        # restore any variables that may have been overridden
+        # TODO: Fix to handle state correctly
+        for param_name, param_val in var_buffer.items():
+            if param_val is None:
+                # value has not existed previously, marked for deletion
                 log.debug("Deleting %s", param_name)
                 p4_state.del_var(param_name)
             else:
-                var = p4_state_context.resolve_reference(param_name)
-                p4_state.set_or_add_var(param_name, var)
+                log.debug("Restoring %s with %s",
+                          param_name, var_buffer[param_name])
+                p4_state.set_or_add_var(param_name, var_buffer[param_name])
 
         return expr
 
@@ -800,7 +803,7 @@ class AssignmentStatement(P4Statement):
     def eval(self, p4_state):
         log.debug("Assigning %s to %s ", self.rval, self.lval)
         rval_expr = resolve_expr(p4_state, self.rval)
-        p4_state.set_or_add_var(self.lval, rval_expr)
+        p4_state.set_or_add_var(self.lval, deepcopy(rval_expr))
         return base.step(p4_state)
 
 
