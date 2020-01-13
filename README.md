@@ -22,11 +22,11 @@ working correctly.
 
 ## Instructions
 This repository requires an installed P4 compiler. You can install all
-dependencies by running `./install.sh` in the source folder.  You can run
-translation validation via `python3 check_p4_compilation.py`. It will create a
-pass folder containing a breakdown of each P4 file and its corresponding
-passes.
+dependencies by running `./install.sh` in the source folder.
 
-### Z3 P4
-The `z3_py` folder contains examples of P4 programs expressed in z3py syntax.
-You can run the examples using `python3`. For example, `python3 key-bmv2.py`.
+To run a test on all p4 test provided by p4c you can run `python3 -m pytest test.py -vrf`.
+
+To check that the compiler correctly translates a p4 program run `python3 check_p4_compilation.py -i "[P4_FILE]`. This program will create a pass folder called "validated" containing a breakdown of each P4 file and its corresponding passes. `check_p4_compilation.py` will emit an error if it detects a violating pass while compiling the program.
+
+To compare two P4 programs, run `python3 check_p4_pair.py -progs [P4_FILE1],[P4_FILE2]`. If the programs are different an error is emitted.
+
