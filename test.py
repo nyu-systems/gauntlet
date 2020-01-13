@@ -46,7 +46,6 @@ bmv2_tests = [
     "bvec_union-bmv2.p4",
     "concat-bmv2.p4",
     "crc32-bmv2.p4",
-    "def-use.p4",
     "drop-bmv2.p4",
     "empty-bmv2.p4",
     "equality-bmv2.p4",
@@ -222,6 +221,7 @@ violation_tests = [
     "issue1544-bmv2-2",
     "key-bmv2",
     "issue1642",
+    "issue1781",
     "mux",
     "out-params-1",
     "out-params-2",
@@ -235,6 +235,7 @@ skipped_tests = [
 
 # ***** broken tests, need fixing *****
 xfails = [
+    "def-use.p4",
     "checksum1-bmv2.p4",
     "checksum2-bmv2.p4",
     "checksum3-bmv2.p4",

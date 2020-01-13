@@ -131,9 +131,9 @@ class P4ComplexType():
         return var
 
     def set_list(self, rval):
-        for index, rval in enumerate(rval):
+        for index, val in enumerate(rval):
             accessor = self.accessors[index]
-            self.set_or_add_var(accessor.name(), rval)
+            self.set_or_add_var(accessor.name(), val)
 
     def set_or_add_var(self, lstring, rval):
 
@@ -421,6 +421,8 @@ class Z3Reg():
     def instance(self, var_name, p4z3_type: z3.SortRef):
         if isinstance(p4z3_type, z3.DatatypeSortRef):
             type_name = str(p4z3_type)
+            if not var_name:
+                var_name = f"{type_name}_{self._ref_count[type_name]}"
             z3_cls = self._classes[type_name]
             self._ref_count[type_name] += 1
             instance = z3_cls(self, p4z3_type, var_name)

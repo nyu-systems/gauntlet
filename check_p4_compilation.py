@@ -90,7 +90,10 @@ def list_passes(p4c_bin, p4_file, p4_dmp_dir):
 
 def gen_p4_passes(p4c_bin, p4_dmp_dir, p4_file):
     util.check_dir(p4_dmp_dir)
-    generate_p4_dump(p4c_bin, p4_file, p4_dmp_dir)
+    # ignore the compiler output here, for now.
+    result = generate_p4_dump(p4c_bin, p4_file, p4_dmp_dir)
+    # if result.returncode == 1:
+    #     return []
     p4_passes = list_passes(p4c_bin, p4_file, p4_dmp_dir)
     full_p4_passes = []
     for p4_pass in p4_passes:

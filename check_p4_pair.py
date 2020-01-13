@@ -54,9 +54,13 @@ def get_z3_asts(p4_module, p4_path, fail_dir):
     z3_asts = {}
     try:
         package = p4_module(Z3Reg())
+        if not package:
+            log.warning("No main module, nothing to evaluate!")
+            return z3_asts
+
         for pipe_name, p4_pipe_ast in package.pipes.items():
             # ignore deparser and emit because externs are hard...
-            if pipe_name != "ig":
+            if pipe_name == "dep":
                 continue
             log.info("Evaluating %s Python pipe...", pipe_name)
             z3_asts[pipe_name] = p4_pipe_ast.eval()
