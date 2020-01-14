@@ -21,6 +21,7 @@ log.addHandler(stderr_log)
 FILE_DIR = Path.resolve(Path(__file__)).parent
 TARGET_DIR = FILE_DIR.joinpath("generated")
 VIOLATION_DIR = FILE_DIR.joinpath("violated")
+FALSE_FRIENDS_DIR = FILE_DIR.joinpath("false_friends")
 P4_DIR = FILE_DIR.joinpath("p4c/testdata/p4_16_samples/")
 
 # p4c binaries
@@ -104,6 +105,12 @@ bmv2_tests = [
     "issue1897-bmv2.p4",
     "issue1937-2-bmv2.p4",
     "issue1955.p4",
+    "def-use.p4",
+    "issue1107.p4",
+    "issue1538.p4",
+    "issue281.p4",
+    "issue793.p4",
+    "issue955.p4",
     "issue232-bmv2.p4",
     "issue242.p4",
     "issue249.p4",
@@ -208,11 +215,12 @@ bmv2_tests = [
     # "flowlet_switching-bmv2.p4",
 ]
 
-# ***** violation tests*****
+# ***** violation tests *****
 violation_tests = [
     "basic_routing_stripped",
     "checksum2",
     "const_entries",
+    "copy_out",
     "drop-bmv2",
     "equality-1",
     "equality-2",
@@ -227,6 +235,13 @@ violation_tests = [
     "out-params-2",
 ]
 
+# ***** tests that should not trigger a violation bug *****
+false_friends = []
+all_tests = list(FALSE_FRIENDS_DIR.glob("*.p4"))
+for test in all_tests:
+    false_friends.append(str(test.name))
+
+
 # ***** working tests but do not generate passes *****
 skipped_tests = [
     "arith-inline-skeleton.p4",
@@ -235,16 +250,13 @@ skipped_tests = [
 
 # ***** broken tests, need fixing *****
 xfails = [
-    "def-use.p4",
     "checksum1-bmv2.p4",
     "checksum2-bmv2.p4",
     "checksum3-bmv2.p4",
     "fabric_20190420/fabric.p4",
     "header-stack-ops-bmv2.p4",
     "hit-expr-bmv2.p4",
-    "issue1107.p4",
     "issue1127-bmv2.p4",
-    "issue1538.p4",
     "issue1566-bmv2.p4",
     "issue1566.p4",
     "issue1653-complex-bmv2.p4",
@@ -254,12 +266,9 @@ xfails = [
     "issue1937-1-bmv2.p4",
     "issue1937-3-bmv2.p4",
     "issue1989-bmv2.p4",
-    "issue281.p4",
     "issue486-bmv2.p4",
     "issue496.p4",
-    "issue793.p4",
     "issue949.p4",
-    "issue955.p4",
     "issue561-2-bmv2.p4",
     "issue561-7-bmv2.p4",
     "junk-prop-bmv2.p4",
@@ -283,8 +292,7 @@ def prep_test(p4_name, p4_dir=P4_DIR):
     return p4_file, target_dir
 
 
-def run_z3p4_test(test_name):
-    p4_file, target_dir = prep_test(test_name)
+def run_z3p4_test(p4_file, target_dir):
     result = p4c_check.validate_translation(p4_file, target_dir, P4C_BIN)
     if result == util.EXIT_SKIPPED:
         pytest.skip(f"Skipping file {p4_file}.")
@@ -307,20 +315,30 @@ def run_violation_test(test_folder):
 
 @pytest.mark.parametrize("test_name", bmv2_tests)
 def test_bmv2(request, test_name):
-    request.node.custom_err = run_z3p4_test(test_name)
+    p4_file, target_dir = prep_test(test_name)
+    request.node.custom_err = run_z3p4_test(p4_file, target_dir)
     assert request.node.custom_err == util.EXIT_SUCCESS
 
 
 @pytest.mark.parametrize("test_name", skipped_tests)
 def test_skipped(request, test_name):
-    request.node.custom_err = run_z3p4_test(test_name)
+    p4_file, target_dir = prep_test(test_name)
+    request.node.custom_err = run_z3p4_test(p4_file, target_dir)
     assert request.node.custom_err == util.EXIT_SKIPPED
 
 
 @pytest.mark.xfail
 @pytest.mark.parametrize("test_name", xfails)
 def test_xfails(request, test_name):
-    request.node.custom_err = run_z3p4_test(test_name)
+    p4_file, target_dir = prep_test(test_name)
+    request.node.custom_err = run_z3p4_test(p4_file, target_dir)
+    assert request.node.custom_err == util.EXIT_SUCCESS
+
+
+@pytest.mark.parametrize("test_name", false_friends)
+def test_friends(request, test_name):
+    p4_file, target_dir = prep_test(test_name, FALSE_FRIENDS_DIR)
+    request.node.custom_err = run_z3p4_test(p4_file, target_dir)
     assert request.node.custom_err == util.EXIT_SUCCESS
 
 

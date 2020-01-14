@@ -600,6 +600,7 @@ class P4Context(P4Z3Class):
         self.p4_state = p4_state
 
     def eval(self, p4_state):
+        old_p4_state = p4_state
         if self.p4_state:
             log.debug("Restoring original p4 state %s to %s ",
                       p4_state, self.p4_state)
@@ -614,6 +615,10 @@ class P4Context(P4Z3Class):
                 # value has not existed previously, marked for deletion
                 log.debug("Deleting %s", param_name)
                 p4_state.del_var(param_name)
+            elif isinstance(param_val, str):
+                val = old_p4_state.resolve_reference(param_name)
+                log.debug("Copy-out: %s to %s", val, param_val)
+                p4_state.set_or_add_var(param_val, val)
             else:
                 log.debug("Restoring %s with %s",
                           param_name, var_buffer[param_name])
@@ -657,10 +662,12 @@ class P4Action(P4Callable):
                     arg_const = slice_assign(
                         arg_val, arg_const, slice_l, slice_r)
                 p4_state.set_or_add_var(arg_name, arg_const)
-            if isinstance(arg, P4Expression):
-                # Sometimes expressions are passed, resolve those first
-                arg = resolve_expr(p4_state, arg)
-            p4_state.set_or_add_var(param_name, arg)
+            if isinstance(arg, str):
+                var_buffer[param_name] = arg
+            # Sometimes expressions are passed, resolve those first
+            arg = resolve_expr(p4_state, arg)
+            log.debug("Copy-in: %s to %s", arg, param_name)
+            p4_state.set_or_add_var(param_name, deepcopy(arg))
         # execute the action expression with the new environment
         p4_state.insert_exprs([self.block, P4Context(var_buffer)])
         # reset to the previous execution chain
@@ -837,7 +844,7 @@ class AssignmentStatement(P4Statement):
         self.rval = rval
 
     def eval(self, p4_state):
-        log.info("Assigning %s to %s ", self.rval, self.lval)
+        log.debug("Assigning %s to %s ", self.rval, self.lval)
         rval_expr = resolve_expr(p4_state, self.rval)
         p4_state.set_or_add_var(self.lval, rval_expr)
         return step(p4_state)
