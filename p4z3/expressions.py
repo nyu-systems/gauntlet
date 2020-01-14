@@ -707,7 +707,7 @@ class P4Extern(P4Callable):
             return_instance = self.z3_reg.instance(
                 f"{self.name}_{self.return_counter}", self.return_type)
             self.return_counter += 1
-            return step(p4_state, return_instance)
+            return return_instance
         return step(p4_state)
 
 
@@ -837,7 +837,7 @@ class AssignmentStatement(P4Statement):
         self.rval = rval
 
     def eval(self, p4_state):
-        log.debug("Assigning %s to %s ", self.rval, self.lval)
+        log.info("Assigning %s to %s ", self.rval, self.lval)
         rval_expr = resolve_expr(p4_state, self.rval)
         p4_state.set_or_add_var(self.lval, rval_expr)
         return step(p4_state)
