@@ -389,10 +389,12 @@ class Z3Reg():
         else:
             self._globals[name] = global_val
 
-    def init_p4_state(self, name, z3_args):
+    def init_p4_state(self, name, p4_params):
         stripped_args = []
-        for arg in z3_args:
-            stripped_args.append((arg[1], arg[2]))
+        for param_name, param in p4_params.items():
+            is_ref = param[0]
+            param_type = param[1]
+            stripped_args.append((param_name, param_type))
         self._register_structlike(name, P4State, stripped_args)
         p4_state = self.instance(name, self.type(name))
         p4_state.add_globals(self._globals)

@@ -13,7 +13,8 @@ log = logging.getLogger(__name__)
 # We maintain a list of passes that causes segmentation faults
 # TODO: Fix these, likely by using simulation relations
 SKIPPED_PASSES = ["FlattenHeaders", "FlattenInterfaceStructs", "NestedStructs",
-                  "UniqueNames", "RemoveActionParameters", "UniqueParameters", "Inline", "SpecializeAll"]
+                  "UniqueNames", "RemoveActionParameters", "UniqueParameters",
+                  "Inline", "SpecializeAll"]
 
 
 def needs_skipping(pre, post):
@@ -69,7 +70,7 @@ def get_z3_asts(p4_module, p4_path, fail_dir):
         if fail_dir:
             handle_pyz3_error(fail_dir, p4_path)
             debug_msg([p4_path, p4_path])
-        return None
+        return util.EXIT_FAILURE
     return z3_asts
 
 
@@ -135,9 +136,11 @@ def z3_check(prog_paths, fail_dir=None):
                  p4_pre_path.stem, p4_post_path.stem)
         pipes_pre = get_z3_asts(p4_pre, p4_pre_path, fail_dir)
         pipes_post = get_z3_asts(p4_post, p4_post_path, fail_dir)
+        if pipes_pre == util.EXIT_FAILURE or pipes_post == util.EXIT_FAILURE:
+            return util.EXIT_FAILURE
         if not pipes_pre or not pipes_post:
             log.error("Pipes did not generate any AST!")
-            return util.EXIT_FAILURE
+            return util.EXIT_SKIPPED
         if len(pipes_pre) != len(pipes_post):
             log.error("Pre and post model differ in size!")
             return util.EXIT_FAILURE
