@@ -78,9 +78,9 @@ def z3_implies(p4_state, cond, then_expr):
     return z3.If(cond, then_expr, no_match)
 
 
-def check_enum(expr):
-    if isinstance(expr, Enum):
-        expr = z3.BitVec(f"{expr.name}", 8)
+def check_p4_type(expr):
+    if isinstance(expr, P4ComplexType):
+        expr = expr.const
     return expr
 
 
@@ -217,8 +217,6 @@ class P4BinaryOp(P4Op):
         # for some reason, overloading equality does not work here...
         # instead reference a named bitvector of size 8
         # this represents a choice
-        lval_expr = check_enum(lval_expr)
-        rval_expr = check_enum(rval_expr)
         lval_expr, rval_expr = align_bitvecs(
             lval_expr, rval_expr, p4_state)
         return self.operator(lval_expr, rval_expr)
@@ -381,7 +379,7 @@ class P4eq(P4BinaryOp):
 
 class P4ne(P4BinaryOp):
     def __init__(self, lval, rval):
-        operator = op.ne
+        operator = lambda x, y: z3.Not(op.eq(x, y))
         P4BinaryOp.__init__(self, lval, rval, operator)
 
 
@@ -491,7 +489,8 @@ class P4Mux(P4Expression):
         cond = resolve_expr(p4_state, self.cond)
         then_val = resolve_expr(p4_state, self.then_val)
         else_val = resolve_expr(p4_state, self.else_val)
-
+        then_val = check_p4_type(then_val)
+        else_val = check_p4_type(else_val)
         return z3.If(cond, then_val, else_val)
 
 

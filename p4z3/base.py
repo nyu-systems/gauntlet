@@ -32,8 +32,7 @@ def step(p4_state, expr=None):
 
 
 class P4ComplexType():
-    """
-    A P4ComplexType is a wrapper for any type that is not a simple Z3 type
+    """ A P4ComplexType is a wrapper for any type that is not a simple Z3 type
     such as IntSort, BitVecSort or BoolSort.
     A P4ComplexType creates an instance of a Z3 DataTypeRef, all subtypes
     become members of this class and be accessed in dot-notation
@@ -288,13 +287,14 @@ class Struct(P4ComplexType):
 class Enum(P4ComplexType):
 
     def __init__(self, z3_reg, z3_type: z3.SortRef, name):
-        self.name = name
-        self.z3_type = z3_type
-        self.const = z3.Const(f"{self.name}", z3_type)
-        self.constructor = z3_type.constructor(0)
+        super(Enum, self).__init__(z3_reg, z3_type, name)
+        # self.name = name
+        # self.z3_type = z3_type
+        # self.const = z3.Const(f"{self.name}", z3_type)
+        # self.constructor = z3_type.constructor(0)
         # These are special for enums
         self._set_z3_accessors(z3_type, self.constructor)
-        self._init_members(z3_reg, self.accessors)
+        self._init_members(z3_reg, None, self.accessors)
 
     def _set_z3_accessors(self, z3_type, constructor):
         self.accessors = []
@@ -302,7 +302,7 @@ class Enum(P4ComplexType):
             accessor = z3_type.accessor(0, type_index)
             self.accessors.append(accessor)
 
-    def _init_members(self, z3_reg, accessors):
+    def _init_members(self, z3_reg, const, accessors):
         # Instead of a z3 variable we assign a concrete number to each member
         for idx, accessor in enumerate(accessors):
             setattr(self, accessor.name(), z3.BitVecVal(idx, 8))
@@ -310,6 +310,10 @@ class Enum(P4ComplexType):
     def propagate_type(self, parent_const: z3.AstRef):
         # Enums are static so they do not have variable types.
         pass
+
+    def __eq__(self, other):
+        z3_type = other.sort()
+        return z3.Const(self.name, z3_type) == other
 
 
 class P4State(P4ComplexType):

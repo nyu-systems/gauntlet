@@ -226,7 +226,7 @@ xfails = [
 
 slow_tests = [
     "flowlet_switching-bmv2.p4",
-    "issue-2123.p4",
+    # "issue-2123.p4",
     "issue-2123-2-bmv2.p4",
     "issue-2123-3-bmv2.p4",
 ]
@@ -269,7 +269,7 @@ def run_violation_test(test_folder):
 def test_bmv2(request, test_name):
     p4_file, target_dir = prep_test(test_name)
     if p4_file.name in xfails:
-        pytest.xfail(f"Expected {p4_file} to fail.")
+        pytest.xfail(f"Expecting {p4_file} to fail.")
     request.node.custom_err = run_z3p4_test(p4_file, target_dir)
     assert request.node.custom_err == util.EXIT_SUCCESS
 
