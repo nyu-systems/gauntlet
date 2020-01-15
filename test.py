@@ -11,24 +11,9 @@ logging.basicConfig(filename="analysis.log",
                     format="%(levelname)s:%(message)s",
                     level=logging.INFO,
                     filemode='w')
-
-
-class SpecialFormatter(logging.Formatter):
-    FORMATS = {logging.DEBUG: "DBG: %(module)s: %(lineno)d: %(message)s",
-               logging.ERROR: "adasd: %(message)s",
-               logging.INFO: "%(message)s",
-               'DEFAULT': "%(levelname)s: %(message)s"}
-
-    def format(self, record):
-        self._fmt = self.FORMATS.get(record.levelno, self.FORMATS['DEFAULT'])
-        return logging.Formatter.format(self, record)
-
-
-log = logging.getLogger(__name__)
 stderr_log = logging.StreamHandler()
-stderr_log.setFormatter(SpecialFormatter())
-log.addHandler(stderr_log)
-
+stderr_log.setFormatter(logging.Formatter("%(levelname)s:%(message)s"))
+logging.getLogger().addHandler(stderr_log)
 
 # some folder definitions
 FILE_DIR = Path.resolve(Path(__file__)).parent

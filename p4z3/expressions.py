@@ -80,7 +80,7 @@ def z3_implies(p4_state, cond, then_expr):
 
 def check_p4_type(expr):
     if isinstance(expr, P4ComplexType):
-        expr = expr.const
+        expr = expr.get_z3_repr()
     return expr
 
 
