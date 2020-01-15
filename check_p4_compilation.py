@@ -126,6 +126,8 @@ def prune_passes(p4_passes):
 
 
 def validate_translation(p4_file, target_dir, p4c_bin):
+    log.info("\n\n" + "-" * 70)
+    log.info("Analysing %s", p4_file)
     util.check_dir(target_dir)
     fail_dir = target_dir.joinpath("failed")
     # run the p4 compiler and dump all the passes for this file
@@ -158,7 +160,6 @@ def analyse_p4_file(p4_file, pass_dir):
     p4_dmp_dir = f"dumps"
     p4_prune_dir = f"{p4_dmp_dir}/pruned"
 
-    log.info("Analysing %s", p4_file)
     p4_passes = gen_p4_passes(P4C_BIN, p4_dmp_dir, p4_file)
     prune_files(p4_prune_dir, p4_passes)
     err = diff_files(p4_passes, pass_dir, p4_file)

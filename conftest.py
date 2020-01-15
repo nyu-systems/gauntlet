@@ -18,24 +18,15 @@ def pytest_runtest_makereport(item):
     report.custom_err = getattr(item, 'custom_err', 0)
 
 
-# def pytest_collection_modifyitems(config, items):
-#     keywordexpr = config.option.keyword
-#     markexpr = config.option.markexpr
-#     if keywordexpr or markexpr:
-#         return  # let pytest handle this
-
-#     skip_p4xfail = pytest.mark.skip(reason='xfail not selected')
-#     for item in items:
-#         if "p4xfail" in item.keywords:
-#             item.add_marker(skip_p4xfail)
+def pytest_configure(config):
+    config.addinivalue_line(
+        "markers", "run_default: Default tests to run"
+    )
 
 
 def pytest_collection_modifyitems(items, config):
-    # add `always_run` marker to all unmarked items
-    # for item in items:
-    #     if not any(item.iter_markers()):
-    #         item.add_marker("always_run")
-    # Ensure the `always_run` marker is always selected for
+
+    # Ensure the `run_default` marker is always selected for
     markexpr = config.getoption("markexpr", "False")
     keyword = config.getoption("keyword", "False")
     if keyword:
@@ -43,4 +34,4 @@ def pytest_collection_modifyitems(items, config):
     elif markexpr:
         config.option.markexpr = markexpr
     else:
-        config.option.markexpr = f"always_run"
+        config.option.markexpr = f"run_default"

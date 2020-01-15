@@ -122,7 +122,10 @@ class P4ComplexType():
         return var
 
     def del_var(self, var_string):
-        delattr(self, var_string)
+        try:
+            delattr(self, var_string)
+        except AttributeError:
+            log.warning("Variable %s does not exist, nothing to delete!")
 
     def resolve_reference(self, var):
         if isinstance(var, str):
@@ -406,7 +409,13 @@ class Z3Reg():
         self._ref_count.clear()
 
     def type(self, type_name):
-        return self._types[type_name]
+        if type_name in self._types:
+            return self._types[type_name]
+        else:
+            # lets be bold here and assume that a type that is not known
+            # is a generic and can be declared as a generic sort
+            val = z3.DeclareSort(type_name)
+            self.declare_global("typedef", type_name, val)
 
     def stack(self, z3_type, num):
         type_name = str(z3_type)
