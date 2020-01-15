@@ -226,6 +226,7 @@ xfails = [
 
 slow_tests = [
     "flowlet_switching-bmv2.p4",
+    "issue-2123-2-bmv2.p4",
 ]
 
 
