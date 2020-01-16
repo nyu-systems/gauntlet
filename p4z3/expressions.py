@@ -3,7 +3,7 @@ from collections import OrderedDict
 import operator as op
 import z3
 
-from p4z3.base import log, step, P4ComplexType, Enum, Struct
+from p4z3.base import log, step, P4ComplexType, Enum, Struct, P4Package
 
 
 def resolve_expr(p4_state, expr):
@@ -67,6 +67,8 @@ def get_type(p4_state, expr):
     arg_expr = resolve_expr(p4_state, expr)
     if isinstance(arg_expr, P4ComplexType):
         arg_type = arg_expr.z3_type
+    elif isinstance(arg_expr, int):
+        arg_type = z3.IntSort()
     else:
         arg_type = arg_expr.sort()
     return arg_type
@@ -87,27 +89,43 @@ def check_p4_type(expr):
 def align_bitvecs(bitvec1, bitvec2, p4_state):
     if isinstance(bitvec1, z3.BitVecRef) and isinstance(bitvec2, z3.BitVecRef):
         if bitvec1.size() < bitvec2.size():
-            bitvec1 = P4Cast(bitvec1, bitvec2).eval(p4_state)
+            bitvec1 = P4Cast(bitvec1, bitvec2.size()).eval(p4_state)
         if bitvec1.size() > bitvec2.size():
-            bitvec2 = P4Cast(bitvec2, bitvec1).eval(p4_state)
+            bitvec2 = P4Cast(bitvec2, bitvec1.size()).eval(p4_state)
     return bitvec1, bitvec2
 
 
-def z3_cast(val, to_size):
-    if isinstance(val, z3.BoolRef):
-        # Convert boolean variables to a bit vector representation
+def z3_cast(val, to_type):
 
-        # TODO: Make all bools a bitvector of size 1
+    if isinstance(val, (z3.BoolSortRef, z3.BoolRef)):
+        # Convert boolean variables to a bit vector representation
+        # TODO: Streamline bools and their evaluation
         val = z3.If(val, z3.BitVecVal(1, 1), z3.BitVecVal(0, 1))
+
+    if isinstance(to_type, z3.BoolSortRef):
+        # casting to a bool is simple, just check if the value is equal to 1
+        # this works for bitvectors and integers, we convert any bools before
+        return val == z3.BitVecVal(1, 1)
+
+    # from here on we assume we are working with integer or bitvector types
+    if isinstance(to_type, (z3.BitVecSortRef)):
+        # It can happen that we get a bitvector type as target, get its size.
+        to_type_size = to_type.size()
+    else:
+        to_type_size = to_type
+
     if isinstance(val, int):
         # It can happen that we get an int, cast it to a bit vector.
-        return z3.BitVecVal(val, to_size)
+        return z3.BitVecVal(val, to_type_size)
     val_size = val.size()
-    if val_size < to_size:
-        return z3.ZeroExt(to_size - val_size, val)
+
+    if val_size < to_type_size:
+        # the target value is larger, extend with zeros
+        return z3.ZeroExt(to_type_size - val_size, val)
     else:
+        # the target value is smaller, truncate everything on the right
         slice_l = val_size - 1
-        slice_r = val_size - to_size
+        slice_r = val_size - to_type_size
         return z3.Extract(slice_l, slice_r, val)
 
 
@@ -143,28 +161,6 @@ class P4Instance():
         #     arg = z3_reg._globals[arg]
         #     parsed_kwargs[name] = arg
         return z3_reg._globals[method_name](None, *args, **kwargs)
-
-
-class P4Package():
-
-    def __init__(self, z3_reg, name, *args, **kwargs):
-        self.pipes = OrderedDict()
-        self.name = name
-        self.z3_reg = z3_reg
-        for arg in args:
-            is_ref = arg[0]
-            param_name = arg[1]
-            param_sort = arg[2]
-            self.pipes[param_name] = None
-
-    def __call__(self, p4_state, *args, **kwargs):
-        pipe_list = list(self.pipes.keys())
-        for idx, arg in enumerate(args):
-            name = pipe_list[idx]
-            self.pipes[name] = self.z3_reg._globals[arg]
-        for name, arg in kwargs.items():
-            self.pipes[name] = self.z3_reg._globals[arg]
-        return self
 
 
 class P4Z3Class():
@@ -379,7 +375,7 @@ class P4eq(P4BinaryOp):
 
 class P4ne(P4BinaryOp):
     def __init__(self, lval, rval):
-        operator = lambda x, y: z3.Not(op.eq(x, y))
+        def operator(x, y): return z3.Not(op.eq(x, y))
         P4BinaryOp.__init__(self, lval, rval, operator)
 
 
@@ -472,7 +468,7 @@ class P4Cast(P4Expression):
     # If we cast do we add/remove the least or most significant bits?
     def __init__(self, val, to_size: z3.BitVecSortRef):
         self.val = val
-        self.to_size = to_size.size()
+        self.to_size = to_size
 
     def eval(self, p4_state):
         expr = resolve_expr(p4_state, self.val)
@@ -687,7 +683,12 @@ class P4Extern(P4Callable):
     def add_method(self, name, method):
         setattr(self, name, method)
 
-    def eval(self, p4_state):
+    def eval(self, p4_state=None):
+        if not p4_state:
+            # There is no state yet, so use the context of the function
+            p4_state = self.z3_reg.init_p4_state(self.name, self.params)
+            p4_state = p4_state
+
         merged_params = self.merge_parameters(*self.args, **self.kwargs)
         for param_name, param in merged_params.items():
             is_ref = param[0]
@@ -714,7 +715,7 @@ class P4Extern(P4Callable):
                 f"{self.name}_{self.return_counter}", self.return_type)
             self.return_counter += 1
             return return_instance
-        return step(p4_state)
+        return p4_state.get_z3_repr()
 
 
 class P4Control(P4Callable):
@@ -856,7 +857,10 @@ class MethodCallStmt(P4Statement):
 
     def eval(self, p4_state):
         expr = self.method_expr.eval(p4_state)
-        return step(p4_state, expr)
+        if p4_state.expr_chain:
+            return step(p4_state)
+        else:
+            return expr
 
 
 class BlockStatement(P4Statement):

@@ -253,9 +253,9 @@ def run_violation_test(test_folder):
 @pytest.mark.parametrize("test_name", p416_tests)
 def test_bmv2(request, test_name):
     p4_file, target_dir = prep_test(test_name)
-    if p4_file.name in xfails:
-        pytest.xfail(f"Expecting {p4_file} to fail.")
     request.node.custom_err = run_z3p4_test(p4_file, target_dir)
+    if p4_file.name in xfails and request.node.custom_err != util.EXIT_SUCCESS:
+        pytest.xfail(f"Expecting {p4_file} to fail.")
     assert request.node.custom_err == util.EXIT_SUCCESS
 
 

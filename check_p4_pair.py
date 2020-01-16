@@ -3,7 +3,7 @@ from pathlib import Path
 import os
 import imp
 import logging
-from p4z3.base import Z3Reg, z3
+from p4z3.base import Z3Reg, P4Package, z3
 import p4z3.util as util
 
 FILE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -49,6 +49,25 @@ def handle_pyz3_error(fail_dir, p4_file):
     util.copy_file(failed, fail_dir)
 
 
+def evaluate_package(p4_package):
+    z3_asts = {}
+    for pipe_name, p4_pipe_ast in p4_package.pipes.items():
+
+        # ignore deparser and emit because externs are hard...
+        if pipe_name == "dep":
+            continue
+        log.info("Evaluating %s Python pipe...", pipe_name)
+        if isinstance(p4_pipe_ast, P4Package):
+            # it is apparently possible to have nested packages...
+            z3_tmp_asts = evaluate_package(p4_pipe_ast)
+            for key, val in z3_tmp_asts.items():
+                name = f"{p4_pipe_ast.name}_{key}"
+                z3_asts[name] = val
+        elif p4_pipe_ast:
+            z3_asts[pipe_name] = p4_pipe_ast.eval()
+    return z3_asts
+
+
 def get_z3_asts(p4_module, p4_path, fail_dir):
     z3.reset_params()
     log.info("Loading %s ASTs...", p4_path.name)
@@ -58,13 +77,7 @@ def get_z3_asts(p4_module, p4_path, fail_dir):
         if not package:
             log.warning("No main module, nothing to evaluate!")
             return z3_asts
-
-        for pipe_name, p4_pipe_ast in package.pipes.items():
-            # ignore deparser and emit because externs are hard...
-            if pipe_name == "dep":
-                continue
-            log.info("Evaluating %s Python pipe...", pipe_name)
-            z3_asts[pipe_name] = p4_pipe_ast.eval()
+        z3_asts = evaluate_package(package)
     except Exception:
         log.exception("Failed to compile Python to Z3:\n")
         if fail_dir:

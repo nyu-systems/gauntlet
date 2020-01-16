@@ -3,6 +3,7 @@ from collections import deque
 import logging
 import z3
 from copy import deepcopy, copy
+from collections import OrderedDict
 
 log = logging.getLogger(__name__)
 
@@ -20,15 +21,41 @@ def step(p4_state, expr=None):
         # eval should always return an expression
         if not isinstance(expr, (z3.ExprRef, int)):
             raise TypeError(f"Expression {expr} is not a z3 expression!")
-    if expr is not None:
-        # end of chain, just mirror the passed expressions
-        return expr
-    else:
+    if expr is None:
         # empty statement, just return the final update assignment
         # this also checks the validity of the new assignment
         # if there is a type error, z3 will complain
         z3_copy = p4_state.get_z3_repr()
         return z3_copy
+    # end of chain, just mirror the passed expressions
+    return expr
+
+
+class P4Package():
+
+    def __init__(self, z3_reg, name, *args, **kwargs):
+        self.pipes = OrderedDict()
+        self.name = name
+        self.z3_reg = z3_reg
+        for arg in args:
+            is_ref = arg[0]
+            param_name = arg[1]
+            param_sort = arg[2]
+            self.pipes[param_name] = None
+
+    def __call__(self, p4_state, *args, **kwargs):
+        pipe_list = list(self.pipes.keys())
+        merged_args = {}
+        for idx, arg in enumerate(args):
+            name = pipe_list[idx]
+            merged_args[name] = arg
+        for name, arg in kwargs.items():
+            merged_args[name] = arg
+        for name, arg in merged_args.items():
+            # only add valid values
+            if arg in self.z3_reg._globals:
+                self.pipes[name] = self.z3_reg._globals[arg]
+        return self
 
 
 class P4ComplexType():
@@ -124,7 +151,8 @@ class P4ComplexType():
         try:
             delattr(self, var_string)
         except AttributeError:
-            log.warning("Variable %s does not exist, nothing to delete!")
+            log.warning(
+                "Variable %s does not exist, nothing to delete!", var_string)
 
     def resolve_reference(self, var):
         if isinstance(var, str):
