@@ -56,7 +56,7 @@ def evaluate_package(p4_package):
         # ignore deparser and emit because externs are hard...
         if pipe_name == "dep":
             continue
-        log.info("Evaluating %s Python pipe...", pipe_name)
+        log.info("Formalizing %s pipe...", pipe_name)
         if isinstance(p4_pipe_ast, P4Package):
             # it is apparently possible to have nested packages...
             z3_tmp_asts = evaluate_package(p4_pipe_ast)
@@ -76,15 +76,15 @@ def get_z3_asts(p4_module, p4_path, fail_dir):
         package = p4_module(Z3Reg())
         if not package:
             log.warning("No main module, nothing to evaluate!")
-            return z3_asts
+            return z3_asts, util.EXIT_SKIPPED
         z3_asts = evaluate_package(package)
     except Exception:
         log.exception("Failed to compile Python to Z3:\n")
         if fail_dir:
             handle_pyz3_error(fail_dir, p4_path)
             debug_msg([p4_path, p4_path])
-        return util.EXIT_FAILURE
-    return z3_asts
+        return z3_asts, util.EXIT_FAILURE
+    return z3_asts, util.EXIT_SUCCESS
 
 
 def check_equivalence(prog_before, prog_after):
@@ -92,7 +92,6 @@ def check_equivalence(prog_before, prog_after):
     # For all input packets and possible table matches the programs should
     # be the same
     ''' SOLVER '''
-    log.info("Checking z3 formula...")
     s = z3.Solver()
     # the equivalence equation
     prog_before_simpl = z3.simplify(prog_before)
@@ -128,6 +127,26 @@ def get_py_module(prog_path):
     return ctrl_module
 
 
+def get_z3_formulization(p4_pre_path, p4_post_path, fail_dir):
+
+    p4_pre = get_py_module(p4_pre_path)
+    if p4_pre is None:
+        return None, None, util.EXIT_FAILURE
+    pipes_pre, result = get_z3_asts(p4_pre, p4_pre_path, fail_dir)
+    if result != util.EXIT_SUCCESS:
+        return None, None, result
+    p4_post = get_py_module(p4_post_path)
+    if p4_post is None:
+        return None, None, util.EXIT_FAILURE
+    pipes_post, result = get_z3_asts(p4_post, p4_post_path, fail_dir)
+    if result != util.EXIT_SUCCESS:
+        return None, None, result
+    if len(pipes_pre) != len(pipes_post):
+        log.warning("Pre and post model differ in size!")
+        return None, None, util.EXIT_SKIPPED
+    return pipes_pre, pipes_post, result
+
+
 def z3_check(prog_paths, fail_dir=None):
     if len(prog_paths) < 2:
         log.error("Equivalence checks require at least two input programs!")
@@ -140,26 +159,17 @@ def z3_check(prog_paths, fail_dir=None):
             continue
         p4_pre_path = Path(prog_paths[i - 1])
         p4_post_path = Path(prog_paths[i])
-
-        p4_pre = get_py_module(p4_pre_path)
-        p4_post = get_py_module(p4_post_path)
-        if p4_pre is None or p4_post is None:
-            return util.EXIT_FAILURE
+        pipes_pre, pipes_post, result = get_z3_formulization(p4_pre_path,
+                                                             p4_post_path,
+                                                             fail_dir)
+        if result != util.EXIT_SUCCESS:
+            return result
         log.info("\nComparing programs\n%s\n%s\n########",
                  p4_pre_path.stem, p4_post_path.stem)
-        pipes_pre = get_z3_asts(p4_pre, p4_pre_path, fail_dir)
-        pipes_post = get_z3_asts(p4_post, p4_post_path, fail_dir)
-        if pipes_pre == util.EXIT_FAILURE or pipes_post == util.EXIT_FAILURE:
-            return util.EXIT_FAILURE
-        if not pipes_pre or not pipes_post:
-            log.error("Pipes did not generate any AST!")
-            return util.EXIT_SKIPPED
-        if len(pipes_pre) != len(pipes_post):
-            log.error("Pre and post model differ in size!")
-            return util.EXIT_FAILURE
         for pipe_name in pipes_pre:
             pipe_pre = pipes_pre[pipe_name]
             pipe_post = pipes_post[pipe_name]
+            log.info("Checking z3 equivalence for pipe %s...", pipe_name)
             ret = check_equivalence(pipe_pre, pipe_post)
             if ret != util.EXIT_SUCCESS:
                 if fail_dir:

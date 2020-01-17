@@ -124,9 +124,7 @@ def z3_cast(val, to_type):
         return z3.ZeroExt(to_type_size - val_size, val)
     else:
         # the target value is smaller, truncate everything on the right
-        slice_l = val_size - 1
-        slice_r = val_size - to_type_size
-        return z3.Extract(slice_l, slice_r, val)
+        return z3.Extract(to_type_size - 1, 0, val)
 
 
 def slice_assign(lval, rval, slice_l, slice_r) -> z3.SortRef:
@@ -666,6 +664,57 @@ class P4Action(P4Callable):
         # execute the action expression with the new environment
         p4_state.insert_exprs([self.block, P4Context(var_buffer)])
         # reset to the previous execution chain
+        return step(p4_state)
+
+
+class P4Function(P4Callable):
+
+    def __init__(self, return_type):
+        self.return_type = return_type
+        super(P4Function, self).__init__()
+
+    def add_stmt(self, block):
+        if not isinstance(block, BlockStatement):
+            raise RuntimeError(f"Expected a block, got {block}!")
+        self.block = block
+
+    def eval(self, p4_state):
+
+        merged_params = self.merge_parameters(*self.args, **self.kwargs)
+        var_buffer = self.save_variables(p4_state, merged_params)
+
+        # override the symbolic entries if we have concrete
+        # arguments from the table
+        for param_name, param in merged_params.items():
+            is_ref = param[0]
+            arg = param[1]
+            param_sort = self.params[param_name][1]
+            log.debug("P4Action: Setting %s as %s ", param_name, arg)
+            if is_ref == "out":
+                # outs are left-values so the arg must be a string
+                arg_name = arg
+                arg_const = z3.Const(f"{param_name}", param_sort)
+                # except slices can also be lvalues...
+                if isinstance(arg, P4Slice):
+                    # again the hope is that the slice value is a string...
+                    arg_name = arg.val
+                    arg_val = resolve_expr(p4_state, arg_name)
+                    slice_l = arg.slice_l
+                    slice_r = arg.slice_r
+                    arg_const = slice_assign(
+                        arg_val, arg_const, slice_l, slice_r)
+                p4_state.set_or_add_var(arg_name, arg_const)
+            if isinstance(arg, str):
+                var_buffer[param_name] = arg
+            # Sometimes expressions are passed, resolve those first
+            arg = resolve_expr(p4_state, arg)
+            log.debug("Copy-in: %s to %s", arg, param_name)
+            p4_state.set_or_add_var(param_name, deepcopy(arg))
+        # reset to the previous execution chain
+        if self.return_type is not None:
+            return self.block.eval(p4_state)
+        # execute the action expression with the new environment
+        p4_state.insert_exprs([self.block, P4Context(var_buffer)])
         return step(p4_state)
 
 
