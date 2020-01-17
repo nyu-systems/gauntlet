@@ -96,7 +96,13 @@ def check_equivalence(prog_before, prog_after):
     # the equivalence equation
     prog_before_simpl = z3.simplify(prog_before)
     prog_after_simpl = z3.simplify(prog_after)
-    tv_equiv = prog_before_simpl != prog_after_simpl
+    try:
+        tv_equiv = prog_before_simpl != prog_after_simpl
+    except z3.Z3Exception as e:
+        log.error("Failed to compare z3 formulas!\nReason: %s", e)
+        log.error("PROGRAM BEFORE\n%s", prog_before_simpl)
+        log.error("PROGRAM AFTER\n%s", prog_after_simpl)
+        return util.EXIT_VIOLATION
     # tv_equiv = z3.Not(z3.eq(prog_before_simpl, prog_after_simpl))
     s.add(tv_equiv)
     log.debug(s.sexpr())

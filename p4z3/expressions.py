@@ -16,7 +16,7 @@ def resolve_expr(p4_state, expr):
             raise RuntimeError(f"Value {expr} could not be found!")
     else:
         val = expr
-    if isinstance(val, (z3.ExprRef, int)):
+    if isinstance(val, (z3.AstRef, int)):
         # These are z3 types and can be returned
         # Unfortunately int is part of it because z3 is very inconsistent
         # about var handling...
