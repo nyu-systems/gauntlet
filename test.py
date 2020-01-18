@@ -98,6 +98,7 @@ xfails = [
     "inline-control.p4",
     "inline-control1.p4",
     "inline-switch.p4",
+    "issue1333.p4",
     "issue1334.p4",
     "issue1386.p4",
     "issue1638.p4",

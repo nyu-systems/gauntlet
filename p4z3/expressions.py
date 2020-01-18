@@ -322,11 +322,38 @@ class P4land(P4BinaryOp):
         operator = z3.And
         P4BinaryOp.__init__(self, lval, rval, operator)
 
+    def eval(self, p4_state):
+        lval_expr = resolve_expr(p4_state, self.lval)
+        if lval_expr == False:
+            return z3.BoolVal(False)
+        rval_expr = resolve_expr(p4_state, self.rval)
+        # if we compare to enums, do not use them for operations
+        # for some reason, overloading equality does not work here...
+        # instead reference a named bitvector of size 8
+        # this represents a choice
+        lval_expr, rval_expr = align_bitvecs(
+            lval_expr, rval_expr, p4_state)
+        return self.operator(lval_expr, rval_expr)
+
 
 class P4lor(P4BinaryOp):
     def __init__(self, lval, rval):
         operator = z3.Or
         P4BinaryOp.__init__(self, lval, rval, operator)
+
+    def eval(self, p4_state):
+
+        lval_expr = resolve_expr(p4_state, self.lval)
+        if lval_expr == True:
+            return z3.BoolVal(True)
+        rval_expr = resolve_expr(p4_state, self.rval)
+        # if we compare to enums, do not use them for operations
+        # for some reason, overloading equality does not work here...
+        # instead reference a named bitvector of size 8
+        # this represents a choice
+        lval_expr, rval_expr = align_bitvecs(
+            lval_expr, rval_expr, p4_state)
+        return self.operator(lval_expr, rval_expr)
 
 
 class P4xor(P4BinaryOp):
@@ -726,43 +753,56 @@ class P4Extern(P4Callable):
         self.z3_reg = z3_reg
         # P4Methods, which are also black-box functions, can have return types
         self.return_type = return_type
-        self.return_counter = 0
-        self.ref_counter = 0
+        self.call_counter = 0
 
     def add_method(self, name, method):
         setattr(self, name, method)
 
     def eval(self, p4_state=None):
+        self.call_counter += 1
         if not p4_state:
             # There is no state yet, so use the context of the function
             p4_state = self.z3_reg.init_p4_state(self.name, self.params)
             p4_state = p4_state
 
         merged_params = self.merge_parameters(*self.args, **self.kwargs)
+        # externs can return values, we need to generate a new constant
+        # we generate the name based on the input arguments
+        var_name = ""
         for param_name, param in merged_params.items():
             is_ref = param[0]
             arg = param[1]
             log.debug("Extern: Setting %s as %s ", param_name, arg)
             # Because we do not know what the extern is doing
             # we initiate a new z3 const and just overwrite all reference types
+            # we can assume that arg is a lvalue here (i.e., a string)
+            arg_expr = resolve_expr(p4_state, arg)
+            if isinstance(arg_expr, P4ComplexType):
+                arg_expr = arg_expr.name
+
             if is_ref == "out" or is_ref == "inout":
                 # Externs often have generic types until they are called
                 # This call resolves the argument and gets its z3 type
                 arg_type = get_type(p4_state, arg)
-                extern_mod = z3.Const(f"{self.name}_{param_name}", arg_type)
-                instance = self.z3_reg.instance(
-                    f"{self.name}_{param_name}", arg_type)
+                name = f"{self.name}_{param_name}"
+                extern_mod = z3.Const(name, arg_type)
+                instance = self.z3_reg.instance(name, arg_type)
                 # In the case that the instance is a complex type make sure
                 # to propagate the variable through all its members
                 if isinstance(instance, P4ComplexType):
                     instance.propagate_type(extern_mod)
                 # Finally, assign a new value to the pass-by-reference argument
                 p4_state.set_or_add_var(arg, instance)
+            # input arguments influence the output behavior
+            # add the input value to the return constant
+            var_name += str(arg_expr)
         if self.return_type is not None:
             # If we return something, instantiate the type and return it
+            # we merge the name
+            # FIXME: We do not consider call order
+            # and assume that externs are stateless
             return_instance = self.z3_reg.instance(
-                f"{self.name}_{self.return_counter}", self.return_type)
-            self.return_counter += 1
+                f"{self.name}_{var_name}", self.return_type)
             return return_instance
         return p4_state.get_z3_repr()
 

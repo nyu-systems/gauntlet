@@ -7,19 +7,18 @@ header H {
 
 
 struct Headers {
-    H gnMo;
+    H h;
 }
 
 struct Meta {
-    H VSjE;
 }
 
 bit<16> do_thing_function() {
     H not_initialized;
-    bit<32> new_val = 32w0;
+    bit<32> new_val = 32w1;
     if (not_initialized.a < 6) {
     } else {
-        new_val = 32w0;
+        new_val = 32w232;
     }
     return (bit<16>)new_val;
 }
@@ -28,7 +27,7 @@ control ingress(inout Headers h, inout Meta m, inout standard_metadata_t sm) {
         do_thing_function();
     }
     apply {
-        do_thing_function();
+        h.h.a = do_thing_function();
         do_thing_action();
     }
 }
