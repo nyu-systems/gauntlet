@@ -155,6 +155,7 @@ class P4ComplexType():
                 "Variable %s does not exist, nothing to delete!", var_string)
 
     def resolve_reference(self, var):
+        log.debug("Resolving reference %s", var)
         if isinstance(var, str):
             var = self.get_var(var)
             var = self.resolve_reference(var)
@@ -308,6 +309,23 @@ class HeaderUnion(P4ComplexType):
         return step(p4_state)
 
 
+class HeaderStack(P4ComplexType):
+
+    def push_front(self, p4_state, num):
+        for hdr_idx in range(num):
+            hdr = self.get_var(f"{hdr_idx}")
+            if hdr:
+                hdr.valid = z3.BoolVal(True)
+        return step(p4_state)
+
+    def pop_front(self, p4_state, num):
+        for hdr_idx in range(num):
+            hdr = self.get_var(f"{hdr_idx}")
+            if hdr:
+                hdr.valid = z3.BoolVal(False)
+        return step(p4_state)
+
+
 class Struct(P4ComplexType):
     pass
 
@@ -405,6 +423,8 @@ class Z3Reg():
             self._register_structlike(name, Header, global_val)
         elif type_str == "struct":
             self._register_structlike(name, Struct, global_val)
+        elif type_str == "stack":
+            self._register_structlike(name, HeaderStack, global_val)
         elif type_str == "enum":
             # Enums are a bit weird... we first create a type
             enum_types = []
@@ -455,7 +475,7 @@ class Z3Reg():
         stack_args = []
         for val in range(num):
             stack_args.append((f"{val}", z3_type))
-        self.declare_global("struct", z3_name, stack_args)
+        self.declare_global("stack", z3_name, stack_args)
         return self.type(z3_name)
 
     def extern(self, extern_name):

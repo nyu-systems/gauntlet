@@ -40,6 +40,7 @@ violation_tests = [
     "const_entries",
     "copy_out",
     "drop-bmv2",
+    "nested_slice",
     "equality-1",
     "equality-2",
     "equality_stripped",

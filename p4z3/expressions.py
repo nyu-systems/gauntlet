@@ -913,13 +913,28 @@ class SliceAssignment(P4Statement):
         self.slice_l = slice_l
         self.slice_r = slice_r
 
+    def find_nested_slice(self, lval, slice_l, slice_r):
+        # gradually reduce the scope until we have calculated the right slice
+        # also retrieve the string lvalue in the mean time
+        if isinstance(lval, P4Slice):
+            lval, outer_slice_l, outer_slice_r = self.find_nested_slice(
+                lval.val, lval.slice_l, lval.slice_r)
+            slice_l = outer_slice_r + slice_l
+            slice_r = outer_slice_r + slice_r
+        return lval, slice_l, slice_r
+
     def eval(self, p4_state):
         log.debug("Assigning %s to %s ", self.rval, self.lval)
-        lval_expr = resolve_expr(p4_state, self.lval)
-        rval_expr = resolve_expr(p4_state, self.rval)
-        rval_expr = slice_assign(lval_expr, rval_expr,
-                                 self.slice_l, self.slice_r)
-        p4_state.set_or_add_var(self.lval, rval_expr)
+        lval = self.lval
+        rval = self.rval
+        slice_l = self.slice_l
+        slice_r = self.slice_r
+        lval, slice_l, slice_r = self.find_nested_slice(lval, slice_l, slice_r)
+
+        lval_expr = resolve_expr(p4_state, lval)
+        rval_expr = resolve_expr(p4_state, rval)
+        rval_expr = slice_assign(lval_expr, rval_expr, slice_l, slice_r)
+        p4_state.set_or_add_var(lval, rval_expr)
         return step(p4_state)
 
 
