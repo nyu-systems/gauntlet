@@ -563,30 +563,40 @@ class P4Context(P4Z3Class):
         self.var_buffer = var_buffer
         self.p4_state = p4_state
 
-    def eval(self, p4_state):
-        old_p4_state = p4_state
+    def eval(self, p4_context):
         if self.p4_state:
             log.debug("Restoring original p4 state %s to %s ",
-                      p4_state, self.p4_state)
-            expr_chain = p4_state.expr_chain
+                      p4_context, self.p4_state)
+            expr_chain = p4_context.expr_chain
             p4_state = self.p4_state
             p4_state.expr_chain = expr_chain
+        else:
+            p4_state = p4_context
         var_buffer = self.var_buffer
         # restore any variables that may have been overridden
         # TODO: Fix to handle state correctly
-        for param_name, param_val in var_buffer.items():
+        for param_name, param in var_buffer.items():
+            is_ref = param[0]
+            param_val = param[1]
             if param_val is None:
                 # value has not existed previously, marked for deletion
                 log.debug("Deleting %s", param_name)
-                # p4_state.del_var(param_name)
-            elif isinstance(param_val, str):
-                val = old_p4_state.resolve_reference(param_name)
+                p4_state.del_var(param_name)
+            elif (is_ref == "inout" or is_ref == "out"):
+                val = p4_context.resolve_reference(param_name)
                 log.debug("Copy-out: %s to %s", val, param_val)
+                if isinstance(param_val, P4Slice):
+                    # again the hope is that the slice value is a string...
+                    slice_l = param_val.slice_l
+                    slice_r = param_val.slice_r
+                    param_val = param_val.val
+                    arg_val = resolve_expr(p4_state, param_val)
+                    val = slice_assign(arg_val, val, slice_l, slice_r)
                 p4_state.set_or_add_var(param_val, val)
-            else:
-                log.debug("Restoring %s with %s",
-                          param_name, var_buffer[param_name])
-                p4_state.set_or_add_var(param_name, var_buffer[param_name])
+            elif is_ref == "in":
+                val = p4_state.resolve_reference(param_name)
+                log.debug("info %s with %s", param_name, val)
+                p4_state.set_or_add_var(param_name, val)
         return step(p4_state)
 
 
@@ -611,11 +621,8 @@ class P4Callable(P4Z3Class):
         args_len = len(args)
         for idx, param_name in enumerate(self.params.keys()):
             is_ref = self.params[param_name][0]
-            param_sort = self.params[param_name][1]
             if idx < args_len:
                 merged_params[param_name] = (is_ref, args[idx])
-            else:
-                merged_params[param_name] = (is_ref, param_sort)
         for arg_name, arg_val in kwargs.items():
             is_ref = self.params[arg_name][0]
             merged_params[arg_name] = (is_ref, arg_val)
@@ -625,14 +632,7 @@ class P4Callable(P4Z3Class):
         var_buffer = {}
         # save all the variables that may be overridden
         for param_name, param in merged_params.items():
-            is_ref = param[0]
-            # previous variables in the environment
-            prev_val = p4_state.resolve_reference(param_name)
-            if is_ref == "in":
-                var_buffer[param_name] = prev_val
-            elif prev_val is None:
-                # variable name did not exist previously, also add it
-                var_buffer[param_name] = None
+            var_buffer[param_name] = param
         return var_buffer
 
     def __call__(self, p4_state=None, *args, **kwargs):
@@ -641,6 +641,15 @@ class P4Callable(P4Z3Class):
         if p4_state:
             return self.eval(p4_state, *args, **kwargs)
         return self
+
+    def eval_callable(self, p4_state, merged_params, var_buffer):
+        pass
+
+    def eval(self, p4_state=None, *args, **kwargs):
+        self.call_counter += 1
+        merged_params = self.merge_parameters(*args, **kwargs)
+        var_buffer = self.save_variables(p4_state, merged_params)
+        return self.eval_callable(p4_state, merged_params, var_buffer)
 
 
 class P4Action(P4Callable):
@@ -653,11 +662,7 @@ class P4Action(P4Callable):
             raise RuntimeError(f"Expected a block, got {block}!")
         self.block = block
 
-    def eval(self, p4_state, *args, **kwargs):
-        self.call_counter += 1
-        merged_params = self.merge_parameters(*args, **kwargs)
-        var_buffer = self.save_variables(p4_state, merged_params)
-
+    def eval_callable(self, p4_state, merged_params, var_buffer):
         # override the symbolic entries if we have concrete
         # arguments from the table
         for param_name, param in merged_params.items():
@@ -679,8 +684,6 @@ class P4Action(P4Callable):
                     arg_const = slice_assign(
                         arg_val, arg_const, slice_l, slice_r)
                 p4_state.set_or_add_var(arg_name, arg_const)
-            if isinstance(arg, str):
-                var_buffer[param_name] = arg
             # Sometimes expressions are passed, resolve those first
             arg = resolve_expr(p4_state, arg)
             log.debug("Copy-in: %s to %s", arg, param_name)
@@ -702,11 +705,7 @@ class P4Function(P4Callable):
             raise RuntimeError(f"Expected a block, got {block}!")
         self.block = block
 
-    def eval(self, p4_state, *args, **kwargs):
-        self.call_counter += 1
-
-        merged_params = self.merge_parameters(*args, **kwargs)
-        var_buffer = self.save_variables(p4_state, merged_params)
+    def eval_callable(self, p4_state, merged_params, var_buffer):
 
         # override the symbolic entries if we have concrete
         # arguments from the table
@@ -729,8 +728,6 @@ class P4Function(P4Callable):
                     arg_const = slice_assign(
                         arg_val, arg_const, slice_l, slice_r)
                 p4_state.set_or_add_var(arg_name, arg_const)
-            if isinstance(arg, str):
-                var_buffer[param_name] = arg
             # Sometimes expressions are passed, resolve those first
             arg = resolve_expr(p4_state, arg)
             log.debug("Copy-in: %s to %s", arg, param_name)
@@ -804,7 +801,7 @@ class P4Control(P4Callable):
                 p4_state.set_or_add_var(arg_name, arg_const)
             # Sometimes expressions are passed, resolve those first
             arg = resolve_expr(p4_state, arg)
-            var_buffer[param_name] = p4_state.get_var(param_name)
+            # var_buffer[param_name] = p4_state.get_var(param_name)
             log.debug("P4Control: Setting %s as %s %s",
                       param_name, arg, type(arg))
             p4_state_context.set_or_add_var(param_name, arg)
