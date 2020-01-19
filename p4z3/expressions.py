@@ -3,175 +3,7 @@ from collections import OrderedDict
 import operator as op
 import z3
 
-from p4z3.base import log, step, P4ComplexType, Enum, Struct, P4Package
-
-
-def resolve_expr(p4_state, expr):
-    # Resolves to z3 and z3p4 expressions, ints, lists, and dicts are also okay
-    # resolve potential string references first
-    log.debug("Resolving %s", expr)
-    if isinstance(expr, str):
-        val = p4_state.resolve_reference(expr)
-        if val is None:
-            raise RuntimeError(f"Value {expr} could not be found!")
-    else:
-        val = expr
-    if isinstance(val, (z3.AstRef, int)):
-        # These are z3 types and can be returned
-        # Unfortunately int is part of it because z3 is very inconsistent
-        # about var handling...
-        return val
-    if isinstance(val, P4ComplexType):
-        # If we get a whole class return a new reference to the object
-        # Do not return the z3 type because we may assign a complete structure
-        if isinstance(val, Struct):
-            return copy(val)
-        return val
-    if isinstance(val, P4Expression):
-        # We got a P4 type, recurse...
-        val = val.eval(p4_state)
-        return resolve_expr(p4_state, val)
-    if isinstance(val, list):
-        # For lists, resolve each value individually and return a new list
-        list_expr = []
-        for val_expr in val:
-            rval_expr = resolve_expr(p4_state, val_expr)
-            list_expr.append(rval_expr)
-        return list_expr
-    if isinstance(val, dict):
-        # For dicts, resolve each value individually and return a new dict
-        dict_expr = []
-        for name, val_expr in val.items():
-            rval_expr = resolve_expr(p4_state, val_expr)
-            dict_expr[name] = rval_expr
-        return dict_expr
-    raise TypeError(f"Value of type {type(val)} cannot be resolved!")
-
-
-def resolve_action(action_expr):
-    # TODO Fix this roundabout way of getting a P4 Action, super annoying...
-    if isinstance(action_expr, MethodCallExpr):
-        action_name = action_expr.p4_method
-        action_args = action_expr.args
-    elif isinstance(action_expr, str):
-        action_name = action_expr
-        action_args = []
-    else:
-        raise TypeError(
-            f"Expected a method call, got {type(action_name)}!")
-    return action_name, action_args
-
-
-def get_type(p4_state, expr):
-    ''' Return the type of an expression, Resolve, if needed'''
-    arg_expr = resolve_expr(p4_state, expr)
-    if isinstance(arg_expr, P4ComplexType):
-        arg_type = arg_expr.z3_type
-    elif isinstance(arg_expr, int):
-        arg_type = z3.IntSort()
-    else:
-        arg_type = arg_expr.sort()
-    return arg_type
-
-
-def z3_implies(p4_state, cond, then_expr):
-    log.debug("Evaluating no_match...")
-    no_match = step(p4_state)
-    return z3.If(cond, then_expr, no_match)
-
-
-def check_p4_type(expr):
-    if isinstance(expr, P4ComplexType):
-        expr = expr.get_z3_repr()
-    return expr
-
-
-def align_bitvecs(bitvec1, bitvec2, p4_state):
-    if isinstance(bitvec1, z3.BitVecRef) and isinstance(bitvec2, z3.BitVecRef):
-        if bitvec1.size() < bitvec2.size():
-            bitvec1 = P4Cast(bitvec1, bitvec2.size()).eval(p4_state)
-        if bitvec1.size() > bitvec2.size():
-            bitvec2 = P4Cast(bitvec2, bitvec1.size()).eval(p4_state)
-    return bitvec1, bitvec2
-
-
-def z3_cast(val, to_type):
-
-    if isinstance(val, (z3.BoolSortRef, z3.BoolRef)):
-        # Convert boolean variables to a bit vector representation
-        # TODO: Streamline bools and their evaluation
-        val = z3.If(val, z3.BitVecVal(1, 1), z3.BitVecVal(0, 1))
-
-    if isinstance(to_type, z3.BoolSortRef):
-        # casting to a bool is simple, just check if the value is equal to 1
-        # this works for bitvectors and integers, we convert any bools before
-        return val == z3.BitVecVal(1, 1)
-
-    # from here on we assume we are working with integer or bitvector types
-    if isinstance(to_type, (z3.BitVecSortRef)):
-        # It can happen that we get a bitvector type as target, get its size.
-        to_type_size = to_type.size()
-    else:
-        to_type_size = to_type
-
-    if isinstance(val, int):
-        # It can happen that we get an int, cast it to a bit vector.
-        return z3.BitVecVal(val, to_type_size)
-    val_size = val.size()
-
-    if val_size < to_type_size:
-        # the target value is larger, extend with zeros
-        return z3.ZeroExt(to_type_size - val_size, val)
-    else:
-        # the target value is smaller, truncate everything on the right
-        return z3.Extract(to_type_size - 1, 0, val)
-
-
-def slice_assign(lval, rval, slice_l, slice_r) -> z3.SortRef:
-    # stupid integer checks that are unfortunately necessary....
-    if isinstance(lval, int):
-        lval = z3.BitVecVal(lval, 64)
-    lval_max = lval.size() - 1
-    if slice_l == lval_max and slice_r == 0:
-        # slice is full lvalue, nothing to do
-        return rval
-    assemble = []
-    if slice_l < lval_max:
-        # left slice is smaller than the max, leave that chunk unchanged
-        assemble.append(z3.Extract(lval_max, slice_l + 1, lval))
-    # fill the rval into the slice
-    rval = z3_cast(rval, slice_l + 1 - slice_r)
-    assemble.append(rval)
-    if slice_r > 0:
-        # right slice is larger than zero, leave that chunk unchanged
-        assemble.append(z3.Extract(slice_r - 1, 0, lval))
-    return z3.Concat(*assemble)
-
-
-class P4Instance():
-    def __new__(cls, z3_reg, method_name, *args, **kwargs):
-        # parsed_args = []
-        # for arg in args:
-        #     arg = z3_reg._globals[arg]
-        #     parsed_args.append(arg)
-        # parsed_kwargs = {}
-        # for name, arg in kwargs:
-        #     arg = z3_reg._globals[arg]
-        #     parsed_kwargs[name] = arg
-        return z3_reg._globals[method_name](None, *args, **kwargs)
-
-
-class P4Z3Class():
-    def eval(self, p4_state):
-        raise NotImplementedError("Method eval not implemented!")
-
-
-class P4Expression(P4Z3Class):
-    pass
-
-
-class P4Statement(P4Z3Class):
-    pass
+from p4z3.base import *
 
 
 class P4Op(P4Expression):
@@ -211,8 +43,11 @@ class P4BinaryOp(P4Op):
         # for some reason, overloading equality does not work here...
         # instead reference a named bitvector of size 8
         # this represents a choice
-        lval_expr, rval_expr = align_bitvecs(
-            lval_expr, rval_expr, p4_state)
+        if isinstance(lval_expr, z3.BitVecRef) and isinstance(rval_expr, z3.BitVecRef):
+            if lval_expr.size() < rval_expr.size():
+                lval_expr = z3_cast(lval_expr, rval_expr.size())
+            if lval_expr.size() > rval_expr.size():
+                rval_expr = z3_cast(rval_expr, lval_expr.size())
         return self.operator(lval_expr, rval_expr)
 
 
@@ -322,38 +157,11 @@ class P4land(P4BinaryOp):
         operator = z3.And
         P4BinaryOp.__init__(self, lval, rval, operator)
 
-    def eval(self, p4_state):
-        lval_expr = resolve_expr(p4_state, self.lval)
-        if lval_expr == False:
-            return z3.BoolVal(False)
-        rval_expr = resolve_expr(p4_state, self.rval)
-        # if we compare to enums, do not use them for operations
-        # for some reason, overloading equality does not work here...
-        # instead reference a named bitvector of size 8
-        # this represents a choice
-        lval_expr, rval_expr = align_bitvecs(
-            lval_expr, rval_expr, p4_state)
-        return self.operator(lval_expr, rval_expr)
-
 
 class P4lor(P4BinaryOp):
     def __init__(self, lval, rval):
         operator = z3.Or
         P4BinaryOp.__init__(self, lval, rval, operator)
-
-    def eval(self, p4_state):
-
-        lval_expr = resolve_expr(p4_state, self.lval)
-        if lval_expr == True:
-            return z3.BoolVal(True)
-        rval_expr = resolve_expr(p4_state, self.rval)
-        # if we compare to enums, do not use them for operations
-        # for some reason, overloading equality does not work here...
-        # instead reference a named bitvector of size 8
-        # this represents a choice
-        lval_expr, rval_expr = align_bitvecs(
-            lval_expr, rval_expr, p4_state)
-        return self.operator(lval_expr, rval_expr)
 
 
 class P4xor(P4BinaryOp):
@@ -421,19 +229,6 @@ class P4Mask(P4BinaryOp):
     def __init__(self, lval, rval):
         operator = op.and_
         P4BinaryOp.__init__(self, lval, rval, operator)
-
-
-class P4Slice(P4Expression):
-    def __init__(self, val, slice_l, slice_r):
-        self.val = val
-        self.slice_l = slice_l
-        self.slice_r = slice_r
-
-    def eval(self, p4_state):
-        val_expr = resolve_expr(p4_state, self.val)
-        if isinstance(val_expr, int):
-            val_expr = z3.BitVecVal(val_expr, 64)
-        return z3.Extract(self.slice_l, self.slice_r, val_expr)
 
 
 class P4Concat(P4Expression):
@@ -582,16 +377,9 @@ class P4Context(P4Z3Class):
                 # value has not existed previously, marked for deletion
                 log.debug("Deleting %s", param_name)
                 p4_state.del_var(param_name)
-            elif (is_ref == "inout" or is_ref == "out"):
+            elif is_ref == "inout" or is_ref == "out":
                 val = p4_context.resolve_reference(param_name)
                 log.debug("Copy-out: %s to %s", val, param_val)
-                if isinstance(param_val, P4Slice):
-                    # again the hope is that the slice value is a string...
-                    slice_l = param_val.slice_l
-                    slice_r = param_val.slice_r
-                    param_val = param_val.val
-                    arg_val = resolve_expr(p4_state, param_val)
-                    val = slice_assign(arg_val, val, slice_l, slice_r)
                 p4_state.set_or_add_var(param_val, val)
             elif is_ref == "in":
                 val = p4_state.resolve_reference(param_name)
@@ -674,15 +462,6 @@ class P4Action(P4Callable):
                 # outs are left-values so the arg must be a string
                 arg_name = arg
                 arg_const = z3.Const(f"{param_name}", param_sort)
-                # except slices can also be lvalues...
-                if isinstance(arg, P4Slice):
-                    # again the hope is that the slice value is a string...
-                    arg_name = arg.val
-                    arg_val = resolve_expr(p4_state, arg_name)
-                    slice_l = arg.slice_l
-                    slice_r = arg.slice_r
-                    arg_const = slice_assign(
-                        arg_val, arg_const, slice_l, slice_r)
                 p4_state.set_or_add_var(arg_name, arg_const)
             # Sometimes expressions are passed, resolve those first
             arg = resolve_expr(p4_state, arg)
@@ -718,15 +497,6 @@ class P4Function(P4Callable):
                 # outs are left-values so the arg must be a string
                 arg_name = arg
                 arg_const = z3.Const(f"{param_name}", param_sort)
-                # except slices can also be lvalues...
-                if isinstance(arg, P4Slice):
-                    # again the hope is that the slice value is a string...
-                    arg_name = arg.val
-                    arg_val = resolve_expr(p4_state, arg_name)
-                    slice_l = arg.slice_l
-                    slice_r = arg.slice_r
-                    arg_const = slice_assign(
-                        arg_val, arg_const, slice_l, slice_r)
                 p4_state.set_or_add_var(arg_name, arg_const)
             # Sometimes expressions are passed, resolve those first
             arg = resolve_expr(p4_state, arg)
@@ -782,22 +552,11 @@ class P4Control(P4Callable):
             is_ref = param[0]
             arg = param[1]
             param_sort = self.params[param_name][1]
-            # FIXME: Hack to avoid awkward instantiations
-            if isinstance(arg, z3.SortRef):
-                continue
             if is_ref == "out":
                 # outs are left-values so the arg must be a string
                 arg_name = arg
                 arg_const = z3.Const(f"{param_name}", param_sort)
                 # except slices can also be lvalues...
-                if isinstance(arg, P4Slice):
-                    # again the hope is that the slice value is a string...
-                    arg_name = arg.val
-                    arg_val = resolve_expr(p4_state, arg_name)
-                    slice_l = arg.slice_l
-                    slice_r = arg.slice_r
-                    arg_const = slice_assign(
-                        arg_val, arg_const, slice_l, slice_r)
                 p4_state.set_or_add_var(arg_name, arg_const)
             # Sometimes expressions are passed, resolve those first
             arg = resolve_expr(p4_state, arg)
@@ -889,38 +648,6 @@ class P4Declaration(P4Statement):
 
     def eval(self, p4_state):
         p4_state.set_or_add_var(self.lval, self.rval)
-        return step(p4_state)
-
-
-class SliceAssignment(P4Statement):
-    def __init__(self, lval, rval, slice_l, slice_r):
-        self.lval = lval
-        self.rval = rval
-        self.slice_l = slice_l
-        self.slice_r = slice_r
-
-    def find_nested_slice(self, lval, slice_l, slice_r):
-        # gradually reduce the scope until we have calculated the right slice
-        # also retrieve the string lvalue in the mean time
-        if isinstance(lval, P4Slice):
-            lval, outer_slice_l, outer_slice_r = self.find_nested_slice(
-                lval.val, lval.slice_l, lval.slice_r)
-            slice_l = outer_slice_r + slice_l
-            slice_r = outer_slice_r + slice_r
-        return lval, slice_l, slice_r
-
-    def eval(self, p4_state):
-        log.debug("Assigning %s to %s ", self.rval, self.lval)
-        lval = self.lval
-        rval = self.rval
-        slice_l = self.slice_l
-        slice_r = self.slice_r
-        lval, slice_l, slice_r = self.find_nested_slice(lval, slice_l, slice_r)
-
-        lval_expr = resolve_expr(p4_state, lval)
-        rval_expr = resolve_expr(p4_state, rval)
-        rval_expr = slice_assign(lval_expr, rval_expr, slice_l, slice_r)
-        p4_state.set_or_add_var(lval, rval_expr)
         return step(p4_state)
 
 
@@ -1081,6 +808,20 @@ class P4Return(P4Statement):
         else:
             expr = resolve_expr(p4_state, self.expr)
             return expr
+
+
+def resolve_action(action_expr):
+    # TODO Fix this roundabout way of getting a P4 Action, super annoying...
+    if isinstance(action_expr, MethodCallExpr):
+        action_name = action_expr.p4_method
+        action_args = action_expr.args
+    elif isinstance(action_expr, str):
+        action_name = action_expr
+        action_args = []
+    else:
+        raise TypeError(
+            f"Expected a method call, got {type(action_name)}!")
+    return action_name, action_args
 
 
 class P4Table(P4Z3Class):

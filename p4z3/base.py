@@ -31,6 +31,130 @@ def step(p4_state, expr=None):
     return expr
 
 
+def resolve_expr(p4_state, expr):
+    # Resolves to z3 and z3p4 expressions, ints, lists, and dicts are also okay
+    # resolve potential string references first
+    log.debug("Resolving %s", expr)
+    if isinstance(expr, str):
+        val = p4_state.resolve_reference(expr)
+        if val is None:
+            raise RuntimeError(f"Value {expr} could not be found!")
+    else:
+        val = expr
+    if isinstance(val, (z3.AstRef, int)):
+        # These are z3 types and can be returned
+        # Unfortunately int is part of it because z3 is very inconsistent
+        # about var handling...
+        return val
+    if isinstance(val, P4ComplexType):
+        # If we get a whole class return a new reference to the object
+        # Do not return the z3 type because we may assign a complete structure
+        if isinstance(val, Struct):
+            return copy(val)
+        return val
+    if isinstance(val, P4Expression):
+        # We got a P4 type, recurse...
+        val = val.eval(p4_state)
+        return resolve_expr(p4_state, val)
+    if isinstance(val, list):
+        # For lists, resolve each value individually and return a new list
+        list_expr = []
+        for val_expr in val:
+            rval_expr = resolve_expr(p4_state, val_expr)
+            list_expr.append(rval_expr)
+        return list_expr
+    if isinstance(val, dict):
+        # For dicts, resolve each value individually and return a new dict
+        dict_expr = []
+        for name, val_expr in val.items():
+            rval_expr = resolve_expr(p4_state, val_expr)
+            dict_expr[name] = rval_expr
+        return dict_expr
+    raise TypeError(f"Value of type {type(val)} cannot be resolved!")
+
+
+def get_type(p4_state, expr):
+    ''' Return the type of an expression, Resolve, if needed'''
+    arg_expr = resolve_expr(p4_state, expr)
+    if isinstance(arg_expr, P4ComplexType):
+        arg_type = arg_expr.z3_type
+    elif isinstance(arg_expr, int):
+        arg_type = z3.IntSort()
+    else:
+        arg_type = arg_expr.sort()
+    return arg_type
+
+
+def z3_implies(p4_state, cond, then_expr):
+    log.debug("Evaluating no_match...")
+    no_match = step(p4_state)
+    return z3.If(cond, then_expr, no_match)
+
+
+def check_p4_type(expr):
+    if isinstance(expr, P4ComplexType):
+        expr = expr.get_z3_repr()
+    return expr
+
+
+def z3_cast(val, to_type):
+
+    if isinstance(val, (z3.BoolSortRef, z3.BoolRef)):
+        # Convert boolean variables to a bit vector representation
+        # TODO: Streamline bools and their evaluation
+        val = z3.If(val, z3.BitVecVal(1, 1), z3.BitVecVal(0, 1))
+
+    if isinstance(to_type, z3.BoolSortRef):
+        # casting to a bool is simple, just check if the value is equal to 1
+        # this works for bitvectors and integers, we convert any bools before
+        return val == z3.BitVecVal(1, 1)
+
+    # from here on we assume we are working with integer or bitvector types
+    if isinstance(to_type, (z3.BitVecSortRef)):
+        # It can happen that we get a bitvector type as target, get its size.
+        to_type_size = to_type.size()
+    else:
+        to_type_size = to_type
+
+    if isinstance(val, int):
+        # It can happen that we get an int, cast it to a bit vector.
+        return z3.BitVecVal(val, to_type_size)
+    val_size = val.size()
+
+    if val_size < to_type_size:
+        # the target value is larger, extend with zeros
+        return z3.ZeroExt(to_type_size - val_size, val)
+    else:
+        # the target value is smaller, truncate everything on the right
+        return z3.Extract(to_type_size - 1, 0, val)
+
+
+class P4Instance():
+    def __new__(cls, z3_reg, method_name, *args, **kwargs):
+        # parsed_args = []
+        # for arg in args:
+        #     arg = z3_reg._globals[arg]
+        #     parsed_args.append(arg)
+        # parsed_kwargs = {}
+        # for name, arg in kwargs:
+        #     arg = z3_reg._globals[arg]
+        #     parsed_kwargs[name] = arg
+        return z3_reg._globals[method_name](None, *args, **kwargs)
+
+
+class P4Z3Class():
+    def eval(self, p4_state):
+        raise NotImplementedError("Method eval not implemented!")
+
+
+class P4Expression(P4Z3Class):
+    pass
+
+
+class P4Statement(P4Z3Class):
+    pass
+
+
 class P4Package():
 
     def __init__(self, z3_reg, name, *args, **kwargs):
@@ -56,6 +180,19 @@ class P4Package():
             if arg in self.z3_reg._globals:
                 self.pipes[name] = self.z3_reg._globals[arg]
         return self
+
+
+class P4Slice(P4Expression):
+    def __init__(self, val, slice_l, slice_r):
+        self.val = val
+        self.slice_l = slice_l
+        self.slice_r = slice_r
+
+    def eval(self, p4_state):
+        val_expr = resolve_expr(p4_state, self.val)
+        if isinstance(val_expr, int):
+            val_expr = z3.BitVecVal(val_expr, 64)
+        return z3.Extract(self.slice_l, self.slice_r, val_expr)
 
 
 class P4ComplexType():
@@ -166,8 +303,49 @@ class P4ComplexType():
             accessor = self.accessors[index]
             self.set_or_add_var(accessor.name(), val)
 
-    def set_or_add_var(self, lstring, rval):
+    def find_nested_slice(self, lval, slice_l, slice_r):
+        # gradually reduce the scope until we have calculated the right slice
+        # also retrieve the string lvalue in the mean time
+        if isinstance(lval, P4Slice):
+            lval, outer_slice_l, outer_slice_r = self.find_nested_slice(
+                lval.val, lval.slice_l, lval.slice_r)
+            slice_l = outer_slice_r + slice_l
+            slice_r = outer_slice_r + slice_r
+        return lval, slice_l, slice_r
 
+    def set_slice(self, lval, rval):
+        slice_l = lval.slice_l
+        slice_r = lval.slice_r
+        lval = lval.val
+        lval, slice_l, slice_r = self.find_nested_slice(lval, slice_l, slice_r)
+
+        lval_expr = resolve_expr(self, lval)
+        rval_expr = resolve_expr(self, rval)
+        # stupid integer checks that are unfortunately necessary....
+        if isinstance(lval_expr, int):
+            lval_expr = z3.BitVecVal(lval_expr, 64)
+        lval_expr_max = lval_expr.size() - 1
+        if slice_l == lval_expr_max and slice_r == 0:
+            # slice is full lval, nothing to do
+            self.set_or_add_var(lval, rval_expr)
+            return
+        assemble = []
+        if slice_l < lval_expr_max:
+            # left slice is smaller than the max, leave that chunk unchanged
+            assemble.append(z3.Extract(lval_expr_max, slice_l + 1, lval_expr))
+        # fill the rval_expr into the slice
+        rval_expr = z3_cast(rval_expr, slice_l + 1 - slice_r)
+        assemble.append(rval_expr)
+        if slice_r > 0:
+            # right slice is larger than zero, leave that chunk unchanged
+            assemble.append(z3.Extract(slice_r - 1, 0, lval_expr))
+        rval_expr = z3.Concat(*assemble)
+        self.set_or_add_var(lval, rval_expr)
+        return
+
+    def set_or_add_var(self, lstring, rval):
+        if isinstance(lstring, P4Slice):
+            return self.set_slice(lstring, rval)
         # TODO: Fix this method, has hideous performance impact
         lval = self.resolve_reference(lstring)
         if lval is not None:
