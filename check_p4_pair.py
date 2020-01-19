@@ -1,10 +1,13 @@
 import argparse
 from pathlib import Path
 import os
+import sys
 import imp
 import logging
 from p4z3.base import Z3Reg, P4Package, z3
 import p4z3.util as util
+sys.setrecursionlimit(15000)
+
 
 FILE_DIR = os.path.dirname(os.path.abspath(__file__))
 log = logging.getLogger(__name__)

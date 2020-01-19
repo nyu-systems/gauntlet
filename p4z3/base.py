@@ -259,7 +259,6 @@ class P4ComplexType():
 class Header(P4ComplexType):
 
     def __init__(self, z3_reg, z3_type, name):
-        # These are special for headers
         self.valid = z3.Bool(f"{name}_valid")
         super(Header, self).__init__(z3_reg, z3_type, name)
 
@@ -293,7 +292,6 @@ class HeaderUnion(P4ComplexType):
     # TODO: Implement this class correctly...
 
     def __init__(self, z3_reg, z3_type, const):
-        # These are special for headers
         self.valid = z3.BoolSort()
         super(HeaderUnion, self).__init__(z3_reg, z3_type, const)
 
@@ -310,6 +308,10 @@ class HeaderUnion(P4ComplexType):
 
 
 class HeaderStack(P4ComplexType):
+
+    def __init__(self, z3_reg, z3_type, name):
+        super(HeaderStack, self).__init__(z3_reg, z3_type, name)
+        self.size = len(self.accessors)
 
     def push_front(self, p4_state, num):
         for hdr_idx in range(num):

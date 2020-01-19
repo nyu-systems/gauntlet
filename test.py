@@ -64,7 +64,6 @@ for test in all_tests:
 # ***** broken tests, need fixing *****
 xfails = [
     "fabric.p4",
-    "header-stack-ops-bmv2.p4",
     "hit-expr-bmv2.p4",
     "issue1566-bmv2.p4",
     "issue1566.p4",
@@ -165,6 +164,7 @@ xfails = [
 ]
 
 slow_tests = [
+    "header-stack-ops-bmv2.p4",
     "flowlet_switching-bmv2.p4",
     # "issue-2123.p4",
     "issue-2123-2-bmv2.p4",
