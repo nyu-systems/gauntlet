@@ -3,24 +3,30 @@
 
 header H {
     bit<8>  a;
+    bit<32> b;
+    bit<64> c;
 }
 
 struct Headers {
-    H h;
+    H    h;
 }
 
 struct Meta {
 }
 
-bit<8> do_thing(out bit<32> d) {
-    return (bit<8>)32w1;
+bit<16> do_thing() {
+    return (bit<16>)16w4;
 }
 control ingress(inout Headers h, inout Meta m, inout standard_metadata_t sm) {
-    action action_thing(inout bit<32> c) {
-        c = (bit<32>)(do_thing(c));
+    bit<64> y = 64w3;
+    bit<64> z = 64w2;
+    action iuJze(in bit<8> hyhe) {
+        h.h.c = 64w2;
+        y = (bit<64>)do_thing();
+        h.h.c = y;
     }
     apply {
-        action_thing(sm.enq_timestamp);
+        iuJze(8w2);
     }
 }
 

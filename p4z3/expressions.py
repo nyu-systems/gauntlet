@@ -580,9 +580,6 @@ class P4Function(P4Callable):
             arg = resolve_expr(p4_state, arg)
             log.debug("Copy-in: %s to %s", arg, param_name)
             p4_state.set_or_add_var(param_name, arg)
-        # reset to the previous execution chain
-        if self.return_type is not None:
-            return self.block.eval(p4_state)
         # execute the action expression with the new environment
         p4_state.insert_exprs([self.block, p4_context])
         return step(p4_state)
@@ -884,7 +881,12 @@ class P4Return(P4Statement):
         self.expr = expr
 
     def eval(self, p4_state):
-        p4_state.clear_expr_chain()
+        chain_copy = p4_state.copy_expr_chain()
+        for expr in chain_copy:
+            p4_state.expr_chain.popleft()
+            # remove all expressions until we hit the end (typically a context)
+            if isinstance(expr, P4Context):
+                break
         if self.expr is None:
             return p4_state.get_z3_repr()
         else:
