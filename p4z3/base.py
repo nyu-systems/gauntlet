@@ -298,11 +298,6 @@ class P4ComplexType():
             var = self.resolve_reference(var)
         return var
 
-    def set_list(self, rval):
-        for index, val in enumerate(rval):
-            accessor = self.accessors[index]
-            self.set_or_add_var(accessor.name(), val)
-
     def find_nested_slice(self, lval, slice_l, slice_r):
         # gradually reduce the scope until we have calculated the right slice
         # also retrieve the string lvalue in the mean time
@@ -343,54 +338,54 @@ class P4ComplexType():
         self.set_or_add_var(lval, rval_expr)
         return
 
-    def set_or_add_var(self, lstring, rval):
-        if isinstance(lstring, P4Slice):
-            return self.set_slice(lstring, rval)
+    def set_list(self, rval):
+        for index, val in enumerate(rval):
+            accessor = self.accessors[index]
+            self.set_or_add_var(accessor.name(), val)
+        return
+
+    def set_or_add_var(self, lval, rval):
+        if isinstance(lval, P4Slice):
+            return self.set_slice(lval, rval)
         # TODO: Fix this method, has hideous performance impact
-        lval = self.resolve_reference(lstring)
-        if lval is not None:
+        tmp_lval = self.resolve_reference(lval)
+        if tmp_lval is None:
+            if isinstance(self.get_var(lval), str):
+                # the target variable exists and is a string
+                # this means it is a reference (i.e., pointer) to another
+                # variable, so we need to resolve it
+                log.debug("Found reference from %s to %s ", lval, tmp_lval)
+                # because it is a reference  we are setting the actual target
+                lval = tmp_lval
+                # do not allow nested references, resolve the rvalue
+                rval = self.resolve_reference(rval)
+        else:
             if isinstance(rval, list):
-                return lval.set_list(rval)
+                return tmp_lval.set_list(rval)
             # We also must handle integer values and convert them to bitvectors
             # For that we have to match the type
-            if isinstance(rval, int) and isinstance(lval, z3.BitVecRef):
+            if isinstance(rval, int) and isinstance(tmp_lval, z3.BitVecRef):
                 # if the lvalue is a bit vector, try to cast it
                 # otherwise ignore and hope that keeping it as an int works out
-                rval = z3.BitVecVal(rval, lval.size())
-
-        # Check if the assigned variable is already a reference
-        var = self.get_var(lstring)
-        if var is None:
-            # nothing found, just set the variable to the reference
-            pass
-        elif isinstance(var, str):
-            # the target variable exists and is a string
-            # this means it is a reference (i.e., pointer) to another
-            # variable, so we need to resolve it
-            log.debug("Found reference from %s to %s ", lstring, var)
-            # because it is a reference  we are setting the actual target
-            lstring = var
-            # do not allow nested references, resolve the rvalue
-            rval = self.resolve_reference(rval)
-        else:
+                rval = z3.BitVecVal(rval, tmp_lval.size())
             # the target variable exists and is not a string
             # do not override an existing variable with a reference!
             # resolve any possible rvalue reference
-            log.debug("Recursing with %s and %s ", lstring, rval)
+            log.debug("Recursing with %s and %s ", lval, rval)
             rval = self.resolve_reference(rval)
 
         log.debug("Setting %s(%s) to %s(%s) ",
-                  lstring, type(lstring), rval, type(rval))
+                  lval, type(lval), rval, type(rval))
 
-        if '.' in lstring:
+        if '.' in lval:
             # this means we are accessing a complex member
             # get the parent class and update its value
-            prefix, suffix = lstring.rsplit(".", 1)
+            prefix, suffix = lval.rsplit(".", 1)
             # prefix may be a pointer to an actual complex type, resolve it
             target_class = self.resolve_reference(prefix)
             target_class.set_or_add_var(suffix, rval)
         else:
-            setattr(self, lstring, rval)
+            setattr(self, lval, rval)
 
         # generate a new version of the z3 datatype
         # update the internal representation of the attribute.
