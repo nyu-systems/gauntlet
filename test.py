@@ -140,7 +140,6 @@ xfails = [
     "two_ebpf.p4",
     "unreachable-accept.p4",
     "v1model-digest-containing-ser-enum.p4",
-    "vss-example.p4",
 ]
 
 slow_tests = [
@@ -149,6 +148,7 @@ slow_tests = [
     # "issue-2123.p4",
     "issue-2123-2-bmv2.p4",
     "issue-2123-3-bmv2.p4",
+    "vss-example.p4",
 ]
 
 
