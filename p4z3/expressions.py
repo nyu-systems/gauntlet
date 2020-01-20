@@ -354,38 +354,38 @@ class MethodCallExpr(P4Expression):
 
 class P4Context(P4Z3Class):
 
-    def __init__(self, var_buffer, p4_state=None):
+    def __init__(self, var_buffer, old_p4_state):
         self.var_buffer = var_buffer
-        self.p4_state = p4_state
+        self.old_p4_state = old_p4_state
 
     def eval(self, p4_context):
-        if self.p4_state:
+        if self.old_p4_state:
             log.debug("Restoring original p4 state %s to %s ",
-                      p4_context, self.p4_state)
+                      p4_context, self.old_p4_state)
             expr_chain = p4_context.expr_chain
-            p4_state = self.p4_state
-            p4_state.expr_chain = expr_chain
+            old_p4_state = self.old_p4_state
+            old_p4_state.expr_chain = expr_chain
         else:
-            p4_state = p4_context
-        var_buffer = self.var_buffer
+            old_p4_state = p4_context
         # restore any variables that may have been overridden
         # TODO: Fix to handle state correctly
-        for param_name, param in var_buffer.items():
+        for param_name, param in self.var_buffer.items():
             is_ref = param[0]
             param_val = param[1]
+            if is_ref == "inout" or is_ref == "out":
+                val = p4_context.resolve_reference(param_name)
+                log.debug("Copy-out: %s to %s", val, param_val)
+                old_p4_state.set_or_add_var(param_val, val)
+            else:
+                log.debug("Resetting %s to %s", param_name, type(param_val))
+                old_p4_state.set_or_add_var(param_name, param_val)
+
             if param_val is None:
                 # value has not existed previously, marked for deletion
                 log.debug("Deleting %s", param_name)
-                p4_state.del_var(param_name)
-            elif is_ref == "inout" or is_ref == "out":
-                val = p4_context.resolve_reference(param_name)
-                log.debug("Copy-out: %s to %s", val, param_val)
-                p4_state.set_or_add_var(param_val, val)
-            elif is_ref == "in":
-                val = p4_state.resolve_reference(param_name)
-                log.debug("info %s with %s", param_name, val)
-                p4_state.set_or_add_var(param_name, val)
-        return step(p4_state)
+                old_p4_state.del_var(param_name)
+
+        return step(old_p4_state)
 
 
 class P4Callable(P4Z3Class):
@@ -420,7 +420,12 @@ class P4Callable(P4Z3Class):
         var_buffer = {}
         # save all the variables that may be overridden
         for param_name, param in merged_params.items():
-            var_buffer[param_name] = param
+            is_ref = param[0]
+            if is_ref == "inout" or is_ref == "out":
+                var_buffer[param_name] = param
+            else:
+                param_val = p4_state.resolve_reference(param_name)
+                var_buffer[param_name] = (is_ref, param_val)
         return var_buffer
 
     def __call__(self, p4_state=None, *args, **kwargs):
@@ -453,6 +458,8 @@ class P4Action(P4Callable):
     def eval_callable(self, p4_state, merged_params, var_buffer):
         # override the symbolic entries if we have concrete
         # arguments from the table
+        p4_state_cpy = p4_state
+        p4_context = P4Context(var_buffer, None)
         for param_name, param in merged_params.items():
             is_ref = param[0]
             arg = param[1]
@@ -468,7 +475,7 @@ class P4Action(P4Callable):
             log.debug("Copy-in: %s to %s", arg, param_name)
             p4_state.set_or_add_var(param_name, arg)
         # execute the action expression with the new environment
-        p4_state.insert_exprs([self.block, P4Context(var_buffer)])
+        p4_state.insert_exprs([self.block, p4_context])
         # reset to the previous execution chain
         return step(p4_state)
 
@@ -488,6 +495,8 @@ class P4Function(P4Callable):
 
         # override the symbolic entries if we have concrete
         # arguments from the table
+        p4_state_cpy = p4_state
+        p4_context = P4Context(var_buffer, None)
         for param_name, param in merged_params.items():
             is_ref = param[0]
             arg = param[1]
@@ -506,7 +515,7 @@ class P4Function(P4Callable):
         if self.return_type is not None:
             return self.block.eval(p4_state)
         # execute the action expression with the new environment
-        p4_state.insert_exprs([self.block, P4Context(var_buffer)])
+        p4_state.insert_exprs([self.block, p4_context])
         return step(p4_state)
 
 
@@ -538,13 +547,14 @@ class P4Control(P4Callable):
         z3_reg = self.state_initializer[0]
         name = self.state_initializer[1]
         p4_state_context = z3_reg.init_p4_state(name, self.params)
-        p4_state_cpy = copy(p4_state)
+        p4_state_cpy = p4_state
         if not p4_state:
             # There is no state yet, so use the context of the function
             p4_state = p4_state_context
 
         merged_params = self.merge_parameters(*args, **kwargs)
         var_buffer = self.save_variables(p4_state, merged_params)
+        p4_context = P4Context(var_buffer, p4_state_cpy)
 
         # override the symbolic entries if we have concrete
         # arguments from the table
@@ -568,7 +578,7 @@ class P4Control(P4Callable):
         # execute the action expression with the new environment
         p4_state_context.expr_chain = p4_state.copy_expr_chain()
         p4_state_context.insert_exprs(
-            [self.block, P4Context(var_buffer, p4_state_cpy)])
+            [self.block, p4_context])
         return step(p4_state_context)
 
 

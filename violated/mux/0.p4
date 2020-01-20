@@ -17,11 +17,6 @@ parser P(packet_in b, out Headers p, inout Metadata meta, inout standard_metadat
 }
 
 control Ing(inout Headers headers, inout Metadata meta, inout standard_metadata_t standard_meta) {
-    apply {
-    }
-}
-
-control Eg(inout Headers hdrs, inout Metadata meta, inout standard_metadata_t standard_meta) {
     bit<32> _sub_0;
     bit<64> res_0;
     bit<32> tmp;
@@ -50,7 +45,12 @@ control Eg(inout Headers hdrs, inout Metadata meta, inout standard_metadata_t st
     apply {
         res_0 = 64w0;
         update();
-        hdrs.a = res_0;
+        headers.a = res_0;
+    }
+}
+
+control Eg(inout Headers hdrs, inout Metadata meta, inout standard_metadata_t standard_meta) {
+    apply {
     }
 }
 
