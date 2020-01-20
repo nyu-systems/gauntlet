@@ -55,9 +55,6 @@ def evaluate_package(p4_package):
     z3_asts = {}
     for pipe_name, p4_pipe_ast in p4_package.pipes.items():
 
-        # ignore deparser and emit because externs are hard...
-        if pipe_name == "dep":
-            continue
         log.info("Formalizing %s pipe...", pipe_name)
         if isinstance(p4_pipe_ast, P4Package):
             # it is apparently possible to have nested packages...

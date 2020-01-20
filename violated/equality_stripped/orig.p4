@@ -50,9 +50,6 @@ control deparser(packet_out packet, in headers hdr) {
     apply {
         {
             packet.emit<H>(hdr.h);
-            packet.emit<H>(hdr.a[0]);
-            packet.emit<H>(hdr.a[1]);
-            packet.emit<Same>(hdr.same);
         }
     }
 }

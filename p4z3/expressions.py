@@ -6,6 +6,75 @@ import z3
 from p4z3.base import *
 
 
+def resolve_expr(p4_state, expr):
+    # Resolves to z3 and z3p4 expressions, ints, lists, and dicts are also okay
+    # resolve potential string references first
+    log.debug("Resolving %s", expr)
+    if isinstance(expr, str):
+        val = p4_state.resolve_reference(expr)
+        if val is None:
+            raise RuntimeError(f"Value {expr} could not be found!")
+    else:
+        val = expr
+    if isinstance(val, (z3.AstRef, int)):
+        # These are z3 types and can be returned
+        # Unfortunately int is part of it because z3 is very inconsistent
+        # about var handling...
+        return val
+    if isinstance(val, P4ComplexType):
+        # If we get a whole class return a new reference to the object
+        # Do not return the z3 type because we may assign a complete structure
+        if isinstance(val, Struct):
+            return copy(val)
+        return val
+    if isinstance(val, P4Expression):
+        # We got a P4 type, recurse...
+        val = val.eval(p4_state)
+        return resolve_expr(p4_state, val)
+    if isinstance(val, P4Callable):
+        # We got a P4 type, recurse...
+        return val
+    if isinstance(val, list):
+        # For lists, resolve each value individually and return a new list
+        list_expr = []
+        for val_expr in val:
+            rval_expr = resolve_expr(p4_state, val_expr)
+            list_expr.append(rval_expr)
+        return list_expr
+    if isinstance(val, dict):
+        # For dicts, resolve each value individually and return a new dict
+        dict_expr = []
+        for name, val_expr in val.items():
+            rval_expr = resolve_expr(p4_state, val_expr)
+            dict_expr[name] = rval_expr
+        return dict_expr
+    raise TypeError(f"Value of type {type(val)} cannot be resolved!")
+
+
+def get_type(p4_state, expr):
+    ''' Return the type of an expression, Resolve, if needed'''
+    arg_expr = resolve_expr(p4_state, expr)
+    if isinstance(arg_expr, P4ComplexType):
+        arg_type = arg_expr.z3_type
+    elif isinstance(arg_expr, int):
+        arg_type = z3.IntSort()
+    else:
+        arg_type = arg_expr.sort()
+    return arg_type
+
+
+def z3_implies(p4_state, cond, then_expr):
+    log.debug("Evaluating no_match...")
+    no_match = step(p4_state)
+    return z3.If(cond, then_expr, no_match)
+
+
+def check_p4_type(expr):
+    if isinstance(expr, P4ComplexType):
+        expr = expr.get_z3_repr()
+    return expr
+
+
 class P4Op(P4Expression):
     def get_value():
         raise NotImplementedError("get_value")
@@ -590,8 +659,10 @@ class P4Extern(P4Callable):
         self.z3_reg = z3_reg
         # P4Methods, which are also black-box functions, can have return types
         self.return_type = return_type
+        self.methods = {}
 
     def add_method(self, name, method):
+        self.methods[name] = method
         setattr(self, name, method)
 
     def eval(self, p4_state=None, *args, **kwargs):
@@ -813,6 +884,7 @@ class P4Return(P4Statement):
         self.expr = expr
 
     def eval(self, p4_state):
+        p4_state.clear_expr_chain()
         if self.expr is None:
             return p4_state.get_z3_repr()
         else:

@@ -2,7 +2,6 @@ import operator as op
 from collections import deque
 import logging
 import z3
-from copy import deepcopy, copy
 from collections import OrderedDict
 
 log = logging.getLogger(__name__)
@@ -28,72 +27,6 @@ def step(p4_state, expr=None):
         z3_copy = p4_state.get_z3_repr()
         return z3_copy
     # end of chain, just mirror the passed expressions
-    return expr
-
-
-def resolve_expr(p4_state, expr):
-    # Resolves to z3 and z3p4 expressions, ints, lists, and dicts are also okay
-    # resolve potential string references first
-    log.debug("Resolving %s", expr)
-    if isinstance(expr, str):
-        val = p4_state.resolve_reference(expr)
-        if val is None:
-            raise RuntimeError(f"Value {expr} could not be found!")
-    else:
-        val = expr
-    if isinstance(val, (z3.AstRef, int)):
-        # These are z3 types and can be returned
-        # Unfortunately int is part of it because z3 is very inconsistent
-        # about var handling...
-        return val
-    if isinstance(val, P4ComplexType):
-        # If we get a whole class return a new reference to the object
-        # Do not return the z3 type because we may assign a complete structure
-        if isinstance(val, Struct):
-            return copy(val)
-        return val
-    if isinstance(val, P4Expression):
-        # We got a P4 type, recurse...
-        val = val.eval(p4_state)
-        return resolve_expr(p4_state, val)
-    if isinstance(val, list):
-        # For lists, resolve each value individually and return a new list
-        list_expr = []
-        for val_expr in val:
-            rval_expr = resolve_expr(p4_state, val_expr)
-            list_expr.append(rval_expr)
-        return list_expr
-    if isinstance(val, dict):
-        # For dicts, resolve each value individually and return a new dict
-        dict_expr = []
-        for name, val_expr in val.items():
-            rval_expr = resolve_expr(p4_state, val_expr)
-            dict_expr[name] = rval_expr
-        return dict_expr
-    raise TypeError(f"Value of type {type(val)} cannot be resolved!")
-
-
-def get_type(p4_state, expr):
-    ''' Return the type of an expression, Resolve, if needed'''
-    arg_expr = resolve_expr(p4_state, expr)
-    if isinstance(arg_expr, P4ComplexType):
-        arg_type = arg_expr.z3_type
-    elif isinstance(arg_expr, int):
-        arg_type = z3.IntSort()
-    else:
-        arg_type = arg_expr.sort()
-    return arg_type
-
-
-def z3_implies(p4_state, cond, then_expr):
-    log.debug("Evaluating no_match...")
-    no_match = step(p4_state)
-    return z3.If(cond, then_expr, no_match)
-
-
-def check_p4_type(expr):
-    if isinstance(expr, P4ComplexType):
-        expr = expr.get_z3_repr()
     return expr
 
 
@@ -189,7 +122,10 @@ class P4Slice(P4Expression):
         self.slice_r = slice_r
 
     def eval(self, p4_state):
-        val_expr = resolve_expr(p4_state, self.val)
+        if isinstance(self.val, P4Expression):
+            val_expr = self.val.eval(p4_state)
+        else:
+            val_expr = p4_state.resolve_reference(self.val)
         if isinstance(val_expr, int):
             val_expr = z3.BitVecVal(val_expr, 64)
         return z3.Extract(self.slice_l, self.slice_r, val_expr)
@@ -314,11 +250,13 @@ class P4ComplexType():
         lval = lval.val
         lval, slice_l, slice_r = self.find_nested_slice(lval, slice_l, slice_r)
 
-        lval_expr = resolve_expr(self, lval)
-        rval_expr = resolve_expr(self, rval)
+        lval_expr = self.resolve_reference(lval)
+        rval_expr = self.resolve_reference(rval)
         # stupid integer checks that are unfortunately necessary....
         if isinstance(lval_expr, int):
             lval_expr = z3.BitVecVal(lval_expr, 64)
+        if isinstance(rval_expr, int):
+            rval_expr = z3.BitVecVal(rval_expr, 64)
         lval_expr_max = lval_expr.size() - 1
         if slice_l == lval_expr_max and slice_r == 0:
             # slice is full lval, nothing to do
@@ -329,6 +267,7 @@ class P4ComplexType():
             # left slice is smaller than the max, leave that chunk unchanged
             assemble.append(z3.Extract(lval_expr_max, slice_l + 1, lval_expr))
         # fill the rval_expr into the slice
+        # this cast is necessary to match the margins and to handle integers
         rval_expr = z3_cast(rval_expr, slice_l + 1 - slice_r)
         assemble.append(rval_expr)
         if slice_r > 0:
@@ -348,18 +287,8 @@ class P4ComplexType():
         if isinstance(lval, P4Slice):
             return self.set_slice(lval, rval)
         # TODO: Fix this method, has hideous performance impact
-        tmp_lval = self.resolve_reference(lval)
-        if tmp_lval is None:
-            if isinstance(self.get_var(lval), str):
-                # the target variable exists and is a string
-                # this means it is a reference (i.e., pointer) to another
-                # variable, so we need to resolve it
-                log.debug("Found reference from %s to %s ", lval, tmp_lval)
-                # because it is a reference  we are setting the actual target
-                lval = tmp_lval
-                # do not allow nested references, resolve the rvalue
-                rval = self.resolve_reference(rval)
-        else:
+        if hasattr(self, lval):
+            tmp_lval = self.resolve_reference(lval)
             if isinstance(rval, list):
                 return tmp_lval.set_list(rval)
             # We also must handle integer values and convert them to bitvectors
@@ -368,15 +297,15 @@ class P4ComplexType():
                 # if the lvalue is a bit vector, try to cast it
                 # otherwise ignore and hope that keeping it as an int works out
                 rval = z3.BitVecVal(rval, tmp_lval.size())
-            # the target variable exists and is not a string
-            # do not override an existing variable with a reference!
+            # the target variable exists
+            # do not override an existing variable with a string reference!
             # resolve any possible rvalue reference
             log.debug("Recursing with %s and %s ", lval, rval)
             rval = self.resolve_reference(rval)
-
         log.debug("Setting %s(%s) to %s(%s) ",
                   lval, type(lval), rval, type(rval))
 
+        # now that all the preprocessing is done we can assign the value
         if '.' in lval:
             # this means we are accessing a complex member
             # get the parent class and update its value
@@ -386,11 +315,6 @@ class P4ComplexType():
             target_class.set_or_add_var(suffix, rval)
         else:
             setattr(self, lval, rval)
-
-        # generate a new version of the z3 datatype
-        # update the internal representation of the attribute.
-        # TODO: Evaluate if it is actually worth it to update every time
-        # self.const = self.get_z3_repr(self.const)
 
     def __eq__(self, other):
 
@@ -416,18 +340,6 @@ class P4ComplexType():
             eq_accessors.append(z3_eq)
         return z3.And(*eq_accessors)
 
-    # def __deepcopy__(self, memo):
-    #     cls = self.__class__
-    #     result = cls.__new__(cls)
-    #     for k, v in self.__dict__.items():
-    #         if isinstance(v, (P4ComplexType)):
-    #             setattr(result, k, deepcopy(v, memo))
-    #         elif isinstance(v, z3.AstRef):
-    #             setattr(result, k, v)
-    #         else:
-    #             setattr(result, k, copy(v))
-    #     return result
-
 
 class Header(P4ComplexType):
 
@@ -436,13 +348,16 @@ class Header(P4ComplexType):
         super(Header, self).__init__(z3_reg, z3_type, name)
 
     def isValid(self, *args):
+        # This is a built-in
         return self.valid
 
     def setValid(self, p4_state):
+        # This is a built-in
         self.valid = z3.BoolVal(True)
         return step(p4_state)
 
     def setInvalid(self, p4_state):
+        # This is a built-in
         self.valid = z3.BoolVal(False)
         return step(p4_state)
 
@@ -469,13 +384,16 @@ class HeaderUnion(P4ComplexType):
         super(HeaderUnion, self).__init__(z3_reg, z3_type, const)
 
     def isValid(self, *args):
+        # This is a built-in
         return self.valid
 
     def setValid(self, p4_state):
+        # This is a built-in
         self.valid = z3.BoolVal(True)
         return step(p4_state)
 
     def setInvalid(self, p4_state):
+        # This is a built-in
         self.valid = z3.BoolVal(False)
         return step(p4_state)
 
@@ -487,6 +405,7 @@ class HeaderStack(P4ComplexType):
         self.size = len(self.accessors)
 
     def push_front(self, p4_state, num):
+        # This is a built-in
         for hdr_idx in range(num):
             hdr = self.get_var(f"{hdr_idx}")
             if hdr:
@@ -494,6 +413,7 @@ class HeaderStack(P4ComplexType):
         return step(p4_state)
 
     def pop_front(self, p4_state, num):
+        # This is a built-in
         for hdr_idx in range(num):
             hdr = self.get_var(f"{hdr_idx}")
             if hdr:
@@ -533,8 +453,15 @@ class Enum(P4ComplexType):
         pass
 
     def __eq__(self, other):
-        z3_type = other.sort()
-        return z3.Const(self.name, z3_type) == other
+        if isinstance(other, z3.ExprRef):
+            # if we compare to a z3 expression we are free to chose the value
+            # it does not matter if we are out of range, this just means false
+            # with this we can generate an interpretable type
+            # TODO: Should the type differ per invocation?
+            z3_type = other.sort()
+            return z3.Const(self.name, z3_type) == other
+        else:
+            return z3.BoolVal(False)
 
 
 class P4State(P4ComplexType):
@@ -577,6 +504,13 @@ class P4State(P4ComplexType):
         else:
             self.expr_chain.appendleft(exprs)
 
+    # def __copy__(self):
+    #     cls = self.__class__
+    #     result = cls.__new__(cls)
+    #     result.__dict__.update(self.__dict__)
+    #     result.expr_chain = self.copy_expr_chain()
+    #     return result
+
 
 class Z3Reg():
     def __init__(self):
@@ -614,20 +548,30 @@ class Z3Reg():
             self._ref_count[name] = 0
         elif type_str == "extern":
             # Extern also serve as types, so we need to register them too
-            self._types[name] = z3.DeclareSort(name)
+            self._types[name] = global_val
             self._globals[name] = global_val
         else:
             self._globals[name] = global_val
+            self._types[name] = global_val
 
     def init_p4_state(self, name, p4_params):
         stripped_args = []
+        instances = {}
         for param_name, param in p4_params.items():
             is_ref = param[0]
             param_type = param[1]
-            stripped_args.append((param_name, param_type))
+            if is_ref == "inout" or is_ref == "out":
+                # only inouts or outs matter as output
+                stripped_args.append((param_name, param_type))
+            else:
+                # for inputs we can instantiate something
+                instance = self.instance(param_name, param_type)
+                instances[param_name] = instance
         self._register_structlike(name, P4State, stripped_args)
         p4_state = self.instance(name, self.type(name))
         p4_state.add_globals(self._globals)
+        for instance_name, instance_val in instances.items():
+            p4_state.set_or_add_var(instance_name, instance_val)
         return p4_state
 
     def reset(self):
@@ -665,5 +609,7 @@ class Z3Reg():
             self._ref_count[type_name] += 1
             instance = z3_cls(self, p4z3_type, var_name)
             return instance
-        else:
+        elif isinstance(p4z3_type, z3.SortRef):
             return z3.Const(f"{var_name}", p4z3_type)
+        else:
+            return p4z3_type
