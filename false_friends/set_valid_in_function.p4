@@ -3,6 +3,8 @@
 
 header H {
     bit<8>  a;
+    bit<64> b;
+    bit<16> c;
 }
 
 struct Headers {
@@ -10,17 +12,16 @@ struct Headers {
 }
 
 struct Meta {
+    bit<32>   t;
 }
 
-bit<8> do_thing(out bit<32> d) {
-    return (bit<8>)32w1;
+bit<16> do_thing() {
+    H tmp_ret = { 8w0, 64w0, 16w0 };
+    return tmp_ret.c;
 }
 control ingress(inout Headers h, inout Meta m, inout standard_metadata_t sm) {
-    action action_thing(inout bit<32> c) {
-        c = (bit<32>)do_thing(c);
-    }
     apply {
-        action_thing(sm.enq_timestamp);
+        m.t = (bit<32>)(do_thing());
     }
 }
 

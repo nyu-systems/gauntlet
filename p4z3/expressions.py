@@ -1,4 +1,4 @@
-from copy import deepcopy, copy
+from copy import copy, deepcopy
 from collections import OrderedDict
 import operator as op
 import z3
@@ -796,8 +796,7 @@ class IfStatement(P4Statement):
         cond = resolve_expr(p4_state, self.cond)
         # conditional branching requires a copy of the state for each branch
         # in some sense this copy acts as a phi function
-        then_p4_state = deepcopy(p4_state)
-        then_expr = self.then_block.eval(then_p4_state)
+        then_expr = self.then_block.eval(copy(p4_state))
         if self.else_block:
             else_expr = self.else_block.eval(p4_state)
             return z3.If(cond, then_expr, else_expr)
@@ -812,10 +811,10 @@ class SwitchHit(P4Expression):
         self.cases = cases
 
     def eval_cases(self, p4_state, cases):
+        p4_state_cpy = copy(p4_state)
         expr = self.default_case.eval(p4_state)
         for case in reversed(cases.values()):
-            p4_state = deepcopy(p4_state)
-            case_expr = case["case_block"].eval(p4_state)
+            case_expr = case["case_block"].eval(copy(p4_state_cpy))
             expr = z3.If(case["match"], case_expr, expr)
         return expr
 
@@ -979,8 +978,10 @@ class P4Table(P4Z3Class):
     def eval_default(self, p4_state):
         if self.default_action is None:
             # In case there is no default action, the first action is default
-            self.default_action = (0, "NoAction", ())
-        _, action_name, p4_action_args = self.default_action
+            default_action = (0, "NoAction", ())
+        else:
+            default_action = self.default_action
+        _, action_name, p4_action_args = default_action
         log.debug("Evaluating default action...")
         return self.eval_action(p4_state,
                                 (action_name, p4_action_args))
@@ -990,7 +991,7 @@ class P4Table(P4Z3Class):
         const_entries = self.const_entries
         # first evaluate the default entry
         # state forks here
-        expr = self.eval_default(deepcopy(p4_state))
+        expr = self.eval_default(copy(p4_state))
         # then wrap constant entries around it
         for const_keys, action in reversed(const_entries):
             action_name = action[0]
@@ -1011,7 +1012,7 @@ class P4Table(P4Z3Class):
             action_match = z3.And(*matches)
             action_tuple = (action_name, p4_action_args)
             log.debug("Evaluating constant action %s...", action_name)
-            action_expr = self.eval_action(deepcopy(p4_state), action_tuple)
+            action_expr = self.eval_action(copy(p4_state), action_tuple)
             expr = z3.If(action_match, action_expr, expr)
         # then wrap dynamic table entries around the constant entries
         for action in reversed(actions.values()):
@@ -1023,7 +1024,7 @@ class P4Table(P4Z3Class):
             action_tuple = (action_name, p4_action_args)
             log.debug("Evaluating action %s...", action_name)
             # state forks here
-            action_expr = self.eval_action(deepcopy(p4_state), action_tuple)
+            action_expr = self.eval_action(copy(p4_state), action_tuple)
             expr = z3.If(action_match, action_expr, expr)
         # finally return a nested set of if expressions
         return expr

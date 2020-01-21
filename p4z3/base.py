@@ -1,5 +1,6 @@
 import operator as op
 from collections import deque
+from copy import copy, deepcopy
 import logging
 import z3
 from collections import OrderedDict
@@ -277,12 +278,6 @@ class P4ComplexType():
         self.set_or_add_var(lval, rval_expr)
         return
 
-    def set_list(self, rval):
-        for index, val in enumerate(rval):
-            accessor = self.accessors[index]
-            self.set_or_add_var(accessor.name(), val)
-        return
-
     def set_or_add_var(self, lval, rval):
         if isinstance(lval, P4Slice):
             return self.set_slice(lval, rval)
@@ -290,7 +285,8 @@ class P4ComplexType():
         if hasattr(self, lval):
             tmp_lval = self.resolve_reference(lval)
             if isinstance(rval, list):
-                return tmp_lval.set_list(rval)
+                tmp_lval.set_list(rval)
+                return
             # We also must handle integer values and convert them to bitvectors
             # For that we have to match the type
             if isinstance(rval, int) and isinstance(tmp_lval, z3.BitVecRef):
@@ -340,12 +336,30 @@ class P4ComplexType():
             eq_accessors.append(z3_eq)
         return z3.And(*eq_accessors)
 
+    def __copy__(self):
+        cls = self.__class__
+        result = cls.__new__(cls)
+        result.__dict__.update(self.__dict__)
+        for name, val in result.__dict__.items():
+            if isinstance(val, (P4ComplexType, deque)):
+                result.__dict__[name] = copy(val)
+        return result
+
+
+
 
 class Header(P4ComplexType):
 
     def __init__(self, z3_reg, z3_type, name):
         self.valid = z3.Bool(f"{name}_valid")
         super(Header, self).__init__(z3_reg, z3_type, name)
+
+    def set_list(self, rval):
+        self.valid = z3.BoolVal(True)
+        for index, val in enumerate(rval):
+            accessor = self.accessors[index]
+            self.set_or_add_var(accessor.name(), val)
+        return
 
     def isValid(self, *args):
         # This is a built-in
@@ -354,12 +368,12 @@ class Header(P4ComplexType):
     def setValid(self, p4_state):
         # This is a built-in
         self.valid = z3.BoolVal(True)
-        return step(p4_state)
+        return p4_state.get_z3_repr()
 
     def setInvalid(self, p4_state):
         # This is a built-in
         self.valid = z3.BoolVal(False)
-        return step(p4_state)
+        return p4_state.get_z3_repr()
 
     def __eq__(self, other):
         if isinstance(other, Header):
@@ -369,8 +383,8 @@ class Header(P4ComplexType):
                                    z3.Not(other.isValid()))
             # when both headers are valid compare the values
             check_valid = z3.And(self.isValid(), other.isValid())
-            self_const = self.const
-            other_const = other.const
+            self_const = self.get_z3_repr()
+            other_const = other.get_z3_repr()
             comparison = z3.And(check_valid, self_const == other_const)
             return z3.Or(check_invalid, comparison)
         return super().__eq__(other)
@@ -379,9 +393,16 @@ class Header(P4ComplexType):
 class HeaderUnion(P4ComplexType):
     # TODO: Implement this class correctly...
 
-    def __init__(self, z3_reg, z3_type, const):
-        self.valid = z3.BoolSort()
-        super(HeaderUnion, self).__init__(z3_reg, z3_type, const)
+    def __init__(self, z3_reg, z3_type, name):
+        self.valid = z3.Bool(f"{name}_valid")
+        super(HeaderUnion, self).__init__(z3_reg, z3_type, name)
+
+    def set_list(self, rval):
+        self.valid = z3.BoolVal(True)
+        for index, val in enumerate(rval):
+            accessor = self.accessors[index]
+            self.set_or_add_var(accessor.name(), val)
+        return
 
     def isValid(self, *args):
         # This is a built-in
@@ -390,13 +411,12 @@ class HeaderUnion(P4ComplexType):
     def setValid(self, p4_state):
         # This is a built-in
         self.valid = z3.BoolVal(True)
-        return step(p4_state)
+        return p4_state.get_z3_repr()
 
     def setInvalid(self, p4_state):
         # This is a built-in
         self.valid = z3.BoolVal(False)
-        return step(p4_state)
-
+        return p4_state.get_z3_repr()
 
 class HeaderStack(P4ComplexType):
 
@@ -422,7 +442,12 @@ class HeaderStack(P4ComplexType):
 
 
 class Struct(P4ComplexType):
-    pass
+
+    def set_list(self, rval):
+        for index, val in enumerate(rval):
+            accessor = self.accessors[index]
+            self.set_or_add_var(accessor.name(), val)
+        return
 
 
 class Enum(P4ComplexType):
@@ -503,14 +528,6 @@ class P4State(P4ComplexType):
             self.expr_chain.extendleft(reversed(exprs))
         else:
             self.expr_chain.appendleft(exprs)
-
-    # def __copy__(self):
-    #     cls = self.__class__
-    #     result = cls.__new__(cls)
-    #     result.__dict__.update(self.__dict__)
-    #     result.expr_chain = self.copy_expr_chain()
-    #     return result
-
 
 class Z3Reg():
     def __init__(self):

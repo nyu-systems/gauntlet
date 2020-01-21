@@ -2,8 +2,11 @@
 #include <v1model.p4>
 
 header H {
-    bit<8>  a;
+    bit<16> a;
+    bit<64> b;
+    bit<16> c;
 }
+
 
 struct Headers {
     H h;
@@ -12,15 +15,13 @@ struct Headers {
 struct Meta {
 }
 
-bit<8> do_thing(out bit<32> d) {
-    return (bit<8>)32w1;
-}
 control ingress(inout Headers h, inout Meta m, inout standard_metadata_t sm) {
-    action action_thing(inout bit<32> c) {
-        c = (bit<32>)do_thing(c);
-    }
+
     apply {
-        action_thing(sm.enq_timestamp);
+        H local_h = { 16w0, 64w0, 16w0 };
+        if (local_h == h.h) {
+            h.h.c = 16w2;
+        }
     }
 }
 
