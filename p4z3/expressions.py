@@ -633,7 +633,7 @@ class P4Control(P4Callable):
         # when there is no p4 state provided, the control is instantiated
         for idx, param_tuple in enumerate(self.const_params.items()):
             const_param_name = param_tuple[0]
-            self.merged_consts[param_name] = args[idx]
+            self.merged_consts[const_param_name] = args[idx]
         for arg_name, arg in kwargs.items():
             self.merged_consts[arg_name] = arg
         return self
