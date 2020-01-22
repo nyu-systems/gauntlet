@@ -1,4 +1,4 @@
-from copy import copy, deepcopy
+import copy
 from collections import OrderedDict
 import operator as op
 import z3
@@ -363,6 +363,23 @@ class P4Cast(P4Expression):
         return z3_cast(expr, self.to_size)
 
 
+class P4Slice(P4Slice):
+
+    def __init__(self, val, slice_l, slice_r):
+        self.val = val
+        self.slice_l = slice_l
+        self.slice_r = slice_r
+
+    def eval(self, p4_state):
+        val = resolve_expr(p4_state, self.val)
+        slice_l = resolve_expr(p4_state, self.slice_l)
+        slice_r = resolve_expr(p4_state, self.slice_r)
+
+        if isinstance(val, int):
+            val = z3.BitVecVal(val, 64)
+        return z3.Extract(slice_l, slice_r, val)
+
+
 class P4Mux(P4Expression):
     def __init__(self, cond, then_val, else_val):
         self.cond = cond
@@ -473,15 +490,15 @@ class P4Callable(P4Z3Class):
     def get_parameters(self):
         return self.params
 
-    def merge_parameters(self, *args, **kwargs):
+    def merge_parameters(self, params, *args, **kwargs):
         merged_params = {}
         args_len = len(args)
-        for idx, param_name in enumerate(self.params.keys()):
-            is_ref = self.params[param_name][0]
+        for idx, param_name in enumerate(params.keys()):
+            is_ref = params[param_name][0]
             if idx < args_len:
                 merged_params[param_name] = (is_ref, args[idx])
         for arg_name, arg_val in kwargs.items():
-            is_ref = self.params[arg_name][0]
+            is_ref = params[arg_name][0]
             merged_params[arg_name] = (is_ref, arg_val)
         return merged_params
 
@@ -509,7 +526,7 @@ class P4Callable(P4Z3Class):
 
     def eval(self, p4_state=None, *args, **kwargs):
         self.call_counter += 1
-        merged_params = self.merge_parameters(*args, **kwargs)
+        merged_params = self.merge_parameters(self.params, *args, **kwargs)
         var_buffer = self.save_variables(p4_state, merged_params)
         return self.eval_callable(p4_state, merged_params, var_buffer)
 
@@ -589,22 +606,36 @@ class P4Function(P4Callable):
 
 class P4Control(P4Callable):
 
-    def __init__(self):
+    def __init__(self, z3_reg, name, params, const_params):
         super(P4Control, self).__init__()
         self.locals = []
-        self.state_initializer = None
+        self.state_initializer = (z3_reg, name)
+        self.const_params = OrderedDict()
+        for param in params:
+            self.add_parameter(param)
+        for param in const_params:
+            is_ref = param[0]
+            const_name = param[1]
+            const_type = param[2]
+            self.const_params[const_name] = const_type
 
     def declare_local(self, local_name, local_var):
         decl = P4Declaration(local_name, local_var)
         self.block.add(decl)
 
-    def add_instance(self, z3_reg, name, params):
-        for param in params:
-            self.add_parameter(param)
-        self.state_initializer = (z3_reg, name)
-
     def add_stmt(self, stmt):
         self.block.add(stmt)
+
+    def __call__(self, p4_state=None, *args, **kwargs):
+        # for controls and externs, the state is not required
+        # controls can only be executed with apply statements
+        if p4_state:
+            return self.eval(p4_state, *args, **kwargs)
+        for idx, (param_name, param_type) in enumerate(self.const_params.items()):
+            self.const_params[param_name] = args[idx]
+        for arg_name, arg in kwargs.items():
+            self.const_params[arg_name] = arg
+        return self
 
     def apply(self, p4_state, *args, **kwargs):
         return self.eval(p4_state, *args, **kwargs)
@@ -620,9 +651,13 @@ class P4Control(P4Callable):
             # There is no state yet, so use the context of the function
             p4_state = p4_state_context
 
-        merged_params = self.merge_parameters(*args, **kwargs)
+        merged_params = self.merge_parameters(self.params, *args, **kwargs)
         var_buffer = self.save_variables(p4_state, merged_params)
         p4_context = P4Context(var_buffer, p4_state_cpy)
+
+        for const_param_name, const_arg in self.const_params.items():
+            const_arg = resolve_expr(p4_state, const_arg)
+            p4_state_context.set_or_add_var(const_param_name, const_arg)
 
         # override the symbolic entries if we have concrete
         # arguments from the table
@@ -671,7 +706,7 @@ class P4Extern(P4Callable):
             p4_state = self.z3_reg.init_p4_state(self.name, self.params)
             p4_state = p4_state
 
-        merged_params = self.merge_parameters(*args, **kwargs)
+        merged_params = self.merge_parameters(self.params, *args, **kwargs)
         # externs can return values, we need to generate a new constant
         # we generate the name based on the input arguments
         var_name = ""
@@ -746,7 +781,7 @@ class AssignmentStatement(P4Statement):
         rval_expr = resolve_expr(p4_state, self.rval)
         # in assignments all complex types values are copied
         if isinstance(rval_expr, P4ComplexType):
-            rval_expr = copy(rval_expr)
+            rval_expr = copy.copy(rval_expr)
         p4_state.set_or_add_var(self.lval, rval_expr)
 
         p4z3_expr = p4_state.pop_next_expr()
@@ -806,7 +841,7 @@ class IfStatement(P4Statement):
         cond = resolve_expr(p4_state, self.cond)
         # conditional branching requires a copy of the state for each branch
         # in some sense this copy acts as a phi function
-        then_expr = self.then_block.eval(copy(p4_state))
+        then_expr = self.then_block.eval(copy.copy(p4_state))
         if self.else_block:
             else_expr = self.else_block.eval(p4_state)
             return z3.If(cond, then_expr, else_expr)
@@ -821,10 +856,10 @@ class SwitchHit(P4Expression):
         self.cases = cases
 
     def eval_cases(self, p4_state, cases):
-        p4_state_cpy = copy(p4_state)
+        p4_state_cpy = copy.copy(p4_state)
         expr = self.default_case.eval(p4_state)
         for case in reversed(cases.values()):
-            case_expr = case["case_block"].eval(copy(p4_state_cpy))
+            case_expr = case["case_block"].eval(copy.copy(p4_state_cpy))
             expr = z3.If(case["match"], case_expr, expr)
         return expr
 
@@ -893,9 +928,9 @@ class P4Return(P4Statement):
 
     def eval(self, p4_state):
         chain_copy = p4_state.copy_expr_chain()
+        # remove all expressions until we hit the end (typically a context)
         for expr in chain_copy:
             p4_state.expr_chain.popleft()
-            # remove all expressions until we hit the end (typically a context)
             if isinstance(expr, P4Context):
                 break
         if self.expr is None:
@@ -1003,7 +1038,7 @@ class P4Table(P4Z3Class):
         const_entries = self.const_entries
         # first evaluate the default entry
         # state forks here
-        expr = self.eval_default(copy(p4_state))
+        expr = self.eval_default(copy.copy(p4_state))
         # then wrap constant entries around it
         for const_keys, action in reversed(const_entries):
             action_name = action[0]
@@ -1024,7 +1059,7 @@ class P4Table(P4Z3Class):
             action_match = z3.And(*matches)
             action_tuple = (action_name, p4_action_args)
             log.debug("Evaluating constant action %s...", action_name)
-            action_expr = self.eval_action(copy(p4_state), action_tuple)
+            action_expr = self.eval_action(copy.copy(p4_state), action_tuple)
             expr = z3.If(action_match, action_expr, expr)
         # then wrap dynamic table entries around the constant entries
         for action in reversed(actions.values()):
@@ -1036,7 +1071,7 @@ class P4Table(P4Z3Class):
             action_tuple = (action_name, p4_action_args)
             log.debug("Evaluating action %s...", action_name)
             # state forks here
-            action_expr = self.eval_action(copy(p4_state), action_tuple)
+            action_expr = self.eval_action(copy.copy(p4_state), action_tuple)
             expr = z3.If(action_match, action_expr, expr)
         # finally return a nested set of if expressions
         return expr

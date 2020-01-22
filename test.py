@@ -101,10 +101,8 @@ xfails = [
     "issue1386.p4",
     "issue1638.p4",
     "issue1717.p4",
-    "issue1806.p4",
     "issue1830.p4",
     "issue2044-bmv2.p4",
-    "issue396.p4",
     "issue407-2.p4",
     "issue407-3.p4",
     "issue754.p4",
@@ -115,7 +113,6 @@ xfails = [
     "named-arg1.p4",
     "nested-tuple.p4",
     "parser-conditional.p4",
-    "psa-basic-counter-bmv2.p4",
     "psa-example-digest-bmv2.p4",
     "psa-hash.p4",
     "psa-portid-using-newtype2.p4",
@@ -138,7 +135,6 @@ xfails = [
     "tuple1.p4",
     "tuple2.p4",
     "two_ebpf.p4",
-    "unreachable-accept.p4",
     "v1model-digest-containing-ser-enum.p4",
 ]
 

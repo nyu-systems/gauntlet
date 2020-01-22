@@ -52,7 +52,7 @@ parser p(packet_in pkt, out Parsed_packet hdr, inout Metadata meta, inout standa
 }
 
 control ingress(inout Parsed_packet hdr, inout Metadata meta, inout standard_metadata_t stdmeta) {
-    action do_action(inout bit<7> in_bit) {
+    action do_action(in bit<7> in_bit) {
         hdr.h.a[0:0] = 0;
     }
     apply {

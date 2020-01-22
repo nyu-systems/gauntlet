@@ -1,6 +1,6 @@
 import operator as op
 from collections import deque
-from copy import copy, deepcopy
+import copy
 import logging
 import z3
 from collections import OrderedDict
@@ -94,19 +94,13 @@ class P4Package():
 
 
 class P4Slice(P4Expression):
+    ''' Abstract class '''
+
     def __init__(self, val, slice_l, slice_r):
-        self.val = val
-        self.slice_l = slice_l
-        self.slice_r = slice_r
+        raise NotImplementedError("Method init not implemented!")
 
     def eval(self, p4_state):
-        if isinstance(self.val, P4Expression):
-            val_expr = self.val.eval(p4_state)
-        else:
-            val_expr = p4_state.resolve_reference(self.val)
-        if isinstance(val_expr, int):
-            val_expr = z3.BitVecVal(val_expr, 64)
-        return z3.Extract(self.slice_l, self.slice_r, val_expr)
+        raise NotImplementedError("Method eval not implemented!")
 
 
 class P4ComplexType():
@@ -319,7 +313,7 @@ class P4ComplexType():
         result.__dict__.update(self.__dict__)
         for name, val in result.__dict__.items():
             if isinstance(val, (P4ComplexType, deque)):
-                result.__dict__[name] = copy(val)
+                result.__dict__[name] = copy.copy(val)
         return result
 
 
