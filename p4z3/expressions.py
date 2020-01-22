@@ -24,8 +24,6 @@ def resolve_expr(p4_state, expr):
     if isinstance(val, P4ComplexType):
         # If we get a whole class return a new reference to the object
         # Do not return the z3 type because we may assign a complete structure
-        if isinstance(val, Struct):
-            return copy(val)
         return val
     if isinstance(val, P4Expression):
         # We got a P4 type, recurse...
@@ -741,6 +739,9 @@ class AssignmentStatement(P4Statement):
     def eval(self, p4_state):
         log.debug("Assigning %s to %s ", self.rval, self.lval)
         rval_expr = resolve_expr(p4_state, self.rval)
+        # in assignments all complex types values are copied
+        if isinstance(rval_expr, P4ComplexType):
+            rval_expr = copy(rval_expr)
         p4_state.set_or_add_var(self.lval, rval_expr)
         return step(p4_state)
 
