@@ -611,6 +611,7 @@ class P4Control(P4Callable):
         self.locals = []
         self.state_initializer = (z3_reg, name)
         self.const_params = OrderedDict()
+        self.merged_consts = OrderedDict()
         for param in params:
             self.add_parameter(param)
         for param in const_params:
@@ -629,12 +630,12 @@ class P4Control(P4Callable):
     def __call__(self, p4_state=None, *args, **kwargs):
         # for controls and externs, the state is not required
         # controls can only be executed with apply statements
-        if p4_state:
-            return self.eval(p4_state, *args, **kwargs)
-        for idx, (param_name, param_type) in enumerate(self.const_params.items()):
-            self.const_params[param_name] = args[idx]
+        # when there is no p4 state provided, the control is instantiated
+        for idx, param_tuple in enumerate(self.const_params.items()):
+            const_param_name = param_tuple[0]
+            self.merged_consts[param_name] = args[idx]
         for arg_name, arg in kwargs.items():
-            self.const_params[arg_name] = arg
+            self.merged_consts[arg_name] = arg
         return self
 
     def apply(self, p4_state, *args, **kwargs):
@@ -655,7 +656,7 @@ class P4Control(P4Callable):
         var_buffer = self.save_variables(p4_state, merged_params)
         p4_context = P4Context(var_buffer, p4_state_cpy)
 
-        for const_param_name, const_arg in self.const_params.items():
+        for const_param_name, const_arg in self.merged_consts.items():
             const_arg = resolve_expr(p4_state, const_arg)
             p4_state_context.set_or_add_var(const_param_name, const_arg)
 
