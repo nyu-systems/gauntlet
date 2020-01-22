@@ -8,29 +8,6 @@ from collections import OrderedDict
 log = logging.getLogger(__name__)
 
 
-def step(p4_state, expr=None):
-    ''' The step function ensures that modifications are propagated to
-        all subsequent operations. This is important to guarantee
-        correctness with branching or local modification. '''
-    if p4_state.expr_chain:
-        # pop the first function in the list
-        next_expr = p4_state.expr_chain.popleft()
-        # iterate through all the remaining functions in the chain
-        log.debug("Evaluating %s", next_expr.__class__)
-        expr = next_expr.eval(p4_state)
-        # eval should always return an expression
-        if not isinstance(expr, (z3.ExprRef, int)):
-            raise TypeError(f"Expression {expr} is not a z3 expression!")
-    if expr is None:
-        # empty statement, just return the final update assignment
-        # this also checks the validity of the new assignment
-        # if there is a type error, z3 will complain
-        z3_copy = p4_state.get_z3_repr()
-        return z3_copy
-    # end of chain, just mirror the passed expressions
-    return expr
-
-
 def z3_cast(val, to_type):
 
     if isinstance(val, (z3.BoolSortRef, z3.BoolRef)):
@@ -346,8 +323,6 @@ class P4ComplexType():
         return result
 
 
-
-
 class Header(P4ComplexType):
 
     def __init__(self, z3_reg, z3_type, name):
@@ -418,6 +393,7 @@ class HeaderUnion(P4ComplexType):
         self.valid = z3.BoolVal(False)
         return p4_state.get_z3_repr()
 
+
 class HeaderStack(P4ComplexType):
 
     def __init__(self, z3_reg, z3_type, name):
@@ -430,7 +406,7 @@ class HeaderStack(P4ComplexType):
             hdr = self.get_var(f"{hdr_idx}")
             if hdr:
                 hdr.valid = z3.BoolVal(True)
-        return step(p4_state)
+        return p4_state.get_z3_repr()
 
     def pop_front(self, p4_state, num):
         # This is a built-in
@@ -438,7 +414,7 @@ class HeaderStack(P4ComplexType):
             hdr = self.get_var(f"{hdr_idx}")
             if hdr:
                 hdr.valid = z3.BoolVal(False)
-        return step(p4_state)
+        return p4_state.get_z3_repr()
 
 
 class Struct(P4ComplexType):
@@ -489,6 +465,16 @@ class Enum(P4ComplexType):
             return z3.BoolVal(False)
 
 
+class EndExpr():
+    ''' This function is a little trick to ensure that chains are executed
+        appropriately. When we reach the end of an execution chain, this
+        expression returns the state of the program at the end of this
+        particular chain.'''
+
+    def eval(self, p4_state):
+        return p4_state.get_z3_repr()
+
+
 class P4State(P4ComplexType):
     """
     A P4State Object is a special, dynamic type of P4ComplexType. It represents
@@ -528,6 +514,12 @@ class P4State(P4ComplexType):
             self.expr_chain.extendleft(reversed(exprs))
         else:
             self.expr_chain.appendleft(exprs)
+
+    def pop_next_expr(self):
+        if self.expr_chain:
+            return self.expr_chain.popleft()
+        return EndExpr()
+
 
 class Z3Reg():
     def __init__(self):

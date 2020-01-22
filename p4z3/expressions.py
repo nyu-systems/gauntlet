@@ -63,7 +63,8 @@ def get_type(p4_state, expr):
 
 def z3_implies(p4_state, cond, then_expr):
     log.debug("Evaluating no_match...")
-    no_match = step(p4_state)
+    p4z3_expr = p4_state.pop_next_expr()
+    no_match = p4z3_expr.eval(p4_state)
     return z3.If(cond, then_expr, no_match)
 
 
@@ -452,7 +453,8 @@ class P4Context(P4Z3Class):
                 log.debug("Deleting %s", param_name)
                 old_p4_state.del_var(param_name)
 
-        return step(old_p4_state)
+        p4z3_expr = old_p4_state.pop_next_expr()
+        return p4z3_expr.eval(old_p4_state)
 
 
 class P4Callable(P4Z3Class):
@@ -544,7 +546,8 @@ class P4Action(P4Callable):
         # execute the action expression with the new environment
         p4_state.insert_exprs([self.block, p4_context])
         # reset to the previous execution chain
-        return step(p4_state)
+        p4z3_expr = p4_state.pop_next_expr()
+        return p4z3_expr.eval(p4_state)
 
 
 class P4Function(P4Callable):
@@ -580,7 +583,8 @@ class P4Function(P4Callable):
             p4_state.set_or_add_var(param_name, arg)
         # execute the action expression with the new environment
         p4_state.insert_exprs([self.block, p4_context])
-        return step(p4_state)
+        p4z3_expr = p4_state.pop_next_expr()
+        return p4z3_expr.eval(p4_state)
 
 
 class P4Control(P4Callable):
@@ -641,9 +645,9 @@ class P4Control(P4Callable):
 
         # execute the action expression with the new environment
         p4_state_context.expr_chain = p4_state.copy_expr_chain()
-        p4_state_context.insert_exprs(
-            [self.block, p4_context])
-        return step(p4_state_context)
+        p4_state_context.insert_exprs([self.block, p4_context])
+        p4z3_expr = p4_state_context.pop_next_expr()
+        return p4z3_expr.eval(p4_state_context)
 
 
 class P4Extern(P4Callable):
@@ -724,7 +728,8 @@ class P4Declaration(P4Statement):
 
     def eval(self, p4_state):
         p4_state.set_or_add_var(self.lval, self.rval)
-        return step(p4_state)
+        p4z3_expr = p4_state.pop_next_expr()
+        return p4z3_expr.eval(p4_state)
 
 
 class AssignmentStatement(P4Statement):
@@ -743,7 +748,9 @@ class AssignmentStatement(P4Statement):
         if isinstance(rval_expr, P4ComplexType):
             rval_expr = copy(rval_expr)
         p4_state.set_or_add_var(self.lval, rval_expr)
-        return step(p4_state)
+
+        p4z3_expr = p4_state.pop_next_expr()
+        return p4z3_expr.eval(p4_state)
 
 
 class MethodCallStmt(P4Statement):
@@ -754,7 +761,8 @@ class MethodCallStmt(P4Statement):
     def eval(self, p4_state):
         expr = self.method_expr.eval(p4_state)
         if p4_state.expr_chain:
-            return step(p4_state)
+            p4z3_expr = p4_state.pop_next_expr()
+            return p4z3_expr.eval(p4_state)
         else:
             return expr
 
@@ -772,7 +780,8 @@ class BlockStatement(P4Statement):
 
     def eval(self, p4_state):
         p4_state.insert_exprs(self.exprs)
-        return step(p4_state)
+        p4z3_expr = p4_state.pop_next_expr()
+        return p4z3_expr.eval(p4_state)
 
 
 class IfStatement(P4Statement):
@@ -859,21 +868,23 @@ class SwitchStatement(P4Statement):
         # instantiate the hit expression
         switch_hit = SwitchHit(table, self.cases, self.default_case)
         p4_state.insert_exprs([table, switch_hit])
-        return step(p4_state)
+        p4z3_expr = p4_state.pop_next_expr()
+        return p4z3_expr.eval(p4_state)
 
 
 class P4Noop(P4Statement):
 
     def eval(self, p4_state):
-        return step(p4_state)
+        p4z3_expr = p4_state.pop_next_expr()
+        return p4z3_expr.eval(p4_state)
 
 
 class P4Exit(P4Statement):
 
     def eval(self, p4_state):
-        # Exit the chain early
+        # Exit the chain early and absolutely
         p4_state.clear_expr_chain()
-        return step(p4_state)
+        return p4_state.get_z3_repr()
 
 
 class P4Return(P4Statement):
