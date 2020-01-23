@@ -14,7 +14,7 @@ log = logging.getLogger(__name__)
 FILE_DIR = os.path.dirname(os.path.abspath(__file__))
 P4C_BIN = FILE_DIR + "/p4c/build/p4c"
 P4Z3_BIN = FILE_DIR + "/p4c/build/p4toz3"
-PASS_DIR = FILE_DIR + "validated"
+PASS_DIR = FILE_DIR + "/validated"
 
 PASSES = "--top4 "
 PASSES += "FrontEnd,MidEnd "

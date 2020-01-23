@@ -424,13 +424,14 @@ class Enum(P4ComplexType):
 
     def __init__(self, z3_reg, z3_type: z3.SortRef, name):
         super(Enum, self).__init__(z3_reg, z3_type, name)
-        # self.name = name
-        # self.z3_type = z3_type
-        # self.const = z3.Const(f"{self.name}", z3_type)
-        # self.constructor = z3_type.constructor(0)
-        # These are special for enums
         self._set_z3_accessors(z3_type, self.constructor)
         self._init_members(z3_reg, None, self.accessors)
+
+    def set_list(self, rval):
+        for index, val in enumerate(rval):
+            accessor = self.accessors[index]
+            self.set_or_add_var(accessor.name(), val)
+        return
 
     def _set_z3_accessors(self, z3_type, constructor):
         self.accessors = []

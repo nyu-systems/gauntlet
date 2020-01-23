@@ -142,7 +142,7 @@ def main():
             log.info("Failed to validate the P4 code!")
             log.info("Rerun the example with:")
             out_file = VALIDATION_BUG_DIR.joinpath(p4_file.name)
-            log.info("python3 check_p4_compilation -i %s", out_file)
+            log.info("python3 check_p4_compilation.py -i %s", out_file)
             dump_result(result, VALIDATION_BUG_DIR, p4_file)
             dump_p4_file(VALIDATION_BUG_DIR, p4_file)
             continue

@@ -68,12 +68,6 @@ def z3_implies(p4_state, cond, then_expr):
     return z3.If(cond, then_expr, no_match)
 
 
-def check_p4_type(expr):
-    if isinstance(expr, P4ComplexType):
-        expr = expr.get_z3_repr()
-    return expr
-
-
 class P4Op(P4Expression):
     def get_value():
         raise NotImplementedError("get_value")
@@ -386,12 +380,36 @@ class P4Mux(P4Expression):
         self.then_val = then_val
         self.else_val = else_val
 
+    def unravel_datatype(self, datatype_list):
+        unravelled_list = []
+        for val in datatype_list:
+            if isinstance(val, P4ComplexType):
+                val = self.unravel_datatype(val.get_z3_repr().children())
+            unravelled_list.append(val)
+        return unravelled_list
+
     def eval(self, p4_state):
         cond = resolve_expr(p4_state, self.cond)
         then_val = resolve_expr(p4_state, self.then_val)
         else_val = resolve_expr(p4_state, self.else_val)
-        then_val = check_p4_type(then_val)
-        else_val = check_p4_type(else_val)
+        # this is a really nasty hack, do not try this at home kids
+        # because we have to be able to access the sub values again
+        # we have to resolve the if condition in the case of complex types
+        # we do this by splitting the if statement into a list
+        # lists can easily be assigned to a target structure
+        if isinstance(then_val, P4ComplexType):
+            then_val = then_val.get_z3_repr().children()
+        if isinstance(else_val, P4ComplexType):
+            else_val = else_val.get_z3_repr().children()
+        if isinstance(then_val, list) and isinstance(else_val, list):
+            sub_cond = []
+            # handle nested complex types
+            then_list = self.unravel_datatype(then_val)
+            else_list = self.unravel_datatype(else_val)
+            for idx, member in enumerate(then_list):
+                if_expr = z3.If(cond, member, else_list[idx])
+                sub_cond.append(if_expr)
+            return sub_cond
         return z3.If(cond, then_val, else_val)
 
 
