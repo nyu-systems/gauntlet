@@ -443,7 +443,7 @@ class P4Context(P4Z3Class):
         self.var_buffer = var_buffer
         self.old_p4_state = old_p4_state
 
-    def eval(self, p4_context):
+    def restore_context(self, p4_context):
         if self.old_p4_state:
             log.debug("Restoring original p4 state %s to %s ",
                       p4_context, self.old_p4_state)
@@ -469,7 +469,10 @@ class P4Context(P4Z3Class):
                 # value has not existed previously, marked for deletion
                 log.debug("Deleting %s", param_name)
                 old_p4_state.del_var(param_name)
+        return old_p4_state
 
+    def eval(self, p4_context):
+        old_p4_state = self.restore_context(p4_context)
         p4z3_expr = old_p4_state.pop_next_expr()
         return p4z3_expr.eval(old_p4_state)
 
@@ -542,8 +545,6 @@ class P4Action(P4Callable):
         self.block = block
 
     def eval_callable(self, p4_state, merged_params, var_buffer):
-        # override the symbolic entries if we have concrete
-        # arguments from the table
         p4_state_cpy = p4_state
         p4_context = P4Context(var_buffer, None)
         for param_name, param in merged_params.items():
@@ -580,8 +581,6 @@ class P4Function(P4Callable):
 
     def eval_callable(self, p4_state, merged_params, var_buffer):
 
-        # override the symbolic entries if we have concrete
-        # arguments from the table
         p4_state_cpy = p4_state
         p4_context = P4Context(var_buffer, None)
         for param_name, param in merged_params.items():
@@ -928,17 +927,29 @@ class P4Return(P4Statement):
         self.expr = expr
 
     def eval(self, p4_state):
-        chain_copy = p4_state.copy_expr_chain()
-        # remove all expressions until we hit the end (typically a context)
-        for expr in chain_copy:
-            p4_state.expr_chain.popleft()
-            if isinstance(expr, P4Context):
-                break
+
+        # resolve the expr before restoring the state
         if self.expr is None:
-            return p4_state.get_z3_repr()
+            expr = None
         else:
             expr = resolve_expr(p4_state, self.expr)
-            return expr
+
+        chain_copy = p4_state.copy_expr_chain()
+        # remove all expressions until we hit the end (typically a context)
+        for p4z3_expr in chain_copy:
+            p4_state.expr_chain.popleft()
+            # this is tricky, we need to restore the state before returning
+            # so update the p4_state and then move on to return the expression
+            # this technique preserves the return value
+            if isinstance(p4z3_expr, P4Context):
+                p4_state = p4z3_expr.restore_context(p4_state)
+                break
+        # since we popped the P4Context object that would take care of this
+        # return the z3 expressions of the state AFTER restoring it
+        if expr is None:
+            p4z3_expr = p4_state.pop_next_expr()
+            expr = p4z3_expr.eval(p4_state)
+        return expr
 
 
 def resolve_action(action_expr):

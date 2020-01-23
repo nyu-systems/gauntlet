@@ -54,7 +54,8 @@ def handle_pyz3_error(fail_dir, p4_file):
 def evaluate_package(p4_package):
     z3_asts = {}
     for pipe_name, p4_pipe_ast in p4_package.pipes.items():
-
+        # if pipe_name != "ig":
+        #     continue
         log.info("Formalizing %s pipe...", pipe_name)
         if isinstance(p4_pipe_ast, P4Package):
             # it is apparently possible to have nested packages...

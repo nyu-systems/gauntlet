@@ -14,6 +14,7 @@ log = logging.getLogger(__name__)
 FILE_DIR = os.path.dirname(os.path.abspath(__file__))
 P4C_BIN = FILE_DIR + "/p4c/build/p4c"
 P4Z3_BIN = FILE_DIR + "/p4c/build/p4toz3"
+PASS_DIR = FILE_DIR + "validated"
 
 PASSES = "--top4 "
 PASSES += "FrontEnd,MidEnd "
@@ -197,20 +198,32 @@ def main():
                         required=True,
                         help="A P4 file or path to a "
                         "directory which contains P4 files.")
+    parser.add_argument("-o", "--out_dir", dest="pass_dir",
+                        default=PASS_DIR,
+                        help="The output folder where all passes are dumped.")
+    parser.add_argument("-p", "--p4c_bin", dest="p4c_bin",
+                        default=P4C_BIN,
+                        help="Specifies the p4c binary to compile a p4 file.")
+
     # Parse options and process argv
     args = parser.parse_args()
     p4_input = Path(args.p4_input)
-    pass_dir = Path("validated")
+    pass_dir = Path(args.pass_dir)
+    p4c_bin = args.p4c_bin
     if os.path.isfile(p4_input):
         pass_dir = pass_dir.joinpath(p4_input.stem)
         util.del_dir(pass_dir)
-        validate_translation(p4_input, pass_dir, P4C_BIN)
+        result = validate_translation(p4_input, pass_dir, p4c_bin)
+        exit(result)
     else:
         util.check_dir(pass_dir)
         for p4_file in list(p4_input.glob("**/*.p4")):
             pass_dir = pass_dir.joinpath(p4_file.stem)
             util.del_dir(pass_dir)
-            validate_translation(p4_file, pass_dir, P4C_BIN)
+            result = validate_translation(p4_file, pass_dir, p4c_bin)
+            if result.returncode != util.EXIT_SUCCESS:
+                exit(result)
+    exit(util.EXIT_SUCCESS)
 
 
 if __name__ == '__main__':
