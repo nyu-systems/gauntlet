@@ -3,7 +3,9 @@ from collections import OrderedDict
 import operator as op
 import z3
 
-from p4z3.base import *
+from p4z3.base import P4ComplexType, P4Z3Class, P4Expression, P4Statement
+from p4z3.base import AbstractP4Slice, P4Package, P4Instance
+from p4z3.base import z3_cast, log
 
 
 def resolve_expr(p4_state, expr):
@@ -12,8 +14,6 @@ def resolve_expr(p4_state, expr):
     log.debug("Resolving %s", expr)
     if isinstance(expr, str):
         val = p4_state.resolve_reference(expr)
-        if val is None:
-            raise RuntimeError(f"Value {expr} could not be found!")
     else:
         val = expr
     if isinstance(val, (z3.AstRef, int)):
@@ -69,7 +69,7 @@ def z3_implies(p4_state, cond, then_expr):
 
 
 class P4Op(P4Expression):
-    def get_value():
+    def get_value(self):
         raise NotImplementedError("get_value")
 
     def eval(self, p4_state):
@@ -101,11 +101,10 @@ class P4BinaryOp(P4Op):
         lval_expr = resolve_expr(p4_state, self.lval)
         rval_expr = resolve_expr(p4_state, self.rval)
 
-        # if we compare to enums, do not use them for operations
-        # for some reason, overloading equality does not work here...
-        # instead reference a named bitvector of size 8
-        # this represents a choice
-        if isinstance(lval_expr, z3.BitVecRef) and isinstance(rval_expr, z3.BitVecRef):
+        # align the bitvectors to allow operations
+        lval_is_bitvec = isinstance(lval_expr, z3.BitVecRef)
+        rval_is_bitvec = isinstance(rval_expr, z3.BitVecRef)
+        if lval_is_bitvec and rval_is_bitvec:
             if lval_expr.size() < rval_expr.size():
                 lval_expr = z3_cast(lval_expr, rval_expr.size())
             if lval_expr.size() > rval_expr.size():
@@ -275,7 +274,9 @@ class P4eq(P4BinaryOp):
 
 class P4ne(P4BinaryOp):
     def __init__(self, lval, rval):
-        def operator(x, y): return z3.Not(op.eq(x, y))
+        # op.ne does not work quite right, this is the z3 way to do it
+        def operator(x, y):
+            return z3.Not(op.eq(x, y))
         P4BinaryOp.__init__(self, lval, rval, operator)
 
 
@@ -315,9 +316,9 @@ class P4Index(P4Expression):
         cls.index = index
         return f"{lval}.{index}"
 
-    def eval(cls, p4_state):
-        lval_expr = resolve_expr(p4_state, cls.lval)
-        index = resolve_expr(p4_state, cls.index)
+    def eval(self, p4_state):
+        lval_expr = resolve_expr(p4_state, self.lval)
+        index = resolve_expr(p4_state, self.index)
         expr = lval_expr.resolve_reference(str(index))
         return expr
 
@@ -338,15 +339,15 @@ class P4Member(P4Expression):
         cls.member = member
         return f"{lval}.{member}"
 
-    def eval(cls, p4_state):
-        if isinstance(cls.lval, P4Expression):
-            lval = cls.lval.eval(p4_state)
+    def eval(self, p4_state):
+        if isinstance(self.lval, P4Expression):
+            lval = self.lval.eval(p4_state)
         else:
-            lval = cls.lval
-        if isinstance(cls.member, P4Expression):
-            member = cls.member.eval(p4_state)
+            lval = self.lval
+        if isinstance(self.member, P4Expression):
+            member = self.member.eval(p4_state)
         else:
-            member = cls.member
+            member = self.member
         return f"{lval}.{member}"
 
 
@@ -362,7 +363,7 @@ class P4Cast(P4Expression):
         return z3_cast(expr, self.to_size)
 
 
-class P4Slice(P4Slice):
+class P4Slice(AbstractP4Slice):
 
     def __init__(self, val, slice_l, slice_r):
         self.val = val
@@ -480,7 +481,7 @@ class P4Context(P4Z3Class):
         for param_name, param in self.var_buffer.items():
             is_ref = param[0]
             param_val = param[1]
-            if is_ref == "inout" or is_ref == "out":
+            if is_ref in ("inout", "out"):
                 val = p4_context.resolve_reference(param_name)
                 log.debug("Copy-out: %s to %s", val, param_val)
                 old_p4_state.set_or_add_var(param_val, val)
@@ -491,11 +492,16 @@ class P4Context(P4Z3Class):
             if param_val is None:
                 # value has not existed previously, marked for deletion
                 log.debug("Deleting %s", param_name)
-                old_p4_state.del_var(param_name)
+                try:
+                    old_p4_state.del_var(param_name)
+                except AttributeError:
+                    log.warning(
+                        "Variable %s does not exist, nothing to delete!",
+                        param_name)
         return old_p4_state
 
-    def eval(self, p4_context):
-        old_p4_state = self.restore_context(p4_context)
+    def eval(self, p4_state):
+        old_p4_state = self.restore_context(p4_state)
         p4z3_expr = old_p4_state.pop_next_expr()
         return p4z3_expr.eval(old_p4_state)
 
@@ -533,14 +539,18 @@ class P4Callable(P4Z3Class):
         # save all the variables that may be overridden
         for param_name, param in merged_params.items():
             is_ref = param[0]
-            if is_ref == "inout" or is_ref == "out":
+            if is_ref in ("inout", "out"):
                 var_buffer[param_name] = param
             else:
-                param_val = p4_state.resolve_reference(param_name)
+                # if the variable does not exist, set the value to None
+                try:
+                    param_val = p4_state.resolve_reference(param_name)
+                except AttributeError:
+                    param_val = None
                 var_buffer[param_name] = (is_ref, param_val)
         return var_buffer
 
-    def __call__(self, p4_state=None, *args, **kwargs):
+    def __call__(self, p4_state, *args, **kwargs):
         # for controls and externs, the state is not required
         # controls can only be executed with apply statements
         if p4_state:
@@ -558,9 +568,6 @@ class P4Callable(P4Z3Class):
 
 
 class P4Action(P4Callable):
-
-    def __init__(self):
-        super(P4Action, self).__init__()
 
     def add_stmt(self, block):
         if not isinstance(block, BlockStatement):
@@ -649,7 +656,7 @@ class P4Control(P4Callable):
     def add_stmt(self, stmt):
         self.block.add(stmt)
 
-    def __call__(self, p4_state=None, *args, **kwargs):
+    def __call__(self, p4_state, *args, **kwargs):
         # for controls and externs, the state is not required
         # controls can only be executed with apply statements
         # when there is no p4 state provided, the control is instantiated
@@ -696,7 +703,6 @@ class P4Control(P4Callable):
                 p4_state.set_or_add_var(arg_name, arg_const)
             # Sometimes expressions are passed, resolve those first
             arg = resolve_expr(p4_state, arg)
-            # var_buffer[param_name] = p4_state.get_var(param_name)
             log.debug("P4Control: Setting %s as %s %s",
                       param_name, arg, type(arg))
             p4_state_context.set_or_add_var(param_name, arg)
@@ -727,7 +733,6 @@ class P4Extern(P4Callable):
         if not p4_state:
             # There is no state yet, so use the context of the function
             p4_state = self.z3_reg.init_p4_state(self.name, self.params)
-            p4_state = p4_state
 
         merged_params = self.merge_parameters(self.params, *args, **kwargs)
         # externs can return values, we need to generate a new constant
@@ -744,7 +749,7 @@ class P4Extern(P4Callable):
             if isinstance(arg_expr, P4ComplexType):
                 arg_expr = arg_expr.name
 
-            if is_ref == "out" or is_ref == "inout":
+            if is_ref in ("inout", "out"):
                 # Externs often have generic types until they are called
                 # This call resolves the argument and gets its z3 type
                 arg_type = get_type(p4_state, arg)
@@ -773,6 +778,154 @@ class P4Extern(P4Callable):
 
 class P4Parser(P4Control):
     pass
+
+
+def resolve_action(action_expr):
+    # TODO Fix this roundabout way of getting a P4 Action, super annoying...
+    if isinstance(action_expr, MethodCallExpr):
+        action_name = action_expr.p4_method
+        action_args = action_expr.args
+    elif isinstance(action_expr, str):
+        action_name = action_expr
+        action_args = []
+    else:
+        raise TypeError(
+            f"Expected a method call, got {type(action_name)}!")
+    return action_name, action_args
+
+
+class P4Table(P4Z3Class):
+
+    def __init__(self, name):
+        self.name = name
+        self.keys = []
+        self.const_entries = []
+        self.actions = OrderedDict()
+        self.default_action = None
+        self.tbl_action = z3.Int(f"{self.name}_action")
+
+    def add_action(self, action_expr):
+        action_name, action_args = resolve_action(action_expr)
+        index = len(self.actions) + 1
+        self.actions[action_name] = (index, action_name, action_args)
+
+    def add_default(self, action_expr):
+        action_name, action_args = resolve_action(action_expr)
+        self.default_action = (0, action_name, action_args)
+
+    def add_match(self, table_key):
+        self.keys.append(table_key)
+
+    def add_const_entry(self, const_keys, action_expr):
+
+        if len(self.keys) != len(const_keys):
+            raise RuntimeError("Constant keys must match table keys!")
+        action_name, action_args = resolve_action(action_expr)
+        self.const_entries.append((const_keys, (action_name, action_args)))
+
+    def apply(self, p4_state):
+        return self.eval(p4_state)
+
+    def __call__(self, p4_state, *args, **kwargs):
+        # tables can only be executed with apply statements
+        return self
+
+    def eval_keys(self, p4_state):
+        key_pairs = []
+        if not self.keys:
+            # there is nothing to match with...
+            return z3.BoolVal(False)
+        for index, key in enumerate(self.keys):
+            key_eval = resolve_expr(p4_state, key)
+            key_sort = get_type(p4_state, key_eval)
+            key_match = z3.Const(f"{self.name}_key_{index}", key_sort)
+            key_pairs.append(key_eval == key_match)
+        return z3.And(key_pairs)
+
+    def eval_action(self, p4_state, action_tuple):
+        p4_action = action_tuple[0]
+        p4_action_args = action_tuple[1]
+        p4_action = p4_state.resolve_reference(p4_action)
+        if not isinstance(p4_action, P4Action):
+            raise TypeError(f"Expected a P4Action got {type(p4_action)}!")
+        action_args = []
+        p4_action_args_len = len(p4_action_args) - 1
+        for idx, (arg_name, param) in enumerate(p4_action.params.items()):
+            if idx > p4_action_args_len:
+                arg_type = param[1]
+                if isinstance(arg_type, z3.SortRef):
+                    action_args.append(
+                        z3.Const(f"{self.name}{arg_name}", arg_type))
+                else:
+                    action_args.append(arg_type)
+            else:
+                action_args.append(p4_action_args[idx])
+        return p4_action(p4_state, *action_args)
+
+    def eval_default(self, p4_state):
+        if self.default_action is None:
+            # In case there is no default action, the first action is default
+            default_action = (0, "NoAction", ())
+        else:
+            default_action = self.default_action
+        _, action_name, p4_action_args = default_action
+        log.debug("Evaluating default action...")
+        return self.eval_action(p4_state,
+                                (action_name, p4_action_args))
+
+    def eval_table(self, p4_state):
+        actions = self.actions
+        const_entries = self.const_entries
+        # first evaluate the default entry
+        # state forks here
+        expr = self.eval_default(copy.copy(p4_state))
+        # then wrap constant entries around it
+        for const_keys, action in reversed(const_entries):
+            action_name = action[0]
+            p4_action_args = action[1]
+            matches = []
+            # match the constant keys with the normal table keys
+            # this generates the match expression for a specific constant entry
+            for index, key in enumerate(self.keys):
+                key_eval = resolve_expr(p4_state, key)
+                const_key = const_keys[index]
+                # default implies don't care, do not add
+                # TODO: Verify that this assumption is right...
+                if str(const_key) == "default":
+                    continue
+                c_key_eval = resolve_expr(
+                    p4_state, const_keys[index])
+                matches.append(key_eval == c_key_eval)
+            action_match = z3.And(*matches)
+            action_tuple = (action_name, p4_action_args)
+            log.debug("Evaluating constant action %s...", action_name)
+            action_expr = self.eval_action(copy.copy(p4_state), action_tuple)
+            expr = z3.If(action_match, action_expr, expr)
+        # then wrap dynamic table entries around the constant entries
+        for action in reversed(actions.values()):
+
+            p4_action_id = action[0]
+            action_name = action[1]
+            p4_action_args = action[2]
+            action_match = (self.tbl_action == z3.IntVal(p4_action_id))
+            action_tuple = (action_name, p4_action_args)
+            log.debug("Evaluating action %s...", action_name)
+            # state forks here
+            action_expr = self.eval_action(copy.copy(p4_state), action_tuple)
+            expr = z3.If(action_match, action_expr, expr)
+        # finally return a nested set of if expressions
+        return expr
+
+    def eval(self, p4_state):
+        # This is a table match where we look up the provided key
+        # If we match select the associated action,
+        # else use the default action
+        # TODO: Check the exact semantics how default actions can be called
+        # Right now, they can be called in either the table match or miss
+        tbl_match = self.eval_keys(p4_state)
+        table_expr = self.eval_table(p4_state)
+        def_expr = self.eval_default(p4_state)
+        return z3.If(tbl_match, table_expr, def_expr)
 
 
 class P4Declaration(P4Statement):
@@ -973,151 +1126,3 @@ class P4Return(P4Statement):
             p4z3_expr = p4_state.pop_next_expr()
             expr = p4z3_expr.eval(p4_state)
         return expr
-
-
-def resolve_action(action_expr):
-    # TODO Fix this roundabout way of getting a P4 Action, super annoying...
-    if isinstance(action_expr, MethodCallExpr):
-        action_name = action_expr.p4_method
-        action_args = action_expr.args
-    elif isinstance(action_expr, str):
-        action_name = action_expr
-        action_args = []
-    else:
-        raise TypeError(
-            f"Expected a method call, got {type(action_name)}!")
-    return action_name, action_args
-
-
-class P4Table(P4Z3Class):
-
-    def __init__(self, name):
-        self.name = name
-        self.keys = []
-        self.const_entries = []
-        self.actions = OrderedDict()
-        self.default_action = None
-        self.tbl_action = z3.Int(f"{self.name}_action")
-
-    def add_action(self, action_expr):
-        action_name, action_args = resolve_action(action_expr)
-        index = len(self.actions) + 1
-        self.actions[action_name] = (index, action_name, action_args)
-
-    def add_default(self, action_expr):
-        action_name, action_args = resolve_action(action_expr)
-        self.default_action = (0, action_name, action_args)
-
-    def add_match(self, table_key):
-        self.keys.append(table_key)
-
-    def add_const_entry(self, const_keys, action_expr):
-
-        if len(self.keys) != len(const_keys):
-            raise RuntimeError("Constant keys must match table keys!")
-        action_name, action_args = resolve_action(action_expr)
-        self.const_entries.append((const_keys, (action_name, action_args)))
-
-    def apply(self, p4_state):
-        return self.eval(p4_state)
-
-    def __call__(self, p4_state):
-        # tables can only be executed with apply statements
-        return self
-
-    def eval_keys(self, p4_state):
-        key_pairs = []
-        if not self.keys:
-            # there is nothing to match with...
-            return z3.BoolVal(False)
-        for index, key in enumerate(self.keys):
-            key_eval = resolve_expr(p4_state, key)
-            key_sort = get_type(p4_state, key_eval)
-            key_match = z3.Const(f"{self.name}_key_{index}", key_sort)
-            key_pairs.append(key_eval == key_match)
-        return z3.And(key_pairs)
-
-    def eval_action(self, p4_state, action_tuple):
-        p4_action = action_tuple[0]
-        p4_action_args = action_tuple[1]
-        p4_action = p4_state.resolve_reference(p4_action)
-        if not isinstance(p4_action, P4Action):
-            raise TypeError(f"Expected a P4Action got {type(p4_action)}!")
-        action_args = []
-        p4_action_args_len = len(p4_action_args) - 1
-        for idx, (arg_name, param) in enumerate(p4_action.params.items()):
-            if idx > p4_action_args_len:
-                arg_type = param[1]
-                if isinstance(arg_type, z3.SortRef):
-                    action_args.append(
-                        z3.Const(f"{self.name}{arg_name}", arg_type))
-                else:
-                    action_args.append(arg_type)
-            else:
-                action_args.append(p4_action_args[idx])
-        return p4_action(p4_state, *action_args)
-
-    def eval_default(self, p4_state):
-        if self.default_action is None:
-            # In case there is no default action, the first action is default
-            default_action = (0, "NoAction", ())
-        else:
-            default_action = self.default_action
-        _, action_name, p4_action_args = default_action
-        log.debug("Evaluating default action...")
-        return self.eval_action(p4_state,
-                                (action_name, p4_action_args))
-
-    def eval_table(self, p4_state):
-        actions = self.actions
-        const_entries = self.const_entries
-        # first evaluate the default entry
-        # state forks here
-        expr = self.eval_default(copy.copy(p4_state))
-        # then wrap constant entries around it
-        for const_keys, action in reversed(const_entries):
-            action_name = action[0]
-            p4_action_args = action[1]
-            matches = []
-            # match the constant keys with the normal table keys
-            # this generates the match expression for a specific constant entry
-            for index, key in enumerate(self.keys):
-                key_eval = resolve_expr(p4_state, key)
-                const_key = const_keys[index]
-                # default implies don't care, do not add
-                # TODO: Verify that this assumption is right...
-                if str(const_key) == "default":
-                    continue
-                c_key_eval = resolve_expr(
-                    p4_state, const_keys[index])
-                matches.append(key_eval == c_key_eval)
-            action_match = z3.And(*matches)
-            action_tuple = (action_name, p4_action_args)
-            log.debug("Evaluating constant action %s...", action_name)
-            action_expr = self.eval_action(copy.copy(p4_state), action_tuple)
-            expr = z3.If(action_match, action_expr, expr)
-        # then wrap dynamic table entries around the constant entries
-        for action in reversed(actions.values()):
-
-            p4_action_id = action[0]
-            action_name = action[1]
-            p4_action_args = action[2]
-            action_match = (self.tbl_action == z3.IntVal(p4_action_id))
-            action_tuple = (action_name, p4_action_args)
-            log.debug("Evaluating action %s...", action_name)
-            # state forks here
-            action_expr = self.eval_action(copy.copy(p4_state), action_tuple)
-            expr = z3.If(action_match, action_expr, expr)
-        # finally return a nested set of if expressions
-        return expr
-
-    def eval(self, p4_state):
-        # This is a table match where we look up the provided key
-        # If we match select the associated action,
-        # else use the default action
-        # TODO: Check the exact semantics how default actions can be called
-        # Right now, they can be called in either the table match or miss
-        tbl_match = self.eval_keys(p4_state)
-        table_expr = self.eval_table(p4_state)
-        def_expr = self.eval_default(p4_state)
-        return z3.If(tbl_match, table_expr, def_expr)
