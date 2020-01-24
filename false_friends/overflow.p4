@@ -2,21 +2,19 @@
 #include <v1model.p4>
 
 header H {
-    bit<8>   a;
+    bit<8> a;
 }
 
 struct Headers {
-    H    h;
+    H h;
 }
 
 struct Meta {
 }
-
 control ingress(inout Headers h, inout Meta m, inout standard_metadata_t sm) {
     apply {
-
-        sm.ingress_port = 9w1 |-| 9w2;
-        h.h.a = 8w3 |-| 8w0;
+        sm.egress_spec = 9w511 |+| 9w2;
+        h.h.a = 8w3 |+| 8w0;
     }
 }
 

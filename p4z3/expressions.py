@@ -168,22 +168,22 @@ class P4sub(P4BinaryOp):
 
 
 class P4addsat(P4BinaryOp):
-    # TODO: Not sure if this is right, check eventually
     def __init__(self, lval, rval):
         def operator(x, y):
-            overflow = z3.BVAddNoOverflow(x, y, False)
-            max_return = z3.BitVecVal(2**(x.size() - 1), x.sort())
-            return z3.If(overflow, max_return, x + y)
+            no_overflow = z3.BVAddNoOverflow(x, y, False)
+            no_underflow = z3.BVAddNoUnderflow(x, y)
+            max_return = z3.BitVecVal((2**x.size()) - 1, x.sort())
+            return z3.If(z3.And(no_overflow, no_underflow), x + y, max_return)
         P4BinaryOp.__init__(self, lval, rval, operator)
 
 
 class P4subsat(P4BinaryOp):
-    # TODO: Not sure if this is right, check eventually
     def __init__(self, lval, rval):
         def operator(x, y):
-            underflow = z3.BVSubNoOverflow(x, y)
+            no_overflow = z3.BVSubNoOverflow(x, y)
+            no_underflow = z3.BVSubNoUnderflow(x, y, False)
             zero_return = z3.BitVecVal(0, x.sort())
-            return z3.If(underflow, zero_return, x - y)
+            return z3.If(z3.And(no_overflow, no_underflow), x - y, zero_return)
 
         P4BinaryOp.__init__(self, lval, rval, operator)
 

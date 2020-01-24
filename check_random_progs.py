@@ -1,12 +1,13 @@
 import random
 import string
 import logging
-from pathlib import Path
-import p4z3.util as util
 from functools import wraps
 import errno
 import os
 import signal
+
+from pathlib import Path
+import p4z3.util as util
 
 
 # configure logging
@@ -26,11 +27,8 @@ ITERATIONS = 50
 
 KNOWN_BUGS = [
     "MethodCallStatement: Unsupported on target Conditional execution",
+    "could not evaluate at compilation time",
 ]
-
-
-class TimeoutError(Exception):
-    pass
 
 
 def timeout(seconds=10, error_message=os.strerror(errno.ETIME)):
