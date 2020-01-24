@@ -26,6 +26,7 @@ TIMEOUT_DIR = OUTPUT_DIR.joinpath("timeout_bugs")
 ITERATIONS = 50
 
 KNOWN_BUGS = [
+    "Conditional execution in actions is not supported on this target",
     "MethodCallStatement: Unsupported on target Conditional execution",
     "could not evaluate at compilation time",
 ]
