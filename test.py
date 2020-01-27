@@ -10,7 +10,7 @@ import check_p4_pair as z3_check
 logging.basicConfig(filename="analysis.log",
                     format="%(levelname)s:%(message)s",
                     level=logging.INFO,
-                    filemode='w')
+                    filemode="w")
 stderr_log = logging.StreamHandler()
 stderr_log.setFormatter(logging.Formatter("%(levelname)s:%(message)s"))
 logging.getLogger().addHandler(stderr_log)

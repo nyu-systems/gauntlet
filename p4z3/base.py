@@ -370,6 +370,7 @@ class HeaderUnion(P4ComplexType):
 
 
 class HeaderStack(P4ComplexType):
+    next_idx = 0
 
     def __init__(self, z3_reg, z3_type, name):
         super(HeaderStack, self).__init__(z3_reg, z3_type, name)
@@ -398,6 +399,31 @@ class HeaderStack(P4ComplexType):
             except AttributeError:
                 pass
         return p4_state.get_z3_repr()
+
+    @property
+    def next(self):
+        try:
+            hdr = getattr(self, f"{self.next_idx}")
+        except AttributeError:
+            # if the header does not exist use it to break out of the loop?
+            return P4Exit()
+        # self.next_idx += 1
+        return hdr
+
+    @property
+    def last(self):
+        last = 0 if self.size < 1 else self.size - 1
+        hdr = getattr(self, f"{last}")
+        # self.next_idx += 1
+        return hdr
+
+    def __setattr__(self, name, val):
+        # TODO: Fix this workaround for next attributes
+        if name == "next":
+            self.__setattr__(f"{self.next_idx}", val)
+            self.next_idx += 1
+        else:
+            self.__dict__[name] = val
 
 
 class Struct(P4ComplexType):
@@ -448,6 +474,14 @@ class EndExpr():
         particular chain.'''
 
     def eval(self, p4_state):
+        return p4_state.get_z3_repr()
+
+
+class P4Exit(P4Statement):
+
+    def eval(self, p4_state):
+        # Exit the chain early and absolutely
+        p4_state.clear_expr_chain()
         return p4_state.get_z3_repr()
 
 

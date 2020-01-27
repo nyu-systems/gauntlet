@@ -16,9 +16,7 @@ struct headers {
 
 parser p(packet_in b, out headers hdr, inout metadata meta, inout standard_metadata_t stdmeta) {
     state start {
-        b.extract<H>(hdr.h, 32w32);
-        b.extract<H>(hdr.a.next, 32w32);
-        b.extract<H>(hdr.a.next, 32w32);
+        b.extract<H>(hdr);
         transition accept;
     }
 }
