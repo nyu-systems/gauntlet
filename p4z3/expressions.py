@@ -1000,7 +1000,6 @@ class SwitchStatement(P4Statement):
 
     def eval(self, p4_state):
         table = resolve_expr(p4_state, self.table_str)
-        table = table(p4_state)
         # instantiate the hit expression
         switch_hit = SwitchHit(table, self.cases, self.default_case)
         p4_state.insert_exprs([table, switch_hit])
