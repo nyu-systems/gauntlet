@@ -3,6 +3,7 @@ from collections import deque, OrderedDict
 import copy
 import logging
 import z3
+import types
 
 log = logging.getLogger(__name__)
 
@@ -60,106 +61,22 @@ class P4Statement(P4Z3Class):
         raise NotImplementedError("Method eval not implemented!")
 
 
-class P4Callable(P4Z3Class):
-    def __init__(self):
-        self.block = None
-        self.params = OrderedDict()
-        self.call_counter = 0
+class EndExpr(P4Expression):
+    ''' This function is a little trick to ensure that chains are executed
+        appropriately. When we reach the end of an execution chain, this
+        expression returns the state of the program at the end of this
+        particular chain.'''
 
-    def add_parameter(self, param=None):
-        if param:
-            is_ref = param[0]
-            param_name = param[1]
-            param_type = param[2]
-            self.params[param_name] = (is_ref, param_type)
-
-    def get_parameters(self):
-        return self.params
-
-    def merge_parameters(self, params, *args, **kwargs):
-        merged_params = {}
-        args_len = len(args)
-        for idx, param_name in enumerate(params.keys()):
-            is_ref = params[param_name][0]
-            if idx < args_len:
-                merged_params[param_name] = (is_ref, args[idx])
-        for arg_name, arg_val in kwargs.items():
-            is_ref = params[arg_name][0]
-            merged_params[arg_name] = (is_ref, arg_val)
-        return merged_params
-
-    def save_variables(self, p4_state, merged_params):
-        var_buffer = {}
-        # save all the variables that may be overridden
-        for param_name, param in merged_params.items():
-            is_ref = param[0]
-            if is_ref in ("inout", "out"):
-                var_buffer[param_name] = param
-            else:
-                # if the variable does not exist, set the value to None
-                try:
-                    param_val = p4_state.resolve_reference(param_name)
-                except AttributeError:
-                    param_val = None
-                var_buffer[param_name] = (is_ref, param_val)
-        return var_buffer
-
-    def __call__(self, p4_state, *args, **kwargs):
-        # for controls and externs, the state is not required
-        # controls can only be executed with apply statements
-        if p4_state:
-            return self.eval(p4_state, *args, **kwargs)
-        return self
-
-    def eval_callable(self, p4_state, merged_params, var_buffer):
-        pass
-
-    def eval(self, p4_state=None, *args, **kwargs):
-        self.call_counter += 1
-        merged_params = self.merge_parameters(self.params, *args, **kwargs)
-        var_buffer = self.save_variables(p4_state, merged_params)
-        return self.eval_callable(p4_state, merged_params, var_buffer)
+    def eval(self, p4_state):
+        return p4_state.get_z3_repr()
 
 
-def resolve_expr(p4_state, expr):
-    # Resolves to z3 and z3p4 expressions, ints, lists, and dicts are also okay
-    # resolve potential string references first
-    log.debug("Resolving %s", expr)
-    if isinstance(expr, str):
-        val = p4_state.resolve_reference(expr)
-    else:
-        val = expr
-    if isinstance(val, (z3.AstRef, int)):
-        # These are z3 types and can be returned
-        # Unfortunately int is part of it because z3 is very inconsistent
-        # about var handling...
-        return val
-    if isinstance(val, P4ComplexType):
-        # If we get a whole class return a new reference to the object
-        # Do not return the z3 type because we may assign a complete structure
-        return val
-    if isinstance(val, P4Expression):
-        # We got a P4 type, recurse...
-        val = val.eval(p4_state)
-        return resolve_expr(p4_state, val)
-    if callable(val):
-        # We got a P4 type, recurse...
-        return val
-    if isinstance(val, list):
-        # For lists, resolve each value individually and return a new list
-        list_expr = []
-        for val_expr in val:
-            rval_expr = resolve_expr(p4_state, val_expr)
-            list_expr.append(rval_expr)
-        return list_expr
-    if isinstance(val, dict):
-        # For dicts, resolve each value individually and return a new dict
-        dict_expr = []
-        for name, val_expr in val.items():
-            rval_expr = resolve_expr(p4_state, val_expr)
-            dict_expr[name] = rval_expr
-        return dict_expr
-    raise TypeError(f"Value of type {type(val)} cannot be resolved!")
+class P4Exit(P4Expression):
+
+    def eval(self, p4_state):
+        # Exit the chain early and absolutely
+        p4_state.clear_expr_chain()
+        return p4_state.get_z3_repr()
 
 
 class P4Member(P4Expression):
@@ -176,7 +93,7 @@ class P4Member(P4Expression):
         while isinstance(member, P4Member):
             member = member.eval(p4_state)
         if isinstance(lval, P4Z3Class):
-            lval = lval.eval(p4_state)
+            lval = p4_state.resolve_expr(lval)
             return getattr(lval, member)
         return f"{lval}.{member}"
 
@@ -239,7 +156,6 @@ class P4ComplexType():
         self.const = z3.Const(f"{name}_0", z3_type)
         self.constructor = z3_type.constructor(0)
         self._set_z3_members(z3_reg, z3_type, self.constructor)
-        # self._init_members(z3_reg, self.const, self.members)
 
     def _set_z3_members(self, z3_reg, z3_type, constructor):
         self.members = OrderedDict()
@@ -259,9 +175,6 @@ class P4ComplexType():
                 # use the default z3 constructor
                 setattr(self, member_name, member(self.const))
             self.members[member_name] = member
-
-    def _init_members(self, z3_reg, const, members):
-        pass
 
     def propagate_type(self, parent_const: z3.AstRef):
         members = []
@@ -299,70 +212,26 @@ class P4ComplexType():
                 members.append(member_make)
         return self.constructor(*members)
 
-    def del_var(self, var_string):
-        delattr(self, var_string)
-
     def resolve_reference(self, var):
         log.debug("Resolving reference %s", var)
         if isinstance(var, str):
             var = op.attrgetter(var)(self)
         return var
 
-    def find_nested_slice(self, lval, slice_l, slice_r):
-        # gradually reduce the scope until we have calculated the right slice
-        # also retrieve the string lvalue in the mean time
-        if isinstance(lval, AbstractP4Slice):
-            lval, _, outer_slice_r = self.find_nested_slice(
-                lval.val, lval.slice_l, lval.slice_r)
-            slice_l = outer_slice_r + slice_l
-            slice_r = outer_slice_r + slice_r
-        return lval, slice_l, slice_r
-
-    def set_slice(self, lval, rval):
-        slice_l = lval.slice_l
-        slice_r = lval.slice_r
-        lval = lval.val
-        lval, slice_l, slice_r = self.find_nested_slice(lval, slice_l, slice_r)
-
-        # need to resolve everything first
-        if isinstance(lval, P4Member):
-            lval = lval.eval(self)
-        lval_expr = self.resolve_reference(lval)
-        rval_expr = self.resolve_reference(rval)
-        # stupid integer checks that are unfortunately necessary....
-        if isinstance(lval_expr, int):
-            lval_expr = z3.BitVecVal(lval_expr, 64)
-        if isinstance(rval_expr, int):
-            rval_expr = z3.BitVecVal(rval_expr, 64)
-        lval_expr_max = lval_expr.size() - 1
-        if slice_l == lval_expr_max and slice_r == 0:
-            # slice is full lval, nothing to do
-            self.set_or_add_var(lval, rval_expr)
-            return
-        assemble = []
-        if slice_l < lval_expr_max:
-            # left slice is smaller than the max, leave that chunk unchanged
-            assemble.append(z3.Extract(lval_expr_max, slice_l + 1, lval_expr))
-        # fill the rval_expr into the slice
-        # this cast is necessary to match the margins and to handle integers
-        rval_expr = z3_cast(rval_expr, slice_l + 1 - slice_r)
-        assemble.append(rval_expr)
-        if slice_r > 0:
-            # right slice is larger than zero, leave that chunk unchanged
-            assemble.append(z3.Extract(slice_r - 1, 0, lval_expr))
-        rval_expr = z3.Concat(*assemble)
-        self.set_or_add_var(lval, rval_expr)
-        return
+    def set_list(self, rvals):
+        for index, member_name in enumerate(self.members):
+            val = rvals[index]
+            self.set_or_add_var(member_name, val)
 
     def set_or_add_var(self, lval, rval):
         # TODO: Fix this method, has hideous performance impact
-        if isinstance(lval, P4Member):
-            lval = lval.eval(self)
-        if isinstance(lval, AbstractP4Slice):
-            self.set_slice(lval, rval)
-            return
         if hasattr(self, lval):
             tmp_lval = self.resolve_reference(lval)
+            # the target variable exists
+            # do not override an existing variable with a string reference!
+            # resolve any possible rvalue reference
+            log.debug("Recursing with %s and %s ", lval, rval)
+            rval = self.resolve_reference(rval)
             if isinstance(rval, list):
                 tmp_lval.set_list(rval)
                 return
@@ -372,15 +241,10 @@ class P4ComplexType():
                 # if the lvalue is a bit vector, try to cast it
                 # otherwise ignore and hope that keeping it as an int works out
                 rval = z3.BitVecVal(rval, tmp_lval.size())
-            # the target variable exists
-            # do not override an existing variable with a string reference!
-            # resolve any possible rvalue reference
-            log.debug("Recursing with %s and %s ", lval, rval)
-            rval = self.resolve_reference(rval)
-        log.debug("Setting %s(%s) to %s(%s) ",
-                  lval, type(lval), rval, type(rval))
 
         # now that all the preprocessing is done we can assign the value
+        log.debug("Setting %s(%s) to %s(%s) ",
+                  lval, type(lval), rval, type(rval))
         if '.' in lval:
             # this means we are accessing a complex member
             # get the parent class and update its value
@@ -435,11 +299,9 @@ class Header(P4ComplexType):
 
     def set_list(self, rvals):
         self.valid = z3.BoolVal(True)
-        for index, member_name in enumerate(self.members):
-            val = rvals[index]
-            self.set_or_add_var(member_name, val)
+        P4ComplexType.set_list(self, rvals)
 
-    def isValid(self, *args):
+    def isValid(self, p4_state):
         # This is a built-in
         return self.valid
 
@@ -457,10 +319,10 @@ class Header(P4ComplexType):
         if isinstance(other, Header):
             # correspond to the P4 semantics for comparing headers
             # when both headers are invalid return true
-            check_invalid = z3.And(z3.Not(self.isValid()),
-                                   z3.Not(other.isValid()))
+            check_invalid = z3.And(z3.Not(self.valid),
+                                   z3.Not(other.valid))
             # when both headers are valid compare the values
-            check_valid = z3.And(self.isValid(), other.isValid())
+            check_valid = z3.And(self.valid, other.valid)
             self_const = self.get_z3_repr()
             other_const = other.get_z3_repr()
             comparison = z3.And(check_valid, self_const == other_const)
@@ -468,40 +330,17 @@ class Header(P4ComplexType):
         return super().__eq__(other)
 
 
-class HeaderUnion(P4ComplexType):
+class HeaderUnion(Header):
     # TODO: Implement this class correctly...
-
-    def __init__(self, z3_reg, z3_type, name):
-        self.valid = z3.Bool(f"{name}_valid")
-        super(HeaderUnion, self).__init__(z3_reg, z3_type, name)
-
-    def set_list(self, rvals):
-        self.valid = z3.BoolVal(True)
-        for index, member_name in enumerate(self.members):
-            val = rvals[index]
-            self.set_or_add_var(member_name, val)
-
-    def isValid(self, *args):
-        # This is a built-in
-        return self.valid
-
-    def setValid(self, p4_state):
-        # This is a built-in
-        self.valid = z3.BoolVal(True)
-        return p4_state.get_z3_repr()
-
-    def setInvalid(self, p4_state):
-        # This is a built-in
-        self.valid = z3.BoolVal(False)
-        return p4_state.get_z3_repr()
+    pass
 
 
 class HeaderStack(P4ComplexType):
-    next_idx = 0
 
     def __init__(self, z3_reg, z3_type, name):
         super(HeaderStack, self).__init__(z3_reg, z3_type, name)
         self.size = len(self.members)
+        self.next_idx = 0
 
     def push_front(self, p4_state, num):
         # This is a built-in
@@ -529,19 +368,21 @@ class HeaderStack(P4ComplexType):
 
     @property
     def next(self):
+        # This is a built-in
+        # TODO: Check if this implementation makes sense
         try:
             hdr = getattr(self, f"{self.next_idx}")
         except AttributeError:
             # if the header does not exist use it to break out of the loop?
             return P4Exit()
-        # self.next_idx += 1
         return hdr
 
     @property
     def last(self):
+        # This is a built-in
+        # TODO: Check if this implementation makes sense
         last = 0 if self.size < 1 else self.size - 1
         hdr = getattr(self, f"{last}")
-        # self.next_idx += 1
         return hdr
 
     def __setattr__(self, name, val):
@@ -554,11 +395,7 @@ class HeaderStack(P4ComplexType):
 
 
 class Struct(P4ComplexType):
-
-    def set_list(self, rvals):
-        for index, member_name in enumerate(self.members):
-            val = rvals[index]
-            self.set_or_add_var(member_name, val)
+    pass
 
 
 class Enum(P4ComplexType):
@@ -566,16 +403,8 @@ class Enum(P4ComplexType):
     def __init__(self, z3_reg, z3_type: z3.SortRef, name):
         super(Enum, self).__init__(z3_reg, z3_type, name)
         # override the members with fixed values
-        self._init_members(z3_reg, None, self.members)
-
-    def set_list(self, rvals):
-        for index, member_name in enumerate(self.members):
-            val = rvals[index]
-            self.set_or_add_var(member_name, val)
-
-    def _init_members(self, z3_reg, const, members):
         # Instead of a z3 variable we assign a concrete number to each member
-        for idx, member_name in enumerate(members):
+        for idx, member_name in enumerate(self.members):
             setattr(self, member_name, z3.BitVecVal(idx, 8))
 
     def propagate_type(self, parent_const: z3.AstRef):
@@ -591,25 +420,9 @@ class Enum(P4ComplexType):
             z3_type = other.sort()
             return z3.Const(self.name, z3_type) == other
         else:
+            log.warning("Enum: Comparison to %s of type %s not supported",
+                        other, type(other))
             return z3.BoolVal(False)
-
-
-class EndExpr():
-    ''' This function is a little trick to ensure that chains are executed
-        appropriately. When we reach the end of an execution chain, this
-        expression returns the state of the program at the end of this
-        particular chain.'''
-
-    def eval(self, p4_state):
-        return p4_state.get_z3_repr()
-
-
-class P4Exit(P4Statement):
-
-    def eval(self, p4_state):
-        # Exit the chain early and absolutely
-        p4_state.clear_expr_chain()
-        return p4_state.get_z3_repr()
 
 
 class P4State(P4ComplexType):
@@ -629,8 +442,102 @@ class P4State(P4ComplexType):
     def _update(self):
         self.const = z3.Const(f"{self.name}_1", self.z3_type)
 
-    def set_or_add_var(self, lstring, rval):
-        P4ComplexType.set_or_add_var(self, lstring, rval)
+    def del_var(self, var_string):
+        # simple wrapper for delattr
+        delattr(self, var_string)
+
+    def resolve_expr(self, expr):
+        # Resolves to z3 and z3p4 expressions, ints, lists, and dicts are also okay
+        # resolve potential string references first
+        log.debug("Resolving %s", expr)
+        if isinstance(expr, str):
+            val = self.resolve_reference(expr)
+        else:
+            val = expr
+        if isinstance(val, P4Expression):
+            # We got a P4 type, recurse...
+            val = val.eval(self)
+            return self.resolve_expr(val)
+        if isinstance(val, (z3.AstRef, int)):
+            # These are z3 types and can be returned
+            # Unfortunately int is part of it because z3 is very inconsistent
+            # about var handling...
+            return val
+        if isinstance(val, (P4ComplexType, P4Z3Class, types.MethodType)):
+            # If we get a whole class return a new reference to the object
+            # Do not return the z3 type because we may assign a complete structure
+            # In a similar manner, just return any remaining class types
+            # Methods can be class attributes and also need to be returned as is
+            return val
+        if isinstance(val, list):
+            # For lists, resolve each value individually and return a new list
+            list_expr = []
+            for val_expr in val:
+                rval_expr = self.resolve_expr(val_expr)
+                list_expr.append(rval_expr)
+            return list_expr
+        if isinstance(val, dict):
+            # For dicts, resolve each value individually and return a new dict
+            dict_expr = []
+            for name, val_expr in val.items():
+                rval_expr = self.resolve_expr(val_expr)
+                dict_expr[name] = rval_expr
+            return dict_expr
+        raise TypeError(f"Value of type {type(val)} cannot be resolved!")
+
+    def find_nested_slice(self, lval, slice_l, slice_r):
+        # gradually reduce the scope until we have calculated the right slice
+        # also retrieve the string lvalue in the mean time
+        if isinstance(lval, AbstractP4Slice):
+            lval, _, outer_slice_r = self.find_nested_slice(
+                lval.val, lval.slice_l, lval.slice_r)
+            slice_l = outer_slice_r + slice_l
+            slice_r = outer_slice_r + slice_r
+        return lval, slice_l, slice_r
+
+    def set_slice(self, lval, rval):
+        slice_l = lval.slice_l
+        slice_r = lval.slice_r
+        lval = lval.val
+        lval, slice_l, slice_r = self.find_nested_slice(lval, slice_l, slice_r)
+
+        # need to resolve everything first
+        lval_expr = self.resolve_expr(lval)
+        rval_expr = self.resolve_expr(rval)
+        # stupid integer checks that are unfortunately necessary....
+        if isinstance(lval_expr, int):
+            lval_expr = z3.BitVecVal(lval_expr, 64)
+        if isinstance(rval_expr, int):
+            rval_expr = z3.BitVecVal(rval_expr, 64)
+        lval_expr_max = lval_expr.size() - 1
+        if slice_l == lval_expr_max and slice_r == 0:
+            # slice is full lval, nothing to do
+            self.set_or_add_var(lval, rval_expr)
+            return
+        assemble = []
+        if slice_l < lval_expr_max:
+            # left slice is smaller than the max, leave that chunk unchanged
+            assemble.append(z3.Extract(lval_expr_max, slice_l + 1, lval_expr))
+        # fill the rval_expr into the slice
+        # this cast is necessary to match the margins and to handle integers
+        rval_expr = z3_cast(rval_expr, slice_l + 1 - slice_r)
+        assemble.append(rval_expr)
+        if slice_r > 0:
+            # right slice is larger than zero, leave that chunk unchanged
+            assemble.append(z3.Extract(slice_r - 1, 0, lval_expr))
+        rval_expr = z3.Concat(*assemble)
+        self.set_or_add_var(lval, rval_expr)
+        return
+
+    def set_or_add_var(self, lval, rval):
+        if isinstance(lval, P4Member):
+            lval = lval.eval(self)
+        if isinstance(lval, AbstractP4Slice):
+            self.set_slice(lval, rval)
+            return
+        P4ComplexType.set_or_add_var(self, lval, rval)
+        # as soon as we have updated a variable in this state object
+        # we update the constant
         self._update()
 
     def add_globals(self, globals_values):
