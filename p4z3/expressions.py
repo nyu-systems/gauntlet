@@ -3,50 +3,7 @@ from collections import OrderedDict
 import operator as op
 import z3
 
-from p4z3.base import P4ComplexType, P4Z3Class, P4Expression, P4Statement
-from p4z3.base import AbstractP4Slice, P4Package, P4Instance, P4Exit
-from p4z3.base import z3_cast, log
-
-
-def resolve_expr(p4_state, expr):
-    # Resolves to z3 and z3p4 expressions, ints, lists, and dicts are also okay
-    # resolve potential string references first
-    log.debug("Resolving %s", expr)
-    if isinstance(expr, str):
-        val = p4_state.resolve_reference(expr)
-    else:
-        val = expr
-    if isinstance(val, (z3.AstRef, int)):
-        # These are z3 types and can be returned
-        # Unfortunately int is part of it because z3 is very inconsistent
-        # about var handling...
-        return val
-    if isinstance(val, P4ComplexType):
-        # If we get a whole class return a new reference to the object
-        # Do not return the z3 type because we may assign a complete structure
-        return val
-    if isinstance(val, P4Expression):
-        # We got a P4 type, recurse...
-        val = val.eval(p4_state)
-        return resolve_expr(p4_state, val)
-    if isinstance(val, P4Callable):
-        # We got a P4 type, recurse...
-        return val
-    if isinstance(val, list):
-        # For lists, resolve each value individually and return a new list
-        list_expr = []
-        for val_expr in val:
-            rval_expr = resolve_expr(p4_state, val_expr)
-            list_expr.append(rval_expr)
-        return list_expr
-    if isinstance(val, dict):
-        # For dicts, resolve each value individually and return a new dict
-        dict_expr = []
-        for name, val_expr in val.items():
-            rval_expr = resolve_expr(p4_state, val_expr)
-            dict_expr[name] = rval_expr
-        return dict_expr
-    raise TypeError(f"Value of type {type(val)} cannot be resolved!")
+from p4z3.base import *
 
 
 def get_type(p4_state, expr):
@@ -310,47 +267,6 @@ class P4Concat(P4Expression):
         return z3.Concat(lval_expr, rval_expr)
 
 
-class P4Index(P4Expression):
-    def __new__(cls, lval, index):
-        cls.lval = lval
-        cls.index = index
-        return f"{lval}.{index}"
-
-    def eval(self, p4_state):
-        lval_expr = resolve_expr(p4_state, self.lval)
-        index = resolve_expr(p4_state, self.index)
-        expr = lval_expr.resolve_reference(str(index))
-        return expr
-
-
-class P4Path(P4Expression):
-    def __init__(self, val):
-        self.val = val
-
-    def eval(self, p4_state):
-        val_expr = resolve_expr(p4_state, self.val)
-        return val_expr
-
-
-class P4Member(P4Expression):
-
-    def __new__(cls, lval, member):
-        cls.lval = lval
-        cls.member = member
-        return f"{lval}.{member}"
-
-    def eval(self, p4_state):
-        if isinstance(self.lval, P4Expression):
-            lval = self.lval.eval(p4_state)
-        else:
-            lval = self.lval
-        if isinstance(self.member, P4Expression):
-            member = self.member.eval(p4_state)
-        else:
-            member = self.member
-        return f"{lval}.{member}"
-
-
 class P4Cast(P4Expression):
     # TODO: need to take a closer look on how to do this correctly...
     # If we cast do we add/remove the least or most significant bits?
@@ -364,11 +280,6 @@ class P4Cast(P4Expression):
 
 
 class P4Slice(AbstractP4Slice):
-
-    def __init__(self, val, slice_l, slice_r):
-        self.val = val
-        self.slice_l = slice_l
-        self.slice_r = slice_r
 
     def eval(self, p4_state):
         val = resolve_expr(p4_state, self.val)
@@ -453,9 +364,9 @@ class MethodCallExpr(P4Expression):
 
     def eval(self, p4_state):
         p4_method = self.p4_method
-        if isinstance(p4_method, str):
-            # if we get a reference just try to find the method in the state
-            p4_method = p4_state.resolve_reference(p4_method)
+        # if we get a reference just try to find the method in the state
+        if not callable(p4_method):
+            p4_method = resolve_expr(p4_state, p4_method)
         if callable(p4_method):
             return p4_method(p4_state, *self.args, **self.kwargs)
         raise TypeError(f"Unsupported method type {type(p4_method)}!")
@@ -504,67 +415,6 @@ class P4Context(P4Z3Class):
         old_p4_state = self.restore_context(p4_state)
         p4z3_expr = old_p4_state.pop_next_expr()
         return p4z3_expr.eval(old_p4_state)
-
-
-class P4Callable(P4Z3Class):
-    def __init__(self):
-        self.block = BlockStatement()
-        self.params = OrderedDict()
-        self.call_counter = 0
-
-    def add_parameter(self, param=None):
-        if param:
-            is_ref = param[0]
-            param_name = param[1]
-            param_type = param[2]
-            self.params[param_name] = (is_ref, param_type)
-
-    def get_parameters(self):
-        return self.params
-
-    def merge_parameters(self, params, *args, **kwargs):
-        merged_params = {}
-        args_len = len(args)
-        for idx, param_name in enumerate(params.keys()):
-            is_ref = params[param_name][0]
-            if idx < args_len:
-                merged_params[param_name] = (is_ref, args[idx])
-        for arg_name, arg_val in kwargs.items():
-            is_ref = params[arg_name][0]
-            merged_params[arg_name] = (is_ref, arg_val)
-        return merged_params
-
-    def save_variables(self, p4_state, merged_params):
-        var_buffer = {}
-        # save all the variables that may be overridden
-        for param_name, param in merged_params.items():
-            is_ref = param[0]
-            if is_ref in ("inout", "out"):
-                var_buffer[param_name] = param
-            else:
-                # if the variable does not exist, set the value to None
-                try:
-                    param_val = p4_state.resolve_reference(param_name)
-                except AttributeError:
-                    param_val = None
-                var_buffer[param_name] = (is_ref, param_val)
-        return var_buffer
-
-    def __call__(self, p4_state, *args, **kwargs):
-        # for controls and externs, the state is not required
-        # controls can only be executed with apply statements
-        if p4_state:
-            return self.eval(p4_state, *args, **kwargs)
-        return self
-
-    def eval_callable(self, p4_state, merged_params, var_buffer):
-        pass
-
-    def eval(self, p4_state=None, *args, **kwargs):
-        self.call_counter += 1
-        merged_params = self.merge_parameters(self.params, *args, **kwargs)
-        var_buffer = self.save_variables(p4_state, merged_params)
-        return self.eval_callable(p4_state, merged_params, var_buffer)
 
 
 class P4Action(P4Callable):
@@ -638,6 +488,7 @@ class P4Control(P4Callable):
     def __init__(self, z3_reg, name, params, const_params):
         super(P4Control, self).__init__()
         self.locals = []
+        self.block = BlockStatement()
         self.state_initializer = (z3_reg, name)
         self.const_params = OrderedDict()
         self.merged_consts = OrderedDict()
@@ -668,7 +519,7 @@ class P4Control(P4Callable):
         return self
 
     def apply(self, p4_state, *args, **kwargs):
-        return self.eval(p4_state, *args, **kwargs)
+        return self.eval(p4_state)
 
     def eval(self, p4_state=None, *args, **kwargs):
         self.call_counter += 1
@@ -871,6 +722,7 @@ class P4Table(P4Z3Class):
         self.actions = OrderedDict()
         self.default_action = None
         self.tbl_action = z3.Int(f"{self.name}_action")
+        self.hit = z3.BoolVal(False)
 
     def add_action(self, action_expr):
         action_name, action_args = resolve_action(action_expr)
@@ -892,11 +744,12 @@ class P4Table(P4Z3Class):
         self.const_entries.append((const_keys, (action_name, action_args)))
 
     def apply(self, p4_state):
-        return self.eval(p4_state)
+        self.hit = self.eval_keys(p4_state)
+        return self
 
     def __call__(self, p4_state, *args, **kwargs):
         # tables can only be executed with apply statements
-        return self
+        return self.eval(p4_state)
 
     def eval_keys(self, p4_state):
         key_pairs = []
@@ -990,7 +843,7 @@ class P4Table(P4Z3Class):
         # else use the default action
         # TODO: Check the exact semantics how default actions can be called
         # Right now, they can be called in either the table match or miss
-        tbl_match = self.eval_keys(p4_state)
+        tbl_match = self.hit
         table_expr = self.eval_table(p4_state)
         def_expr = self.eval_default(p4_state)
         return z3.If(tbl_match, table_expr, def_expr)
@@ -1039,6 +892,10 @@ class MethodCallStmt(P4Statement):
 
     def eval(self, p4_state):
         expr = self.method_expr.eval(p4_state)
+        if callable(expr):
+            args = self.method_expr.args
+            kwargs = self.method_expr.kwargs
+            expr = expr(p4_state, *args, **kwargs)
         if p4_state.expr_chain:
             p4z3_expr = p4_state.pop_next_expr()
             return p4z3_expr.eval(p4_state)
@@ -1109,7 +966,7 @@ class SwitchHit(P4Expression):
 
     def eval_switch_matches(self, table):
         for case_name, case in self.cases.items():
-            match_var = case["match_var"]
+            match_var = table.tbl_action
             action = table.actions[case_name][0]
             self.cases[case_name]["match"] = (match_var == action)
 
@@ -1131,7 +988,6 @@ class SwitchStatement(P4Statement):
         if action_str == "default":
             return
         case = {}
-        case["match_var"] = z3.Int(f"{self.table_str}_action")
         case["case_block"] = BlockStatement()
         self.cases[action_str] = case
 
@@ -1143,7 +999,8 @@ class SwitchStatement(P4Statement):
             case_block.add(case_stmt)
 
     def eval(self, p4_state):
-        table = p4_state.resolve_reference(self.table_str)
+        table = resolve_expr(p4_state, self.table_str)
+        table = table(p4_state)
         # instantiate the hit expression
         switch_hit = SwitchHit(table, self.cases, self.default_case)
         p4_state.insert_exprs([table, switch_hit])

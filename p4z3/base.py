@@ -60,6 +60,127 @@ class P4Statement(P4Z3Class):
         raise NotImplementedError("Method eval not implemented!")
 
 
+class P4Callable(P4Z3Class):
+    def __init__(self):
+        self.block = None
+        self.params = OrderedDict()
+        self.call_counter = 0
+
+    def add_parameter(self, param=None):
+        if param:
+            is_ref = param[0]
+            param_name = param[1]
+            param_type = param[2]
+            self.params[param_name] = (is_ref, param_type)
+
+    def get_parameters(self):
+        return self.params
+
+    def merge_parameters(self, params, *args, **kwargs):
+        merged_params = {}
+        args_len = len(args)
+        for idx, param_name in enumerate(params.keys()):
+            is_ref = params[param_name][0]
+            if idx < args_len:
+                merged_params[param_name] = (is_ref, args[idx])
+        for arg_name, arg_val in kwargs.items():
+            is_ref = params[arg_name][0]
+            merged_params[arg_name] = (is_ref, arg_val)
+        return merged_params
+
+    def save_variables(self, p4_state, merged_params):
+        var_buffer = {}
+        # save all the variables that may be overridden
+        for param_name, param in merged_params.items():
+            is_ref = param[0]
+            if is_ref in ("inout", "out"):
+                var_buffer[param_name] = param
+            else:
+                # if the variable does not exist, set the value to None
+                try:
+                    param_val = p4_state.resolve_reference(param_name)
+                except AttributeError:
+                    param_val = None
+                var_buffer[param_name] = (is_ref, param_val)
+        return var_buffer
+
+    def __call__(self, p4_state, *args, **kwargs):
+        # for controls and externs, the state is not required
+        # controls can only be executed with apply statements
+        if p4_state:
+            return self.eval(p4_state, *args, **kwargs)
+        return self
+
+    def eval_callable(self, p4_state, merged_params, var_buffer):
+        pass
+
+    def eval(self, p4_state=None, *args, **kwargs):
+        self.call_counter += 1
+        merged_params = self.merge_parameters(self.params, *args, **kwargs)
+        var_buffer = self.save_variables(p4_state, merged_params)
+        return self.eval_callable(p4_state, merged_params, var_buffer)
+
+
+def resolve_expr(p4_state, expr):
+    # Resolves to z3 and z3p4 expressions, ints, lists, and dicts are also okay
+    # resolve potential string references first
+    log.debug("Resolving %s", expr)
+    if isinstance(expr, str):
+        val = p4_state.resolve_reference(expr)
+    else:
+        val = expr
+    if isinstance(val, (z3.AstRef, int)):
+        # These are z3 types and can be returned
+        # Unfortunately int is part of it because z3 is very inconsistent
+        # about var handling...
+        return val
+    if isinstance(val, P4ComplexType):
+        # If we get a whole class return a new reference to the object
+        # Do not return the z3 type because we may assign a complete structure
+        return val
+    if isinstance(val, P4Expression):
+        # We got a P4 type, recurse...
+        val = val.eval(p4_state)
+        return resolve_expr(p4_state, val)
+    if callable(val):
+        # We got a P4 type, recurse...
+        return val
+    if isinstance(val, list):
+        # For lists, resolve each value individually and return a new list
+        list_expr = []
+        for val_expr in val:
+            rval_expr = resolve_expr(p4_state, val_expr)
+            list_expr.append(rval_expr)
+        return list_expr
+    if isinstance(val, dict):
+        # For dicts, resolve each value individually and return a new dict
+        dict_expr = []
+        for name, val_expr in val.items():
+            rval_expr = resolve_expr(p4_state, val_expr)
+            dict_expr[name] = rval_expr
+        return dict_expr
+    raise TypeError(f"Value of type {type(val)} cannot be resolved!")
+
+
+class P4Member(P4Expression):
+
+    def __init__(self, lval, member):
+        self.lval = lval
+        self.member = member
+
+    def eval(self, p4_state):
+        lval = self.lval
+        member = self.member
+        while isinstance(lval, P4Member):
+            lval = lval.eval(p4_state)
+        while isinstance(member, P4Member):
+            member = member.eval(p4_state)
+        if isinstance(lval, P4Z3Class):
+            lval = lval.eval(p4_state)
+            return getattr(lval, member)
+        return f"{lval}.{member}"
+
+
 class P4Package():
 
     def __init__(self, z3_reg, name, *args, **kwargs):
@@ -91,7 +212,9 @@ class AbstractP4Slice(P4Expression):
     ''' Abstract class '''
 
     def __init__(self, val, slice_l, slice_r):
-        raise NotImplementedError("Method init not implemented!")
+        self.val = val
+        self.slice_l = slice_l
+        self.slice_r = slice_r
 
     def eval(self, p4_state):
         raise NotImplementedError("Method eval not implemented!")
@@ -202,6 +325,8 @@ class P4ComplexType():
         lval, slice_l, slice_r = self.find_nested_slice(lval, slice_l, slice_r)
 
         # need to resolve everything first
+        if isinstance(lval, P4Member):
+            lval = lval.eval(self)
         lval_expr = self.resolve_reference(lval)
         rval_expr = self.resolve_reference(rval)
         # stupid integer checks that are unfortunately necessary....
@@ -230,10 +355,12 @@ class P4ComplexType():
         return
 
     def set_or_add_var(self, lval, rval):
+        # TODO: Fix this method, has hideous performance impact
+        if isinstance(lval, P4Member):
+            lval = lval.eval(self)
         if isinstance(lval, AbstractP4Slice):
             self.set_slice(lval, rval)
             return
-        # TODO: Fix this method, has hideous performance impact
         if hasattr(self, lval):
             tmp_lval = self.resolve_reference(lval)
             if isinstance(rval, list):
