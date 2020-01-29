@@ -35,9 +35,12 @@ def z3_cast(val, to_type):
     if val_size < to_type_size:
         # the target value is larger, extend with zeros
         return z3.ZeroExt(to_type_size - val_size, val)
-    else:
+    elif val_size > to_type_size:
         # the target value is smaller, truncate everything on the right
         return z3.Extract(to_type_size - 1, 0, val)
+    else:
+        # nothing to do
+        return val
 
 
 class P4Instance():
@@ -66,8 +69,8 @@ class EndExpr(P4Expression):
         appropriately. When we reach the end of an execution chain, this
         expression returns the state of the program at the end of this
         particular chain.'''
-
-    def eval(self, p4_state):
+    @staticmethod
+    def eval(p4_state):
         return p4_state.get_z3_repr()
 
 
@@ -165,7 +168,7 @@ class P4ComplexType():
             arg_type = member.range()
             if isinstance(arg_type, z3.DatatypeSortRef):
                 # this is a complex datatype, create a P4ComplexType
-                member_cls = z3_reg.instance("", arg_type)
+                member_cls = z3_reg.instance(member_name, arg_type)
                 # and add it to the members, this is a little inefficient...
                 setattr(self, member_name, member_cls)
                 # since the child type is dependent on its parent
@@ -177,7 +180,6 @@ class P4ComplexType():
             self.members[member_name] = member
 
     def propagate_type(self, parent_const: z3.AstRef):
-        members = []
         for member_name, member_constructor in self.members.items():
             # a z3 constructor dependent on the parent constant
             z3_member = member_constructor(parent_const)
@@ -190,7 +192,6 @@ class P4ComplexType():
             else:
                 # a simple z3 type, just update the constructor
                 setattr(self, member_name, z3_member)
-            members.append(z3_member)
 
     def get_z3_repr(self, parent_const=None) -> z3.DatatypeRef:
         ''' This method returns the current representation of the object in z3
@@ -243,6 +244,7 @@ class P4ComplexType():
             # resolve any possible rvalue reference
             log.debug("Recursing with %s and %s ", lval, rval)
             rval = self.resolve_reference(rval)
+            # rvals could be a list, unroll the assignment
             if isinstance(rval, list):
                 tmp_lval.set_list(rval)
                 return

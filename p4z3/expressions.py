@@ -211,7 +211,6 @@ class P4rshift(P4BinaryOp):
         def operator(x, y):
             if isinstance(x, int) and isinstance(y, int):
                 x = z3.BitVecVal(x, 64)
-                y = z3.BitVecVal(y, 64)
             return z3.LShR(x, y)
         P4BinaryOp.__init__(self, lval, rval, operator)
 
@@ -292,7 +291,7 @@ class P4Slice(AbstractP4Slice):
         slice_r = p4_state.resolve_expr(self.slice_r)
 
         if isinstance(val, int):
-            val = z3.BitVecVal(val, 64)
+            val = z3.IntVal(val)
         return z3.Extract(slice_l, slice_r, val)
 
 
@@ -662,9 +661,6 @@ class P4Extern(P4Callable):
             # Because we do not know what the extern is doing
             # we initiate a new z3 const and just overwrite all reference types
             # we can assume that arg is a lvalue here (i.e., a string)
-            arg_expr = p4_state.resolve_expr(arg)
-            if isinstance(arg_expr, P4ComplexType):
-                arg_expr = arg_expr.name
 
             if is_ref in ("inout", "out"):
                 # Externs often have generic types until they are called
@@ -679,9 +675,14 @@ class P4Extern(P4Callable):
                     instance.propagate_type(extern_mod)
                 # Finally, assign a new value to the pass-by-reference argument
                 p4_state.set_or_add_var(arg, instance)
+
             # input arguments influence the output behavior
             # add the input value to the return constant
+            arg_expr = p4_state.resolve_expr(arg)
+            if isinstance(arg_expr, P4ComplexType):
+                arg_expr = arg_expr.name
             var_name += str(arg_expr)
+
         if self.return_type is not None:
             # If we return something, instantiate the type and return it
             # we merge the name
@@ -690,7 +691,7 @@ class P4Extern(P4Callable):
             return_instance = self.z3_reg.instance(
                 f"{self.name}_{var_name}", self.return_type)
             return return_instance
-        return p4_state.get_z3_repr()
+        return p4_state.const
 
 
 class P4Parser(P4Control):
@@ -750,16 +751,22 @@ class ParserSelect(P4Expression):
         p4_state_cpy = copy.copy(p4_state)
         expr = p4_state.resolve_expr(self.default)
         for case_val, case_name in reversed(self.cases):
-            case_match = p4_state.resolve_expr(case_val)
-
+            case_expr = p4_state.resolve_expr(case_val)
             select_cond = []
-            for match in self.match:
-                match_expr = p4_state.resolve_expr(match)
-                cond = match_expr == case_match
-                select_cond.append(cond)
+            if isinstance(case_expr, list):
+                for idx, case_match in enumerate(case_expr):
+                    match = self.match[idx]
+                    match_expr = p4_state.resolve_expr(match)
+                    cond = match_expr == case_match
+                    select_cond.append(cond)
+            else:
+                for match in self.match:
+                    match_expr = p4_state.resolve_expr(match)
+                    cond = match_expr == case_expr
+                    select_cond.append(cond)
             if not select_cond:
                 select_cond = [z3.BoolVal(False)]
-            state_expr = resolve_expr(copy.copy(p4_state_cpy), case_name)
+            state_expr = copy.copy(p4_state_cpy).resolve_expr(case_name)
             expr = z3.If(z3.And(*select_cond), state_expr, expr)
 
         return expr

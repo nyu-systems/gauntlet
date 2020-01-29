@@ -70,6 +70,7 @@ def evaluate_package(p4_package):
 
 def get_z3_asts(p4_module, p4_path, fail_dir):
     z3.reset_params()
+
     log.info("Loading %s ASTs...", p4_path.name)
     z3_asts = {}
     try:
