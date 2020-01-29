@@ -66,9 +66,6 @@ class P4BinaryOp(P4Op):
                 lval_expr = z3_cast(lval_expr, rval_expr.size())
             if lval_expr.size() > rval_expr.size():
                 rval_expr = z3_cast(rval_expr, lval_expr.size())
-        if isinstance(lval_expr, int) and isinstance(rval_expr, int):
-            lval_expr = z3.BitVecVal(lval_expr, 64)
-            rval_expr = z3.BitVecVal(rval_expr, 64)
         return self.operator(lval_expr, rval_expr)
 
 
@@ -210,7 +207,12 @@ class P4lshift(P4BinaryOp):
 
 class P4rshift(P4BinaryOp):
     def __init__(self, lval, rval):
-        operator = z3.LShR
+        # LShR does not like both expressions being int...
+        def operator(x, y):
+            if isinstance(x, int) and isinstance(y, int):
+                x = z3.BitVecVal(x, 64)
+                y = z3.BitVecVal(y, 64)
+            return z3.LShR(x, y)
         P4BinaryOp.__init__(self, lval, rval, operator)
 
 

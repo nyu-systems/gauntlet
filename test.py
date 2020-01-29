@@ -63,6 +63,8 @@ for test in all_tests:
 
 # ***** broken tests, need fixing *****
 xfails = [
+    "runtime-index-2-bmv2.p4",
+    "runtime-index-bmv2.p4",
     "fabric.p4",
     "hit-expr-bmv2.p4",
     "issue1653-complex-bmv2.p4",

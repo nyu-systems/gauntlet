@@ -1,9 +1,9 @@
 import operator as op
+import types
 from collections import deque, OrderedDict
 import copy
 import logging
 import z3
-import types
 
 log = logging.getLogger(__name__)
 
@@ -15,13 +15,13 @@ def z3_cast(val, to_type):
         # TODO: Streamline bools and their evaluation
         val = z3.If(val, z3.BitVecVal(1, 1), z3.BitVecVal(0, 1))
 
-    if isinstance(to_type, z3.BoolSortRef):
+    if isinstance(to_type, (z3.BoolSortRef, z3.BoolRef)):
         # casting to a bool is simple, just check if the value is equal to 1
         # this works for bitvectors and integers, we convert any bools before
         return val == z3.BitVecVal(1, 1)
 
     # from here on we assume we are working with integer or bitvector types
-    if isinstance(to_type, (z3.BitVecSortRef)):
+    if isinstance(to_type, (z3.BitVecSortRef, z3.BitVecRef)):
         # It can happen that we get a bitvector type as target, get its size.
         to_type_size = to_type.size()
     else:
@@ -202,14 +202,25 @@ class P4ComplexType():
 
         for member_name, member_constructor in self.members.items():
             member_make = self.resolve_reference(member_name)
+            sub_const = member_constructor(parent_const)
             if isinstance(member_make, P4ComplexType):
                 # we have a complex type
                 # retrieve the member and call the constructor
-                sub_const = member_constructor(parent_const)
                 # call the constructor of the complex type
                 members.append(member_make.get_z3_repr(sub_const))
-            else:
+            elif isinstance(member_make, (z3.BitVecRef, z3.BoolRef, int)):
+                # make sure values are aligned appropriately
+                # this can happen because we also evaluate before the
+                # BindTypeVariables pass
+                member_make = z3_cast(member_make, sub_const)
                 members.append(member_make)
+            elif isinstance(member_make, z3.ExprRef):
+                # for now, allow generic remaining types
+                # FIXME: THis is not supposed to happen...
+                members.append(member_make)
+            else:
+                raise TypeError(f"Type {type(member_make)} not supported!")
+
         return self.constructor(*members)
 
     def resolve_reference(self, var):
@@ -235,12 +246,6 @@ class P4ComplexType():
             if isinstance(rval, list):
                 tmp_lval.set_list(rval)
                 return
-            # We also must handle integer values and convert them to bitvectors
-            # For that we have to match the type
-            if isinstance(rval, int) and isinstance(tmp_lval, z3.BitVecRef):
-                # if the lvalue is a bit vector, try to cast it
-                # otherwise ignore and hope that keeping it as an int works out
-                rval = z3.BitVecVal(rval, tmp_lval.size())
 
         # now that all the preprocessing is done we can assign the value
         log.debug("Setting %s(%s) to %s(%s) ",
