@@ -51,7 +51,7 @@ class Z3Int(int):
 
     @staticmethod
     def sort():
-        return z3.IntSort()
+        return z3.BitVecSort(64)
 
     @staticmethod
     def size():
@@ -235,13 +235,16 @@ class P4ComplexType():
 
         for member_name, member_constructor in self.members.items():
             member_make = self.resolve_reference(member_name)
+            sub_const = member_constructor(parent_const)
             if isinstance(member_make, P4ComplexType):
                 # we have a complex type
                 # retrieve the member and call the constructor
                 # call the constructor of the complex type
-                sub_const = member_constructor(parent_const)
                 members.append(member_make.get_z3_repr(sub_const))
-            elif isinstance(member_make, (z3.ExprRef, int)):
+            elif isinstance(member_make, (z3.BoolRef, z3.BitVecRef, int)):
+                member_make = z3_cast(member_make, sub_const.sort())
+                members.append(member_make)
+            elif isinstance(member_make, z3.ExprRef):
                 # for now, allow generic remaining types
                 # for example funcdeclref or int
                 # FIXME: THis is not supposed to happen...
@@ -263,23 +266,6 @@ class P4ComplexType():
             self.set_or_add_var(member_name, val)
 
     def set_or_add_var(self, lval, rval):
-        # TODO: Fix this method, has hideous performance impact
-        if hasattr(self, lval):
-            tmp_lval = self.resolve_reference(lval)
-            # the target variable exists
-            # do not override an existing variable with a string reference!
-            # resolve any possible rvalue reference
-            log.debug("Recursing with %s and %s ", lval, rval)
-            rval = self.resolve_reference(rval)
-            # rvals could be a list, unroll the assignment
-            if isinstance(rval, list):
-                tmp_lval.set_list(rval)
-                return
-            # make sure the assignment is aligned appropriately
-            # this can happen because we also evaluate before the
-            # BindTypeVariables pass
-            if isinstance(rval, int):
-                rval = z3_cast(rval, tmp_lval.sort())
 
         # now that all the preprocessing is done we can assign the value
         log.debug("Setting %s(%s) to %s(%s) ",
@@ -292,6 +278,23 @@ class P4ComplexType():
             target_class = self.resolve_reference(prefix)
             target_class.set_or_add_var(suffix, rval)
         else:
+            # TODO: Fix this method, has hideous performance impact
+            if hasattr(self, lval):
+                tmp_lval = self.resolve_reference(lval)
+                # the target variable exists
+                # do not override an existing variable with a string reference!
+                # resolve any possible rvalue reference
+                log.debug("Recursing with %s and %s ", lval, rval)
+                rval = self.resolve_reference(rval)
+                # rvals could be a list, unroll the assignment
+                if isinstance(rval, list):
+                    tmp_lval.set_list(rval)
+                    return
+                # make sure the assignment is aligned appropriately
+                # this can happen because we also evaluate before the
+                # BindTypeVariables pass
+                if isinstance(rval, int):
+                    rval = z3_cast(rval, tmp_lval.sort())
             setattr(self, lval, rval)
 
     def sort(self):

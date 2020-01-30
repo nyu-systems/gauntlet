@@ -1,58 +1,93 @@
+/*
+Copyright 2017 VMware, Inc.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
 #include <core.p4>
 #include <v1model.p4>
 
+header ethernet_t {
+    bit<48> dstAddr;
+    bit<48> srcAddr;
+    bit<16> etherType;
+}
+
 header H {
-    bit<16>  a;
-    bit<16>  b;
+    bit<8> a;
+    bit<8> b;
 }
 
-struct Headers {
-    H    h;
+struct Parsed_packet {
+    ethernet_t eth;
+    H h;
 }
 
-struct Meta {
+struct Metadata {
 }
 
+control deparser(packet_out packet, in Parsed_packet hdr) {
+    apply {
+        packet.emit(hdr);
+    }
+}
 
-parser p(packet_in pkt, out Headers hdr, inout Meta m, inout standard_metadata_t sm) {
+parser p(packet_in pkt, out Parsed_packet hdr, inout Metadata meta, inout standard_metadata_t stdmeta) {
     state start {
+        pkt.extract(hdr.eth);
+        transition parse_h;
+    }
+    state parse_h {
+        pkt.extract(hdr.h);
         transition accept;
     }
 }
 
-control ingress(inout Headers h, inout Meta m, inout standard_metadata_t sm) {
-
-    action simple_action() {
-        sm.egress_spec = 9w0;
+control ingress(inout Parsed_packet hdr, inout Metadata meta, inout standard_metadata_t stdmeta) {
+    action do_something() {
+        stdmeta.egress_spec = 9w0;
     }
-
     table simple_table {
         key = {
-            h.h.b: exact @name("CCctuD") ;
+            hdr.h.b: exact;
         }
         actions = {
-            NoAction;
-            simple_action;
+            NoAction();
+            do_something();
         }
+        default_action = NoAction;
     }
-
     apply {
+        bit<8> tmp_condition = 8w0;
         switch (simple_table.apply().action_run) {
-            simple_action: {
+            NoAction: {
                 return;
             }
         }
-        h.h.a = 16w0;
+
+        hdr.h.a = 8w0;
     }
 }
 
-control vrfy(inout Headers h, inout Meta m) { apply {} }
+control egress(inout Parsed_packet hdr, inout Metadata meta, inout standard_metadata_t stdmeta) {
+    apply {}
+}
 
-control update(inout Headers h, inout Meta m) { apply {} }
+control vrfy(inout Parsed_packet hdr, inout Metadata meta) {
+    apply {}
+}
 
-control egress(inout Headers h, inout Meta m, inout standard_metadata_t sm) { apply {} }
-
-control deparser(packet_out b, in Headers h) { apply {} }
+control update(inout Parsed_packet hdr, inout Metadata meta) {
+    apply {}
+}
 
 V1Switch(p(), vrfy(), ingress(), egress(), update(), deparser()) main;
-

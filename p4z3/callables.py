@@ -330,10 +330,7 @@ class P4Table(P4Z3Class):
             return z3.BoolVal(False)
         for index, key in enumerate(self.keys):
             key_eval = p4_state.resolve_expr(key)
-            if isinstance(key_eval, int):
-                key_sort = z3.IntSort()
-            else:
-                key_sort = key_eval.sort()
+            key_sort = key_eval.sort()
             key_match = z3.Const(f"{self.name}_key_{index}", key_sort)
             key_pairs.append(key_eval == key_match)
         return z3.And(key_pairs)
