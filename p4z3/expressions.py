@@ -229,7 +229,7 @@ class P4rshift(P4BinaryOp):
         # LShR does not like both expressions being int...
         def operator(x, y):
             if isinstance(x, int) and isinstance(y, int):
-                return z3.LShR(z3.BitVecVal(x, 64), y)
+                return z3.LShR(x.as_bitvec, y)
             return z3.LShR(x, y)
         P4BinaryOp.__init__(self, lval, rval, operator)
 

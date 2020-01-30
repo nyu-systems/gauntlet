@@ -167,7 +167,7 @@ class P4Slice(P4Expression):
         slice_r = p4_state.resolve_expr(self.slice_r)
 
         if isinstance(val, int):
-            val = z3.IntVal(val)
+            val = val.as_bitvec
         return z3.Extract(slice_l, slice_r, val)
 
 
@@ -556,7 +556,7 @@ class P4State(P4ComplexType):
 
         # z3 requires the extract value to be a bitvecor, so we must cast ints
         if isinstance(lval_expr, int):
-            lval_expr = z3.BitVecVal(lval_expr, 64)
+            lval_expr = lval_expr.as_bitvec
 
         rval_expr = self.resolve_expr(rval)
 
