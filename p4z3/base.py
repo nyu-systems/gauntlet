@@ -553,7 +553,7 @@ class P4State(P4ComplexType):
 
         # z3 requires the extract value to be a bitvecor, so we must cast ints
         if isinstance(lval_expr, int):
-            lval_expr = lval_expr.as_bitvec
+            lval_expr = z3.BitVecVal(lval_expr, 64)
 
         rval_expr = self.resolve_expr(rval)
 

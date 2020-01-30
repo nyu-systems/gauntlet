@@ -246,7 +246,10 @@ class P4Extern(P4Callable):
             if is_ref in ("inout", "out"):
                 # Externs often have generic types until they are called
                 # This call resolves the argument and gets its z3 type
-                arg_type = arg_expr.sort()
+                if isinstance(arg_expr, int):
+                    arg_type = z3.IntSort()
+                else:
+                    arg_type = arg_expr.sort()
                 name = f"{self.name}_{param_name}"
                 extern_mod = z3.Const(name, arg_type)
                 instance = self.z3_reg.instance(name, arg_type)
@@ -327,7 +330,10 @@ class P4Table(P4Z3Class):
             return z3.BoolVal(False)
         for index, key in enumerate(self.keys):
             key_eval = p4_state.resolve_expr(key)
-            key_sort = key_eval.sort()
+            if isinstance(key_eval, int):
+                key_sort = z3.IntSort()
+            else:
+                key_sort = key_eval.sort()
             key_match = z3.Const(f"{self.name}_key_{index}", key_sort)
             key_pairs.append(key_eval == key_match)
         return z3.And(key_pairs)
