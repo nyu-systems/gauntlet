@@ -235,20 +235,15 @@ class P4ComplexType():
 
         for member_name, member_constructor in self.members.items():
             member_make = self.resolve_reference(member_name)
-            sub_const = member_constructor(parent_const)
             if isinstance(member_make, P4ComplexType):
                 # we have a complex type
                 # retrieve the member and call the constructor
                 # call the constructor of the complex type
+                sub_const = member_constructor(parent_const)
                 members.append(member_make.get_z3_repr(sub_const))
-            elif isinstance(member_make, (z3.BitVecRef, z3.BoolRef, int)):
-                # make sure values are aligned appropriately
-                # this can happen because we also evaluate before the
-                # BindTypeVariables pass
-                member_make = z3_cast(member_make, sub_const)
-                members.append(member_make)
-            elif isinstance(member_make, z3.ExprRef):
+            elif isinstance(member_make, (z3.ExprRef, int)):
                 # for now, allow generic remaining types
+                # for example funcdeclref or int
                 # FIXME: THis is not supposed to happen...
                 members.append(member_make)
             else:
@@ -280,6 +275,11 @@ class P4ComplexType():
             if isinstance(rval, list):
                 tmp_lval.set_list(rval)
                 return
+            # make sure the assignment is aligned appropriately
+            # this can happen because we also evaluate before the
+            # BindTypeVariables pass
+            if isinstance(rval, int):
+                rval = z3_cast(rval, tmp_lval.sort())
 
         # now that all the preprocessing is done we can assign the value
         log.debug("Setting %s(%s) to %s(%s) ",

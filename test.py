@@ -47,6 +47,7 @@ violation_tests = [
     "issue1544-bmv2-1",
     "issue1544-bmv2-2",
     "key-bmv2",
+    "issue983",
     "issue1642",
     "issue1781",
     "mux",
