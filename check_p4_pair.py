@@ -2,7 +2,7 @@ import argparse
 from pathlib import Path
 import os
 import sys
-import imp
+import importlib
 import logging
 from p4z3 import Z3Reg, P4Package, z3
 import p4z3.util as util
@@ -19,7 +19,7 @@ SKIPPED_PASSES = ["FlattenHeaders", "FlattenInterfaceStructs", "NestedStructs",
                   "UniqueNames", "UniqueParameters", "Inline", "SpecializeAll"]
 
 
-def needs_skipping(pre, post):
+def needs_skipping(post):
     for skip_pass in SKIPPED_PASSES:
         if skip_pass in post:
             log.warning("Skipping \"%s\" pass to avoid crashes...", skip_pass)
@@ -30,8 +30,11 @@ def needs_skipping(pre, post):
 def import_prog(ctrl_dir, ctrl_name, prog_name):
     """ Try to import a module and class directly instead of the typical
         Python method. Allows for dynamic imports. """
-    mod_info = imp.find_module(ctrl_name, [ctrl_dir])
-    module = imp.load_module("tmp_module", *mod_info)
+    finder = importlib.machinery.PathFinder()
+    # unfortunately this does not support Posix paths and silently fails
+    # this is a standard lib function...
+    module_specs = finder.find_spec(str(ctrl_name), [str(ctrl_dir)])
+    module = module_specs.loader.load_module()
     return getattr(module, prog_name)
 
 
@@ -162,7 +165,7 @@ def z3_check(prog_paths, fail_dir=None):
         # We do not support the passes which rename variables right now
         # Reason is they generate entirely new variables
         # which cause z3 to crash for some reason...
-        if needs_skipping(prog_paths[i - 1], prog_paths[i]):
+        if needs_skipping(prog_paths[i]):
             continue
         p4_pre_path = Path(prog_paths[i - 1])
         p4_post_path = Path(prog_paths[i])

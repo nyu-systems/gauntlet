@@ -23,12 +23,13 @@ GENERATOR_BUG_DIR = OUTPUT_DIR.joinpath("generator_bugs")
 CRASH_BUG_DIR = OUTPUT_DIR.joinpath("crash_bugs")
 VALIDATION_BUG_DIR = OUTPUT_DIR.joinpath("validation_bugs")
 TIMEOUT_DIR = OUTPUT_DIR.joinpath("timeout_bugs")
-ITERATIONS = 50
+ITERATIONS = 10000
 
 KNOWN_BUGS = [
     "Conditional execution in actions is not supported on this target",
     "MethodCallStatement: Unsupported on target Conditional execution",
     "could not evaluate at compilation time",
+    "Unsupported on target Conditional execution in actions",
 ]
 
 
