@@ -24,7 +24,7 @@ GENERATOR_BUG_DIR = OUTPUT_DIR.joinpath("generator_bugs")
 CRASH_BUG_DIR = OUTPUT_DIR.joinpath("crash_bugs")
 VALIDATION_BUG_DIR = OUTPUT_DIR.joinpath("validation_bugs")
 TIMEOUT_DIR = OUTPUT_DIR.joinpath("timeout_bugs")
-ITERATIONS = 10
+ITERATIONS = 10000
 NUM_PROCESSES = 5
 
 KNOWN_BUGS = [
@@ -110,13 +110,13 @@ def validate_p4_compilation(p4_file, target_dir, p4c_bin, log_file):
 
 def check(idx):
     test_id = generate_id()
-
     test_name = f"{test_id}_{idx}"
     dump_dir = OUTPUT_DIR.joinpath(f"dmp_{test_name}")
     util.check_dir(dump_dir)
     log_file = OUTPUT_DIR.joinpath(f"{test_name}.log")
     p4_file = OUTPUT_DIR.joinpath(f"{test_name}.p4")
 
+    log.info("Testing p4 program %s", p4_file)
     result, p4_file = generate_p4_dump(P4RANDOM_BIN, p4_file)
     if result.returncode != util.EXIT_SUCCESS:
         log.info("Failed generate P4 code!")
