@@ -37,7 +37,7 @@ class P4Callable(P4Z3Class):
         return merged_params
 
     def save_variables(self, p4_state, merged_params):
-        var_buffer = {}
+        var_buffer = OrderedDict()
         # save all the variables that may be overridden
         for param_name, param in merged_params.items():
             is_ref = param[0]
@@ -74,20 +74,25 @@ class P4Action(P4Callable):
     def eval_callable(self, p4_state, merged_params, var_buffer):
         p4_state_cpy = p4_state
         p4_context = P4Context(var_buffer, None)
+        param_buffer = OrderedDict()
         for param_name, param in merged_params.items():
             is_ref = param[0]
             arg = param[1]
-            param_sort = self.params[param_name][1]
             log.debug("P4Action: Setting %s as %s ", param_name, arg)
             if is_ref == "out":
-                # outs are left-values so the arg must be a string
-                arg_name = arg
-                arg_const = z3.Const(f"{param_name}", param_sort)
-                p4_state.set_or_add_var(arg_name, arg_const)
+                # outs reset the input
+                param_sort = self.params[param_name][1]
+                arg = z3.Const(f"{param_name}", param_sort)
+            else:
+                arg = p4_state.resolve_expr(arg)
             # Sometimes expressions are passed, resolve those first
-            arg = p4_state.resolve_expr(arg)
             log.debug("Copy-in: %s to %s", arg, param_name)
-            p4_state.set_or_add_var(param_name, arg)
+            # buffer the value, do NOT set it yet
+            param_buffer[param_name] = arg
+        # now we can set the arguments without influencing subsequent variables
+        for param_name, param_val in param_buffer.items():
+            p4_state.set_or_add_var(param_name, param_val)
+
         # execute the action expression with the new environment
         p4_state.insert_exprs(p4_context)
         p4_state.insert_exprs(self.statements)
@@ -96,36 +101,11 @@ class P4Action(P4Callable):
         return p4z3_expr.eval(p4_state)
 
 
-class P4Function(P4Callable):
+class P4Function(P4Action):
 
     def __init__(self, return_type):
         self.return_type = return_type
         super(P4Function, self).__init__()
-
-    def eval_callable(self, p4_state, merged_params, var_buffer):
-
-        p4_state_cpy = p4_state
-        p4_context = P4Context(var_buffer, None)
-        for param_name, param in merged_params.items():
-            is_ref = param[0]
-            arg = param[1]
-            param_sort = self.params[param_name][1]
-            log.debug("P4Action: Setting %s as %s ", param_name, arg)
-            if is_ref == "out":
-                # outs are left-values so the arg must be a string
-                arg_name = arg
-                arg_const = z3.Const(f"{param_name}", param_sort)
-                p4_state.set_or_add_var(arg_name, arg_const)
-            # Sometimes expressions are passed, resolve those first
-            arg = p4_state.resolve_expr(arg)
-            log.debug("Copy-in: %s to %s", arg, param_name)
-            p4_state.set_or_add_var(param_name, arg)
-        # execute the action expression with the new environment
-        p4_state.insert_exprs(p4_context)
-        p4_state.insert_exprs(self.statements)
-        p4z3_expr = p4_state.pop_next_expr()
-        return p4z3_expr.eval(p4_state)
-
 
 class P4Control(P4Callable):
 

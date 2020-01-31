@@ -95,6 +95,9 @@ class P4Context(P4Z3Class):
             is_ref = param[0]
             param_val = param[1]
             if is_ref in ("inout", "out"):
+                # with copy-out we copy from left to right
+                # values on the right override values on the left
+                # the var buffer is an ordered dict that maintains this order
                 val = p4_context.resolve_reference(param_name)
                 log.debug("Copy-out: %s to %s", val, param_val)
                 old_p4_state.set_or_add_var(param_val, val)
