@@ -1,6 +1,7 @@
 import random
 import string
 import logging
+from multiprocessing import Pool
 from functools import wraps
 import errno
 import os
@@ -23,7 +24,8 @@ GENERATOR_BUG_DIR = OUTPUT_DIR.joinpath("generator_bugs")
 CRASH_BUG_DIR = OUTPUT_DIR.joinpath("crash_bugs")
 VALIDATION_BUG_DIR = OUTPUT_DIR.joinpath("validation_bugs")
 TIMEOUT_DIR = OUTPUT_DIR.joinpath("timeout_bugs")
-ITERATIONS = 10000
+ITERATIONS = 10
+NUM_PROCESSES = 5
 
 KNOWN_BUGS = [
     "Conditional execution in actions is not supported on this target",
@@ -82,7 +84,7 @@ def dump_result(result, target_dir, p4_file):
         err_file.write(result.stderr.decode("utf-8"))
 
 
-def dump_p4_file(target_dir, p4_file):
+def dump_file(target_dir, p4_file):
     util.check_dir(target_dir)
     target = target_dir.joinpath(p4_file.name)
     p4_file.rename(target)
@@ -97,56 +99,74 @@ def is_known_bug(result):
 
 
 @timeout(seconds=600)
-def validate_p4_compilation(p4_file, target_dir, p4c_bin):
+def validate_p4_compilation(p4_file, target_dir, p4c_bin, log_file):
     p4z3_cmd = "python3 check_p4_compilation.py "
     p4z3_cmd += f"-i {p4_file} "
     p4z3_cmd += f"-o {target_dir} "
     p4z3_cmd += f"-p {p4c_bin} "
+    p4z3_cmd += f"-l {log_file} "
     return util.exec_process(p4z3_cmd)
+
+
+def check(idx):
+    test_id = generate_id()
+
+    test_name = f"{test_id}_{idx}"
+    dump_dir = OUTPUT_DIR.joinpath(f"dmp_{test_name}")
+    util.check_dir(dump_dir)
+    log_file = OUTPUT_DIR.joinpath(f"{test_name}.log")
+    p4_file = OUTPUT_DIR.joinpath(f"{test_name}.p4")
+
+    result, p4_file = generate_p4_dump(P4RANDOM_BIN, p4_file)
+    if result.returncode != util.EXIT_SUCCESS:
+        log.info("Failed generate P4 code!")
+        dump_result(result, GENERATOR_BUG_DIR, p4_file)
+        # reset the dump directory
+        util.del_dir(dump_dir)
+        return
+
+    result = compile_p4_prog(P4C_BIN, p4_file, dump_dir)
+    if result.returncode != util.EXIT_SUCCESS:
+        if not is_known_bug(result):
+            log.info("Failed to compile the P4 code!")
+            log.info("Found a new bug!")
+            dump_result(result, CRASH_BUG_DIR, p4_file)
+            dump_file(CRASH_BUG_DIR, p4_file)
+            dump_file(CRASH_BUG_DIR, log_file)
+            # reset the dump directory
+            util.del_dir(dump_dir)
+            return
+
+    try:
+        result = validate_p4_compilation(p4_file, dump_dir, P4C_BIN, log_file)
+    except TimeoutError:
+        log.error("Validation timed out.")
+        dump_file(TIMEOUT_DIR, p4_file)
+        dump_file(TIMEOUT_DIR, log_file)
+        # reset the dump directory
+        util.del_dir(dump_dir)
+        return
+    if result.returncode != util.EXIT_SUCCESS:
+        log.info("Failed to validate the P4 code!")
+        log.info("Rerun the example with:")
+        out_file = VALIDATION_BUG_DIR.joinpath(p4_file.name)
+        log.info("python3 check_p4_compilation.py -i %s", out_file)
+        dump_result(result, VALIDATION_BUG_DIR, p4_file)
+        dump_file(VALIDATION_BUG_DIR, p4_file)
+        dump_file(VALIDATION_BUG_DIR, log_file)
+        # reset the dump directory
+        util.del_dir(dump_dir)
+        return
+    # reset the dump directory
+    p4_file.unlink()
+    log_file.unlink()
+    util.del_dir(dump_dir)
 
 
 def main():
     util.check_dir(OUTPUT_DIR)
-    test_id = generate_id()
-    dump_dir = OUTPUT_DIR.joinpath("dmp")
-    for idx in range(ITERATIONS):
-        # reset the dump directory
-        util.del_dir(dump_dir)
-        util.check_dir(dump_dir)
-
-        test_name = f"{test_id}_{idx}"
-        p4_file = OUTPUT_DIR.joinpath(f"{test_name}.p4")
-
-        result, p4_file = generate_p4_dump(P4RANDOM_BIN, p4_file)
-        if result.returncode != util.EXIT_SUCCESS:
-            log.info("Failed generate P4 code!")
-            dump_result(result, GENERATOR_BUG_DIR, p4_file)
-            continue
-
-        result = compile_p4_prog(P4C_BIN, p4_file, dump_dir)
-        if result.returncode != util.EXIT_SUCCESS:
-            if not is_known_bug(result):
-                log.info("Failed to compile the P4 code!")
-                log.info("Found a new bug!")
-                dump_result(result, CRASH_BUG_DIR, p4_file)
-                dump_p4_file(CRASH_BUG_DIR, p4_file)
-                continue
-
-        try:
-            result = validate_p4_compilation(p4_file, dump_dir, P4C_BIN)
-        except TimeoutError:
-            log.error("Validation timed out.")
-            dump_p4_file(TIMEOUT_DIR, p4_file)
-            continue
-        if result.returncode != util.EXIT_SUCCESS:
-            log.info("Failed to validate the P4 code!")
-            log.info("Rerun the example with:")
-            out_file = VALIDATION_BUG_DIR.joinpath(p4_file.name)
-            log.info("python3 check_p4_compilation.py -i %s", out_file)
-            dump_result(result, VALIDATION_BUG_DIR, p4_file)
-            dump_p4_file(VALIDATION_BUG_DIR, p4_file)
-            continue
-        p4_file.unlink()
+    with Pool(NUM_PROCESSES) as p:
+        p.map(check, range(ITERATIONS))
     return util.EXIT_SUCCESS
 
 

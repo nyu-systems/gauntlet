@@ -191,22 +191,8 @@ def generate_analysis():
             analyse_p4_file(p4_file, pass_dir)
 
 
-def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("-i", "--p4_input", dest="p4_input",
-                        default="p4c/testdata/p4_16_samples",
-                        required=True,
-                        help="A P4 file or path to a "
-                        "directory which contains P4 files.")
-    parser.add_argument("-o", "--out_dir", dest="pass_dir",
-                        default=PASS_DIR,
-                        help="The output folder where all passes are dumped.")
-    parser.add_argument("-p", "--p4c_bin", dest="p4c_bin",
-                        default=P4C_BIN,
-                        help="Specifies the p4c binary to compile a p4 file.")
+def main(args):
 
-    # Parse options and process argv
-    args = parser.parse_args()
     p4_input = Path(args.p4_input)
     pass_dir = Path(args.pass_dir)
     p4c_bin = args.p4c_bin
@@ -227,12 +213,30 @@ def main():
 
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-i", "--p4_input", dest="p4_input",
+                        default="p4c/testdata/p4_16_samples",
+                        required=True,
+                        help="A P4 file or path to a "
+                        "directory which contains P4 files.")
+    parser.add_argument("-o", "--out_dir", dest="pass_dir",
+                        default=PASS_DIR,
+                        help="The output folder where all passes are dumped.")
+    parser.add_argument("-p", "--p4c_bin", dest="p4c_bin",
+                        default=P4C_BIN,
+                        help="Specifies the p4c binary to compile a p4 file.")
+    parser.add_argument("-l", "--log_file", dest="log_file",
+                        default="analysis.log",
+                        help="Specifies name of the log file.")
+    # Parse options and process argv
+    arguments = parser.parse_args()
+
     # configure logging
-    logging.basicConfig(filename="analysis.log",
+    logging.basicConfig(filename=arguments.log_file,
                         format="%(levelname)s:%(message)s",
                         level=logging.INFO,
                         filemode='w')
     stderr_log = logging.StreamHandler()
     stderr_log.setFormatter(logging.Formatter("%(levelname)s:%(message)s"))
     logging.getLogger().addHandler(stderr_log)
-    main()
+    main(arguments)
