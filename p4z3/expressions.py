@@ -316,7 +316,8 @@ class P4Mux(P4Expression):
     def unravel_datatype(self, complex_type, datatype_list):
         unravelled_list = []
         for val in datatype_list:
-            val = complex_type.resolve_reference(val)
+            if isinstance(complex_type, P4ComplexType):
+                val = complex_type.resolve_reference(val)
             if isinstance(val, P4ComplexType):
                 val_list = list(val.members)
                 val = self.unravel_datatype(val, val_list)
@@ -327,22 +328,24 @@ class P4Mux(P4Expression):
         cond = p4_state.resolve_expr(self.cond)
         then_val = p4_state.resolve_expr(self.then_val)
         else_val = p4_state.resolve_expr(self.else_val)
+        then_expr = then_val
+        else_expr = else_val
         # this is a really nasty hack, do not try this at home kids
         # because we have to be able to access the sub values again
         # we have to resolve the if condition in the case of complex types
         # we do this by splitting the if statement into a list
         # lists can easily be assigned to a target structure
-        then_is_complex = isinstance(then_val, P4ComplexType)
-        else_is_complex = isinstance(else_val, P4ComplexType)
-        if then_is_complex and else_is_complex:
+        if isinstance(then_expr, P4ComplexType):
+            then_expr = list(then_expr.members)
+        if isinstance(else_expr, P4ComplexType):
+            else_expr = list(else_expr.members)
+        if isinstance(then_expr, list) and isinstance(else_expr, list):
             sub_cond = []
-            then_list = list(then_val.members)
-            else_list = list(else_val.members)
             # handle nested complex types
-            then_list = self.unravel_datatype(then_val, then_list)
-            else_list = self.unravel_datatype(else_val, else_list)
-            for idx, member in enumerate(then_list):
-                if_expr = z3.If(cond, member, else_list[idx])
+            then_expr = self.unravel_datatype(then_val, then_expr)
+            else_expr = self.unravel_datatype(else_val, else_expr)
+            for idx, member in enumerate(then_expr):
+                if_expr = z3.If(cond, member, else_expr[idx])
                 sub_cond.append(if_expr)
             return sub_cond
-        return z3.If(cond, then_val, else_val)
+        return z3.If(cond, then_expr, else_expr)
