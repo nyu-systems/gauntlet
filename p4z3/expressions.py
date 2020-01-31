@@ -226,10 +226,11 @@ class P4lshift(P4BinaryOp):
 
 class P4rshift(P4BinaryOp):
     def __init__(self, lval, rval):
-        # LShR does not like both expressions being int...
         def operator(x, y):
-            if isinstance(x, int) and isinstance(y, int):
-                return z3.LShR(x.as_bitvec, y)
+            # if x is an int we might get a signed value
+            # we need to use the arithmetic right shift in this case
+            if isinstance(x, int):
+                return op.rshift(x, y)
             return z3.LShR(x, y)
         P4BinaryOp.__init__(self, lval, rval, operator)
 
@@ -288,6 +289,11 @@ class P4Concat(P4Expression):
         # for concat we do not align the size of the operators
         lval = p4_state.resolve_expr(self.lval)
         rval = p4_state.resolve_expr(self.rval)
+        # all values must be bitvectors... so cast them
+        if isinstance(lval, int):
+            lval = lval.as_bitvec
+        if isinstance(rval, int):
+            rval = rval.as_bitvec
         return z3.Concat(lval, rval)
 
 

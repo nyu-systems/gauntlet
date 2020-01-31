@@ -1,13 +1,16 @@
 from p4z3.base import log, copy, z3
-from p4z3.base import P4Exit, P4Z3Class, P4End
+from p4z3.base import P4Exit, P4Expression, P4End
 from p4z3.callables import P4Control
+
+
+MAX_LOOP = 15
 
 
 class P4Parser(P4Control):
     pass
 
 
-class ParserTree(P4Z3Class):
+class ParserTree(P4Expression):
 
     def __init__(self):
         self.states = {}
@@ -25,11 +28,12 @@ class ParserTree(P4Z3Class):
         return self.states["start"].eval(p4_state)
 
 
-class ParserState(P4Z3Class):
+class ParserState(P4Expression):
 
     def __init__(self):
         self.exprs = []
         self.select = P4End()
+        self.counter = 0
 
     def add_stmt(self, expr):
         self.exprs.append(expr)
@@ -38,14 +42,19 @@ class ParserState(P4Z3Class):
         self.select = select
 
     def eval(self, p4_state):
-        select = p4_state.resolve_reference(self.select)
-        self.exprs.append(select)
-        p4_state.insert_exprs(self.exprs)
+        if self.counter > MAX_LOOP:
+            log.warning("Parser exceeded current loop limit, aborting...")
+            p4_state.clear_expr_chain()
+        else:
+            self.counter += 1
+            select = p4_state.resolve_reference(self.select)
+            self.exprs.append(select)
+            p4_state.insert_exprs(self.exprs)
         p4z3_expr = p4_state.pop_next_expr()
         return p4z3_expr.eval(p4_state)
 
 
-class ParserSelect(P4Z3Class):
+class ParserSelect(P4Expression):
     def __init__(self, match, *cases):
         self.match = match
         self.cases = []

@@ -2,8 +2,11 @@
 #include <v1model.p4>
 
 header H {
-    bit<128> a;
-    bit<32>  b;
+    bit<4> a;
+    int<4>  b;
+    bit<4>  c;
+    int<4>  d;
+    bit<4>  e;
 }
 
 struct Headers {
@@ -15,8 +18,12 @@ struct Meta {
 
 control ingress(inout Headers h, inout Meta m, inout standard_metadata_t sm) {
     apply {
-        bit<32> tmp = 32w0 - 32w1;
-        h.h.b = tmp / 32w2;
+        bit<4> tmp = 4w0 - 4w1;
+        h.h.a = tmp / 4w2;
+        h.h.b = 4s7 >> 1 >> 1;
+        h.h.c = 4w15 >> 1 >> 1;
+        h.h.d = -4s7 >> 1 >> 1;
+        h.h.e = tmp >> 1 >> 1;
     }
 }
 

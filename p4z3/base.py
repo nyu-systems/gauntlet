@@ -45,17 +45,18 @@ def z3_cast(val, to_type):
 
 class Z3Int(int):
 
-    def __new__(cls, val):
+    def __new__(cls, val, size=64):
+        cls.size = size
         cls.as_bitvec = z3.BitVecVal(val, 64)
         return int.__new__(cls, val)
 
     @staticmethod
     def sort():
-        return z3.BitVecSort(64)
+        return z3.BitVecSort(Z3Int.size)
 
     @staticmethod
     def size():
-        return 64
+        return Z3Int.size
 
 
 class P4Z3Class():
