@@ -107,6 +107,7 @@ class P4Function(P4Action):
         self.return_type = return_type
         super(P4Function, self).__init__()
 
+
 class P4Control(P4Callable):
 
     def __init__(self, z3_reg, name, params, const_params):
@@ -189,17 +190,63 @@ class P4Control(P4Callable):
 
 class P4Extern(P4Callable):
     # TODO: This is quite brittle, requires concrete examination
-    def __init__(self, name, z3_reg, return_type=None):
+    def __init__(self, name, z3_reg, type_params=[], methods={}):
         super(P4Extern, self).__init__()
         self.name = name
         self.z3_reg = z3_reg
+        self.type_params = type_params
+
+        for method in methods:
+            setattr(self, method.name, method)
+
+    def eval(self, p4_state=None, *args, **kwargs):
+        self.call_counter += 1
+        if not p4_state:
+            # There is no state yet, so use the context of the function
+            p4_state = self.z3_reg.init_p4_state(self.name, self.params)
+
+        merged_params = self.merge_parameters(self.params, *args, **kwargs)
+        for param_name, param in merged_params.items():
+            is_ref = param[0]
+            arg = param[1]
+            log.debug("Extern: Setting %s as %s ", param_name, arg)
+            # Because we do not know what the extern is doing
+            # we initiate a new z3 const and just overwrite all reference types
+            # we can assume that arg is a lvalue here (i.e., a string)
+
+            if is_ref in ("inout", "out"):
+                # Externs often have generic types until they are called
+                # This call resolves the argument and gets its z3 type
+                arg_expr = p4_state.resolve_expr(arg)
+                if isinstance(arg_expr, int):
+                    arg_type = z3.IntSort()
+                else:
+                    arg_type = arg_expr.sort()
+                name = f"{self.name}_{param_name}"
+                extern_mod = z3.Const(name, arg_type)
+                instance = self.z3_reg.instance(name, arg_type)
+                # In the case that the instance is a complex type make sure
+                # to propagate the variable through all its members
+                if isinstance(instance, P4ComplexType):
+                    instance.propagate_type(extern_mod)
+                # Finally, assign a new value to the pass-by-reference argument
+                p4_state.set_or_add_var(arg, instance)
+        return p4_state.const
+
+
+class P4Method(P4Extern):
+
+    # TODO: This is quite brittle, requires concrete examination
+    def __init__(self, name, z3_reg, return_type=None, params=[]):
+        super(P4Method, self).__init__(name, z3_reg)
         # P4Methods, which are also black-box functions, can have return types
         self.return_type = return_type
-        self.methods = {}
 
-    def add_method(self, name, method):
-        self.methods[name] = method
-        setattr(self, name, method)
+        for param in params:
+            is_ref = param[0]
+            param_name = param[1]
+            param_type = param[2]
+            self.params[param_name] = (is_ref, param_type)
 
     def eval(self, p4_state=None, *args, **kwargs):
         self.call_counter += 1

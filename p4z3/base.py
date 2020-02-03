@@ -628,9 +628,9 @@ class Z3Reg():
         self._ref_count = {}
 
     def _register_structlike(self, name, p4_class, z3_args):
-        self._types[name] = z3.Datatype(name)
-        self._types[name].declare(f"mk_{name}", *z3_args)
-        self._types[name] = self._types[name].create()
+        z3_type = z3.Datatype(name)
+        z3_type.declare(f"mk_{name}", *z3_args)
+        self._types[name] = z3_type.create()
         self._classes[name] = p4_class
         self._ref_count[name] = 0
 
