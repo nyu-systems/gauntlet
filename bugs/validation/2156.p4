@@ -3,7 +3,7 @@
 
 header H {
     bit<4> a;
-    bit<4>  b;
+    bit<4> b;
 }
 
 
