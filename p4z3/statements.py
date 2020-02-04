@@ -4,7 +4,7 @@ import z3
 
 from p4z3.base import log
 from p4z3.base import P4ComplexType, P4Statement, P4Z3Class, P4Context
-
+from p4z3.callables import P4Callable
 
 def z3_implies(p4_state, cond, then_expr):
     log.debug("Evaluating no_match...")
@@ -86,7 +86,7 @@ class MethodCallStmt(P4Statement):
 
     def eval(self, p4_state):
         expr = self.method_expr.eval(p4_state)
-        if callable(expr):
+        if isinstance(expr, P4Callable):
             args = self.method_expr.args
             kwargs = self.method_expr.kwargs
             expr = expr(p4_state, *args, **kwargs)

@@ -19,7 +19,8 @@ class P4Callable(P4Z3Class):
             is_ref = param[0]
             param_name = param[1]
             param_type = param[2]
-            self.params[param_name] = (is_ref, param_type)
+            param_default = param[3]
+            self.params[param_name] = (is_ref, param_type, param_default)
 
     def get_parameters(self):
         return self.params
@@ -27,10 +28,16 @@ class P4Callable(P4Z3Class):
     def merge_parameters(self, params, *args, **kwargs):
         merged_params = {}
         args_len = len(args)
-        for idx, param_name in enumerate(params.keys()):
-            is_ref = params[param_name][0]
+        for idx, param in enumerate(params.items()):
+            param_name = param[0]
+            is_ref = param[1][0]
+            param_default = param[1][2]
             if idx < args_len:
                 merged_params[param_name] = (is_ref, args[idx])
+            elif param_default is not None:
+                # there is no argument but we have a default value, so use that
+                merged_params[param_name] = (is_ref, param_default)
+
         for arg_name, arg_val in kwargs.items():
             is_ref = params[arg_name][0]
             merged_params[arg_name] = (is_ref, arg_val)
@@ -140,7 +147,7 @@ class P4Control(P4Callable):
         return self
 
     def apply(self, p4_state, *args, **kwargs):
-        return self.eval(p4_state)
+        return self.eval(p4_state, *args, **kwargs)
 
     def eval(self, p4_state=None, *args, **kwargs):
         self.call_counter += 1
@@ -185,6 +192,8 @@ class P4Control(P4Callable):
         p4_state_context.insert_exprs(self.statements)
         p4z3_expr = p4_state_context.pop_next_expr()
         return p4z3_expr.eval(p4_state_context)
+
+
 
 
 class P4Extern(P4Callable):
@@ -245,7 +254,8 @@ class P4Method(P4Extern):
             is_ref = param[0]
             param_name = param[1]
             param_type = param[2]
-            self.params[param_name] = (is_ref, param_type)
+            param_default = param[3]
+            self.params[param_name] = (is_ref, param_type, param_default)
 
     def eval(self, p4_state=None, *args, **kwargs):
         self.call_counter += 1
@@ -311,7 +321,7 @@ def resolve_action(action_expr):
     return action_name, action_args
 
 
-class P4Table(P4Z3Class):
+class P4Table(P4Callable):
 
     def __init__(self, name):
         self.name = name
