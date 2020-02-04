@@ -2,11 +2,11 @@ from p4z3.base import OrderedDict, z3, log, copy
 from p4z3.base import P4ComplexType, P4Z3Class, P4Context
 
 from p4z3.expressions import MethodCallExpr
-from p4z3.statements import P4Declaration
 
 
 class P4Callable(P4Z3Class):
-    def __init__(self):
+    def __init__(self, name):
+        self.name = name
         self.statements = []
         self.params = OrderedDict()
         self.call_counter = 0
@@ -103,15 +103,15 @@ class P4Action(P4Callable):
 
 class P4Function(P4Action):
 
-    def __init__(self, return_type):
+    def __init__(self, name, return_type):
         self.return_type = return_type
-        super(P4Function, self).__init__()
+        super(P4Function, self).__init__(name)
 
 
 class P4Control(P4Callable):
 
     def __init__(self, z3_reg, name, params, const_params):
-        super(P4Control, self).__init__()
+        super(P4Control, self).__init__(name)
         self.locals = []
         self.statements = []
         self.state_initializer = (z3_reg, name)
@@ -125,8 +125,7 @@ class P4Control(P4Callable):
             const_type = param[2]
             self.const_params[const_name] = const_type
 
-    def declare_local(self, local_name, local_var):
-        decl = P4Declaration(local_name, local_var)
+    def declare_local(self, decl):
         self.statements.append(decl)
 
     def __call__(self, p4_state, *args, **kwargs):
@@ -191,7 +190,7 @@ class P4Control(P4Callable):
 class P4Extern(P4Callable):
     # TODO: This is quite brittle, requires concrete examination
     def __init__(self, name, z3_reg, type_params=[], methods={}):
-        super(P4Extern, self).__init__()
+        super(P4Extern, self).__init__(name)
         self.name = name
         self.z3_reg = z3_reg
         self.type_params = type_params

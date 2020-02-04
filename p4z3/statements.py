@@ -13,12 +13,6 @@ def z3_implies(p4_state, cond, then_expr):
     return z3.If(cond, then_expr, no_match)
 
 
-class P4Instance():
-    def __new__(cls, z3_reg, method_name, *args, **kwargs):
-        # global instances typically do not have any state so pass None here
-        return z3_reg._globals[method_name](None, *args, **kwargs)
-
-
 class P4Package():
 
     def __init__(self, z3_reg, name, *args, **kwargs):
@@ -52,6 +46,7 @@ class P4Declaration(P4Statement):
     # in the declaration we assign variables as is.
     # they are resolved at runtime by other classes
     def __init__(self, lval, rval):
+        self.name = lval
         self.lval = lval
         self.rval = rval
 

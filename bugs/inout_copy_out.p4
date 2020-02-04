@@ -38,12 +38,12 @@ parser p(packet_in pkt, out Parsed_packet hdr, inout Metadata meta, inout standa
 }
 
 control ingress(inout Parsed_packet h, inout Metadata m, inout standard_metadata_t sm) {
-    action do_action_2(inout bit<8> val_0, inout bit<8> val_1, inout bit<8> val_2, inout bit<8> val_3, inout bit<8> val_4, inout bit<8> val_5, inout bit<8> val_6) {
-        val_5 = 8w2;
-        val_6 = 8w0;
+    action do_action_2(inout bit<8> val_0, inout bit<8> val_1, inout bit<8> val_2) {
+        val_1 = 8w2;
+        // val_2 = 8w0;
     }
     apply {
-        do_action_2(h.h.b, h.h.b, h.h.b, h.h.b, h.h.b, h.h.b, h.h.b);
+        do_action_2(h.h.b, h.h.b, h.h.b);
         if (h.h.b > 8w1) {
             h.h.a = 1;
         }
