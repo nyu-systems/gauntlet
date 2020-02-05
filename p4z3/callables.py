@@ -5,16 +5,18 @@ from p4z3.expressions import MethodCallExpr
 
 
 class P4Callable(P4Z3Class):
-    def __init__(self, name):
+    def __init__(self, name, params):
         self.name = name
         self.statements = []
         self.params = OrderedDict()
         self.call_counter = 0
+        for param in params:
+            self._add_parameter(param)
 
     def add_stmt(self, stmt):
         self.statements.append(stmt)
 
-    def add_parameter(self, param=None):
+    def _add_parameter(self, param=None):
         if param:
             is_ref = param[0]
             param_name = param[1]
@@ -110,22 +112,20 @@ class P4Action(P4Callable):
 
 class P4Function(P4Action):
 
-    def __init__(self, name, return_type):
+    def __init__(self, name, params, return_type):
         self.return_type = return_type
-        super(P4Function, self).__init__(name)
+        super(P4Function, self).__init__(name, params)
 
 
 class P4Control(P4Callable):
 
     def __init__(self, z3_reg, name, params, const_params):
-        super(P4Control, self).__init__(name)
+        super(P4Control, self).__init__(name, params)
         self.locals = []
         self.statements = []
         self.state_initializer = (z3_reg, name)
         self.const_params = OrderedDict()
         self.merged_consts = OrderedDict()
-        for param in params:
-            self.add_parameter(param)
         for param in const_params:
             is_ref = param[0]
             const_name = param[1]
@@ -194,12 +194,10 @@ class P4Control(P4Callable):
         return p4z3_expr.eval(p4_state_context)
 
 
-
-
 class P4Extern(P4Callable):
     # TODO: This is quite brittle, requires concrete examination
     def __init__(self, name, z3_reg, type_params=[], methods={}):
-        super(P4Extern, self).__init__(name)
+        super(P4Extern, self).__init__(name, params=[])
         self.name = name
         self.z3_reg = z3_reg
         self.type_params = type_params
@@ -323,7 +321,7 @@ def resolve_action(action_expr):
 
 class P4Table(P4Callable):
 
-    def __init__(self, name):
+    def __init__(self, name, **properties):
         self.name = name
         self.keys = []
         self.const_entries = []
@@ -332,24 +330,44 @@ class P4Table(P4Callable):
         self.tbl_action = z3.Int(f"{self.name}_action")
         self.hit = z3.BoolVal(False)
 
-    def add_action(self, action_expr):
-        action_name, action_args = resolve_action(action_expr)
-        index = len(self.actions) + 1
-        self.actions[action_name] = (index, action_name, action_args)
+        self.add_keys(properties)
+        self.add_default(properties)
+        self.add_actions(properties)
+        self.add_const_entries(properties)
 
-    def add_default(self, action_expr):
-        action_name, action_args = resolve_action(action_expr)
-        self.default_action = (0, action_name, action_args)
+    def add_actions(self, properties):
+        if "actions" not in properties:
+            return
+        for action_expr in properties["actions"]:
+            action_name, action_args = resolve_action(action_expr)
+            index = len(self.actions) + 1
+            self.actions[action_name] = (index, action_name, action_args)
 
-    def add_match(self, table_key):
-        self.keys.append(table_key)
+    def add_default(self, properties):
+        if "default_action" not in properties:
+            # In case there is no default action, the first action is default
+            self.default_action = (0, "NoAction", ())
+        else:
+            def_action = properties["default_action"]
+            action_name, action_args = resolve_action(def_action)
+            self.default_action = (0, action_name, action_args)
 
-    def add_const_entry(self, const_keys, action_expr):
+    def add_keys(self, properties):
+        if "key" not in properties:
+            return
+        for table_key in properties["key"]:
+            self.keys.append(table_key)
 
-        if len(self.keys) != len(const_keys):
-            raise RuntimeError("Constant keys must match table keys!")
-        action_name, action_args = resolve_action(action_expr)
-        self.const_entries.append((const_keys, (action_name, action_args)))
+    def add_const_entries(self, properties):
+        if "entries" not in properties:
+            return
+        for entry in properties["entries"]:
+            const_keys = entry[0]
+            action_expr = entry[1]
+            if len(self.keys) != len(const_keys):
+                raise RuntimeError("Constant keys must match table keys!")
+            action_name, action_args = resolve_action(action_expr)
+            self.const_entries.append((const_keys, (action_name, action_args)))
 
     def apply(self, p4_state):
         self.hit = self.eval_keys(p4_state)
@@ -392,12 +410,7 @@ class P4Table(P4Callable):
         return p4_action(p4_state, *action_args)
 
     def eval_default(self, p4_state):
-        if self.default_action is None:
-            # In case there is no default action, the first action is default
-            default_action = (0, "NoAction", ())
-        else:
-            default_action = self.default_action
-        _, action_name, p4_action_args = default_action
+        _, action_name, p4_action_args = self.default_action
         log.debug("Evaluating default action...")
         return self.eval_action(p4_state,
                                 (action_name, p4_action_args))
