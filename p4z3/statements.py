@@ -86,7 +86,6 @@ class MethodCallStmt(P4Statement):
         self.method_expr = method_expr
 
     def eval(self, p4_state):
-        p4_state.insert_exprs(P4Noop())
         expr = self.method_expr.eval(p4_state)
         if isinstance(expr, P4Callable):
             args = self.method_expr.args
