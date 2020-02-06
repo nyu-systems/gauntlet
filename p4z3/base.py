@@ -142,7 +142,8 @@ class P4Exit(P4Expression):
     def eval(self, p4_state):
         # Exit the chain early and absolutely
         p4_state.clear_expr_chain()
-        return p4_state.get_z3_repr()
+        p4z3_expr = p4_state.pop_next_expr()
+        return p4z3_expr.eval(p4_state)
 
 
 class P4Member(P4Expression):
@@ -375,12 +376,14 @@ class Header(P4ComplexType):
     def setValid(self, p4_state):
         # This is a built-in
         self.valid = z3.BoolVal(True)
-        return p4_state.get_z3_repr()
+        p4z3_expr = p4_state.pop_next_expr()
+        return p4z3_expr.eval(p4_state)
 
     def setInvalid(self, p4_state):
         # This is a built-in
         self.valid = z3.BoolVal(False)
-        return p4_state.get_z3_repr()
+        p4z3_expr = p4_state.pop_next_expr()
+        return p4z3_expr.eval(p4_state)
 
     def __eq__(self, other):
         if isinstance(other, Header):
@@ -441,7 +444,8 @@ class HeaderStack(P4ComplexType):
                 hdr.valid = z3.BoolVal(True)
             except AttributeError:
                 pass
-        return p4_state.get_z3_repr()
+        p4z3_expr = p4_state.pop_next_expr()
+        return p4z3_expr.eval(p4_state)
 
     def pop_front(self, p4_state, num):
         # This is a built-in
@@ -453,7 +457,8 @@ class HeaderStack(P4ComplexType):
                 hdr.valid = z3.BoolVal(False)
             except AttributeError:
                 pass
-        return p4_state.get_z3_repr()
+        p4z3_expr = p4_state.pop_next_expr()
+        return p4z3_expr.eval(p4_state)
 
     @property
     def next(self):
