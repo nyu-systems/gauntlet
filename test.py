@@ -51,6 +51,7 @@ violation_tests = [
     "issue1642",
     "issue1781",
     "mux",
+    "unused_return",
     "out-params-1",
     "out-params-2",
 ]

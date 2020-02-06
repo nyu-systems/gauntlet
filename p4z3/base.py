@@ -89,7 +89,6 @@ class P4Context(P4Z3Class):
         else:
             old_p4_state = p4_context
         # restore any variables that may have been overridden
-        # TODO: Fix to handle state correctly
         for param_name, param in self.var_buffer.items():
             is_ref = param[0]
             param_val = param[1]
@@ -573,7 +572,7 @@ class P4State(P4ComplexType):
             val = self.resolve_reference(expr)
         else:
             val = expr
-        if isinstance(val, P4Expression):
+        if isinstance(val, (P4Statement, P4Expression)):
             # We got a P4 expression, recurse and resolve...
             val = val.eval(self)
             return self.resolve_expr(val)

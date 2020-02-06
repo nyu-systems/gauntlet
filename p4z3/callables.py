@@ -5,16 +5,13 @@ from p4z3.expressions import MethodCallExpr
 
 
 class P4Callable(P4Z3Class):
-    def __init__(self, name, params):
+    def __init__(self, name, params, body=[]):
         self.name = name
-        self.statements = []
+        self.statements = body
         self.params = OrderedDict()
         self.call_counter = 0
         for param in params:
             self._add_parameter(param)
-
-    def add_stmt(self, stmt):
-        self.statements.append(stmt)
 
     def _add_parameter(self, param=None):
         if param:
@@ -46,6 +43,8 @@ class P4Callable(P4Z3Class):
         return merged_params
 
     def save_variables(self, p4_state, merged_params):
+        if not p4_state:
+            return {}
         var_buffer = OrderedDict()
         # save all the variables that may be overridden
         for param_name, param in merged_params.items():
@@ -112,18 +111,17 @@ class P4Action(P4Callable):
 
 class P4Function(P4Action):
 
-    def __init__(self, name, params, return_type):
+    def __init__(self, name, params, return_type, body):
         self.return_type = return_type
-        super(P4Function, self).__init__(name, params)
+        super(P4Function, self).__init__(name, params, body)
 
 
 class P4Control(P4Callable):
 
-    def __init__(self, z3_reg, name, params, const_params):
-        super(P4Control, self).__init__(name, params)
-        self.locals = []
-        self.statements = []
-        self.state_initializer = (z3_reg, name)
+    def __init__(self, z3_reg, name, params, const_params, body, local_decls):
+        super(P4Control, self).__init__(name, params, body)
+        self.locals = local_decls
+        self.z3_reg = z3_reg
         self.const_params = OrderedDict()
         self.merged_consts = OrderedDict()
         for param in const_params:
@@ -131,9 +129,6 @@ class P4Control(P4Callable):
             const_name = param[1]
             const_type = param[2]
             self.const_params[const_name] = const_type
-
-    def declare_local(self, decl):
-        self.statements.append(decl)
 
     def __call__(self, p4_state, *args, **kwargs):
         # for controls and externs, the state is not required
@@ -149,20 +144,15 @@ class P4Control(P4Callable):
     def apply(self, p4_state, *args, **kwargs):
         return self.eval(p4_state, *args, **kwargs)
 
-    def eval(self, p4_state=None, *args, **kwargs):
-        self.call_counter += 1
+    def eval_callable(self, p4_state, merged_params, var_buffer):
         # initialize the local context of the function for execution
-        z3_reg = self.state_initializer[0]
-        name = self.state_initializer[1]
-        p4_state_context = z3_reg.init_p4_state(name, self.params)
-        p4_state_cpy = p4_state
+        p4_state_context = self.z3_reg.init_p4_state(self.name, self.params)
         if not p4_state:
             # There is no state yet, so use the context of the function
             p4_state = p4_state_context
-
-        merged_params = self.merge_parameters(self.params, *args, **kwargs)
-        var_buffer = self.save_variables(p4_state, merged_params)
-        p4_context = P4Context(var_buffer, p4_state_cpy)
+            p4_context = []
+        else:
+            p4_context = P4Context(var_buffer, p4_state)
 
         for const_param_name, const_arg in self.merged_consts.items():
             const_arg = p4_state.resolve_expr(const_arg)
@@ -190,6 +180,7 @@ class P4Control(P4Callable):
         p4_state_context.expr_chain = p4_state.copy_expr_chain()
         p4_state_context.insert_exprs(p4_context)
         p4_state_context.insert_exprs(self.statements)
+        p4_state_context.insert_exprs(self.locals)
         p4z3_expr = p4_state_context.pop_next_expr()
         return p4z3_expr.eval(p4_state_context)
 
@@ -205,13 +196,12 @@ class P4Extern(P4Callable):
         for method in methods:
             setattr(self, method.name, method)
 
-    def eval(self, p4_state=None, *args, **kwargs):
+    def eval_callable(self, p4_state, merged_params, var_buffer):
         self.call_counter += 1
         if not p4_state:
             # There is no state yet, so use the context of the function
             p4_state = self.z3_reg.init_p4_state(self.name, self.params)
 
-        merged_params = self.merge_parameters(self.params, *args, **kwargs)
         for param_name, param in merged_params.items():
             is_ref = param[0]
             arg = param[1]
@@ -237,31 +227,30 @@ class P4Extern(P4Callable):
                     instance.propagate_type(extern_mod)
                 # Finally, assign a new value to the pass-by-reference argument
                 p4_state.set_or_add_var(arg, instance)
-        return p4_state.const
+        p4z3_expr = p4_state.pop_next_expr()
+        return p4z3_expr.eval(p4_state)
 
 
-class P4Method(P4Extern):
+class P4Method(P4Callable):
 
     # TODO: This is quite brittle, requires concrete examination
     def __init__(self, name, z3_reg, return_type=None, params=[]):
-        super(P4Method, self).__init__(name, z3_reg)
+        super(P4Method, self).__init__(name, params)
         # P4Methods, which are also black-box functions, can have return types
         self.return_type = return_type
+        self.z3_reg = z3_reg
 
-        for param in params:
-            is_ref = param[0]
-            param_name = param[1]
-            param_type = param[2]
-            param_default = param[3]
-            self.params[param_name] = (is_ref, param_type, param_default)
-
-    def eval(self, p4_state=None, *args, **kwargs):
+    def eval_callable(self, p4_state, merged_params, var_buffer):
         self.call_counter += 1
+        # initialize the local context of the function for execution
+        p4_state_context = self.z3_reg.init_p4_state(self.name, self.params)
         if not p4_state:
             # There is no state yet, so use the context of the function
-            p4_state = self.z3_reg.init_p4_state(self.name, self.params)
+            p4_state = p4_state_context
+            p4_context = []
+        else:
+            p4_context = P4Context({}, None)
 
-        merged_params = self.merge_parameters(self.params, *args, **kwargs)
         # externs can return values, we need to generate a new constant
         # we generate the name based on the input arguments
         var_name = ""
@@ -293,7 +282,7 @@ class P4Method(P4Extern):
                     instance.propagate_type(extern_mod)
                 # Finally, assign a new value to the pass-by-reference argument
                 p4_state.set_or_add_var(arg, instance)
-
+        p4_state.insert_exprs(p4_context)
         if self.return_type is not None:
             # If we return something, instantiate the type and return it
             # we merge the name
@@ -302,7 +291,8 @@ class P4Method(P4Extern):
             return_instance = self.z3_reg.instance(
                 f"{self.name}_{var_name}", self.return_type)
             return return_instance
-        return p4_state.const
+        p4z3_expr = p4_state.pop_next_expr()
+        return p4z3_expr.eval(p4_state)
 
 
 def resolve_action(action_expr):

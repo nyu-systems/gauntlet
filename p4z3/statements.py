@@ -6,6 +6,7 @@ from p4z3.base import log
 from p4z3.base import P4ComplexType, P4Statement, P4Z3Class, P4Context
 from p4z3.callables import P4Callable
 
+
 def z3_implies(p4_state, cond, then_expr):
     log.debug("Evaluating no_match...")
     p4z3_expr = p4_state.pop_next_expr()
@@ -99,14 +100,8 @@ class MethodCallStmt(P4Statement):
 
 class BlockStatement(P4Statement):
 
-    def __init__(self):
-        self.exprs = []
-
-    def preprend(self, expr):
-        self.exprs.insert(0, expr)
-
-    def add(self, expr):
-        self.exprs.append(expr)
+    def __init__(self, exprs=[]):
+        self.exprs = exprs
 
     def eval(self, p4_state):
         p4_state.insert_exprs(self.exprs)
@@ -116,19 +111,10 @@ class BlockStatement(P4Statement):
 
 class IfStatement(P4Statement):
 
-    def __init__(self):
-        self.cond = None
-        self.then_block = None
-        self.else_block = None
-
-    def add_condition(self, cond):
+    def __init__(self, cond, then_block, else_block=None):
         self.cond = cond
-
-    def add_then_stmt(self, stmt):
-        self.then_block = stmt
-
-    def add_else_stmt(self, stmt):
-        self.else_block = stmt
+        self.then_block = then_block
+        self.else_block = else_block
 
     def eval(self, p4_state):
         if self.cond is None:
@@ -172,10 +158,13 @@ class SwitchHit(P4Z3Class):
 
 class SwitchStatement(P4Statement):
     # TODO: Fix fall through for switch statement
-    def __init__(self, table_str):
+    def __init__(self, table_str, cases):
         self.table_str = table_str
-        self.default_case = BlockStatement()
+        self.default_case = P4Noop()
         self.cases = OrderedDict()
+        for action_str, case_stmt in cases:
+            self.add_case(action_str)
+            self.add_stmt_to_case(action_str, case_stmt)
 
     def add_case(self, action_str):
         # skip default statements, they are handled separately
@@ -187,10 +176,9 @@ class SwitchStatement(P4Statement):
 
     def add_stmt_to_case(self, action_str, case_stmt):
         if action_str == "default":
-            self.default_case.add(case_stmt)
+            self.default_case = case_stmt
         else:
-            case_block = self.cases[action_str]["case_block"]
-            case_block.add(case_stmt)
+            self.cases[action_str]["case_block"] = case_stmt
 
     def eval(self, p4_state):
         table = p4_state.resolve_expr(self.table_str)
