@@ -69,6 +69,33 @@ class P4Callable(P4Z3Class):
     def eval_callable(self, p4_state, merged_params, var_buffer):
         pass
 
+    def set_context(self, p4_state, merged_params, ref_criteria):
+        param_buffer = OrderedDict()
+        for param_name, param in merged_params.items():
+            is_ref = param[0]
+            arg = param[1]
+            if is_ref in ref_criteria:
+                # outs are left-values so the arg must be a string
+                arg_name = f"{self.name}_{param_name}"
+                # infer the type value at runtime, param does not work yet
+                arg_sort = p4_state.resolve_expr(arg).sort()
+                # outs reset the input
+                arg = z3.Const(f"{param_name}", arg_sort)
+                # In the case that the instance is a complex type make sure
+                # to propagate the variable through all its members
+                if isinstance(arg_sort, z3.DatatypeSortRef):
+                    instance = self.z3_reg.instance(arg_name, arg_sort)
+                    arg = instance
+            else:
+                arg = p4_state.resolve_expr(arg)
+            # Sometimes expressions are passed, resolve those first
+            log.debug("Copy-in: %s to %s", arg, param_name)
+            # buffer the value, do NOT set it yet
+            param_buffer[param_name] = arg
+        # now we can set the arguments without influencing subsequent variables
+        for param_name, param_val in param_buffer.items():
+            p4_state.set_or_add_var(param_name, param_val)
+
     def eval(self, p4_state=None, *args, **kwargs):
         self.call_counter += 1
         merged_params = self.merge_parameters(self.params, *args, **kwargs)
@@ -81,31 +108,7 @@ class P4Action(P4Callable):
     def eval_callable(self, p4_state, merged_params, var_buffer):
         p4_context = P4Context(var_buffer, None)
 
-        param_buffer = OrderedDict()
-        for param_name, param in merged_params.items():
-            is_ref = param[0]
-            arg = param[1]
-            param_sort = self.params[param_name][1]
-            if is_ref == "out":
-                # outs are left-values so the arg must be a string
-                arg_name = f"{self.name}_{param_name}"
-                # outs reset the input
-                param_sort = self.params[param_name][1]
-                arg = z3.Const(f"{param_name}", param_sort)
-                # In the case that the instance is a complex type make sure
-                # to propagate the variable through all its members
-                if isinstance(param_sort, z3.DatatypeRef):
-                    instance = self.z3_reg.instance(arg_name, param_sort)
-                    instance.propagate_type(arg)
-            else:
-                arg = p4_state.resolve_expr(arg)
-            # Sometimes expressions are passed, resolve those first
-            log.debug("Copy-in: %s to %s", arg, param_name)
-            # buffer the value, do NOT set it yet
-            param_buffer[param_name] = arg
-        # now we can set the arguments without influencing subsequent variables
-        for param_name, param_val in param_buffer.items():
-            p4_state.set_or_add_var(param_name, param_val)
+        self.set_context(p4_state, merged_params, ("out"))
 
         # execute the action expression with the new environment
         p4_state.insert_exprs(p4_context)
@@ -122,31 +125,8 @@ class P4Function(P4Action):
         super(P4Function, self).__init__(name, z3_reg, params, body)
 
     def eval_callable(self, p4_state, merged_params, var_buffer):
-        param_buffer = OrderedDict()
-        for param_name, param in merged_params.items():
-            is_ref = param[0]
-            arg = param[1]
-            param_sort = self.params[param_name][1]
-            if is_ref == "out":
-                # outs are left-values so the arg must be a string
-                arg_name = f"{self.name}_{param_name}"
-                # outs reset the input
-                param_sort = self.params[param_name][1]
-                arg = z3.Const(f"{param_name}", param_sort)
-                # In the case that the instance is a complex type make sure
-                # to propagate the variable through all its members
-                if isinstance(param_sort, z3.DatatypeRef):
-                    instance = self.z3_reg.instance(arg_name, param_sort)
-                    instance.propagate_type(arg)
-            else:
-                arg = p4_state.resolve_expr(arg)
-            # Sometimes expressions are passed, resolve those first
-            log.debug("Copy-in: %s to %s", arg, param_name)
-            # buffer the value, do NOT set it yet
-            param_buffer[param_name] = arg
-        # now we can set the arguments without influencing subsequent variables
-        for param_name, param_val in param_buffer.items():
-            p4_state.set_or_add_var(param_name, param_val)
+
+        self.set_context(p4_state, merged_params, ("out"))
         # execute the action expression with the new environment
         old_expr_chain = p4_state.copy_expr_chain()
         p4_state.clear_expr_chain()
@@ -200,31 +180,7 @@ class P4Control(P4Callable):
             const_arg = p4_state.resolve_expr(const_arg)
             p4_state_context.set_or_add_var(const_param_name, const_arg)
 
-        param_buffer = OrderedDict()
-        for param_name, param in merged_params.items():
-            is_ref = param[0]
-            arg = param[1]
-            param_sort = self.params[param_name][1]
-            if is_ref == "out":
-                # outs are left-values so the arg must be a string
-                arg_name = f"{self.name}_{param_name}"
-                # outs reset the input
-                param_sort = self.params[param_name][1]
-                arg = z3.Const(f"{param_name}", param_sort)
-                # In the case that the instance is a complex type make sure
-                # to propagate the variable through all its members
-                if isinstance(param_sort, z3.DatatypeRef):
-                    instance = self.z3_reg.instance(arg_name, param_sort)
-                    instance.propagate_type(arg)
-            else:
-                arg = p4_state_context.resolve_expr(arg)
-            # Sometimes expressions are passed, resolve those first
-            log.debug("Copy-in: %s to %s", arg, param_name)
-            # buffer the value, do NOT set it yet
-            param_buffer[param_name] = arg
-        # now we can set the arguments without influencing subsequent variables
-        for param_name, param_val in param_buffer.items():
-            p4_state_context.set_or_add_var(param_name, param_val)
+        self.set_context(p4_state_context, merged_params, ("out"))
 
         # execute the action expression with the new environment
         p4_state_context.insert_exprs(p4_context)
@@ -239,9 +195,12 @@ class P4Extern(P4Callable):
     def __init__(self, name, z3_reg, type_params=[], methods={}):
         super(P4Extern, self).__init__(name, z3_reg, params=[])
         self.type_params = type_params
-
         for method in methods:
             setattr(self, method.name, method)
+
+    def sort(self):
+        # FIXME: a hack
+        return z3.DeclareSort(self.name)
 
     def eval_callable(self, p4_state, merged_params, var_buffer):
         self.call_counter += 1
@@ -249,31 +208,8 @@ class P4Extern(P4Callable):
             # There is no state yet, so use the context of the function
             p4_state = self.z3_reg.init_p4_state(self.name, self.params)
 
-        param_buffer = OrderedDict()
-        for param_name, param in merged_params.items():
-            is_ref = param[0]
-            arg = param[1]
-            param_sort = self.params[param_name][1]
-            if is_ref == ("inout", "out"):
-                # outs are left-values so the arg must be a string
-                arg_name = f"{self.name}_{param_name}"
-                # outs reset the input
-                param_sort = self.params[param_name][1]
-                arg = z3.Const(f"{param_name}", param_sort)
-                # In the case that the instance is a complex type make sure
-                # to propagate the variable through all its members
-                if isinstance(param_sort, z3.DatatypeRef):
-                    instance = self.z3_reg.instance(arg_name, param_sort)
-                    instance.propagate_type(arg)
-            else:
-                arg = p4_state.resolve_expr(arg)
-            # Sometimes expressions are passed, resolve those first
-            log.debug("Copy-in: %s to %s", arg, param_name)
-            # buffer the value, do NOT set it yet
-            param_buffer[param_name] = arg
-        # now we can set the arguments without influencing subsequent variables
-        for param_name, param_val in param_buffer.items():
-            p4_state.set_or_add_var(param_name, param_val)
+        self.set_context(p4_state, merged_params, ("inout", "out"))
+
         p4z3_expr = p4_state.pop_next_expr()
         return p4z3_expr.eval(p4_state)
 
@@ -291,41 +227,26 @@ class P4Method(P4Callable):
         # initialize the local context of the function for execution
         if not p4_state:
             # There is no state yet, so use the context of the function
-            # There is no state yet, so use the context of the function
-            p4_state = self.z3_reg.init_p4_state(self.name, self.params)
+            p4_state = self.z3_reg.init_p4_state(self.name, merged_params)
+            p4_context = P4Context({}, None)
+        else:
+            p4_context = P4Context(var_buffer, copy.copy(p4_state))
+
+        self.set_context(p4_state, merged_params, ("inout", "out"))
+
         # externs can return values, we need to generate a new constant
         # we generate the name based on the input arguments
         var_name = ""
-        for param_name, param in merged_params.items():
-            is_ref = param[0]
-            arg = param[1]
-            log.debug("Extern: Setting %s as %s ", param_name, arg)
+        for param_name in merged_params:
+            # FIXME: This should be arg insteadm of param
             # Because we do not know what the extern is doing
             # we initiate a new z3 const and just overwrite all reference types
             # we can assume that arg is a lvalue here (i.e., a string)
-            arg_expr = p4_state.resolve_expr(arg)
             # input arguments influence the output behavior
             # add the input value to the return constant
-            var_name += str(arg_expr)
+            var_name.join(param_name)
 
-            if is_ref in ("inout", "out"):
-                # Externs often have generic types until they are called
-                # This call resolves the argument and gets its z3 type
-                if isinstance(arg_expr, int):
-                    arg_type = z3.IntSort()
-                else:
-                    arg_type = arg_expr.sort()
-                name = f"{self.name}_{param_name}"
-                extern_mod = z3.Const(name, arg_type)
-                instance = self.z3_reg.instance(name, arg_type)
-                # In the case that the instance is a complex type make sure
-                # to propagate the variable through all its members
-                if isinstance(instance, P4ComplexType):
-                    instance.propagate_type(extern_mod)
-                # Finally, assign a new value to the pass-by-reference argument
-                p4_state.set_or_add_var(arg, instance)
         if self.return_type is not None:
-            # p4_state.insert_exprs(P4Context({}, None))
             # If we return something, instantiate the type and return it
             # we merge the name
             # FIXME: We do not consider call order
@@ -333,6 +254,7 @@ class P4Method(P4Callable):
             return_instance = self.z3_reg.instance(
                 f"{self.name}_{var_name}", self.return_type)
             return return_instance
+        p4_state.insert_exprs(p4_context)
         p4z3_expr = p4_state.pop_next_expr()
         return p4z3_expr.eval(p4_state)
 

@@ -27,39 +27,11 @@ control ingress(inout headers hdr, inout metadata meta, inout standard_metadata_
     bool hasReturned;
     bit<16> retval;
     standard_metadata_t smeta;
-    @name(".my_drop") action my_drop() {
+
+    apply {
         smeta = standard_metadata;
         mark_to_drop(smeta);
         standard_metadata = smeta;
-    }
-    @name("ingress.set_port") action set_port(bit<9> output_port) {
-        standard_metadata.egress_spec = output_port;
-    }
-    @name("ingress.mac_da") table mac_da_0 {
-        key = {
-            hdr.ethernet.dstAddr: exact @name("hdr.ethernet.dstAddr") ;
-        }
-        actions = {
-            set_port();
-            my_drop();
-        }
-        default_action = my_drop();
-    }
-    apply {
-        mac_da_0.apply();
-        {
-            x_0 = hdr.ethernet.srcAddr[15:0];
-            hasReturned = false;
-            if (x_0 > 16w5) {
-                hasReturned = true;
-                retval = x_0 + 16w65535;
-            } else {
-                hasReturned = true;
-                retval = x_0;
-            }
-            tmp = retval;
-        }
-        hdr.ethernet.srcAddr[15:0] = tmp;
     }
 }
 
