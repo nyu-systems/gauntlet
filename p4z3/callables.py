@@ -1,5 +1,5 @@
 from p4z3.base import OrderedDict, z3, log, copy
-from p4z3.base import P4ComplexType, P4Z3Class, P4Context
+from p4z3.base import P4Z3Class, P4Context
 
 
 class P4Callable(P4Z3Class):
@@ -59,7 +59,7 @@ class P4Callable(P4Z3Class):
                 var_buffer[param_name] = (is_ref, param_val)
         return var_buffer
 
-    def __call__(self, p4_state, *args, **kwargs):
+    def __call__(self, p4_state=None, *args, **kwargs):
         # for controls and externs, the state is not required
         # controls can only be executed with apply statements
         if p4_state:
@@ -67,7 +67,7 @@ class P4Callable(P4Z3Class):
         return self
 
     def eval_callable(self, p4_state, merged_params, var_buffer):
-        pass
+        raise NotImplementedError("Method eval_callable not implemented!")
 
     def set_context(self, p4_state, merged_params, ref_criteria):
         param_buffer = OrderedDict()
@@ -151,15 +151,19 @@ class P4Control(P4Callable):
             const_type = param[2]
             self.const_params[const_name] = const_type
 
-    def __call__(self, p4_state, *args, **kwargs):
-        # for controls and externs, the state is not required
-        # controls can only be executed with apply statements
-        # when there is no p4 state provided, the control is instantiated
+    def initialize(self, *args, **kwargs):
         for idx, param_tuple in enumerate(self.const_params.items()):
             const_param_name = param_tuple[0]
             self.merged_consts[const_param_name] = args[idx]
         for arg_name, arg in kwargs.items():
             self.merged_consts[arg_name] = arg
+        return self
+
+    def __call__(self, p4_state, *args, **kwargs):
+        # for controls and externs, the state is not required
+        # controls can only be executed with apply statements
+        # when there is no p4 state provided, the control is instantiated
+        raise RuntimeError()
         return self
 
     def apply(self, p4_state, *args, **kwargs):
@@ -170,24 +174,21 @@ class P4Control(P4Callable):
         if not p4_state:
             # There is no state yet, so use the context of the function
             p4_state = self.z3_reg.init_p4_state(self.name, self.params)
-            p4_state_context = p4_state
             p4_context = P4Context({}, None)
         else:
-            p4_state_context = copy.copy(p4_state)
-            p4_context = P4Context(var_buffer, p4_state)
+            p4_context = P4Context(var_buffer, copy.copy(p4_state))
 
         for const_param_name, const_arg in self.merged_consts.items():
             const_arg = p4_state.resolve_expr(const_arg)
-            p4_state_context.set_or_add_var(const_param_name, const_arg)
-
-        self.set_context(p4_state_context, merged_params, ("out"))
+            p4_state.set_or_add_var(const_param_name, const_arg)
+        self.set_context(p4_state, merged_params, ("out"))
 
         # execute the action expression with the new environment
-        p4_state_context.insert_exprs(p4_context)
-        p4_state_context.insert_exprs(self.statements)
-        p4_state_context.insert_exprs(self.locals)
-        p4z3_expr = p4_state_context.pop_next_expr()
-        return p4z3_expr.eval(p4_state_context)
+        p4_state.insert_exprs(p4_context)
+        p4_state.insert_exprs(self.statements)
+        p4_state.insert_exprs(self.locals)
+        p4z3_expr = p4_state.pop_next_expr()
+        return p4z3_expr.eval(p4_state)
 
 
 class P4Extern(P4Callable):
@@ -198,12 +199,16 @@ class P4Extern(P4Callable):
         for method in methods:
             setattr(self, method.name, method)
 
+    def initialize(self, *args, **kwargs):
+        # TODO Figure out what to actually do here
+        return self
+
     def sort(self):
-        # FIXME: a hack
+        # FIXME: a hack to allow sort access
+        # should not be necessary but externs are currently not complex types
         return z3.DeclareSort(self.name)
 
     def eval_callable(self, p4_state, merged_params, var_buffer):
-        self.call_counter += 1
         if not p4_state:
             # There is no state yet, so use the context of the function
             p4_state = self.z3_reg.init_p4_state(self.name, self.params)
@@ -223,7 +228,6 @@ class P4Method(P4Callable):
         self.return_type = return_type
 
     def eval_callable(self, p4_state, merged_params, var_buffer):
-        self.call_counter += 1
         # initialize the local context of the function for execution
         if not p4_state:
             # There is no state yet, so use the context of the function
@@ -234,19 +238,19 @@ class P4Method(P4Callable):
 
         self.set_context(p4_state, merged_params, ("inout", "out"))
 
-        # externs can return values, we need to generate a new constant
-        # we generate the name based on the input arguments
-        var_name = ""
-        for param_name in merged_params:
-            # FIXME: This should be arg insteadm of param
-            # Because we do not know what the extern is doing
-            # we initiate a new z3 const and just overwrite all reference types
-            # we can assume that arg is a lvalue here (i.e., a string)
-            # input arguments influence the output behavior
-            # add the input value to the return constant
-            var_name.join(param_name)
 
         if self.return_type is not None:
+            # methods can return values, we need to generate a new constant
+            # we generate the name based on the input arguments
+            var_name = ""
+            for is_ref, arg_val in merged_params.values():
+                arg = p4_state.resolve_expr(arg_val)
+                # Because we do not know what the extern is doing
+                # we initiate a new z3 const and
+                # just overwrite all reference types
+                # input arguments influence the output behavior
+                # add the input value to the return constant
+                var_name.join(str(arg))
             # If we return something, instantiate the type and return it
             # we merge the name
             # FIXME: We do not consider call order
@@ -283,6 +287,7 @@ class P4Table(P4Callable):
         self.default_action = None
         self.tbl_action = z3.Int(f"{self.name}_action")
         self.hit = z3.BoolVal(False)
+        self.action_run = self
 
         self.add_keys(properties)
         self.add_default(properties)
@@ -324,12 +329,19 @@ class P4Table(P4Callable):
             self.const_entries.append((const_keys, (action_name, action_args)))
 
     def apply(self, p4_state):
+        # tables are a little bit special since they also have attributes
+        # so what we do here is first initialize the key
         self.hit = self.eval_keys(p4_state)
+        # then execute the table as the next expression in the chain
+        # FIXME: I do not think this will work with assignment statements
+        # the table is probably applied after the value has been assigned
+        p4_state.insert_exprs(self)
         return self
 
     def __call__(self, p4_state, *args, **kwargs):
-        # tables can only be executed with apply statements
-        return self.eval(p4_state)
+        # tables can only be executed after apply statements
+        p4z3_expr = p4_state.pop_next_expr()
+        return p4z3_expr.eval(p4_state)
 
     def eval_keys(self, p4_state):
         key_pairs = []

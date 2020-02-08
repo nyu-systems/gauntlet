@@ -26,7 +26,7 @@ class P4Package():
             param_sort = arg[2]
             self.pipes[param_name] = None
 
-    def __call__(self, p4_state, *args, **kwargs):
+    def initialize(self, *args, **kwargs):
         pipe_list = list(self.pipes.keys())
         merged_args = {}
         for idx, arg in enumerate(args):
@@ -131,10 +131,10 @@ class IfStatement(P4Statement):
 
 
 class SwitchHit(P4Z3Class):
-    def __init__(self, table, cases, default_case):
-        self.table = table
+    def __init__(self, cases, default_case):
         self.default_case = default_case
         self.cases = cases
+        self.table = None
 
     def eval_cases(self, p4_state, cases):
         p4_state_cpy = copy.copy(p4_state)
@@ -144,11 +144,15 @@ class SwitchHit(P4Z3Class):
             expr = z3.If(case["match"], case_expr, expr)
         return expr
 
+    def set_table(self, table):
+        self.table = table
+
     def eval_switch_matches(self, table):
         for case_name, case in self.cases.items():
             match_var = table.tbl_action
             action = table.actions[case_name][0]
-            self.cases[case_name]["match"] = (match_var == action)
+            match_cond = z3.And(table.hit, (action == match_var))
+            self.cases[case_name]["match"] = match_cond
 
     def eval(self, p4_state):
         self.eval_switch_matches(self.table)
@@ -181,10 +185,11 @@ class SwitchStatement(P4Statement):
             self.cases[action_str]["case_block"] = case_stmt
 
     def eval(self, p4_state):
-        table = p4_state.resolve_expr(self.table_str)
+        switch_hit = SwitchHit(self.cases, self.default_case)
+        p4_state.insert_exprs(switch_hit)
+        table = self.table_str.eval(p4_state)
+        switch_hit.set_table(table)
         # instantiate the hit expression
-        switch_hit = SwitchHit(table, self.cases, self.default_case)
-        p4_state.insert_exprs([table, switch_hit])
         p4z3_expr = p4_state.pop_next_expr()
         return p4z3_expr.eval(p4_state)
 
