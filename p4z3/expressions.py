@@ -2,7 +2,6 @@ from p4z3.base import log, z3_cast, z3, op
 from p4z3.base import P4ComplexType, P4Expression
 
 
-
 class P4Initializer(P4Expression):
     def __init__(self, val, instance):
         self.val = val

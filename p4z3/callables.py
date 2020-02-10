@@ -101,6 +101,8 @@ class P4Callable(P4Z3Class):
 class P4Action(P4Callable):
 
     def eval_callable(self, p4_state, merged_params, var_buffer):
+        # actions can modify global variables so do not save the p4 state
+        # the only variables that do need to be restored are copy-ins/outs
         p4_context = P4Context(var_buffer, None)
 
         self.set_context(p4_state, merged_params, ("out"))
@@ -120,6 +122,10 @@ class P4Function(P4Action):
         super(P4Function, self).__init__(name, z3_reg, params, body)
 
     def eval_callable(self, p4_state, merged_params, var_buffer):
+        # P4Functions always return so we do not need a context object
+        # At the end of the execution a value is returned, NOT the p4 state
+        # if the function is part of a method-call statement and the return
+        # value is ignored, the method-call statement will continue execution
 
         self.set_context(p4_state, merged_params, ("out"))
         # execute the action expression with the new environment

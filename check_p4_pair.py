@@ -73,7 +73,6 @@ def evaluate_package(p4_package):
 
 
 def get_z3_asts(p4_module, p4_path, fail_dir):
-    z3.reset_params()
 
     log.info("Loading %s ASTs...", p4_path.name)
     z3_asts = {}
@@ -138,45 +137,41 @@ def get_py_module(prog_path):
     return ctrl_module
 
 
-def get_z3_formulization(p4_pre_path, p4_post_path, fail_dir):
-
+def get_z3_formulization(p4_pre_path, fail_dir):
     p4_pre = get_py_module(p4_pre_path)
     if p4_pre is None:
-        return None, None, util.EXIT_FAILURE
+        return None, util.EXIT_FAILURE
     pipes_pre, result = get_z3_asts(p4_pre, p4_pre_path, fail_dir)
     if result != util.EXIT_SUCCESS:
-        return None, None, result
-    p4_post = get_py_module(p4_post_path)
-    if p4_post is None:
-        return None, None, util.EXIT_FAILURE
-    pipes_post, result = get_z3_asts(p4_post, p4_post_path, fail_dir)
-    if result != util.EXIT_SUCCESS:
-        return None, None, result
-    if len(pipes_pre) != len(pipes_post):
-        log.warning("Pre and post model differ in size!")
-        return None, None, util.EXIT_SKIPPED
-    return pipes_pre, pipes_post, result
+        return None, result
+    return pipes_pre, result
 
 
 def z3_check(prog_paths, fail_dir=None):
     if len(prog_paths) < 2:
         log.error("Equivalence checks require at least two input programs!")
         return util.EXIT_FAILURE
-    for i in range(1, len(prog_paths)):
+    z3_progs = []
+    for p4_prog in prog_paths:
+        p4_path = Path(p4_prog)
+        pipes, result = get_z3_formulization(p4_path, fail_dir)
+        if result != util.EXIT_SUCCESS:
+            return result
+        z3_progs.append((p4_path, pipes))
+    for idx in range(1, len(z3_progs)):
+
+        p4_pre_path, pipes_pre = z3_progs[idx - 1]
+        p4_post_path, pipes_post = z3_progs[idx]
+        log.info("\nComparing programs\n%s\n%s\n########",
+                 p4_pre_path.stem, p4_post_path.stem)
         # We do not support the passes which rename variables right now
         # Reason is they generate entirely new variables
         # which cause z3 to crash for some reason...
-        if needs_skipping(prog_paths[i]):
+        if needs_skipping(str(p4_post_path)):
             continue
-        p4_pre_path = Path(prog_paths[i - 1])
-        p4_post_path = Path(prog_paths[i])
-        pipes_pre, pipes_post, result = get_z3_formulization(p4_pre_path,
-                                                             p4_post_path,
-                                                             fail_dir)
-        if result != util.EXIT_SUCCESS:
-            return result
-        log.info("\nComparing programs\n%s\n%s\n########",
-                 p4_pre_path.stem, p4_post_path.stem)
+        if len(pipes_pre) != len(pipes_post):
+            log.warning("Pre and post model differ in size!")
+            return util.EXIT_SKIPPED
         for pipe_name in pipes_pre:
             pipe_pre = pipes_pre[pipe_name]
             pipe_post = pipes_post[pipe_name]

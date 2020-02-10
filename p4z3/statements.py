@@ -35,9 +35,18 @@ class P4Package():
         for name, arg in kwargs.items():
             merged_args[name] = arg
         for name, arg in merged_args.items():
-            # only add valid values
+            if isinstance(arg, str):
+                # stupid hack to deal with weird naming schemes in p4c...
+                # FIXME: Figure out what this is even supposed to mean
+                if arg.endswith("<...>"):
+                    arg = arg[:-5]
+            # only add valid values that are executable
             if arg in self.z3_reg._globals:
                 self.pipes[name] = self.z3_reg._globals[arg]
+            else:
+                log.warning(
+                    "Skipping value %s, type %s because it does not make "
+                    "sense as a P4 pipeline.", arg, type(arg))
         return self
 
 
@@ -171,7 +180,6 @@ class SwitchStatement(P4Statement):
             if case_stmt is not None:
                 # TODO: Check if this models fall-through correctly
                 self.add_stmt_to_case(action_str, case_stmt)
-
 
     def add_case(self, action_str):
         # skip default statements, they are handled separately

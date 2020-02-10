@@ -718,7 +718,10 @@ class Z3Reg():
         z3_type = z3_type.create()
         return z3_type
 
-    def declare_global(self, p4_class):
+    def declare_global(self, p4_class=None):
+        if not p4_class:
+            # TODO: Get rid of unimplemented expressions
+            return
         if isinstance(p4_class, P4ComplexType):
             name = p4_class.type_name
             z3_type = self._register_structlike(p4_class)
