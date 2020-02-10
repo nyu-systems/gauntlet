@@ -51,7 +51,7 @@ class P4Callable(P4Z3Class):
                     param_val = p4_state.resolve_reference(param_name)
                 except AttributeError:
                     param_val = None
-                var_buffer[param_name] = (is_ref, param_val)
+                var_buffer[param_name] = (is_ref, copy.deepcopy(param_val))
         return var_buffer
 
     def __call__(self, p4_state=None, *args, **kwargs):
