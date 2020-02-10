@@ -755,9 +755,9 @@ class Z3Reg():
                 # for inputs we can instantiate something
                 instance = self.instance(param_name, param_type)
                 instances[param_name] = instance
-        state_instance = P4State(name, stripped_args)
-        self.declare_global(state_instance)
-        p4_state = self.instance(name, self.type(name))
+        p4_state = P4State(name, stripped_args)
+        p4_state_type = self._register_structlike(p4_state)
+        p4_state.instantiate(self, p4_state_type, name)
         p4_state.add_globals(self._globals)
         for instance_name, instance_val in instances.items():
             p4_state.set_or_add_var(instance_name, instance_val)
@@ -767,11 +767,10 @@ class Z3Reg():
         if type_name in self._types:
             return self._types[type_name]
         else:
-            # lets be bold here and assume that a type that is not known
+            # lets be bold here and assume that if a  type is not known
             # it is a user-defined or generic can be declared generically
             z3_type = z3.DeclareSort(type_name)
-            val = Declaration(type_name, z3_type)
-            self.declare_global(val)
+            self._types[type_name] = z3_type
             return z3_type
 
     def stack(self, z3_type, num):

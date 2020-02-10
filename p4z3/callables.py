@@ -20,9 +20,6 @@ class P4Callable(P4Z3Class):
             param_default = param[3]
             self.params[param_name] = (is_ref, param_type, param_default)
 
-    def get_parameters(self):
-        return self.params
-
     def merge_parameters(self, params, *args, **kwargs):
         merged_params = {}
         args_len = len(args)
@@ -42,8 +39,6 @@ class P4Callable(P4Z3Class):
         return merged_params
 
     def save_variables(self, p4_state, merged_params):
-        # if not p4_state:
-        #     return {}
         var_buffer = OrderedDict()
         # save all the variables that may be overridden
         for param_name, param in merged_params.items():

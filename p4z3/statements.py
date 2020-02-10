@@ -16,11 +16,11 @@ def z3_implies(p4_state, cond, then_expr):
 
 class P4Package():
 
-    def __init__(self, z3_reg, name, *args, **kwargs):
+    def __init__(self, z3_reg, name, params):
         self.pipes = OrderedDict()
         self.name = name
         self.z3_reg = z3_reg
-        for arg in args:
+        for arg in params:
             is_ref = arg[0]
             param_name = arg[1]
             param_sort = arg[2]
@@ -168,7 +168,10 @@ class SwitchStatement(P4Statement):
         self.cases = OrderedDict()
         for action_str, case_stmt in cases:
             self.add_case(action_str)
-            self.add_stmt_to_case(action_str, case_stmt)
+            if case_stmt is not None:
+                # TODO: Check if this models fall-through correctly
+                self.add_stmt_to_case(action_str, case_stmt)
+
 
     def add_case(self, action_str):
         # skip default statements, they are handled separately
