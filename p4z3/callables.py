@@ -150,14 +150,12 @@ class P4Control(P4Callable):
             is_ref = param[0]
             const_name = param[1]
             const_type = param[2]
-            self.const_params[const_name] = const_type
+            const_default = param[3]
+            self.params[const_name] = (is_ref, const_type, const_default)
 
     def initialize(self, *args, **kwargs):
-        for idx, param_tuple in enumerate(self.const_params.items()):
-            const_param_name = param_tuple[0]
-            self.merged_consts[const_param_name] = args[idx]
-        for arg_name, arg in kwargs.items():
-            self.merged_consts[arg_name] = arg
+        self.merged_consts = self.merge_parameters(
+            self.const_params, *args, **kwargs)
         return self
 
     def __call__(self, p4_state, *args, **kwargs):
@@ -182,6 +180,7 @@ class P4Control(P4Callable):
         for const_param_name, const_arg in self.merged_consts.items():
             const_arg = p4_state.resolve_expr(const_arg)
             p4_state.set_or_add_var(const_param_name, const_arg)
+
         self.set_context(p4_state, merged_params, ("out"))
 
         # execute the action expression with the new environment
@@ -238,7 +237,6 @@ class P4Method(P4Callable):
             p4_context = P4Context(var_buffer, copy.copy(p4_state))
 
         self.set_context(p4_state, merged_params, ("inout", "out"))
-
 
         if self.return_type is not None:
             # methods can return values, we need to generate a new constant

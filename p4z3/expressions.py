@@ -24,6 +24,9 @@ class P4Initializer(P4Expression):
                     f"P4StructInitializer members {val} not supported!")
             return instance
         else:
+            # cast the value we assign to the instance we create
+            # TODO: I do not like this, there must be a better way to do this
+            val = z3_cast(val, instance.sort())
             return val
 
 
@@ -76,7 +79,6 @@ class P4BinaryOp(P4Op):
     def eval(self, p4_state):
         lval_expr = p4_state.resolve_expr(self.lval)
         rval_expr = p4_state.resolve_expr(self.rval)
-
         # align the bitvectors to allow operations
         lval_is_bitvec = isinstance(lval_expr, z3.BitVecRef)
         rval_is_bitvec = isinstance(rval_expr, z3.BitVecRef)
@@ -214,7 +216,12 @@ class P4xor(P4BinaryOp):
 
 class P4div(P4BinaryOp):
     def __init__(self, lval, rval):
-        operator = z3.UDiv
+        def operator(x, y):
+            # z3 requires at least one value to be a bitvector for UDiv
+            if isinstance(y, int) and isinstance(x, int):
+                x = x.as_bitvec
+                y = y.as_bitvec
+            return z3.UDiv(x, y)
         P4BinaryOp.__init__(self, lval, rval, operator)
 
 
