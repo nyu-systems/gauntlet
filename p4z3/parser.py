@@ -1,5 +1,5 @@
 from p4z3.base import log, copy, z3
-from p4z3.base import P4Exit, P4Expression, P4End
+from p4z3.base import P4Exit, P4Expression, P4ComplexType
 from p4z3.callables import P4Control
 
 
@@ -12,12 +12,12 @@ class P4Parser(P4Control):
 
 class ParserTree(P4Expression):
 
-    def __init__(self):
+    def __init__(self, states):
         self.states = {}
         self.exit_states = ["accept", "reject"]
-
-    def add_state(self, state_name, state):
-        self.states[state_name] = state
+        for state in states:
+            state_name = state.name
+            self.states[state_name] = state
 
     def eval(self, p4_state):
         for state_name, state in self.states.items():
@@ -30,16 +30,11 @@ class ParserTree(P4Expression):
 
 class ParserState(P4Expression):
 
-    def __init__(self):
-        self.exprs = []
-        self.select = P4End()
-        self.counter = 0
-
-    def add_stmt(self, expr):
-        self.exprs.append(expr)
-
-    def add_select(self, select):
+    def __init__(self, name, select, components):
+        self.name = name
+        self.components = components
         self.select = select
+        self.counter = 0
 
     def eval(self, p4_state):
         if self.counter > MAX_LOOP:
@@ -48,8 +43,8 @@ class ParserState(P4Expression):
         else:
             self.counter += 1
             select = p4_state.resolve_reference(self.select)
-            self.exprs.append(select)
-            p4_state.insert_exprs(self.exprs)
+            self.components.append(select)
+            p4_state.insert_exprs(self.components)
         p4z3_expr = p4_state.pop_next_expr()
         return p4z3_expr.eval(p4_state)
 
@@ -71,6 +66,8 @@ class ParserSelect(P4Expression):
         for case_val, case_name in reversed(self.cases):
             case_expr = p4_state.resolve_expr(case_val)
             select_cond = []
+            if isinstance(case_expr, P4ComplexType):
+                case_expr = case_expr.flatten()
             if isinstance(case_expr, list):
                 for idx, case_match in enumerate(case_expr):
                     match = self.match[idx]
@@ -80,7 +77,7 @@ class ParserSelect(P4Expression):
             else:
                 for match in self.match:
                     match_expr = p4_state.resolve_expr(match)
-                    cond = match_expr == case_expr
+                    cond = case_expr == match_expr
                     select_cond.append(cond)
             if not select_cond:
                 select_cond = [z3.BoolVal(False)]

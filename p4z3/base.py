@@ -318,6 +318,16 @@ class P4ComplexType():
     def sort(self):
         return self.z3_type
 
+    def flatten(self):
+        members = []
+        for self_member_name in self.members:
+            member = self.resolve_reference(self_member_name)
+            if isinstance(member, P4ComplexType):
+                members.extend(member.flatten())
+            else:
+                members.append(member)
+        return members
+
     def __str__(self):
         return self.name
 
@@ -792,5 +802,11 @@ class Z3Reg():
             return z3_cls
         elif isinstance(p4z3_type, z3.SortRef):
             return z3.Const(f"{var_name}", p4z3_type)
+        elif isinstance(p4z3_type, list):
+            instantiated_list = []
+            for idx, z3_type in enumerate(p4z3_type):
+                const = z3.Const(f"{var_name}{idx}", z3_type)
+                instantiated_list.append(const)
+            return instantiated_list
         else:
             return p4z3_type
