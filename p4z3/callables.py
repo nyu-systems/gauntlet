@@ -23,10 +23,9 @@ class P4Callable(P4Z3Class):
     def merge_parameters(self, params, *args, **kwargs):
         merged_params = {}
         args_len = len(args)
-        for idx, param in enumerate(params.items()):
-            param_name = param[0]
-            is_ref = param[1][0]
-            param_default = param[1][2]
+        for idx, (param_name, param_tuple) in enumerate(params.items()):
+            is_ref = param_tuple[0]
+            param_default = param_tuple[2]
             if idx < args_len:
                 merged_params[param_name] = (is_ref, args[idx])
             elif param_default is not None:
@@ -151,7 +150,7 @@ class P4Control(P4Callable):
             const_name = param[1]
             const_type = param[2]
             const_default = param[3]
-            self.params[const_name] = (is_ref, const_type, const_default)
+            self.const_params[const_name] = (is_ref, const_type, const_default)
 
     def initialize(self, *args, **kwargs):
         self.merged_consts = self.merge_parameters(
@@ -177,7 +176,8 @@ class P4Control(P4Callable):
         else:
             p4_context = P4Context(var_buffer, copy.copy(p4_state))
 
-        for const_param_name, const_arg in self.merged_consts.items():
+        for const_param_name, const_val in self.merged_consts.items():
+            const_arg = const_val[1]
             const_arg = p4_state.resolve_expr(const_arg)
             p4_state.set_or_add_var(const_param_name, const_arg)
 

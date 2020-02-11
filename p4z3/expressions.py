@@ -26,7 +26,8 @@ class P4Initializer(P4Expression):
         else:
             # cast the value we assign to the instance we create
             # TODO: I do not like this, there must be a better way to do this
-            val = z3_cast(val, instance.sort())
+            if isinstance(val, int):
+                val = z3_cast(val, instance.sort())
             return val
 
 
