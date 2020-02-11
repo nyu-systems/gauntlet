@@ -152,6 +152,13 @@ class P4Control(P4Callable):
             const_default = param[3]
             self.const_params[const_name] = (is_ref, const_type, const_default)
 
+    def init_type_params(self, *args, **kwargs):
+        for idx, (c_name, c_param) in enumerate(self.const_params.items()):
+            is_ref = c_param[0]
+            const_default = c_param[2]
+            self.const_params[c_name] = (is_ref, args[idx], const_default)
+        return self
+
     def initialize(self, *args, **kwargs):
         self.merged_consts = self.merge_parameters(
             self.const_params, *args, **kwargs)
@@ -193,11 +200,19 @@ class P4Control(P4Callable):
 
 class P4Extern(P4Callable):
     # TODO: This is quite brittle, requires concrete examination
-    def __init__(self, name, z3_reg, type_params=[], methods={}):
+    def __init__(self, name, z3_reg, type_params=[], methods=[]):
         super(P4Extern, self).__init__(name, z3_reg, params=[])
         self.type_params = type_params
+        self.methods = methods
         for method in methods:
             setattr(self, method.name, method)
+
+    def init_type_params(self, *args, **kwargs):
+        for idx, t_param in enumerate(self.type_params):
+            for method in self.methods:
+                if method.return_type == t_param:
+                    method.return_type = args[idx]
+        return self
 
     def initialize(self, *args, **kwargs):
         # TODO Figure out what to actually do here

@@ -24,7 +24,11 @@ class P4Package():
             is_ref = arg[0]
             param_name = arg[1]
             param_sort = arg[2]
+            praam_default = arg[3]
             self.pipes[param_name] = None
+
+    def init_type_params(self, *args, **kwargs):
+        return self
 
     def initialize(self, *args, **kwargs):
         pipe_list = list(self.pipes.keys())
@@ -40,9 +44,10 @@ class P4Package():
                 # FIXME: Figure out what this is even supposed to mean
                 if arg.endswith("<...>"):
                     arg = arg[:-5]
-            # only add valid values that are executable
+            # only add valid values that are initializable
             if arg in self.z3_reg._globals:
-                self.pipes[name] = self.z3_reg._globals[arg]
+                # TODO: We need to initialize, but can you have arguments here?
+                self.pipes[name] = self.z3_reg._globals[arg].initialize()
             else:
                 log.warning(
                     "Skipping value %s, type %s because it does not make "
