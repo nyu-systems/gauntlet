@@ -29,8 +29,12 @@ def z3_cast(val, to_type):
     if isinstance(val, int):
         # It can happen that we get an int, cast it to a bit vector.
         return z3.BitVecVal(val, to_type_size)
-    val_size = val.size()
+    if z3.is_int(val):
+        # I hate z3 sometimes. They have their own IntNumRef value that can
+        # only be converted with Int2BV. Why? I do not know...
+        return z3.Int2BV(val, to_type_size)
 
+    val_size = val.size()
     if val_size < to_type_size:
         # the target value is larger, extend with zeros
         return z3.ZeroExt(to_type_size - val_size, val)
@@ -252,12 +256,15 @@ class P4ComplexType():
                 # retrieve the member and call the constructor
                 # call the constructor of the complex type
                 members.append(member_make.get_z3_repr(sub_const))
-            elif isinstance(member_make, (z3.BoolRef, z3.BitVecRef, int)):
+            elif isinstance(member_make, (z3.BoolRef, z3.BitVecRef)):
+                member_make = z3_cast(member_make, sub_const.sort())
+                members.append(member_make)
+            elif isinstance(member_make, int) or z3.is_int(member_make):
                 member_make = z3_cast(member_make, sub_const.sort())
                 members.append(member_make)
             elif isinstance(member_make, z3.ExprRef):
                 # for now, allow generic remaining types
-                # for example funcdeclref or int
+                # for example funcdeclref or arithref
                 # FIXME: THis is not supposed to happen...
                 members.append(member_make)
             else:
@@ -478,7 +485,7 @@ class HeaderStack(P4ComplexType):
             hdr = getattr(self, f"{self.next_idx}")
         except AttributeError:
             # if the header does not exist use it to break out of the loop?
-            return P4Exit()
+            hdr = getattr(self, f"{self.size -1}")
         return hdr
 
     @property

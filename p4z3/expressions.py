@@ -1,5 +1,6 @@
 from p4z3.base import log, z3_cast, z3, op
 from p4z3.base import P4ComplexType, P4Expression
+from p4z3.callables import P4Method
 
 
 class P4Initializer(P4Expression):
@@ -33,16 +34,20 @@ class P4Initializer(P4Expression):
 
 class MethodCallExpr(P4Expression):
 
-    def __init__(self, p4_method, *args, **kwargs):
+    def __init__(self, p4_method, type_args, *args, **kwargs):
         self.p4_method = p4_method
         self.args = args
         self.kwargs = kwargs
+        self.type_args = type_args
 
     def eval(self, p4_state):
         p4_method = self.p4_method
         # if we get a reference just try to find the method in the state
         if not callable(p4_method):
             p4_method = p4_state.resolve_expr(p4_method)
+        # TODO: Figure out how these type bindings work
+        # if isinstance(p4_method, P4Method):
+            # p4_method.initialize(*self.type_args)
         if callable(p4_method):
             return p4_method(p4_state, *self.args, **self.kwargs)
         raise TypeError(f"Unsupported method type {type(p4_method)}!")

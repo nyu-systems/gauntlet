@@ -242,6 +242,13 @@ class P4Method(P4Callable):
         # P4Methods, which are also black-box functions, can have return types
         self.return_type = return_type
 
+    def initialize(self, *args, **kwargs):
+        # TODO Figure out what to actually do here
+        if len(args) > 0 and self.return_type is not None:
+            if len(self.params) == 0:
+                self.return_type = args[0]
+        return self
+
     def eval_callable(self, p4_state, merged_params, var_buffer):
         # initialize the local context of the function for execution
         if not p4_state:
@@ -250,7 +257,6 @@ class P4Method(P4Callable):
             p4_context = P4Context({}, None)
         else:
             p4_context = P4Context(var_buffer, copy.copy(p4_state))
-
         self.set_context(p4_state, merged_params, ("inout", "out"))
 
         if self.return_type is not None:
