@@ -1,5 +1,5 @@
 from p4z3.base import OrderedDict, z3, log, copy
-from p4z3.base import P4Z3Class
+from p4z3.base import P4Z3Class, P4ComplexType
 
 
 class P4Callable(P4Z3Class):
@@ -72,14 +72,14 @@ class P4Callable(P4Z3Class):
                 # outs are left-values so the arg must be a string
                 arg_name = f"{self.name}_{param_name}"
                 # infer the type value at runtime, param does not work yet
-                arg_sort = p4_state.resolve_expr(arg).sort()
+                arg_expr = p4_state.resolve_expr(arg)
                 # outs reset the input
-                arg = z3.Const(f"{param_name}", arg_sort)
                 # In the case that the instance is a complex type make sure
                 # to propagate the variable through all its members
-                if isinstance(arg_sort, z3.DatatypeSortRef):
-                    instance = self.z3_reg.instance(arg_name, arg_sort)
-                    arg = instance
+                if isinstance(arg_expr, P4ComplexType):
+                    arg = arg_expr.instantiate(arg_name)
+                else:
+                    arg = z3.Const(f"{param_name}", arg_expr.sort())
             else:
                 arg = p4_state.resolve_expr(arg)
             # Sometimes expressions are passed, resolve those first

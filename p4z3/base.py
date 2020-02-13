@@ -166,7 +166,7 @@ class P4ComplexType():
 
         z3_type = z3.Datatype(name)
         stripped_args = []
-        for z3_arg in z3_args:
+        for idx, z3_arg in enumerate(z3_args):
             z3_arg_name = z3_arg[0]
             z3_arg_type = z3_arg[1]
             # lists can be part of a type declaration, resolve them
@@ -174,9 +174,12 @@ class P4ComplexType():
             # z3 wants us to declare a datatype though..
             if isinstance(z3_arg_type, list):
                 dummy_name = f"{name}_{z3_arg_name}"
-                p4_sub_class = ListType(z3_reg, dummy_name, z3_arg_type)
-                z3_reg.declare_global(p4_sub_class)
-                stripped_args.append((z3_arg_name, p4_sub_class.z3_type))
+                z3_arg_type = ListType(z3_reg, dummy_name, z3_arg_type)
+                z3_args[idx] = (z3_arg_name, z3_arg_type)
+                # z3_reg.declare_global(p4_sub_class)
+                # stripped_args.append((z3_arg_name, p4_sub_class.z3_type))
+            if isinstance(z3_arg_type, P4ComplexType):
+                stripped_args.append((z3_arg_name, z3_arg_type.z3_type))
             else:
                 stripped_args.append(z3_arg)
         z3_type.declare(f"mk_{name}", *stripped_args)
@@ -186,27 +189,29 @@ class P4ComplexType():
         self.constructor = self.z3_type.constructor(0)
         self.members = OrderedDict()
         # set the members of this class
-        for type_index in range(self.constructor.arity()):
-            member = self.z3_type.accessor(0, type_index)
-            member_name = member.name()
-            arg_type = member.range()
-            if isinstance(arg_type, z3.DatatypeSortRef):
+        for type_index, z3_arg in enumerate(z3_args):
+            z3_arg_name = z3_arg[0]
+            z3_arg_type = z3_arg[1]
+            member_accessor = self.z3_type.accessor(0, type_index)
+            if isinstance(z3_arg_type, P4ComplexType):
                 # this is a complex datatype, create a P4ComplexType
-                member_cls = z3_reg.instance(member_name, arg_type)
-                # and add it to the members, this is a little inefficient...
-                setattr(self, member_name, member_cls)
+                member_cls = z3_arg_type.instantiate(z3_arg_name)
                 # since the child type is dependent on its parent
                 # we propagate the parent constant down to all members
-                member_cls.propagate_type(member(self.const))
+                member_cls.propagate_type(member_accessor(self.const))
+                # and add it to the members, this is a little inefficient...
+                setattr(self, z3_arg_name, member_cls)
             else:
                 # use the default z3 constructor
-                setattr(self, member_name, member(self.const))
-            self.members[member_name] = member
+                setattr(self, z3_arg_name, member_accessor(self.const))
+            self.members[z3_arg_name] = member_accessor
 
     def instantiate(self, name):
         class_copy = copy.copy(self)
         class_copy.name = name
         class_copy.const = z3.Const(f"{name}_0", class_copy.z3_type)
+        # update the representation with the new type
+        class_copy.propagate_type(class_copy.const)
         return class_copy
 
     def propagate_type(self, parent_const: z3.AstRef):
@@ -298,7 +303,7 @@ class P4ComplexType():
                             tmp_lval[idx] = val
                     else:
                         raise TypeError(
-                            f"set_list {type(lval)} not supported!")
+                            f"set_list {type(tmp_lval)} not supported!")
                     return
                 # make sure the assignment is aligned appropriately
                 # this can happen because we also evaluate before the
@@ -363,6 +368,10 @@ class P4ComplexType():
 
 class Header(P4ComplexType):
 
+    def __init__(self, z3_reg, name, z3_args):
+        super(Header, self).__init__(z3_reg, name, z3_args)
+        self.valid = z3.Bool(f"{name}_valid")
+
     def instantiate(self, name):
         class_copy = super(Header, self).instantiate(name)
         class_copy.valid = z3.Bool(f"{name}_valid")
@@ -426,9 +435,13 @@ class Struct(P4ComplexType):
 
 class HeaderStack(ListType):
 
+    def __init__(self, z3_reg, name, z3_args):
+        super(HeaderStack, self).__init__(z3_reg, name, z3_args)
+        self.size = len(self.members)
+        self.next_idx = 0
+
     def instantiate(self, name):
         class_copy = super(HeaderStack, self).instantiate(name)
-        class_copy.size = len(class_copy.members)
         class_copy.next_idx = 0
         return class_copy
 
@@ -499,7 +512,7 @@ class Enum(P4ComplexType):
         # Enums are static so they do not have variable types.
         pass
 
-    def get_z3_repr(self, parent_const: z3.AstRef):
+    def get_z3_repr(self):
         return self.const
 
     def __eq__(self, other):
@@ -523,7 +536,7 @@ class SerEnum(Enum):
         self.name = name
         self.z3_type = z3_type
         self.members = OrderedDict()
-        for idx, z3_arg in enumerate(z3_args):
+        for z3_arg in z3_args:
             z3_arg_name = z3_arg[0]
             z3_arg_val = z3_arg[1]
             setattr(self, z3_arg_name, z3_arg_val)
@@ -613,7 +626,7 @@ class P4State(P4ComplexType):
         # need to resolve everything first
         lval_expr = self.resolve_expr(lval)
 
-        # z3 requires the extract value to be a bitvecor, so we must cast ints
+        # z3 requires the extract value to be a bitvector, so we must cast ints
         if isinstance(lval_expr, int):
             lval_expr = lval_expr.as_bitvec
 
@@ -687,7 +700,9 @@ class Z3Reg():
             if isinstance(p4_class, Enum):
                 # enums are special static types
                 # we need to add them to the list of accessible variables
+                # and their type is actually the z3 type, not the class type
                 self._globals[name] = p4_class
+                self._types[name] = p4_class.z3_type
         elif isinstance(p4_class, P4Declaration):
             # FIXME: Types should not be added here
             # This hack currently exists to deal with extern arguments
@@ -722,8 +737,8 @@ class Z3Reg():
     def type(self, type_name):
         if type_name in self._types:
             z3_type = self._types[type_name]
-            if isinstance(z3_type, P4ComplexType):
-                return z3_type.z3_type
+            # if isinstance(z3_type, P4ComplexType):
+            # return z3_type.z3_type
             return self._types[type_name]
         else:
             # lets be bold here and assume that if a  type is not known
