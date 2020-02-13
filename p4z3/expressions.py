@@ -21,6 +21,9 @@ class P4Initializer(P4Expression):
             elif isinstance(val, list):
                 instance.set_list(val)
             else:
+                log.info(type(val))
+                log.info(instance)
+                log.info(type(instance))
                 raise RuntimeError(
                     f"P4StructInitializer members {val} not supported!")
             return instance

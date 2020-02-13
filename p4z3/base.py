@@ -161,19 +161,33 @@ class P4ComplexType():
     needs to be converted to a P4ComplexType.
     """
 
-    def __init__(self, type_name, z3_args):
-        self.type_name = type_name
-        self.z3_args = z3_args
-
-    def instantiate(self, z3_reg, z3_type: z3.SortRef, name):
+    def __init__(self, z3_reg, name, z3_args):
         self.name = name
-        self.z3_type = z3_type
-        self.const = z3.Const(f"{name}_0", z3_type)
-        self.constructor = z3_type.constructor(0)
+
+        z3_type = z3.Datatype(name)
+        stripped_args = []
+        for z3_arg in z3_args:
+            z3_arg_name = z3_arg[0]
+            z3_arg_type = z3_arg[1]
+            # lists can be part of a type declaration, resolve them
+            # this usually implies we are declaring a nested tuple
+            # z3 wants us to declare a datatype though..
+            if isinstance(z3_arg_type, list):
+                dummy_name = f"{name}_{z3_arg_name}"
+                p4_sub_class = ListType(z3_reg, dummy_name, z3_arg_type)
+                z3_reg.declare_global(p4_sub_class)
+                stripped_args.append((z3_arg_name, p4_sub_class.z3_type))
+            else:
+                stripped_args.append(z3_arg)
+        z3_type.declare(f"mk_{name}", *stripped_args)
+        self.z3_type = z3_type.create()
+
+        self.const = z3.Const(name, self.z3_type)
+        self.constructor = self.z3_type.constructor(0)
         self.members = OrderedDict()
         # set the members of this class
         for type_index in range(self.constructor.arity()):
-            member = z3_type.accessor(0, type_index)
+            member = self.z3_type.accessor(0, type_index)
             member_name = member.name()
             arg_type = member.range()
             if isinstance(arg_type, z3.DatatypeSortRef):
@@ -189,7 +203,14 @@ class P4ComplexType():
                 setattr(self, member_name, member(self.const))
             self.members[member_name] = member
 
+    def instantiate(self, name):
+        class_copy = copy.copy(self)
+        class_copy.name = name
+        class_copy.const = z3.Const(f"{name}_0", class_copy.z3_type)
+        return class_copy
+
     def propagate_type(self, parent_const: z3.AstRef):
+        members = []
         for member_name, member_constructor in self.members.items():
             # a z3 constructor dependent on the parent constant
             z3_member = member_constructor(parent_const)
@@ -202,28 +223,29 @@ class P4ComplexType():
             else:
                 # a simple z3 type, just update the constructor
                 setattr(self, member_name, z3_member)
+            members.append(z3_member)
+        # the class is now dependent on its parent, update the constructor
+        self.const = self.constructor(*members)
 
-    def get_z3_repr(self, parent_const=None) -> z3.DatatypeRef:
+    def get_z3_repr(self) -> z3.DatatypeRef:
         ''' This method returns the current representation of the object in z3
-        logic. If there is no parent constant provided, use the z3 constant
-        variable of the object and propagate it through all its children.'''
+        logic. Use the z3 constant variable of the object and propagate it
+        through all its children.'''
         members = []
-        if parent_const is None:
-            parent_const = self.const
 
         for member_name, member_constructor in self.members.items():
             member_make = self.resolve_reference(member_name)
-            sub_const = member_constructor(parent_const)
+            member_type = member_constructor.range()
             if isinstance(member_make, P4ComplexType):
                 # we have a complex type
                 # retrieve the member and call the constructor
                 # call the constructor of the complex type
-                members.append(member_make.get_z3_repr(sub_const))
+                members.append(member_make.get_z3_repr())
             elif isinstance(member_make, (z3.BoolRef, z3.BitVecRef)):
-                member_make = z3_cast(member_make, sub_const.sort())
+                member_make = z3_cast(member_make, member_type)
                 members.append(member_make)
             elif isinstance(member_make, int) or z3.is_int(member_make):
-                member_make = z3_cast(member_make, sub_const.sort())
+                member_make = z3_cast(member_make, member_type)
                 members.append(member_make)
             elif isinstance(member_make, z3.ExprRef):
                 # for now, allow generic remaining types
@@ -341,9 +363,10 @@ class P4ComplexType():
 
 class Header(P4ComplexType):
 
-    def instantiate(self, z3_reg, z3_type, name):
-        super(Header, self).instantiate(z3_reg, z3_type, name)
-        self.valid = z3.Bool(f"{name}_valid")
+    def instantiate(self, name):
+        class_copy = super(Header, self).instantiate(name)
+        class_copy.valid = z3.Bool(f"{name}_valid")
+        return class_copy
 
     def set_list(self, rvals):
         self.valid = z3.BoolVal(True)
@@ -387,10 +410,10 @@ class HeaderUnion(Header):
 
 class ListType(P4ComplexType):
 
-    def __init__(self, type_name, z3_args):
-        super(ListType, self).__init__(type_name, z3_args)
-        for idx, arg in enumerate(self.z3_args):
-            self.z3_args[idx] = (f"{idx}", arg)
+    def __init__(self, z3_reg, name, z3_args):
+        for idx, arg in enumerate(z3_args):
+            z3_args[idx] = (f"{idx}", arg)
+        super(ListType, self).__init__(z3_reg, name, z3_args)
 
     def propagate_type(self, parent_const: z3.AstRef):
         # Enums are static so they do not have variable types.
@@ -403,10 +426,11 @@ class Struct(P4ComplexType):
 
 class HeaderStack(ListType):
 
-    def instantiate(self, z3_reg, z3_type, name):
-        super(HeaderStack, self).instantiate(z3_reg, z3_type, name)
-        self.size = len(self.members)
-        self.next_idx = 0
+    def instantiate(self, name):
+        class_copy = super(HeaderStack, self).instantiate(name)
+        class_copy.size = len(class_copy.members)
+        class_copy.next_idx = 0
+        return class_copy
 
     def push_front(self, p4_state, num):
         # This is a built-in
@@ -464,18 +488,12 @@ class HeaderStack(ListType):
 
 class Enum(P4ComplexType):
 
-    def __init__(self, type_name, z3_args):
-        super(Enum, self).__init__(type_name, z3_args)
-        for idx, enum_name in enumerate(self.z3_args):
-            self.z3_args[idx] = (enum_name, z3.BitVecSort(8))
+    def __init__(self, z3_reg, name, z3_args):
+        self.members = OrderedDict()
+        for idx, enum_name in enumerate(z3_args):
+            setattr(self, enum_name, z3.BitVecVal(idx, 8))
+        self.name = name
         self.z3_type = z3.BitVecSort(8)
-
-    def instantiate(self, z3_reg, z3_type: z3.SortRef, name):
-        super(Enum, self).instantiate(z3_reg, z3_type, name)
-        # override the members with fixed values
-        # Instead of a z3 variable we assign a concrete number to each member
-        for idx, member_name in enumerate(self.members):
-            setattr(self, member_name, z3.BitVecVal(idx, 8))
 
     def propagate_type(self, parent_const: z3.AstRef):
         # Enums are static so they do not have variable types.
@@ -500,23 +518,12 @@ class Enum(P4ComplexType):
 
 class SerEnum(Enum):
 
-    def __init__(self, type_name, z3_args, z3_type):
+    def __init__(self, z3_reg, name, z3_args, z3_type):
         self.arg_vals = []
-        self.z3_args = z3_args
-        self.type_name = type_name
-        self.z3_type = z3_type
-        for idx, z3_arg in enumerate(z3_args):
-            z3_arg_name = z3_arg[0]
-            z3_arg_val = z3_arg[1]
-            self.z3_args[idx] = (z3_arg_name, z3_type)
-            self.arg_vals.append((z3_arg_name, z3_arg_val))
-
-    def instantiate(self, z3_reg, z3_type: z3.SortRef, name):
         self.name = name
-        # override the members with fixed values
-        # Instead of a z3 variable we assign a concrete number to each member
-        self.const = z3.Const(f"{name}_0", self.z3_type)
-        for z3_arg in self.arg_vals:
+        self.z3_type = z3_type
+        self.members = OrderedDict()
+        for idx, z3_arg in enumerate(z3_args):
             z3_arg_name = z3_arg[0]
             z3_arg_val = z3_arg[1]
             setattr(self, z3_arg_name, z3_arg_val)
@@ -530,11 +537,16 @@ class P4State(P4ComplexType):
     values. It also manages the execution chain of the program.
     """
 
-    def instantiate(self, z3_reg, z3_type, name):
+    def instantiate(self, name, global_values, instances):
+        class_copy = super(P4State, self).instantiate(name)
         # deques allow for much more efficient pop and append operations
         # this is all we do so this works well
-        super(P4State, self).instantiate(z3_reg, z3_type, name)
-        self.expr_chain = deque()
+        class_copy.expr_chain = deque()
+        for extern_name, extern_method in global_values.items():
+            class_copy.set_or_add_var(extern_name, extern_method)
+        for instance_name, instance_val in instances.items():
+            class_copy.set_or_add_var(instance_name, instance_val)
+        return class_copy
 
     def _update(self):
         self.const = z3.Const(f"{self.name}_1", self.z3_type)
@@ -638,10 +650,6 @@ class P4State(P4ComplexType):
         # we update the constant
         self._update()
 
-    def add_globals(self, globals_values):
-        for extern_name, extern_method in globals_values.items():
-            self.set_or_add_var(extern_name, extern_method)
-
     def clear_expr_chain(self):
         self.expr_chain.clear()
 
@@ -667,42 +675,19 @@ class Z3Reg():
     def __init__(self):
         self._types = {}
         self._globals = {}
-        self._classes = {}
         self._ref_count = {}
-
-    def _register_structlike(self, p4_class):
-        name = p4_class.type_name
-        z3_args = p4_class.z3_args
-        z3_type = z3.Datatype(name)
-        stripped_args = []
-        for z3_arg in z3_args:
-            z3_arg_name = z3_arg[0]
-            z3_arg_type = z3_arg[1]
-            # lists can be part of a type declaration, resolve them
-            # this usually implies we are declaring a nested tuple
-            # z3 wants us to declare a datatype though..
-            if isinstance(z3_arg_type, list):
-                dummy_name = f"{name}_{z3_arg_name}"
-                p4_sub_class = ListType(dummy_name, z3_arg_type)
-                self.declare_global(p4_sub_class)
-                stripped_args.append((z3_arg_name, self.type(dummy_name)))
-            else:
-                stripped_args.append(z3_arg)
-        z3_type.declare(f"mk_{name}", *stripped_args)
-        z3_type = z3_type.create()
-        return z3_type
 
     def declare_global(self, p4_class=None):
         if not p4_class:
             # TODO: Get rid of unimplemented expressions
             return
         if isinstance(p4_class, P4ComplexType):
-            name = p4_class.type_name
-            z3_type = self._register_structlike(p4_class)
-            if not isinstance(p4_class, Enum):
-                p4_class.z3_type = z3_type
+            name = p4_class.name
             self._types[name] = p4_class
-            # self._globals[name] = p4_class
+            if isinstance(p4_class, Enum):
+                # enums are special static types
+                # we need to add them to the list of accessible variables
+                self._globals[name] = p4_class
         elif isinstance(p4_class, P4Declaration):
             # FIXME: Types should not be added here
             # This hack currently exists to deal with extern arguments
@@ -715,11 +700,6 @@ class Z3Reg():
             self._types[name] = p4_class
 
         self._ref_count[name] = 0
-        if isinstance(p4_class, Enum):
-            # enums are special, we actually need to instantiate them
-            # also the type needs to be the enum class type not the dataref
-            self._globals[name] = self.instance(name, z3_type)
-            self._types[name] = p4_class.z3_type
 
     def init_p4_state(self, name, p4_params):
         stripped_args = []
@@ -734,12 +714,9 @@ class Z3Reg():
                 # for inputs we can instantiate something
                 instance = self.instance(param_name, param_type)
                 instances[param_name] = instance
-        p4_state = P4State(name, stripped_args)
-        p4_state_type = self._register_structlike(p4_state)
-        p4_state.instantiate(self, p4_state_type, name)
-        p4_state.add_globals(self._globals)
-        for instance_name, instance_val in instances.items():
-            p4_state.set_or_add_var(instance_name, instance_val)
+        p4_state = P4State(self, name, stripped_args).instantiate(
+            name, self._globals, instances)
+
         return p4_state
 
     def type(self, type_name):
@@ -759,18 +736,18 @@ class Z3Reg():
         # Header stacks are a bit special because they are basically arrays
         # with specific features
         # We need to declare a new z3 type and add a new complex class
-        p4_stack = HeaderStack(f"{z3_type}{num}", [z3_type] * num)
+        name = f"{z3_type}{num}"
+        p4_stack = HeaderStack(self, name, [z3_type] * num)
         self.declare_global(p4_stack)
-        return self.type(p4_stack.type_name)
+        return self.type(name)
 
     def instance(self, var_name, p4z3_type):
         if isinstance(p4z3_type, z3.DatatypeSortRef):
             type_name = str(p4z3_type)
             if not var_name:
                 var_name = f"{type_name}_{self._ref_count[type_name]}"
-            z3_cls = copy.copy(self._types[type_name])
+            z3_cls = self._types[type_name].instantiate(var_name)
             self._ref_count[type_name] += 1
-            z3_cls.instantiate(self, p4z3_type, var_name)
             return z3_cls
         elif isinstance(p4z3_type, z3.SortRef):
             return z3.Const(f"{var_name}", p4z3_type)
