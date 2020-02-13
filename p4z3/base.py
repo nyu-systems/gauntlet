@@ -77,58 +77,21 @@ class P4Statement(P4Z3Class):
         raise NotImplementedError("Method eval not implemented!")
 
 
-class P4Context(P4Z3Class):
-
-    def __init__(self, var_buffer, old_p4_state):
-        self.var_buffer = var_buffer
-        self.old_p4_state = old_p4_state
-
-    def restore_context(self, p4_context):
-        if self.old_p4_state:
-            log.debug("Restoring original p4 state %s to %s ",
-                      p4_context, self.old_p4_state)
-            expr_chain = p4_context.expr_chain
-            old_p4_state = self.old_p4_state
-            old_p4_state.expr_chain = expr_chain
-        else:
-            old_p4_state = p4_context
-        # restore any variables that may have been overridden
-        for param_name, param in self.var_buffer.items():
-            is_ref = param[0]
-            param_val = param[1]
-            if is_ref in ("inout", "out"):
-                # with copy-out we copy from left to right
-                # values on the right override values on the left
-                # the var buffer is an ordered dict that maintains this order
-                val = p4_context.resolve_reference(param_name)
-                log.debug("Copy-out: %s to %s", val, param_val)
-                old_p4_state.set_or_add_var(param_val, val)
-            else:
-                log.debug("Resetting %s to %s", param_name, type(param_val))
-                old_p4_state.set_or_add_var(param_name, param_val)
-
-            if param_val is None:
-                # value has not existed previously, marked for deletion
-                log.debug("Deleting %s", param_name)
-                try:
-                    old_p4_state.del_var(param_name)
-                except AttributeError:
-                    log.warning(
-                        "Variable %s does not exist, nothing to delete!",
-                        param_name)
-        return old_p4_state
+class P4Declaration(P4Statement):
+    # the difference between a P4Declaration and a P4Assignment is that
+    # we resolve the variable in the P4Assignment
+    # in the declaration we assign variables as is.
+    # they are resolved at runtime by other classes
+    def __init__(self, lval, rval):
+        self.lval = lval
+        self.rval = rval
 
     def eval(self, p4_state):
-        old_p4_state = self.restore_context(p4_state)
-        p4z3_expr = old_p4_state.pop_next_expr()
-        return p4z3_expr.eval(old_p4_state)
-
-
-class Declaration():
-
-    def __init__(self, type_name, val):
-        self.name = type_name
-        self.val = val
+        # this will only resolve expressions no other classes
+        rval = p4_state.resolve_expr(self.rval)
+        p4_state.set_or_add_var(self.lval, rval)
+        p4z3_expr = p4_state.pop_next_expr()
+        return p4z3_expr.eval(p4_state)
 
 
 class P4End(P4Z3Class):
@@ -438,13 +401,7 @@ class Struct(P4ComplexType):
     pass
 
 
-class HeaderStack(P4ComplexType):
-
-    def __init__(self, z3_type, num):
-        self.type_name = f"{z3_type}{num}"
-        self.z3_args = []
-        for idx in range(num):
-            self.z3_args.append((f"{idx}", z3_type))
+class HeaderStack(ListType):
 
     def instantiate(self, z3_reg, z3_type, name):
         super(HeaderStack, self).instantiate(z3_reg, z3_type, name)
@@ -742,14 +699,16 @@ class Z3Reg():
         if isinstance(p4_class, P4ComplexType):
             name = p4_class.type_name
             z3_type = self._register_structlike(p4_class)
-            self._types[name] = z3_type
-            self._globals[name] = p4_class
-        elif isinstance(p4_class, Declaration):
+            if not isinstance(p4_class, Enum):
+                p4_class.z3_type = z3_type
+            self._types[name] = p4_class
+            # self._globals[name] = p4_class
+        elif isinstance(p4_class, P4Declaration):
             # FIXME: Types should not be added here
             # This hack currently exists to deal with extern arguments
-            name = p4_class.name
-            self._globals[name] = p4_class.val
-            self._types[name] = p4_class.val
+            name = p4_class.lval
+            self._globals[name] = p4_class.rval
+            self._types[name] = p4_class.rval
         else:
             name = p4_class.name
             self._globals[name] = p4_class
@@ -785,6 +744,9 @@ class Z3Reg():
 
     def type(self, type_name):
         if type_name in self._types:
+            z3_type = self._types[type_name]
+            if isinstance(z3_type, P4ComplexType):
+                return z3_type.z3_type
             return self._types[type_name]
         else:
             # lets be bold here and assume that if a  type is not known
@@ -794,7 +756,10 @@ class Z3Reg():
             return z3_type
 
     def stack(self, z3_type, num):
-        p4_stack = HeaderStack(z3_type, num)
+        # Header stacks are a bit special because they are basically arrays
+        # with specific features
+        # We need to declare a new z3 type and add a new complex class
+        p4_stack = HeaderStack(f"{z3_type}{num}", [z3_type] * num)
         self.declare_global(p4_stack)
         return self.type(p4_stack.type_name)
 
@@ -803,7 +768,7 @@ class Z3Reg():
             type_name = str(p4z3_type)
             if not var_name:
                 var_name = f"{type_name}_{self._ref_count[type_name]}"
-            z3_cls = copy.copy(self._globals[type_name])
+            z3_cls = copy.copy(self._types[type_name])
             self._ref_count[type_name] += 1
             z3_cls.instantiate(self, p4z3_type, var_name)
             return z3_cls
@@ -815,5 +780,6 @@ class Z3Reg():
                 const = z3.Const(f"{var_name}{idx}", z3_type)
                 instantiated_list.append(const)
             return instantiated_list
-        else:
-            return p4z3_type
+        # this only exists because of externs... fix the damn externs...
+        return p4z3_type
+        # raise RuntimeError(f"{p4z3_type} instantiation not supported!")

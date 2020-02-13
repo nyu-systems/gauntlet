@@ -5,6 +5,7 @@ import subprocess
 import logging
 import hashlib
 from pathlib import Path
+import z3
 
 import p4z3.util as util
 import check_p4_pair as z3check
@@ -191,6 +192,57 @@ def generate_analysis():
             analyse_p4_file(p4_file, pass_dir)
 
 
+def get_models(const, formula, solutions):
+    # Return the first "M" models of formula list of formulas F
+    result = []
+    s = z3.Solver()
+    s.add(const == formula)
+    while len(result) < solutions and s.check() == z3.sat:
+        m = s.model()
+        result.append(m)
+        # Create a new constraint the blocks the current model
+        block = []
+        for d in m:
+            # d is a declaration
+            if d.arity() > 0:
+                raise z3.Z3Exception(
+                    "uninterpreted functions are not supported")
+            # create a constant from declaration
+            c = d()
+            if z3.is_array(c) or c.sort().kind() == z3.Z3_UNINTERPRETED_SORT:
+                raise z3.Z3Exception(
+                    "arrays and uninterpreted sorts are not supported")
+            block.append(c != m[d])
+        s.add(z3.Or(block))
+    return result
+
+
+def get_semantics(target_dir, p4_input):
+    util.check_dir(target_dir)
+    py_file = Path(f"{target_dir}/{p4_input.stem}.py")
+    fail_dir = target_dir.joinpath("failed")
+
+    result = run_p4_to_py(p4_input, py_file)
+    if result.returncode != util.EXIT_SUCCESS:
+        log.error("Failed to translate P4 to Python.")
+        log.error("Compiler crashed!")
+        util.check_dir(fail_dir)
+        with open(f"{fail_dir}/error.txt", 'w+') as err_file:
+            err_file.write(result.stderr.decode("utf-8"))
+        util.copy_file([p4_input, py_file], fail_dir)
+        return result.returncode
+    check, result = z3check.get_z3_formulization(py_file, fail_dir)
+    if result != util.EXIT_SUCCESS:
+        return result
+    z3_formula = check["ig"]
+    s = z3.Solver()
+    z3_const = z3.Const("simple_test", z3_formula.sort())
+    s.add(z3_const == z3_formula)
+    s.check()
+    log.info(s.model())
+    return util.EXIT_SUCCESS
+
+
 def main(args):
 
     p4_input = Path(args.p4_input)
@@ -199,14 +251,20 @@ def main(args):
     if os.path.isfile(p4_input):
         pass_dir = pass_dir.joinpath(p4_input.stem)
         util.del_dir(pass_dir)
-        result = validate_translation(p4_input, pass_dir, p4c_bin)
+        if args.get_semantics:
+            result = get_semantics(pass_dir, p4_input)
+        else:
+            result = validate_translation(p4_input, pass_dir, p4c_bin)
         exit(result)
     else:
         util.check_dir(pass_dir)
         for p4_file in list(p4_input.glob("**/*.p4")):
             pass_dir = pass_dir.joinpath(p4_file.stem)
             util.del_dir(pass_dir)
-            result = validate_translation(p4_file, pass_dir, p4c_bin)
+            if args.get_semantics:
+                result = 0
+            else:
+                result = validate_translation(p4_file, pass_dir, p4c_bin)
             if result.returncode != util.EXIT_SUCCESS:
                 exit(result)
     exit(util.EXIT_SUCCESS)
@@ -228,6 +286,9 @@ if __name__ == '__main__':
     parser.add_argument("-l", "--log_file", dest="log_file",
                         default="analysis.log",
                         help="Specifies name of the log file.")
+    parser.add_argument("-g", "--get_semantics", dest="get_semantics",
+                        action='store_true',
+                        help="Only retrieve the formal semantics of the file.")
     # Parse options and process argv
     arguments = parser.parse_args()
 

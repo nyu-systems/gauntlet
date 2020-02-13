@@ -24,7 +24,6 @@ class ParserTree(P4Expression):
             p4_state.set_or_add_var(state_name, state)
         for state_name in self.exit_states:
             p4_state.set_or_add_var(state_name, P4Exit())
-
         return self.states["start"].eval(p4_state)
 
 

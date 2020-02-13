@@ -3,8 +3,8 @@ from collections import OrderedDict
 import z3
 
 from p4z3.base import log
-from p4z3.base import P4ComplexType, P4Statement, P4Z3Class, P4Context
-from p4z3.callables import P4Callable
+from p4z3.base import P4ComplexType, P4Statement, P4Z3Class
+from p4z3.callables import P4Callable, P4Context
 
 
 def z3_implies(p4_state, cond, then_expr):
@@ -53,24 +53,6 @@ class P4Package():
                     "Skipping value %s, type %s because it does not make "
                     "sense as a P4 pipeline.", arg, type(arg))
         return self
-
-
-class P4Declaration(P4Statement):
-    # the difference between a P4Declaration and a P4Assignment is that
-    # we resolve the variable in the P4Assignment
-    # in the declaration we assign variables as is.
-    # they are resolved at runtime by other classes
-    def __init__(self, lval, rval):
-        self.name = lval
-        self.lval = lval
-        self.rval = rval
-
-    def eval(self, p4_state):
-        # this will only resolve expressions no other classes
-        rval = p4_state.resolve_expr(self.rval)
-        p4_state.set_or_add_var(self.lval, rval)
-        p4z3_expr = p4_state.pop_next_expr()
-        return p4z3_expr.eval(p4_state)
 
 
 class AssignmentStatement(P4Statement):

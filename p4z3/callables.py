@@ -1,5 +1,5 @@
 from p4z3.base import OrderedDict, z3, log, copy
-from p4z3.base import P4Z3Class, P4Context
+from p4z3.base import P4Z3Class
 
 
 class P4Callable(P4Z3Class):
@@ -95,6 +95,53 @@ class P4Callable(P4Z3Class):
         merged_params = self.merge_parameters(self.params, *args, **kwargs)
         var_buffer = self.save_variables(p4_state, merged_params)
         return self.eval_callable(p4_state, merged_params, var_buffer)
+
+
+class P4Context(P4Z3Class):
+
+    def __init__(self, var_buffer, old_p4_state):
+        self.var_buffer = var_buffer
+        self.old_p4_state = old_p4_state
+
+    def restore_context(self, p4_context):
+        if self.old_p4_state:
+            log.debug("Restoring original p4 state %s to %s ",
+                      p4_context, self.old_p4_state)
+            expr_chain = p4_context.expr_chain
+            old_p4_state = self.old_p4_state
+            old_p4_state.expr_chain = expr_chain
+        else:
+            old_p4_state = p4_context
+        # restore any variables that may have been overridden
+        for param_name, param in self.var_buffer.items():
+            is_ref = param[0]
+            param_val = param[1]
+            if is_ref in ("inout", "out"):
+                # with copy-out we copy from left to right
+                # values on the right override values on the left
+                # the var buffer is an ordered dict that maintains this order
+                val = p4_context.resolve_reference(param_name)
+                log.debug("Copy-out: %s to %s", val, param_val)
+                old_p4_state.set_or_add_var(param_val, val)
+            else:
+                log.debug("Resetting %s to %s", param_name, type(param_val))
+                old_p4_state.set_or_add_var(param_name, param_val)
+
+            if param_val is None:
+                # value has not existed previously, marked for deletion
+                log.debug("Deleting %s", param_name)
+                try:
+                    old_p4_state.del_var(param_name)
+                except AttributeError:
+                    log.warning(
+                        "Variable %s does not exist, nothing to delete!",
+                        param_name)
+        return old_p4_state
+
+    def eval(self, p4_state):
+        old_p4_state = self.restore_context(p4_state)
+        p4z3_expr = old_p4_state.pop_next_expr()
+        return p4z3_expr.eval(old_p4_state)
 
 
 class P4Action(P4Callable):
