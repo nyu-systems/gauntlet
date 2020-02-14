@@ -169,15 +169,6 @@ class P4ComplexType():
         for idx, z3_arg in enumerate(z3_args):
             z3_arg_name = z3_arg[0]
             z3_arg_type = z3_arg[1]
-            # lists can be part of a type declaration, resolve them
-            # this usually implies we are declaring a nested tuple
-            # z3 wants us to declare a datatype though..
-            if isinstance(z3_arg_type, list):
-                dummy_name = f"{name}_{z3_arg_name}"
-                z3_arg_type = ListType(z3_reg, dummy_name, z3_arg_type)
-                z3_args[idx] = (z3_arg_name, z3_arg_type)
-                # z3_reg.declare_global(p4_sub_class)
-                # stripped_args.append((z3_arg_name, p4_sub_class.z3_type))
             if isinstance(z3_arg_type, P4ComplexType):
                 stripped_args.append((z3_arg_name, z3_arg_type.z3_type))
             else:
@@ -366,7 +357,33 @@ class P4ComplexType():
         return result
 
 
-class Header(P4ComplexType):
+class Struct(P4ComplexType):
+    def __init__(self, z3_reg, name, z3_args):
+        super(Struct, self).__init__(z3_reg, name, z3_args)
+        self.var_buffer = {}
+
+    def activate(self):
+        # structs can be contained in headers so they can also be activated...
+        for member_name in self.members:
+            member_val = self.resolve_reference(member_name)
+            if isinstance(member_val, Struct):
+                member_val.activate()
+        for member_name, orig_val in self.var_buffer.items():
+            self.set_or_add_var(member_name, orig_val)
+
+    def disable(self):
+        # structs can be contained in headers so they can also be disabled...
+        for member_name in self.members:
+            member_val = self.resolve_reference(member_name)
+            if isinstance(member_val, Struct):
+                member_val.disable()
+            else:
+                member_type = member_val.sort()
+                self.var_buffer[member_name] = member_val
+                self.set_or_add_var(member_name, z3.BitVecVal(0, member_type))
+
+
+class Header(Struct):
 
     def __init__(self, z3_reg, name, z3_args):
         super(Header, self).__init__(z3_reg, name, z3_args)
@@ -385,14 +402,21 @@ class Header(P4ComplexType):
         # This is a built-in
         return self.valid
 
+    def set_or_add_var(self, lval, rval):
+        if self.valid == z3.BoolVal(False):
+            return
+        super(Header, self).set_or_add_var(lval, rval)
+
     def setValid(self, p4_state):
         # This is a built-in
         self.valid = z3.BoolVal(True)
+        self.activate()
         p4z3_expr = p4_state.pop_next_expr()
         return p4z3_expr.eval(p4_state)
 
     def setInvalid(self, p4_state):
         # This is a built-in
+        self.disable()
         self.valid = z3.BoolVal(False)
         p4z3_expr = p4_state.pop_next_expr()
         return p4z3_expr.eval(p4_state)
@@ -422,15 +446,13 @@ class ListType(P4ComplexType):
     def __init__(self, z3_reg, name, z3_args):
         for idx, arg in enumerate(z3_args):
             z3_args[idx] = (f"{idx}", arg)
+            # some little hack to automatically infer a random type name
+            name += str(arg)
         super(ListType, self).__init__(z3_reg, name, z3_args)
 
     def propagate_type(self, parent_const: z3.AstRef):
         # Enums are static so they do not have variable types.
         pass
-
-
-class Struct(P4ComplexType):
-    pass
 
 
 class HeaderStack(ListType):
@@ -504,9 +526,9 @@ class Enum(P4ComplexType):
     def __init__(self, z3_reg, name, z3_args):
         self.members = OrderedDict()
         for idx, enum_name in enumerate(z3_args):
-            setattr(self, enum_name, z3.BitVecVal(idx, 8))
+            setattr(self, enum_name, z3.BitVecVal(idx, 32))
         self.name = name
-        self.z3_type = z3.BitVecSort(8)
+        self.z3_type = z3.BitVecSort(32)
 
     def propagate_type(self, parent_const: z3.AstRef):
         # Enums are static so they do not have variable types.

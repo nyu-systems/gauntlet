@@ -354,6 +354,7 @@ class P4Table(P4Callable):
         self.default_action = None
         self.tbl_action = z3.Int(f"{self.name}_action")
         self.hit = z3.BoolVal(False)
+        self.miss = z3.BoolVal(True)
         self.action_run = self
 
         self.add_keys(properties)
@@ -399,6 +400,7 @@ class P4Table(P4Callable):
         # tables are a little bit special since they also have attributes
         # so what we do here is first initialize the key
         self.hit = self.eval_keys(p4_state)
+        self.miss = z3.Not(self.hit)
         # then execute the table as the next expression in the chain
         # FIXME: I do not think this will work with assignment statements
         # the table is probably applied after the value has been assigned

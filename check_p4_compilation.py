@@ -191,32 +191,6 @@ def generate_analysis():
         for p4_file in glob.glob(f"{p4_input}/*.p4i"):
             analyse_p4_file(p4_file, pass_dir)
 
-
-def get_models(const, formula, solutions):
-    # Return the first "M" models of formula list of formulas F
-    result = []
-    s = z3.Solver()
-    s.add(const == formula)
-    while len(result) < solutions and s.check() == z3.sat:
-        m = s.model()
-        result.append(m)
-        # Create a new constraint the blocks the current model
-        block = []
-        for d in m:
-            # d is a declaration
-            if d.arity() > 0:
-                raise z3.Z3Exception(
-                    "uninterpreted functions are not supported")
-            # create a constant from declaration
-            c = d()
-            if z3.is_array(c) or c.sort().kind() == z3.Z3_UNINTERPRETED_SORT:
-                raise z3.Z3Exception(
-                    "arrays and uninterpreted sorts are not supported")
-            block.append(c != m[d])
-        s.add(z3.Or(block))
-    return result
-
-
 def get_semantics(target_dir, p4_input):
     util.check_dir(target_dir)
     py_file = Path(f"{target_dir}/{p4_input.stem}.py")
@@ -236,10 +210,12 @@ def get_semantics(target_dir, p4_input):
         return result
     z3_formula = check["ig"]
     s = z3.Solver()
-    z3_const = z3.Const("simple_test", z3_formula.sort())
+    z3_const = z3.Const("output", z3_formula.sort())
     s.add(z3_const == z3_formula)
-    s.check()
-    log.info(s.model())
+
+    for cube in s.cube():
+        s.check(cube)
+        log.info(s.model())
     return util.EXIT_SUCCESS
 
 
