@@ -48,18 +48,18 @@ def z3_cast(val, to_type):
 
 class Z3Int(int):
 
-    def __new__(cls, val, size=64):
-        cls.size = size
+    def __new__(cls, val, bit_size=64):
+        cls.bit_size = bit_size
         cls.as_bitvec = z3.BitVecVal(val, 64)
         return int.__new__(cls, val)
 
     @staticmethod
     def sort():
-        return z3.BitVecSort(Z3Int.size)
+        return z3.BitVecSort(Z3Int.bit_size)
 
     @staticmethod
     def size():
-        return Z3Int.size
+        return Z3Int.bit_size
 
 
 class P4Z3Class():
@@ -370,8 +370,12 @@ class Struct(P4ComplexType):
                 member_val.activate()
         for member_name, orig_val in self.var_buffer.items():
             self.set_or_add_var(member_name, orig_val)
+        # clean the buffer to avoid stale state
+        self.var_buffer.clear()
 
     def disable(self):
+        # clean the buffer to avoid stale state
+        self.var_buffer.clear()
         # structs can be contained in headers so they can also be disabled...
         for member_name in self.members:
             member_val = self.resolve_reference(member_name)
@@ -451,13 +455,15 @@ class ListType(P4ComplexType):
         super(ListType, self).__init__(z3_reg, name, z3_args)
 
     def propagate_type(self, parent_const: z3.AstRef):
-        # Enums are static so they do not have variable types.
+        # Lists are static so they do not have variable types.
         pass
 
 
-class HeaderStack(ListType):
+class HeaderStack(P4ComplexType):
 
     def __init__(self, z3_reg, name, z3_args):
+        for idx, arg in enumerate(z3_args):
+            z3_args[idx] = (f"{idx}", arg)
         super(HeaderStack, self).__init__(z3_reg, name, z3_args)
         self.size = len(self.members)
         self.next_idx = 0
