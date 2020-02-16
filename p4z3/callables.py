@@ -1,5 +1,5 @@
 from p4z3.base import OrderedDict, z3, log, copy
-from p4z3.base import P4Z3Class, P4ComplexType
+from p4z3.base import P4Z3Class, P4ComplexType, P4Member
 
 
 class P4Callable(P4Z3Class):
@@ -76,6 +76,7 @@ class P4Callable(P4Z3Class):
                 # outs reset the input
                 # In the case that the instance is a complex type make sure
                 # to propagate the variable through all its members
+                log.debug("Resetting %s to %s", arg, param_name)
                 if isinstance(arg_expr, P4ComplexType):
                     arg = arg_expr.instantiate(arg_name)
                 else:
@@ -172,11 +173,14 @@ class P4Function(P4Action):
         # At the end of the execution a value is returned, NOT the p4 state
         # if the function is part of a method-call statement and the return
         # value is ignored, the method-call statement will continue execution
+        p4_context = P4Context(var_buffer, None)
+        # execute the action expression with the new environment
 
         self.set_context(p4_state, merged_params, ("out"))
         # execute the action expression with the new environment
         old_expr_chain = p4_state.copy_expr_chain()
         p4_state.clear_expr_chain()
+        p4_state.insert_exprs(p4_context)
         p4_state.insert_exprs(self.statements)
         # reset to the previous execution chain
         p4z3_expr = p4_state.pop_next_expr()
@@ -216,7 +220,6 @@ class P4Control(P4Callable):
         # controls can only be executed with apply statements
         # when there is no p4 state provided, the control is instantiated
         raise RuntimeError()
-        return self
 
     def apply(self, p4_state, *args, **kwargs):
         return self.eval(p4_state, *args, **kwargs)
@@ -234,7 +237,6 @@ class P4Control(P4Callable):
             const_arg = const_val[1]
             const_arg = p4_state.resolve_expr(const_arg)
             p4_state.set_or_add_var(const_param_name, const_arg)
-
         self.set_context(p4_state, merged_params, ("out"))
 
         # execute the action expression with the new environment

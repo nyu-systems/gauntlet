@@ -163,7 +163,7 @@ class P4ComplexType():
 
     def __init__(self, z3_reg, name, z3_args):
         self.name = name
-
+        self.ref_count = 0
         z3_type = z3.Datatype(name)
         stripped_args = []
         for idx, z3_arg in enumerate(z3_args):
@@ -716,7 +716,6 @@ class Z3Reg():
     def __init__(self):
         self._types = {}
         self._globals = {}
-        self._ref_count = {}
 
     def declare_global(self, p4_class=None):
         if not p4_class:
@@ -742,7 +741,6 @@ class Z3Reg():
             self._globals[name] = p4_class
             self._types[name] = p4_class
 
-        self._ref_count[name] = 0
 
     def init_p4_state(self, name, p4_params):
         stripped_args = []
@@ -759,14 +757,11 @@ class Z3Reg():
                 instances[param_name] = instance
         p4_state = P4State(self, name, stripped_args).instantiate(
             name, self._globals, instances)
-
         return p4_state
 
     def type(self, type_name):
         if type_name in self._types:
             z3_type = self._types[type_name]
-            # if isinstance(z3_type, P4ComplexType):
-            # return z3_type.z3_type
             return self._types[type_name]
         else:
             # lets be bold here and assume that if a  type is not known
@@ -785,12 +780,12 @@ class Z3Reg():
         return self.type(name)
 
     def instance(self, var_name, p4z3_type):
-        if isinstance(p4z3_type, z3.DatatypeSortRef):
-            type_name = str(p4z3_type)
+        if isinstance(p4z3_type, P4ComplexType):
+            type_name = p4z3_type.name
             if not var_name:
-                var_name = f"{type_name}_{self._ref_count[type_name]}"
-            z3_cls = self._types[type_name].instantiate(var_name)
-            self._ref_count[type_name] += 1
+                var_name = f"{type_name}_{p4z3_type.ref_count}"
+            p4z3_type.ref_count += 1
+            z3_cls = p4z3_type.instantiate(var_name)
             return z3_cls
         elif isinstance(p4z3_type, z3.SortRef):
             return z3.Const(f"{var_name}", p4z3_type)

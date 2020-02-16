@@ -32,6 +32,7 @@ KNOWN_BUGS = [
     "MethodCallStatement: Unsupported on target Conditional execution",
     "could not evaluate at compilation time",
     "Unsupported on target Conditional execution in actions",
+    "Conditional execution in actions unsupported on this target",
 ]
 
 
