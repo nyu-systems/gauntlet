@@ -191,33 +191,6 @@ def generate_analysis():
         for p4_file in glob.glob(f"{p4_input}/*.p4i"):
             analyse_p4_file(p4_file, pass_dir)
 
-def get_semantics(target_dir, p4_input):
-    util.check_dir(target_dir)
-    py_file = Path(f"{target_dir}/{p4_input.stem}.py")
-    fail_dir = target_dir.joinpath("failed")
-
-    result = run_p4_to_py(p4_input, py_file)
-    if result.returncode != util.EXIT_SUCCESS:
-        log.error("Failed to translate P4 to Python.")
-        log.error("Compiler crashed!")
-        util.check_dir(fail_dir)
-        with open(f"{fail_dir}/error.txt", 'w+') as err_file:
-            err_file.write(result.stderr.decode("utf-8"))
-        util.copy_file([p4_input, py_file], fail_dir)
-        return result.returncode
-    check, result = z3check.get_z3_formulization(py_file, fail_dir)
-    if result != util.EXIT_SUCCESS:
-        return result
-    z3_formula = check["ig"]
-    s = z3.Solver()
-    z3_const = z3.Const("output", z3_formula.sort())
-    s.add(z3_const == z3_formula)
-
-    for cube in s.cube():
-        s.check(cube)
-        log.info(s.model())
-    return util.EXIT_SUCCESS
-
 
 def main(args):
 
@@ -227,20 +200,14 @@ def main(args):
     if os.path.isfile(p4_input):
         pass_dir = pass_dir.joinpath(p4_input.stem)
         util.del_dir(pass_dir)
-        if args.get_semantics:
-            result = get_semantics(pass_dir, p4_input)
-        else:
-            result = validate_translation(p4_input, pass_dir, p4c_bin)
+        result = validate_translation(p4_input, pass_dir, p4c_bin)
         exit(result)
     else:
         util.check_dir(pass_dir)
         for p4_file in list(p4_input.glob("**/*.p4")):
             pass_dir = pass_dir.joinpath(p4_file.stem)
             util.del_dir(pass_dir)
-            if args.get_semantics:
-                result = 0
-            else:
-                result = validate_translation(p4_file, pass_dir, p4c_bin)
+            result = validate_translation(p4_file, pass_dir, p4c_bin)
             if result.returncode != util.EXIT_SUCCESS:
                 exit(result)
     exit(util.EXIT_SUCCESS)
@@ -262,9 +229,6 @@ if __name__ == '__main__':
     parser.add_argument("-l", "--log_file", dest="log_file",
                         default="analysis.log",
                         help="Specifies name of the log file.")
-    parser.add_argument("-g", "--get_semantics", dest="get_semantics",
-                        action='store_true',
-                        help="Only retrieve the formal semantics of the file.")
     # Parse options and process argv
     arguments = parser.parse_args()
 
