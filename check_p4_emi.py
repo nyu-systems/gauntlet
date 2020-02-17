@@ -13,6 +13,7 @@ log = logging.getLogger(__name__)
 FILE_DIR = os.path.dirname(os.path.abspath(__file__))
 P4Z3_BIN = FILE_DIR + "/p4c/build/p4toz3"
 OUT_DIR = FILE_DIR + "/validated"
+P4C_DIR = FILE_DIR + "/p4c"
 
 
 def run_p4_to_py(p4_file, py_file):
@@ -32,7 +33,9 @@ def fill_values(z3_input):
     input_values = []
     for val in z3_input.children():
         if isinstance(val, z3.DatatypeRef):
-            complex_val = P4Struct(val.sort().name(), fill_values(val))
+            val_name = val.sort().name()
+            val_children = fill_values(val)
+            complex_val = P4Struct(val_name, val_children)
             input_values.append(complex_val)
         elif isinstance(val, z3.BitVecNumRef):
             bitvec_val = val.as_long()
@@ -117,6 +120,8 @@ def main(args):
         if result != util.EXIT_SUCCESS:
             sys.exit(result)
         z3_subsets.append(z3_prog)
+    util.copy_file(args.p4_input, out_dir)
+    util.copy_file(p4_subsets, out_dir)
 
     s = z3.Solver()
     z3_formula_1 = z3_main_prog["ig"]
@@ -130,8 +135,27 @@ def main(args):
     if sat:
         m = s.model()
         stf_str = get_stf_str(m, z3_const)
-        with open(out_dir.joinpath(f"{p4_input.stem}.stf"), 'w+') as stf_file:
+        stf_file_name = out_dir.joinpath(f"{p4_input.stem}.stf")
+        with open(stf_file_name, 'w+') as stf_file:
             stf_file.write(stf_str)
+        main_cmd = "python "
+        main_cmd += f"{P4C_DIR}/backends/bmv2/run-bmv2-test.py "
+        main_cmd += f"{P4C_DIR} "
+        # main_cmd += f"-v -a \'--maxErrorCount 100\' \"$@\"  "
+        main_cmd += f"{out_dir}/{p4_input.name} "
+        result = util.exec_process(main_cmd).returncode
+        for input_prog in p4_subsets:
+            input_prog = Path(input_prog)
+            stf_file_name = out_dir.joinpath(f"{input_prog.stem}.stf")
+            with open(stf_file_name, 'w+') as stf_file:
+                stf_file.write(stf_str)
+            subset_cmd = "python "
+            subset_cmd += f"{P4C_DIR}/backends/bmv2/run-bmv2-test.py "
+            subset_cmd += f"{P4C_DIR} -v "
+            # subset_cmd += f"-v -a \'--maxErrorCount 100\' \"$@\"  "
+            subset_cmd += f"{out_dir}/{input_prog.name} "
+            result = util.exec_process(subset_cmd)
+
     # for cube in s.cube():
     # s.check(cube)
     # log.info(s.model())
