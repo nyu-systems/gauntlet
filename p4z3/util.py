@@ -10,6 +10,13 @@ EXIT_SKIPPED = -10
 EXIT_VIOLATION = -20
 
 
+def is_valid_file(parser, arg):
+    if not os.path.exists(arg):
+        return parser.error("File %s does not exist!" % arg)
+    else:
+        return arg
+
+
 def check_dir(directory):
     # create the folder if it does not exit
     if not directory == "" and not os.path.exists(directory):

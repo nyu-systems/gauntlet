@@ -5,7 +5,6 @@ import subprocess
 import logging
 import hashlib
 from pathlib import Path
-import z3
 
 import p4z3.util as util
 import check_p4_pair as z3check
