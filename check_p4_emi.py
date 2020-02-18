@@ -180,11 +180,11 @@ def random_prune(out_dir, p4_input, idx):
     return new_p4_file, z3_prog, util.EXIT_SUCCESS
 
 
-def enter_retry_loop(out_dir, p4_input, s, output_const):
+def enter_retry_loop(out_dir, p4_input, s, output_const, num_retries):
     log.info("Cannot find an input that leads to equivalence!")
-    log.info("Retrying %s times...", NUM_RETRIES)
+    log.info("Retrying %s times...", num_retries)
     iters = 0
-    while iters < NUM_RETRIES:
+    while iters < num_retries:
         log.info("Attempt Number %s...", iters)
         new_p4, z3_prog, result = random_prune(out_dir, p4_input, iters)
         if result != util.EXIT_SUCCESS:
@@ -252,6 +252,8 @@ def main(args):
     s = z3.Solver()
     # we currently ignore all other pipelines and focus on the ingress pipeline
     main_formula = z3_main_prog["ig"]
+    # this util might come in handy later.
+    # z3.z3util.get_vars(main_formula)
     output_const = z3.Const("output", main_formula.sort())
     # bind the output constant to the output of the main program
     s.add(main_formula == output_const)
@@ -273,7 +275,8 @@ def main(args):
         if args.retry:
             # remove the context and start fresh
             s.pop()
-            result = enter_retry_loop(out_dir, p4_input, s, output_const)
+            result = enter_retry_loop(
+                out_dir, p4_input, s, output_const, args.num_retries)
         else:
             log.warning(
                 "Retrying is disabled, enable random subset testing "
@@ -301,6 +304,9 @@ if __name__ == '__main__':
     parser.add_argument("--retry", "-r", dest="retry",
                         action='store_true',
                         help="Retry with random mutation to find an equivalence solution.")
+    parser.add_argument("--num_retries", dest="num_retries",
+                        default=NUM_RETRIES,
+                        help="How many times to retry before giving up.")
     parser.add_argument("-o", "--out_dir", dest="out_dir",
                         default=OUT_DIR,
                         help="The output folder where all passes are dumped.")
