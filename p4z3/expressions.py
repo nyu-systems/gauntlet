@@ -233,9 +233,26 @@ class P4div(P4BinaryOp):
 
 class P4lshift(P4BinaryOp):
     def __init__(self, lval, rval):
-        operator = op.lshift
+        def operator(x, y):
+            return z3_cast(op.lshift(x, y), x.size())
         P4BinaryOp.__init__(self, lval, rval, operator)
 
+    def eval(self, p4_state):
+        # z3 does not like to shift operators of different size
+        # but casting both values could lead to missing an overflow
+        # so after the operation cast the lvalue down to its original size
+        lval_expr = p4_state.resolve_expr(self.lval)
+        rval_expr = p4_state.resolve_expr(self.rval)
+        # align the bitvectors to allow operations
+        lval_is_bitvec = isinstance(lval_expr, z3.BitVecRef)
+        rval_is_bitvec = isinstance(rval_expr, z3.BitVecRef)
+        orig_lval_size = lval_expr.size()
+        if lval_is_bitvec and rval_is_bitvec:
+            if lval_expr.size() < rval_expr.size():
+                lval_expr = z3_cast(lval_expr, rval_expr.size())
+            if lval_expr.size() > rval_expr.size():
+                rval_expr = z3_cast(rval_expr, lval_expr.size())
+        return z3_cast(op.lshift(lval_expr, rval_expr), orig_lval_size)
 
 class P4rshift(P4BinaryOp):
     def __init__(self, lval, rval):
@@ -361,4 +378,12 @@ class P4Mux(P4Expression):
                 if_expr = z3.If(cond, member, else_expr[idx])
                 sub_cond.append(if_expr)
             return sub_cond
+        then_is_const = isinstance(then_expr, (z3.BitVecRef, int))
+        else_is_const = isinstance(else_expr, (z3.BitVecRef, int))
+        if then_is_const and else_is_const:
+            # align the bitvectors to allow operations
+            if else_expr.size() < then_expr.size():
+                else_expr = z3_cast(else_expr, then_expr.size())
+            if else_expr.size() > then_expr.size():
+                then_expr = z3_cast(then_expr, else_expr.size())
         return z3.If(cond, then_expr, else_expr)

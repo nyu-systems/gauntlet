@@ -9,6 +9,7 @@ log = logging.getLogger(__name__)
 
 
 def z3_cast(val, to_type):
+    # some checks to guarantee that the inputs are usable
     if isinstance(val, (z3.BoolSortRef, z3.BoolRef)):
         # Convert boolean variables to a bit vector representation
         # TODO: Streamline bools and their evaluation
@@ -34,6 +35,7 @@ def z3_cast(val, to_type):
         # only be converted with Int2BV. Why? I do not know...
         return z3.Int2BV(val, to_type_size)
 
+    # preprocessing done, the actual casting starts here
     val_size = val.size()
     if val_size < to_type_size:
         # the target value is larger, extend with zeros
@@ -740,7 +742,6 @@ class Z3Reg():
             name = p4_class.name
             self._globals[name] = p4_class
             self._types[name] = p4_class
-
 
     def init_p4_state(self, name, p4_params):
         stripped_args = []

@@ -57,6 +57,16 @@ def fill_values(z3_input):
     return input_values
 
 
+def get_branch_conditions(z3_formula):
+    conditions = []
+    if z3.is_app_of(z3_formula, z3.Z3_OP_ITE):
+        # the first child is usually the condition
+        cond = z3_formula.children()[0]
+        conditions.append(cond)
+    for child in z3_formula.children():
+        conditions.extend(get_branch_conditions(child))
+    return conditions
+
 def convert_to_stf(input_values, input_name, append_values=False):
     stf_str = ""
     for val in input_values:
@@ -254,6 +264,7 @@ def main(args):
     main_formula = z3_main_prog["ig"]
     # this util might come in handy later.
     # z3.z3util.get_vars(main_formula)
+    # conditions = get_branch_conditions(main_formula)
     output_const = z3.Const("output", main_formula.sort())
     # bind the output constant to the output of the main program
     s.add(main_formula == output_const)
@@ -281,37 +292,29 @@ def main(args):
             log.warning(
                 "Retrying is disabled, enable random subset testing "
                 "with the --retry/-r flag.")
-    # cubes are a cute z3 feature that partitions the program into different
-    # result paths, this can be useful later
-    # for cube in s.cube():
-    # s.check(cube)
 
     sys.exit(result)
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument("-i", "--p4_input", dest="p4_input",
-                        default=None,
+    parser.add_argument("-i", "--p4_input", dest="p4_input", default=None,
                         type=lambda x: util.is_valid_file(parser, x),
                         help="The main reference p4 file.")
     parser.add_argument("--num_subsets", "-n", dest="num_subsets",
                         type=int, default=0,
                         help="The number of subset programs to generate.")
-    parser.add_argument("--subsets", "-s", dest="subsets",
-                        type=str, nargs='+', default=[],
+    parser.add_argument("--subsets", "-s", dest="subsets", type=str,
+                        nargs='+', default=[],
                         help="The ordered list of programs to compare.")
-    parser.add_argument("--retry", "-r", dest="retry",
-                        action='store_true',
+    parser.add_argument("--retry", "-r", dest="retry", action='store_true',
                         help="Retry with random mutation to find an equivalence solution.")
     parser.add_argument("--num_retries", dest="num_retries",
-                        default=NUM_RETRIES,
+                        default=NUM_RETRIES, type=int,
                         help="How many times to retry before giving up.")
-    parser.add_argument("-o", "--out_dir", dest="out_dir",
-                        default=OUT_DIR,
+    parser.add_argument("-o", "--out_dir", dest="out_dir", default=OUT_DIR,
                         help="The output folder where all passes are dumped.")
-    parser.add_argument("-l", "--log_file", dest="log_file",
-                        default="emi.log",
+    parser.add_argument("-l", "--log_file", dest="log_file", default="emi.log",
                         help="Specifies name of the log file.")
     # Parse options and process argv
     arguments = parser.parse_args()

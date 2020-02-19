@@ -28,11 +28,9 @@ ITERATIONS = 10000
 NUM_PROCESSES = 5
 
 KNOWN_BUGS = [
-    "Conditional execution in actions is not supported on this target",
-    "MethodCallStatement: Unsupported on target Conditional execution",
-    "could not evaluate at compilation time",
-    "Unsupported on target Conditional execution in actions",
-    "Conditional execution in actions unsupported on this target",
+    "Conditional execution",
+    "At this point in the compilation typechecking should not",
+    "Null cst",
 ]
 
 
@@ -65,6 +63,7 @@ def generate_id():
 def generate_p4_dump(p4c_bin, p4_file):
     p4_cmd = f"{p4c_bin} "
     p4_cmd += f"{p4_file} "
+    p4_cmd += f"--flag=0 "
     log.debug("Generating random p4 code with command %s ", p4_cmd)
     return util.exec_process(p4_cmd), p4_file
 

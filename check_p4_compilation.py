@@ -204,11 +204,9 @@ def main(args):
     else:
         util.check_dir(pass_dir)
         for p4_file in list(p4_input.glob("**/*.p4")):
-            pass_dir = pass_dir.joinpath(p4_file.stem)
-            util.del_dir(pass_dir)
-            result = validate_translation(p4_file, pass_dir, p4c_bin)
-            if result.returncode != util.EXIT_SUCCESS:
-                exit(result)
+            output_dir = pass_dir.joinpath(p4_file.stem)
+            util.del_dir(output_dir)
+            result = validate_translation(p4_file, output_dir, p4c_bin)
     exit(util.EXIT_SUCCESS)
 
 
