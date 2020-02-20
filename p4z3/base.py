@@ -308,14 +308,22 @@ class P4ComplexType():
     def sort(self):
         return self.z3_type
 
-    def flatten(self):
+    def flatten(self, return_strings=False):
         members = []
-        for self_member_name in self.members:
-            member = self.resolve_reference(self_member_name)
+        for member_name in self.members:
+            member = self.resolve_reference(member_name)
             if isinstance(member, P4ComplexType):
-                members.extend(member.flatten())
+                sub_members = member.flatten(return_strings)
+                if return_strings:
+                    for idx, sub_member in enumerate(sub_members):
+                        merged_member = f"{member_name}.{sub_member}"
+                        sub_members[idx] = merged_member
+                members.extend(sub_members)
             else:
-                members.append(member)
+                if return_strings:
+                    members.append(member_name)
+                else:
+                    members.append(member)
         return members
 
     def __str__(self):

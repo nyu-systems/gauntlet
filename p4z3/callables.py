@@ -162,11 +162,39 @@ class P4Action(P4Callable):
         return p4z3_expr.eval(p4_state)
 
 
+
 class P4Function(P4Action):
 
     def __init__(self, name, z3_reg, params, return_type, body):
         self.return_type = return_type
         super(P4Function, self).__init__(name, z3_reg, params, body)
+
+    def explore(self, expr):
+        if z3.is_app_of(expr, z3.Z3_OP_ITE):
+            return self.generate_phi_values(expr)
+        member_list = []
+        for child in expr.children():
+            if isinstance(child, z3.DatatypeRef):
+                member_list.extend(self.explore(child))
+            else:
+                member_list.append(child)
+        return member_list
+
+    def generate_phi_values(self, input_expr, conditions=True):
+        # the first child is usually the condition
+        cond = input_expr.children()[0]
+        z3_then = input_expr.children()[1]
+        z3_else = input_expr.children()[2]
+        z3_then_children = self.explore(z3_then)
+        z3_else_children = self.explore(z3_else)
+        merged_list = []
+        for idx, then_child in enumerate(z3_then_children):
+            else_child = z3_else_children[idx]
+            if_cond = z3.If(cond, then_child, else_child)
+            merged_list.append(z3.simplify(if_cond))
+        return merged_list
+        # self.generate_phi_values(z3_then, z3.And(conditions, cond))
+        # self.generate_phi_values(z3_else, z3.And(conditions, z3.Not(cond)))
 
     def eval_callable(self, p4_state, merged_params, var_buffer):
         # P4Functions always return so we do not need a context object
@@ -174,19 +202,30 @@ class P4Function(P4Action):
         # if the function is part of a method-call statement and the return
         # value is ignored, the method-call statement will continue execution
         p4_context = P4Context(var_buffer, None)
-        # execute the action expression with the new environment
 
         self.set_context(p4_state, merged_params, ("out"))
         # execute the action expression with the new environment
         old_expr_chain = p4_state.copy_expr_chain()
         p4_state.clear_expr_chain()
+
+        p4_state_copy = copy.copy(p4_state)
+        p4_state_copy.insert_exprs(self.statements)
+        p4z3_expr = p4_state_copy.pop_next_expr()
+        return_value = p4z3_expr.eval(p4_state_copy)
+
         p4_state.insert_exprs(p4_context)
         p4_state.insert_exprs(self.statements)
         # reset to the previous execution chain
         p4z3_expr = p4_state.pop_next_expr()
         expr = p4z3_expr.eval(p4_state)
+        if z3.is_app_of(expr, z3.Z3_OP_ITE):
+            phi_values = self.generate_phi_values(expr)
+            p4_state_members = p4_state.flatten(return_strings=True)
+            for idx, member in enumerate(p4_state_members):
+                p4_state.set_or_add_var(member, phi_values[idx])
+
         p4_state.expr_chain = old_expr_chain
-        return expr
+        return return_value
 
 
 class P4Control(P4Callable):

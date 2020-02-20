@@ -1,23 +1,30 @@
 #include <core.p4>
 #include <v1model.p4>
 
+header ethernet_t {
+    bit<48> dst_addr;
+    bit<48> src_addr;
+    bit<16> eth_type;
+}
+
 struct Headers {
+    ethernet_t    eth_hdr;
 }
 
 struct Meta {
 }
 
-control ingress(inout Headers h, inout Meta m, inout standard_metadata_t sm) {
-    action do_thing() {
-        if (sm.enq_timestamp != 6) {
-            sm = sm;
-        }
+bit<48> do_thing(inout bit<16> val_0) {
+    if (val_0 >= 16w2) {
+        val_0 = 16w0;
+    } else {
+        val_0 = 16w1;
     }
-
+    return 2;
+}
+control ingress(inout Headers h, inout Meta m, inout standard_metadata_t sm) {
     apply {
-        sm.egress_spec = 2;
-        do_thing();
-
+        h.eth_hdr.dst_addr = do_thing(h.eth_hdr.eth_type);
     }
 }
 

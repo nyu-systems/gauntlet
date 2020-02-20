@@ -36,6 +36,7 @@ for test in all_tests:
 # ***** violation tests *****
 violation_tests = [
     "basic_routing_stripped",
+    "branching_in_function",
     "checksum2",
     "const_entries",
     "copy_out",
