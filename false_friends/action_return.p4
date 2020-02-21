@@ -15,8 +15,15 @@ struct Meta {
 control ingress(inout Headers h, inout Meta m, inout standard_metadata_t sm) {
     bit<128> AYYzVv = 128w2;
     action LItPu(inout bit<8> val) {
-        val = 8w2;
+        if (val > 8w10) {
+            val = 8w2;
+            return;
+        } else{
+            val = 8w3;
+        }
+
         return;
+        val = 8w4;
     }
     table FDnHyV {
         key = {

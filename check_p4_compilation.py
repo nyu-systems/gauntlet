@@ -18,6 +18,7 @@ PASS_DIR = FILE_DIR + "/validated"
 
 PASSES = "--top4 "
 PASSES += "FrontEnd,MidEnd "
+# PASSES += "FrontEnd,MidEnd,PassManager "
 # PASSES += "-vvvv "
 
 
@@ -82,6 +83,7 @@ def list_passes(p4c_bin, p4_file, p4_dmp_dir):
     p4_pass_cmd += f"{p4_file} 2>&1 "
     p4_pass_cmd += f"-o {p4_dmp_dir} "
     p4_pass_cmd += "| sed -e '/FrontEnd\\|MidEnd/!d' | "
+    # p4_pass_cmd += "| sed -e '/FrontEnd\\|MidEnd\\|PassManager/!d' | "
     p4_pass_cmd += "sed -e '/Writing program to/d' "
     log.debug("Grabbing passes with command %s", p4_pass_cmd)
     output = subprocess.check_output(p4_pass_cmd, shell=True)

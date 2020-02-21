@@ -32,6 +32,7 @@ KNOWN_BUGS = [
     "At this point in the compilation typechecking should not",
     "Null cst",
     "format-string referred to more arguments than were passed",
+    "Unimplemented compiler support",
 ]
 
 

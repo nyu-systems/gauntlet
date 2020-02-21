@@ -224,7 +224,7 @@ class P4Return(P4Statement):
                 return p4z3_expr.eval(p4_state)
         # since we popped the P4Context object that would take care of this
         # return the z3 expressions of the state AFTER restoring it
-        # if expr is None:
-            # p4z3_expr = p4_state.pop_next_expr()
-            # return p4z3_expr.eval(p4_state)
+        if expr is None:
+            p4z3_expr = p4_state.pop_next_expr()
+            return p4z3_expr.eval(p4_state)
         return expr

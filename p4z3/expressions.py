@@ -180,7 +180,8 @@ class P4mul(P4BinaryOp):
 
 class P4mod(P4BinaryOp):
     def __init__(self, lval, rval):
-        operator = op.mod
+        # P4 only supports positive unsigned modulo operations
+        operator = z3.SRem
         P4BinaryOp.__init__(self, lval, rval, operator)
 
 
