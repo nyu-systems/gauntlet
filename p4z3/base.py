@@ -258,7 +258,16 @@ class P4ComplexType():
     def resolve_reference(self, var):
         log.debug("Resolving reference %s", var)
         if isinstance(var, str):
-            var = op.attrgetter(var)(self)
+            sub_class = self
+            if '.' in var:
+                # this means we are accessing a complex member
+                # get the parent class and update its value
+                prefix, suffix = var.rsplit(".", 1)
+                # prefix may be a pointer to an actual complex type, resolve it
+                sub_class = self.resolve_reference(prefix)
+                var = getattr(sub_class, suffix)
+            else:
+                var = getattr(self, var)
         return var
 
     def set_list(self, rvals):

@@ -96,11 +96,11 @@ def get_stf_str(z3_model, z3_const):
     z3_input_header = z3_model[z3_model[0]]
     log.debug("Input header: %s", z3_input_header)
     input_values = fill_values(z3_input_header)
-    input_pkt_str = convert_to_stf(input_values, "Parsed_packet")
+    input_pkt_str = convert_to_stf(input_values, "Headers")
     z3_output_header = z3_model[z3_const]
     log.debug("Output header: %s", z3_output_header)
     output_values = fill_values(z3_output_header)
-    output_pkt_str = convert_to_stf(output_values, "Parsed_packet")
+    output_pkt_str = convert_to_stf(output_values, "Headers")
     stf_str = "packet 0 "
     stf_str += insert_spaces(input_pkt_str, 2)
     stf_str += "\nexpect 0 "
@@ -167,6 +167,7 @@ def check_with_stf(out_dir, file_1, file_2, model, output_const):
             result = run_stf_test(out_dir, sub_file, stf_str)
             if result != util.EXIT_SUCCESS:
                 return result
+        return util.EXIT_SUCCESS
     else:
         return run_stf_test(out_dir, file_2, stf_str)
 
@@ -211,7 +212,9 @@ def enter_retry_loop(out_dir, p4_input, s, output_const, num_retries):
             log.info("Found a solution!")
             # get the model
             m = s.model()
-            check_with_stf(out_dir, p4_input, new_p4, m, output_const)
+            result = check_with_stf(out_dir, p4_input, new_p4, m, output_const)
+            if result != util.EXIT_SUCCESS:
+                return result
             break
         s.pop()
         iters += 1
@@ -295,7 +298,8 @@ def perform_emi_test(out_dir, p4_input, num_subsets, p4_subsets, num_retries):
         if args.retry:
             # remove the context and start fresh
             s.pop()
-            enter_retry_loop(out_dir, p4_input, s, output_const, num_retries)
+            result = enter_retry_loop(
+                out_dir, p4_input, s, output_const, num_retries)
         else:
             log.warning(
                 "Retrying is disabled, enable random subset testing "

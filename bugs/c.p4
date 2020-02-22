@@ -53,7 +53,7 @@ parser p(packet_in pkt, out Parsed_packet hdr, inout Metadata meta, inout standa
 
 control ingress(inout Parsed_packet hdr, inout Metadata meta, inout standard_metadata_t stdmeta) {
     apply {
-        // overflows
+        // underflows
         hdr.h.a = 0 - 1;
     }
 }

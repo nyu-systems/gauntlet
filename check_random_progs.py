@@ -1,6 +1,7 @@
 import random
 import string
 import logging
+import argparse
 from multiprocessing import Pool
 from functools import wraps
 import errno
@@ -101,7 +102,7 @@ def is_known_bug(result):
 
 
 @timeout(seconds=600)
-def validate_p4_compilation(p4_file, target_dir, p4c_bin, log_file):
+def validate_p4(p4_file, target_dir, p4c_bin, log_file):
     p4z3_cmd = "python3 check_p4_compilation.py "
     p4z3_cmd += f"-i {p4_file} "
     p4z3_cmd += f"-o {target_dir} "
@@ -110,7 +111,16 @@ def validate_p4_compilation(p4_file, target_dir, p4c_bin, log_file):
     return util.exec_process(p4z3_cmd)
 
 
-def check(idx):
+@timeout(seconds=600)
+def validate_p4_emi(p4_file, target_dir, log_file):
+    p4z3_cmd = "python3 check_p4_emi.py "
+    p4z3_cmd += f"-i {p4_file} "
+    p4z3_cmd += f"-o {target_dir} "
+    p4z3_cmd += f"-l {log_file} "
+    return util.exec_process(p4z3_cmd)
+
+
+def check(idx, use_emi=False):
     test_id = generate_id()
     test_name = f"{test_id}_{idx}"
     dump_dir = OUTPUT_DIR.joinpath(f"dmp_{test_name}")
@@ -140,7 +150,10 @@ def check(idx):
             return
 
     try:
-        result = validate_p4_compilation(p4_file, dump_dir, P4C_BIN, log_file)
+        if use_emi:
+            result = validate_p4(p4_file, dump_dir, P4C_BIN, log_file)
+        else:
+            result = validate_p4_emi(p4_file, dump_dir, log_file)
     except TimeoutError:
         log.error("Validation timed out.")
         dump_file(TIMEOUT_DIR, p4_file)
@@ -165,20 +178,29 @@ def check(idx):
     util.del_dir(dump_dir)
 
 
-def main():
+def main(args):
     util.check_dir(OUTPUT_DIR)
     with Pool(NUM_PROCESSES) as p:
-        p.map(check, range(ITERATIONS))
+        p.map(check, range(ITERATIONS), args.use_emi)
     return util.EXIT_SUCCESS
 
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--use-emi", "-e", dest="use_emi", action='store_true',
+                        help="Use an EMI-like technique instead of translation validation.")
+    parser.add_argument("-l", "--log_file", dest="log_file",
+                        default="random.log",
+                        help="Specifies name of the log file.")
+    # Parse options and process argv
+    args = parser.parse_args()
+
     # configure logging
-    logging.basicConfig(filename="random.log",
+    logging.basicConfig(filename=args.log_file,
                         format="%(levelname)s:%(message)s",
                         level=logging.INFO,
                         filemode='w')
     stderr_log = logging.StreamHandler()
     stderr_log.setFormatter(logging.Formatter("%(levelname)s:%(message)s"))
     log.addHandler(stderr_log)
-    main()
+    main(args)
