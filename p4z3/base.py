@@ -177,34 +177,33 @@ class P4ComplexType():
                 stripped_args.append(z3_arg)
         z3_type.declare(f"mk_{name}", *stripped_args)
         self.z3_type = z3_type.create()
-
-        self.const = z3.Const(name, self.z3_type)
-        self.constructor = self.z3_type.constructor(0)
-        self.members = OrderedDict()
-        # set the members of this class
-        for type_index, z3_arg in enumerate(z3_args):
-            z3_arg_name = z3_arg[0]
-            z3_arg_type = z3_arg[1]
-            member_accessor = self.z3_type.accessor(0, type_index)
-            if isinstance(z3_arg_type, P4ComplexType):
-                # this is a complex datatype, create a P4ComplexType
-                member_cls = z3_arg_type.instantiate(z3_arg_name)
-                # since the child type is dependent on its parent
-                # we propagate the parent constant down to all members
-                member_cls.propagate_type(member_accessor(self.const))
-                # and add it to the members, this is a little inefficient...
-                setattr(self, z3_arg_name, member_cls)
-            else:
-                # use the default z3 constructor
-                setattr(self, z3_arg_name, member_accessor(self.const))
-            self.members[z3_arg_name] = member_accessor
+        self.z3_args = z3_args
 
     def instantiate(self, name):
         class_copy = copy.copy(self)
         class_copy.name = name
         class_copy.const = z3.Const(f"{name}_0", class_copy.z3_type)
+        class_copy.constructor = class_copy.z3_type.constructor(0)
+        class_copy.members = OrderedDict()
+        # set the members of this class
+        for type_index, z3_arg in enumerate(class_copy.z3_args):
+            z3_arg_name = z3_arg[0]
+            z3_arg_type = z3_arg[1]
+            member_accessor = class_copy.z3_type.accessor(0, type_index)
+            if isinstance(z3_arg_type, P4ComplexType):
+                # this is a complex datatype, create a P4ComplexType
+                member_cls = z3_arg_type.instantiate(z3_arg_name)
+                # since the child type is dependent on its parent
+                # we propagate the parent constant down to all members
+                member_cls.propagate_type(member_accessor(class_copy.const))
+                # and add it to the members, this is a little inefficient...
+                setattr(class_copy, z3_arg_name, member_cls)
+            else:
+                # use the default z3 constructor
+                setattr(class_copy, z3_arg_name, member_accessor(class_copy.const))
+            class_copy.members[z3_arg_name] = member_accessor
         # update the representation with the new type
-        class_copy.propagate_type(class_copy.const)
+        # class_copy.propagate_type(class_copy.const)
         return class_copy
 
     def propagate_type(self, parent_const: z3.AstRef):
@@ -484,8 +483,7 @@ class HeaderStack(P4ComplexType):
         for idx, arg in enumerate(z3_args):
             z3_args[idx] = (f"{idx}", arg)
         super(HeaderStack, self).__init__(z3_reg, name, z3_args)
-        self.size = len(self.members)
-        self.next_idx = 0
+        self.size = len(z3_args)
 
     def instantiate(self, name):
         class_copy = super(HeaderStack, self).instantiate(name)
