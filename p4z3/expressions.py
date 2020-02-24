@@ -1,5 +1,5 @@
 from p4z3.base import log, z3_cast, z3, op
-from p4z3.base import P4ComplexType, P4Expression
+from p4z3.base import P4ComplexInstance, P4Expression
 from p4z3.callables import P4Method
 
 
@@ -11,9 +11,9 @@ class P4Initializer(P4Expression):
     def eval(self, p4_state):
         instance = p4_state.resolve_expr(self.instance)
         val = p4_state.resolve_expr(self.val)
-        if isinstance(val, P4ComplexType):
+        if isinstance(val, P4ComplexInstance):
             return val
-        if isinstance(instance, P4ComplexType):
+        if isinstance(instance, P4ComplexInstance):
             if isinstance(val, dict):
                 for name, val in val.items():
                     val_expr = p4_state.resolve_expr(val)
@@ -347,9 +347,9 @@ class P4Mux(P4Expression):
     def unravel_datatype(self, complex_type, datatype_list):
         unravelled_list = []
         for val in datatype_list:
-            if isinstance(complex_type, P4ComplexType):
+            if isinstance(complex_type, P4ComplexInstance):
                 val = complex_type.resolve_reference(val)
-            if isinstance(val, P4ComplexType):
+            if isinstance(val, P4ComplexInstance):
                 val_list = list(val.members)
                 val = self.unravel_datatype(val, val_list)
             unravelled_list.append(val)
@@ -366,9 +366,9 @@ class P4Mux(P4Expression):
         # we have to resolve the if condition in the case of complex types
         # we do this by splitting the if statement into a list
         # lists can easily be assigned to a target structure
-        if isinstance(then_expr, P4ComplexType):
+        if isinstance(then_expr, P4ComplexInstance):
             then_expr = list(then_expr.members)
-        if isinstance(else_expr, P4ComplexType):
+        if isinstance(else_expr, P4ComplexInstance):
             else_expr = list(else_expr.members)
         if isinstance(then_expr, list) and isinstance(else_expr, list):
             sub_cond = []

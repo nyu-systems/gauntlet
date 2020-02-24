@@ -1,5 +1,5 @@
 from p4z3.base import log, copy, z3
-from p4z3.base import P4Exit, P4Expression, P4ComplexType
+from p4z3.base import P4Exit, P4Expression, P4ComplexInstance
 from p4z3.callables import P4Control
 
 
@@ -65,7 +65,7 @@ class ParserSelect(P4Expression):
         for case_val, case_name in reversed(self.cases):
             case_expr = p4_state.resolve_expr(case_val)
             select_cond = []
-            if isinstance(case_expr, P4ComplexType):
+            if isinstance(case_expr, P4ComplexInstance):
                 case_expr = case_expr.flatten()
             if isinstance(case_expr, list):
                 for idx, case_match in enumerate(case_expr):

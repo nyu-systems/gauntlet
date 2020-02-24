@@ -1,5 +1,5 @@
 from p4z3.base import OrderedDict, z3, log, copy
-from p4z3.base import P4Z3Class, P4ComplexType, P4Member
+from p4z3.base import P4Z3Class, P4ComplexInstance, P4Member
 
 
 class P4Callable(P4Z3Class):
@@ -77,8 +77,8 @@ class P4Callable(P4Z3Class):
                 # In the case that the instance is a complex type make sure
                 # to propagate the variable through all its members
                 log.debug("Resetting %s to %s", arg, param_name)
-                if isinstance(arg_expr, P4ComplexType):
-                    arg = arg_expr.instantiate(arg_name)
+                if isinstance(arg_expr, P4ComplexInstance):
+                    arg = arg_expr.p4z3_type.instantiate(arg_name)
                 else:
                     arg = z3.Const(f"{param_name}", arg_expr.sort())
             else:

@@ -3,7 +3,7 @@ from collections import OrderedDict
 import z3
 
 from p4z3.base import log
-from p4z3.base import P4ComplexType, P4Statement, P4Z3Class
+from p4z3.base import P4ComplexInstance, P4Statement, P4Z3Class
 from p4z3.callables import P4Callable, P4Context
 
 
@@ -68,7 +68,7 @@ class AssignmentStatement(P4Statement):
         log.debug("Assigning %s to %s ", self.rval, self.lval)
         rval_expr = p4_state.resolve_expr(self.rval)
         # in assignments all complex types values are copied
-        if isinstance(rval_expr, P4ComplexType):
+        if isinstance(rval_expr, P4ComplexInstance):
             rval_expr = copy.copy(rval_expr)
         p4_state.set_or_add_var(self.lval, rval_expr)
 
