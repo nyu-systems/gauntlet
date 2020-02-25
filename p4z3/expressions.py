@@ -1,4 +1,4 @@
-from p4z3.base import log, z3_cast, z3, op
+from p4z3.base import log, z3_cast, z3, op, copy
 from p4z3.base import P4ComplexInstance, P4Expression
 from p4z3.callables import P4Method
 
@@ -357,8 +357,12 @@ class P4Mux(P4Expression):
 
     def eval(self, p4_state):
         cond = p4_state.resolve_expr(self.cond)
-        then_val = p4_state.resolve_expr(self.then_val)
+        # handle side effects for function calls
+        p4_state_copy = copy.copy(p4_state)
+        then_val = p4_state_copy.resolve_expr(self.then_val)
         else_val = p4_state.resolve_expr(self.else_val)
+        p4_state.merge_vars(cond, p4_state_copy)
+
         then_expr = then_val
         else_expr = else_val
         # this is a really nasty hack, do not try this at home kids

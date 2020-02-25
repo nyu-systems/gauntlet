@@ -345,14 +345,14 @@ class P4ComplexInstance():
                     members.append(member)
         return members
 
-    def merge_variables(self, cond, other_var):
+    def merge_vars(self, cond, other_var):
         for attr_name, attr_val in self.p4_attrs.items():
             try:
                 then_val = other_var.p4_attrs[attr_name]
             except KeyError:
                 continue
             if isinstance(attr_val, P4ComplexInstance):
-                attr_val.merge_variables(cond, then_val, attr_val)
+                attr_val.merge_vars(cond, then_val)
             elif isinstance(attr_val, z3.ExprRef):
                 if_expr = z3.simplify(z3.If(cond, then_val, attr_val))
                 self.p4_attrs[attr_name] = if_expr
@@ -388,7 +388,7 @@ class P4ComplexInstance():
         result.__dict__.update(self.__dict__)
         result.p4_attrs = {}
         for name, val in self.p4_attrs.items():
-            if not isinstance(val, z3.AstRef):
+            if isinstance(val, P4ComplexInstance):
                 result.p4_attrs[name] = copy.copy(val)
             else:
                 result.p4_attrs[name] = val

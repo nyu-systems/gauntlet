@@ -148,12 +148,11 @@ def check(idx, use_emi=False):
             # reset the dump directory
             util.del_dir(dump_dir)
             return
-
     try:
         if use_emi:
-            result = validate_p4(p4_file, dump_dir, P4C_BIN, log_file)
-        else:
             result = validate_p4_emi(p4_file, dump_dir, log_file)
+        else:
+            result = validate_p4(p4_file, dump_dir, P4C_BIN, log_file)
     except TimeoutError:
         log.error("Validation timed out.")
         dump_file(TIMEOUT_DIR, p4_file)
