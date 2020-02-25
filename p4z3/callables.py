@@ -11,6 +11,7 @@ class P4Callable(P4Z3Class):
         self.call_counter = 0
         for param in params:
             self._add_parameter(param)
+        self.p4_attrs = {}
 
     def _add_parameter(self, param=None):
         if param:
@@ -48,9 +49,9 @@ class P4Callable(P4Z3Class):
                 # if the variable does not exist, set the value to None
                 try:
                     param_val = p4_state.resolve_reference(param_name)
-                except AttributeError:
-                    param_val = None
-                var_buffer[param_name] = (is_ref, copy.deepcopy(param_val))
+                    var_buffer[param_name] = (is_ref, copy.deepcopy(param_val))
+                except KeyError:
+                    pass
         return var_buffer
 
     def __call__(self, p4_state=None, *args, **kwargs):
@@ -162,7 +163,6 @@ class P4Action(P4Callable):
         return p4z3_expr.eval(p4_state)
 
 
-
 class P4Function(P4Action):
 
     def __init__(self, name, z3_reg, params, return_type, body):
@@ -241,6 +241,7 @@ class P4Control(P4Callable):
             const_type = param[2]
             const_default = param[3]
             self.const_params[const_name] = (is_ref, const_type, const_default)
+        self.p4_attrs["apply"] = self.apply
 
     def init_type_params(self, *args, **kwargs):
         for idx, (c_name, c_param) in enumerate(self.const_params.items()):
@@ -293,7 +294,7 @@ class P4Extern(P4Callable):
         self.type_params = type_params
         self.methods = methods
         for method in methods:
-            setattr(self, method.name, method)
+            self.p4_attrs[method.name] = method
 
     def init_type_params(self, *args, **kwargs):
         for idx, t_param in enumerate(self.type_params):
@@ -389,14 +390,16 @@ class P4Table(P4Callable):
 
     def __init__(self, name, **properties):
         self.name = name
+        self.p4_attrs = {}
         self.keys = []
         self.const_entries = []
         self.actions = OrderedDict()
         self.default_action = None
         self.tbl_action = z3.Int(f"{self.name}_action")
-        self.hit = z3.BoolVal(False)
-        self.miss = z3.BoolVal(True)
-        self.action_run = self
+        self.p4_attrs["hit"] = z3.BoolVal(False)
+        self.p4_attrs["miss"] = z3.BoolVal(True)
+        self.p4_attrs["action_run"] = self
+        self.p4_attrs["apply"] = self.apply
 
         self.add_keys(properties)
         self.add_default(properties)
@@ -440,8 +443,9 @@ class P4Table(P4Callable):
     def apply(self, p4_state):
         # tables are a little bit special since they also have attributes
         # so what we do here is first initialize the key
-        self.hit = self.eval_keys(p4_state)
-        self.miss = z3.Not(self.hit)
+        hit = self.eval_keys(p4_state)
+        self.p4_attrs["hit"] = hit
+        self.p4_attrs["miss"] = z3.Not(hit)
         # then execute the table as the next expression in the chain
         # FIXME: I do not think this will work with assignment statements
         # the table is probably applied after the value has been assigned
@@ -539,7 +543,7 @@ class P4Table(P4Callable):
         # else use the default action
         # TODO: Check the exact semantics how default actions can be called
         # Right now, they can be called in either the table match or miss
-        tbl_match = self.hit
+        tbl_match = self.p4_attrs["hit"]
         table_expr = self.eval_table(p4_state)
         def_expr = self.eval_default(p4_state)
         return z3.If(tbl_match, table_expr, def_expr)

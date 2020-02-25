@@ -147,7 +147,7 @@ class SwitchHit(P4Z3Class):
         for case_name, case in self.cases.items():
             match_var = table.tbl_action
             action = table.actions[case_name][0]
-            match_cond = z3.And(table.hit, (action == match_var))
+            match_cond = z3.And(table.p4_attrs["hit"], (action == match_var))
             self.cases[case_name]["match"] = match_cond
 
     def eval(self, p4_state):
