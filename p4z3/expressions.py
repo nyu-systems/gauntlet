@@ -46,8 +46,8 @@ class MethodCallExpr(P4Expression):
         if not callable(p4_method):
             p4_method = p4_state.resolve_expr(p4_method)
         # TODO: Figure out how these type bindings work
-        # if isinstance(p4_method, P4Method):
-            # p4_method.initialize(*self.type_args)
+        if isinstance(p4_method, P4Method) and self.type_args:
+            p4_method.initialize(*self.type_args)
         if callable(p4_method):
             return p4_method(p4_state, *self.args, **self.kwargs)
         raise TypeError(f"Unsupported method type {type(p4_method)}!")

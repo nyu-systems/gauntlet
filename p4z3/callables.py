@@ -1,4 +1,4 @@
-from p4z3.base import OrderedDict, z3, log, copy
+from p4z3.base import OrderedDict, z3, log, copy, z3_cast
 from p4z3.base import P4Z3Class, P4ComplexInstance, P4Member
 
 
@@ -13,13 +13,12 @@ class P4Callable(P4Z3Class):
             self._add_parameter(param)
         self.p4_attrs = {}
 
-    def _add_parameter(self, param=None):
-        if param:
-            is_ref = param[0]
-            param_name = param[1]
-            param_type = param[2]
-            param_default = param[3]
-            self.params[param_name] = (is_ref, param_type, param_default)
+    def _add_parameter(self, param):
+        is_ref = param[0]
+        param_name = param[1]
+        param_type = param[2]
+        param_default = param[3]
+        self.params[param_name] = (is_ref, param_type, param_default)
 
     def merge_parameters(self, params, *args, **kwargs):
         merged_params = {}
@@ -86,6 +85,8 @@ class P4Callable(P4Z3Class):
                 arg = p4_state.resolve_expr(arg)
             # Sometimes expressions are passed, resolve those first
             log.debug("Copy-in: %s to %s", arg, param_name)
+            if isinstance(arg, int):
+                arg = z3_cast(arg, self.params[param_name][1])
             # buffer the value, do NOT set it yet
             param_buffer[param_name] = arg
         # now we can set the arguments without influencing subsequent variables
@@ -292,16 +293,28 @@ class P4Extern(P4Callable):
     def __init__(self, name, z3_reg, type_params=[], methods=[]):
         super(P4Extern, self).__init__(name, z3_reg, params=[])
         self.type_params = type_params
-        self.methods = methods
         for method in methods:
             self.p4_attrs[method.name] = method
 
     def init_type_params(self, *args, **kwargs):
-        for idx, t_param in enumerate(self.type_params):
-            for method in self.methods:
+        # the extern is instantiated, we need to copy it
+        # TODO: Make Externs a complextype...
+        init_extern = copy.copy(self)
+        for attr_name, attr_val in init_extern.p4_attrs.items():
+            init_extern.p4_attrs[attr_name] = copy.copy(attr_val)
+        # bind variables to the runtime types
+        for idx, t_param in enumerate(init_extern.type_params):
+            for method_name, method in init_extern.p4_attrs.items():
                 if method.return_type == t_param:
                     method.return_type = args[idx]
-        return self
+                for m_param_name, method_param in method.params.items():
+                    is_ref = method_param[0]
+                    m_param_type = method_param[1]
+                    m_param_default = method_param[2]
+                    if m_param_type == t_param:
+                        method.params[m_param_name] = (
+                            is_ref, args[idx], m_param_default)
+        return init_extern
 
     def initialize(self, *args, **kwargs):
         # TODO Figure out what to actually do here
@@ -326,17 +339,31 @@ class P4Extern(P4Callable):
 class P4Method(P4Callable):
 
     # TODO: This is quite brittle, requires concrete examination
-    def __init__(self, name, z3_reg, return_type=None, params=[]):
+    def __init__(self, name, z3_reg, type_params, params=[]):
         super(P4Method, self).__init__(name, z3_reg, params)
         # P4Methods, which are also black-box functions, can have return types
-        self.return_type = return_type
+        self.return_type = type_params[0]
+        self.type_params = type_params[1]
 
     def initialize(self, *args, **kwargs):
         # TODO Figure out what to actually do here
-        if len(args) > 0 and self.return_type is not None:
-            if len(self.params) == 0:
-                self.return_type = args[0]
-        return self
+        init_method = copy.copy(self)
+        if len(args) < len(init_method.type_params):
+            type_list = init_method.type_params[1:]
+        else:
+            type_list = init_method.type_params
+        for idx, t_param in enumerate(type_list):
+            if init_method.return_type == t_param:
+                init_method.return_type = args[idx]
+            for m_param_name, method_param in init_method.params.items():
+                is_ref = method_param[0]
+                m_param_type = method_param[1]
+                m_param_default = method_param[2]
+                if m_param_type == t_param:
+                    init_method.params[m_param_name] = (
+                        is_ref, args[idx], m_param_default)
+        return init_method
+
 
     def eval_callable(self, p4_state, merged_params, var_buffer):
         # initialize the local context of the function for execution

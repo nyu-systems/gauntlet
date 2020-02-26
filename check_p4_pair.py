@@ -57,6 +57,9 @@ def handle_pyz3_error(fail_dir, p4_file):
 
 def evaluate_package(p4_package):
     z3_asts = {}
+    # only P4Package instances are valid inputs
+    if not isinstance(p4_package, P4Package):
+        return z3_asts
     for pipe_name, p4_pipe_ast in p4_package.pipes.items():
         # if pipe_name != "ig":
         #     continue

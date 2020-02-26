@@ -189,6 +189,13 @@ class P4ComplexType():
     def __repr__(self):
         return self.name
 
+    def __eq__(self, other):
+        if isinstance(other, P4ComplexType):
+            return self.z3_type == other.z3_type
+        elif isinstance(other, z3.AstRef):
+            return self.z3_type == other
+        return super(P4ComplexType).__eq__(other)
+
 
 class P4ComplexInstance():
     def __init__(self, p4z3_type, name):
