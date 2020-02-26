@@ -181,7 +181,12 @@ class P4mul(P4BinaryOp):
 class P4mod(P4BinaryOp):
     def __init__(self, lval, rval):
         # P4 only supports positive unsigned modulo operations
-        operator = z3.SRem
+        def operator(x, y):
+            # z3 requires at least one value to be a bitvector for SRem
+            # use normal modulo ops instead
+            if isinstance(y, int) and isinstance(x, int):
+                return op.mod(x, y)
+            return z3.SRem(x, y)
         P4BinaryOp.__init__(self, lval, rval, operator)
 
 
@@ -254,6 +259,7 @@ class P4lshift(P4BinaryOp):
             if lval_expr.size() > rval_expr.size():
                 rval_expr = z3_cast(rval_expr, lval_expr.size())
         return z3_cast(op.lshift(lval_expr, rval_expr), orig_lval_size)
+
 
 class P4rshift(P4BinaryOp):
     def __init__(self, lval, rval):

@@ -180,7 +180,7 @@ def check(idx, use_emi=False):
 def main(args):
     util.check_dir(OUTPUT_DIR)
     with Pool(NUM_PROCESSES) as p:
-        p.map(check, range(ITERATIONS), args.use_emi)
+        p.map(check, range(ITERATIONS))
     return util.EXIT_SUCCESS
 
 

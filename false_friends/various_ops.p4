@@ -14,6 +14,7 @@ header UNDERFLOW {
 header MOD {
     bit<4> a;
     bit<4> b;
+    bit<4> c;
 }
 
 header RSH {
@@ -52,6 +53,7 @@ control ingress(inout Headers h, inout Meta m, inout standard_metadata_t sm) {
         h.mod.a = 4w1 % 4w8;
         // signed mod
         h.mod.b = 1 % 4w8;
+        h.mod.c = 3 % 2;
 
         // right shift
         bit<4> tmp = 4w0 - 4w1;
