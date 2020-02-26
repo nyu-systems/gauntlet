@@ -42,15 +42,15 @@ class P4Callable(P4Z3Class):
         # save all the variables that may be overridden
         for param_name, param in merged_params.items():
             is_ref = param[0]
-            if is_ref in ("inout", "out"):
-                var_buffer[param_name] = param
-            else:
-                # if the variable does not exist, set the value to None
-                try:
-                    param_val = p4_state.resolve_reference(param_name)
-                    var_buffer[param_name] = (is_ref, copy.deepcopy(param_val))
-                except KeyError:
-                    pass
+            param_ref = param[1]
+            # if the variable does not exist, set the value to None
+            try:
+                param_val = p4_state.resolve_reference(param_name)
+                if not isinstance(param_val, z3.AstRef):
+                    param_val = copy.copy(param_val)
+                var_buffer[param_name] = (is_ref, param_ref, param_val)
+            except KeyError:
+                var_buffer[param_name] = (is_ref, param_ref, None)
         return var_buffer
 
     def __call__(self, p4_state=None, *args, **kwargs):
@@ -117,28 +117,26 @@ class P4Context(P4Z3Class):
             old_p4_state = p4_context
         # restore any variables that may have been overridden
         for param_name, param in self.var_buffer.items():
+
             is_ref = param[0]
-            param_val = param[1]
+            param_ref = param[1]
+            param_val = param[2]
             if is_ref in ("inout", "out"):
-                # with copy-out we copy from left to right
-                # values on the right override values on the left
-                # the var buffer is an ordered dict that maintains this order
                 val = p4_context.resolve_reference(param_name)
-                log.debug("Copy-out: %s to %s", val, param_val)
-                old_p4_state.set_or_add_var(param_val, val)
+            if param_val is None:
+                # value has not existed previously, marked for deletion
+                log.debug("Deleting %s", param_name)
+                old_p4_state.del_var(param_name)
             else:
                 log.debug("Resetting %s to %s", param_name, type(param_val))
                 old_p4_state.set_or_add_var(param_name, param_val)
 
-            if param_val is None:
-                # value has not existed previously, marked for deletion
-                log.debug("Deleting %s", param_name)
-                try:
-                    old_p4_state.del_var(param_name)
-                except AttributeError:
-                    log.warning(
-                        "Variable %s does not exist, nothing to delete!",
-                        param_name)
+            if is_ref in ("inout", "out"):
+                # with copy-out we copy from left to right
+                # values on the right override values on the left
+                # the var buffer is an ordered dict that maintains this order
+                log.debug("Copy-out: %s to %s", val, param_val)
+                old_p4_state.set_or_add_var(param_ref, val)
         return old_p4_state
 
     def eval(self, p4_state):

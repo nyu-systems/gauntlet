@@ -72,9 +72,6 @@ xfails = [
     "array_field.p4",
     "array_field1.p4",
     "complex2.p4",
-    "constant_folding.p4",
-    "fabric.p4",
-    "issue1830.p4",
     "issue1989-bmv2.p4",
     "issue754.p4",
     "issue933.p4",
@@ -88,7 +85,6 @@ xfails = [
     "string.p4",
     "struct_init-1.p4",
     "table-entries-range-bmv2.p4",
-    "v1model-special-ops-bmv2.p4",
 ]
 
 slow_tests = [

@@ -268,7 +268,6 @@ class P4ComplexInstance():
                 members.append(member_make)
             else:
                 raise TypeError(f"Type {type(member_make)} not supported!")
-
         return self.z3_type.constructor(0)(*members)
 
     def resolve_reference(self, var):
@@ -550,12 +549,12 @@ class HeaderStackInstance(P4ComplexInstance):
 
     def __init__(self, z3p4_type, name):
         super(HeaderStackInstance, self).__init__(z3p4_type, name)
+        self.next_idx = 0
         self.p4_attrs["push_front"] = self.push_front
         self.p4_attrs["pop_front"] = self.pop_front
         self.p4_attrs["next"] = self.next
         self.p4_attrs["last"] = self.last
         self.p4_attrs["size"] = len(self.members)
-        self.next_idx = 0
 
     def push_front(self, p4_state, num):
         # This is a built-in
@@ -587,18 +586,18 @@ class HeaderStackInstance(P4ComplexInstance):
         # This is a built-in
         # TODO: Check if this implementation makes sense
         try:
-            hdr = getattr(self, f"{self.next_idx}")
+            hdr = self.p4_attrs[f"{self.next_idx}"]
         except KeyError:
             # if the header does not exist use it to break out of the loop?
             size = self.p4_attrs["size"]
-            hdr = getattr(self, f"{size -1}")
+            hdr = self.p4_attrs[f"{size -1}"]
         return hdr
 
     def last(self):
         # This is a built-in
         # TODO: Check if this implementation makes sense
         last = 0 if self.p4_attrs["size"] < 1 else self.p4_attrs["size"] - 1
-        hdr = getattr(self, f"{last}")
+        hdr = self.p4_attrs[f"{last}"]
         return hdr
 
     def __setattr__(self, name, val):
@@ -711,7 +710,7 @@ class P4StateInstance(P4ComplexInstance):
 
     def del_var(self, var_string):
         # simple wrapper for delattr
-        delattr(self, var_string)
+        self.p4_attrs.pop(var_string, None)
 
     def resolve_expr(self, expr):
         # Resolves to z3 and z3p4 expressions, ints, lists, and dicts are also okay
