@@ -14,47 +14,6 @@ def z3_implies(p4_state, cond, then_expr):
     return z3.If(cond, then_expr, no_match)
 
 
-class P4Package():
-
-    def __init__(self, z3_reg, name, params):
-        self.pipes = OrderedDict()
-        self.name = name
-        self.z3_reg = z3_reg
-        for arg in params:
-            is_ref = arg[0]
-            param_name = arg[1]
-            param_sort = arg[2]
-            praam_default = arg[3]
-            self.pipes[param_name] = None
-
-    def init_type_params(self, *args, **kwargs):
-        return self
-
-    def initialize(self, *args, **kwargs):
-        pipe_list = list(self.pipes.keys())
-        merged_args = {}
-        for idx, arg in enumerate(args):
-            name = pipe_list[idx]
-            merged_args[name] = arg
-        for name, arg in kwargs.items():
-            merged_args[name] = arg
-        for name, arg in merged_args.items():
-            if isinstance(arg, str):
-                # stupid hack to deal with weird naming schemes in p4c...
-                # FIXME: Figure out what this is even supposed to mean
-                if arg.endswith("<...>"):
-                    arg = arg[:-5]
-            # only add valid values that are initializable
-            if arg in self.z3_reg._globals:
-                # TODO: We need to initialize, but can you have arguments here?
-                self.pipes[name] = self.z3_reg._globals[arg].initialize()
-            else:
-                log.warning(
-                    "Skipping value %s, type %s because it does not make "
-                    "sense as a P4 pipeline.", arg, type(arg))
-        return self
-
-
 class AssignmentStatement(P4Statement):
     # AssignmentStatements are essentially just a wrapper class for the
     # set_or_add_var ḿethod of the p4 state.

@@ -8,6 +8,25 @@ import z3
 log = logging.getLogger(__name__)
 
 
+def gen_instance(var_name, p4z3_type):
+    if isinstance(p4z3_type, P4ComplexType):
+        type_name = p4z3_type.name
+        if not var_name:
+            var_name = f"{type_name}_{p4z3_type.ref_count}"
+        p4z3_type.ref_count += 1
+        z3_cls = p4z3_type.instantiate(var_name)
+        return z3_cls
+    elif isinstance(p4z3_type, z3.SortRef):
+        return z3.Const(f"{var_name}", p4z3_type)
+    elif isinstance(p4z3_type, list):
+        instantiated_list = []
+        for idx, z3_type in enumerate(p4z3_type):
+            const = z3.Const(f"{var_name}{idx}", z3_type)
+            instantiated_list.append(const)
+        return instantiated_list
+    raise RuntimeError(f"{p4z3_type} instantiation not supported!")
+
+
 def z3_cast(val, to_type):
     # some checks to guarantee that the inputs are usable
     if isinstance(val, (z3.BoolSortRef, z3.BoolRef)):
@@ -163,7 +182,7 @@ class P4ComplexType():
     needs to be converted to a P4ComplexType.
     """
 
-    def __init__(self, z3_reg, name, z3_args):
+    def __init__(self, name, z3_args):
         self.name = name
         self.ref_count = 0
         z3_type = z3.Datatype(name)
@@ -254,19 +273,9 @@ class P4ComplexInstance():
                 # retrieve the member and call the constructor
                 # call the constructor of the complex type
                 members.append(member_make.get_z3_repr())
-            elif isinstance(member_make, (z3.BoolRef, z3.BitVecRef)):
-                member_make = z3_cast(member_make, member_type)
-                members.append(member_make)
-            elif isinstance(member_make, int) or z3.is_int(member_make):
-                member_make = z3_cast(member_make, member_type)
-                members.append(member_make)
-            elif isinstance(member_make, z3.ExprRef):
-                # for now, allow generic remaining types
-                # for example funcdeclref or arithref
-                # FIXME: THis is not supposed to happen...
-                members.append(member_make)
             else:
-                raise TypeError(f"Type {type(member_make)} not supported!")
+                member_make = z3_cast(member_make, member_type)
+                members.append(member_make)
         return self.z3_type.constructor(0)(*members)
 
     def resolve_reference(self, var):
@@ -359,8 +368,9 @@ class P4ComplexInstance():
             if isinstance(attr_val, P4ComplexInstance):
                 attr_val.merge_vars(cond, then_val)
             elif isinstance(attr_val, z3.ExprRef):
-                if_expr = z3.simplify(z3.If(cond, then_val, attr_val))
-                self.p4_attrs[attr_name] = if_expr
+                if not z3.eq(then_val, attr_val):
+                    if_expr = z3.If(cond, then_val, attr_val)
+                    self.p4_attrs[attr_name] = if_expr
 
     def __eq__(self, other):
         # It can happen that we compare to a list
@@ -513,12 +523,12 @@ class HeaderUnionInstance(HeaderInstance):
 
 class ListType(P4ComplexType):
 
-    def __init__(self, z3_reg, name, z3_args):
+    def __init__(self, name, z3_args):
         for idx, arg in enumerate(z3_args):
             z3_args[idx] = (f"{idx}", arg)
             # some little hack to automatically infer a random type name
             name += str(arg)
-        super(ListType, self).__init__(z3_reg, name, z3_args)
+        super(ListType, self).__init__(name, z3_args)
 
     # TODO: Implement this class correctly...
     def instantiate(self, name):
@@ -534,10 +544,10 @@ class ListInstance(P4ComplexInstance):
 
 class HeaderStack(P4ComplexType):
 
-    def __init__(self, z3_reg, name, z3_args):
+    def __init__(self, name, z3_args):
         for idx, arg in enumerate(z3_args):
             z3_args[idx] = (f"{idx}", arg)
-        super(HeaderStack, self).__init__(z3_reg, name, z3_args)
+        super(HeaderStack, self).__init__(name, z3_args)
 
     # TODO: Implement this class correctly...
     def instantiate(self, name):
@@ -618,7 +628,7 @@ class HeaderStackInstance(P4ComplexInstance):
 
 class Enum(P4ComplexType):
 
-    def __init__(self, z3_reg, name, z3_args):
+    def __init__(self, name, z3_args):
         # TODO: Implement this class correctly...
         self.p4_attrs = {}
         self.name = name
@@ -658,7 +668,7 @@ class EnumInstance(P4ComplexInstance):
 
 class SerEnum(Enum):
 
-    def __init__(self, z3_reg, name, z3_args, z3_type):
+    def __init__(self, name, z3_args, z3_type):
         self.arg_vals = []
         self.name = name
         self.z3_type = z3_type
@@ -680,6 +690,119 @@ class SerEnumInstance(EnumInstance):
     pass
 
 
+class P4Extern(P4ComplexType):
+    def __init__(self, name, type_params=[], methods=[]):
+        # Externs are this weird bastard child of callables and a complex type
+        super(P4Extern, self).__init__(name, [])
+        self.p4_attrs = {}
+        self.name = name
+        self.type_params = type_params
+        for method in methods:
+            self.p4_attrs[method.name] = method
+
+    def init_type_params(self, *args, **kwargs):
+        # the extern is instantiated, we need to copy it
+        init_extern = self.initialize()
+        for attr_name, attr_val in init_extern.p4_attrs.items():
+            init_extern.p4_attrs[attr_name] = copy.copy(attr_val)
+        # bind variables to the runtime types
+        for idx, t_param in enumerate(init_extern.type_params):
+            for method_name, method in init_extern.p4_attrs.items():
+                if method.return_type == t_param:
+                    method.return_type = args[idx]
+                for m_param_name, method_param in method.params.items():
+                    is_ref = method_param[0]
+                    m_param_type = method_param[1]
+                    m_param_default = method_param[2]
+                    if m_param_type == t_param:
+                        method.params[m_param_name] = (
+                            is_ref, args[idx], m_param_default)
+        return init_extern
+
+    def initialize(self, *args, **kwargs):
+        # TODO Figure out what to actually do here
+        instance = P4ExternInstance(self, self.name)
+        instance.p4_attrs = self.p4_attrs
+        return instance
+
+    def __call__(self, *args, **kwargs):
+        return self
+
+    def instantiate(self, name):
+        # TODO Figure out what to actually do here
+        instance = P4ExternInstance(self, name)
+        return instance
+
+
+class P4ExternInstance(P4ComplexInstance):
+
+    def __init__(self, z3p4_type, name):
+        super(P4ExternInstance, self).__init__(z3p4_type, name)
+        self.p4_attrs = z3p4_type.p4_attrs
+        self.type_params = z3p4_type.type_params
+
+    def eval(self):
+        return z3.Const(self.name, self.z3_type)
+
+    def initialize(self, *args, **kwargs):
+        # TODO Figure out what to actually do here
+        return self
+
+
+class P4Package():
+
+    def __init__(self, z3_reg, name, params):
+        self.pipes = OrderedDict()
+        self.name = name
+        self.z3_reg = z3_reg
+        for arg in params:
+            is_ref = arg[0]
+            param_name = arg[1]
+            param_sort = arg[2]
+            param_default = arg[3]
+            # for now this is None, should be the type.
+            self.pipes[param_name] = arg[2]
+
+    def init_type_params(self, *args, **kwargs):
+        return self
+
+    def initialize(self, *args, **kwargs):
+        pipe_list = list(self.pipes.keys())
+        merged_args = {}
+        for idx, arg in enumerate(args):
+            name = pipe_list[idx]
+            merged_args[name] = arg
+        for name, arg in kwargs.items():
+            merged_args[name] = arg
+        for name, arg in merged_args.items():
+            if isinstance(arg, str):
+                # stupid hack to deal with weird naming schemes in p4c...
+                # FIXME: Figure out what this is even supposed to mean
+                if arg.endswith("<...>"):
+                    arg = arg[:-5]
+            # only add valid values that are initializable
+            if arg in self.z3_reg._globals:
+                pipe = self.z3_reg._globals[arg]
+                pipe_type = self.pipes[name]
+                # TODO: We need to initialize, but can you have arguments here?
+                # TODO: This is a royal mess
+                # FIXME: Do not skip externs here
+                if isinstance(pipe_type, P4Extern):
+                    for type_param in pipe_type.type_params:
+                        is_ref = type_param[0]
+                        param_name = type_param[1]
+                        param_sort = type_param[2]
+                        param_default = type_param[3]
+                        pipe.params[param_name] = (
+                            is_ref, param_sort, param_default)
+                self.pipes[name] = pipe.initialize()
+            else:
+                log.warning(
+                    "Skipping value %s, type %s because it does not make "
+                    "sense as a P4 pipeline.", arg, type(arg))
+        return self
+
+
 class P4State(P4ComplexType):
     # TODO: Implement this class correctly...
     def instantiate(self, name, global_values, instances):
@@ -695,12 +818,17 @@ class P4StateInstance(P4ComplexInstance):
     """
 
     def __init__(self, z3p4_type, name, global_values, instances):
-        super(P4StateInstance, self).__init__(z3p4_type, name)
         # deques allow for much more efficient pop and append operations
         # this is all we do so this works well
+        super(P4StateInstance, self).__init__(z3p4_type, name)
         self.expr_chain = deque()
-        for extern_name, extern_method in global_values.items():
-            self.set_or_add_var(extern_name, extern_method)
+        for global_name, global_val in global_values.items():
+            # since the local function shadow the global declarations
+            # do not add variables that have already been declared
+            # TODO: Globals should not be part of p4_attrs anyway, waste of space
+            if global_name in self.p4_attrs:
+                continue
+            self.p4_attrs[global_name] = global_val
         for instance_name, instance_val in instances.items():
             self.set_or_add_var(instance_name, instance_val)
 
@@ -844,19 +972,23 @@ class Z3Reg():
         if isinstance(p4_class, P4ComplexType):
             name = p4_class.name
             self._types[name] = p4_class
-            if isinstance(p4_class, Enum):
+            if isinstance(p4_class, (Enum)):
                 # enums are special static types
                 # we need to add them to the list of accessible variables
                 # and their type is actually the z3 type, not the class type
                 self._globals[name] = p4_class
                 self._types[name] = p4_class.z3_type
+            if isinstance(p4_class, P4Extern):
+                # I hate externs so much...
+                self._globals[name] = p4_class.initialize()
         elif isinstance(p4_class, P4Declaration):
-            # FIXME: Types should not be added here
-            # This hack currently exists to deal with extern arguments
+            # FIXME: Typedefs should not be added here
             name = p4_class.lval
             self._globals[name] = p4_class.rval
             self._types[name] = p4_class.rval
         else:
+            # FIXME: I do not even know what kind of crap is added here
+            # parsers, controls, that sort of random stuff...
             name = p4_class.name
             self._globals[name] = p4_class
             self._types[name] = p4_class
@@ -872,9 +1004,9 @@ class Z3Reg():
                 stripped_args.append((param_name, param_type))
             else:
                 # for inputs we can instantiate something
-                instance = self.instance(param_name, param_type)
+                instance = gen_instance(param_name, param_type)
                 instances[param_name] = instance
-        p4_state = P4State(self, name, stripped_args).instantiate(
+        p4_state = P4State(name, stripped_args).instantiate(
             name, self._globals, instances)
         return p4_state
 
@@ -894,26 +1026,6 @@ class Z3Reg():
         # with specific features
         # We need to declare a new z3 type and add a new complex class
         name = f"{z3_type}{num}"
-        p4_stack = HeaderStack(self, name, [z3_type] * num)
+        p4_stack = HeaderStack(name, [z3_type] * num)
         self.declare_global(p4_stack)
         return self.type(name)
-
-    def instance(self, var_name, p4z3_type):
-        if isinstance(p4z3_type, P4ComplexType):
-            type_name = p4z3_type.name
-            if not var_name:
-                var_name = f"{type_name}_{p4z3_type.ref_count}"
-            p4z3_type.ref_count += 1
-            z3_cls = p4z3_type.instantiate(var_name)
-            return z3_cls
-        elif isinstance(p4z3_type, z3.SortRef):
-            return z3.Const(f"{var_name}", p4z3_type)
-        elif isinstance(p4z3_type, list):
-            instantiated_list = []
-            for idx, z3_type in enumerate(p4z3_type):
-                const = z3.Const(f"{var_name}{idx}", z3_type)
-                instantiated_list.append(const)
-            return instantiated_list
-        # this only exists because of externs... fix the damn externs...
-        return p4z3_type
-        # raise RuntimeError(f"{p4z3_type} instantiation not supported!")

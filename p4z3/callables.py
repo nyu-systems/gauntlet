@@ -1,4 +1,4 @@
-from p4z3.base import OrderedDict, z3, log, copy, z3_cast
+from p4z3.base import OrderedDict, z3, log, copy, z3_cast, gen_instance
 from p4z3.base import P4Z3Class, P4ComplexInstance, P4Member
 
 
@@ -31,7 +31,6 @@ class P4Callable(P4Z3Class):
             elif param_default is not None:
                 # there is no argument but we have a default value, so use that
                 merged_params[param_name] = (is_ref, param_default)
-
         for arg_name, arg_val in kwargs.items():
             is_ref = params[arg_name][0]
             merged_params[arg_name] = (is_ref, arg_val)
@@ -92,6 +91,31 @@ class P4Callable(P4Z3Class):
         # now we can set the arguments without influencing subsequent variables
         for param_name, param_val in param_buffer.items():
             p4_state.set_or_add_var(param_name, param_val)
+
+    def explore(self, expr):
+        if z3.is_app_of(expr, z3.Z3_OP_ITE):
+            return self.generate_phi_values(expr)
+        member_list = []
+        for child in expr.children():
+            if isinstance(child, z3.DatatypeRef):
+                member_list.extend(self.explore(child))
+            else:
+                member_list.append(child)
+        return member_list
+
+    def generate_phi_values(self, input_expr):
+        # the first child is usually the condition
+        cond = input_expr.children()[0]
+        z3_then = input_expr.children()[1]
+        z3_else = input_expr.children()[2]
+        z3_then_children = self.explore(z3_then)
+        z3_else_children = self.explore(z3_else)
+        merged_list = []
+        for idx, then_child in enumerate(z3_then_children):
+            else_child = z3_else_children[idx]
+            if_cond = z3.simplify(z3.If(cond, then_child, else_child))
+            merged_list.append(if_cond)
+        return merged_list
 
     def eval(self, p4_state=None, *args, **kwargs):
         self.call_counter += 1
@@ -286,54 +310,6 @@ class P4Control(P4Callable):
         return p4z3_expr.eval(p4_state)
 
 
-class P4Extern(P4Callable):
-    # TODO: This is quite brittle, requires concrete examination
-    def __init__(self, name, z3_reg, type_params=[], methods=[]):
-        super(P4Extern, self).__init__(name, z3_reg, params=[])
-        self.type_params = type_params
-        for method in methods:
-            self.p4_attrs[method.name] = method
-
-    def init_type_params(self, *args, **kwargs):
-        # the extern is instantiated, we need to copy it
-        # TODO: Make Externs a complextype...
-        init_extern = copy.copy(self)
-        for attr_name, attr_val in init_extern.p4_attrs.items():
-            init_extern.p4_attrs[attr_name] = copy.copy(attr_val)
-        # bind variables to the runtime types
-        for idx, t_param in enumerate(init_extern.type_params):
-            for method_name, method in init_extern.p4_attrs.items():
-                if method.return_type == t_param:
-                    method.return_type = args[idx]
-                for m_param_name, method_param in method.params.items():
-                    is_ref = method_param[0]
-                    m_param_type = method_param[1]
-                    m_param_default = method_param[2]
-                    if m_param_type == t_param:
-                        method.params[m_param_name] = (
-                            is_ref, args[idx], m_param_default)
-        return init_extern
-
-    def initialize(self, *args, **kwargs):
-        # TODO Figure out what to actually do here
-        return self
-
-    def sort(self):
-        # FIXME: a hack to allow sort access
-        # should not be necessary but externs are currently not complex types
-        return z3.DeclareSort(self.name)
-
-    def eval_callable(self, p4_state, merged_params, var_buffer):
-        if not p4_state:
-            # There is no state yet, so use the context of the function
-            p4_state = self.z3_reg.init_p4_state(self.name, self.params)
-
-        self.set_context(p4_state, merged_params, ("inout", "out"))
-
-        p4z3_expr = p4_state.pop_next_expr()
-        return p4z3_expr.eval(p4_state)
-
-
 class P4Method(P4Callable):
 
     # TODO: This is quite brittle, requires concrete examination
@@ -389,8 +365,7 @@ class P4Method(P4Callable):
             # we merge the name
             # FIXME: We do not consider call order
             # and assume that externs are stateless
-            return_instance = self.z3_reg.instance(
-                f"{self.name}_{var_name}", self.return_type)
+            return_instance = gen_instance(f"{self.name}_{var_name}", self.return_type)
             return return_instance
         p4_state.insert_exprs(p4_context)
         p4z3_expr = p4_state.pop_next_expr()

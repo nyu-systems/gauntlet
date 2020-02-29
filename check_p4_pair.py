@@ -4,7 +4,7 @@ import os
 import sys
 import importlib
 import logging
-from p4z3 import Z3Reg, P4Package, z3
+from p4z3 import Z3Reg, P4Package, P4Z3Class, z3
 import p4z3.util as util
 sys.setrecursionlimit(15000)
 
@@ -70,7 +70,8 @@ def evaluate_package(p4_package):
             for key, val in z3_tmp_asts.items():
                 name = f"{p4_pipe_ast.name}_{key}"
                 z3_asts[name] = val
-        elif p4_pipe_ast:
+        # all other types are nonsense and we should not bother with them
+        elif isinstance(p4_pipe_ast, P4Z3Class):
             z3_asts[pipe_name] = p4_pipe_ast.eval()
     return z3_asts
 
@@ -117,11 +118,11 @@ def check_equivalence(prog_before, prog_after):
     log.debug(tv_equiv)
     log.debug(ret)
     if ret == z3.sat:
+        log.error("Detected an equivalence violation!")
         log.error("PROGRAM BEFORE\n%s", prog_before_simpl)
         log.error("PROGRAM AFTER\n%s", prog_after_simpl)
         log.error("Proposed solution:")
         log.error(s.model())
-        log.error("Detected an equivalence violation!")
         return util.EXIT_VIOLATION
     else:
         return util.EXIT_SUCCESS
