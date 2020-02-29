@@ -112,8 +112,7 @@ class P4Exit(P4Expression):
     def eval(self, p4_state):
         # Exit the chain early and absolutely
         p4_state.clear_expr_chain()
-        p4z3_expr = p4_state.pop_next_expr()
-        return p4z3_expr.eval(p4_state)
+        return p4_state.get_z3_repr()
 
 
 class P4Member(P4Expression):

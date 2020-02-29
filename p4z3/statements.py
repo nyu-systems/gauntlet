@@ -70,6 +70,11 @@ class AssignmentStatement(P4Statement):
         # in assignments all complex types values are copied
         if isinstance(rval_expr, P4ComplexInstance):
             rval_expr = copy.copy(rval_expr)
+
+        # this check only exists for exit statements
+        is_data_type = isinstance(rval_expr, z3.DatatypeRef)
+        if is_data_type and (rval_expr.sort() == p4_state.sort()):
+            return rval_expr
         p4_state.set_or_add_var(self.lval, rval_expr)
 
         p4z3_expr = p4_state.pop_next_expr()

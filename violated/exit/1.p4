@@ -3,6 +3,7 @@
 
 header H {
     bit<8>  a;
+    bit<8>  b;
 }
 
 struct Headers {
@@ -12,29 +13,15 @@ struct Headers {
 struct Meta {
 }
 
+bit<8> do_thing(out bit<32> d) {
+    exit;
+    return (bit<8>)32w1;
+}
 control ingress(inout Headers h, inout Meta m, inout standard_metadata_t sm) {
-    bit<128> tmp_key = 128w2;
-    action do_action(inout bit<8> val) {
-        if (val > 8w10) {
-            val = 8w2;
-            return;
-        } else{
-            val = 8w3;
-        }
-
-        return;
-        val = 8w4;
-    }
-    table simple_table {
-        key = {
-            tmp_key             : exact @name("bKiScA") ;
-        }
-        actions = {
-            do_action(h.h.a);
-        }
-    }
     apply {
-        simple_table.apply();
+        h.h.a = 2;
+        do_thing(sm.enq_timestamp);
+        h.h.a = 1;
     }
 }
 
