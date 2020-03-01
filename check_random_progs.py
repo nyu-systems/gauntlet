@@ -144,7 +144,6 @@ def check(idx, use_emi=False):
             log.info("Found a new bug!")
             dump_result(result, CRASH_BUG_DIR, p4_file)
             dump_file(CRASH_BUG_DIR, p4_file)
-            dump_file(CRASH_BUG_DIR, log_file)
             # reset the dump directory
             util.del_dir(dump_dir)
             return

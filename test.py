@@ -44,6 +44,7 @@ violation_tests = [
     "drop-bmv2",
     "nested_slice",
     "exit",
+    "action_exit",
     "equality-1",
     "equality-2",
     "equality_stripped",
@@ -90,13 +91,12 @@ xfails = [
     "table-entries-range-bmv2.p4",
 ]
 
+# these tests show pathological behavior and cannot be tested
 slow_tests = [
     "header-stack-ops-bmv2.p4",
-    "flowlet_switching-bmv2.p4",
     # "issue-2123.p4",
-    "issue-2123-2-bmv2.p4",
-    "issue-2123-3-bmv2.p4",
-    "vss-example.p4",
+    "issue-2123-2-bmv2.p4",  # z3 gets stuck for unclear reasons
+    "issue-2123-3-bmv2.p4",  # z3 gets stuck for unclear reasons
 ]
 
 
