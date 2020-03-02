@@ -1,5 +1,4 @@
 from collections import deque, OrderedDict
-import operator as op
 import types
 import copy
 import logging
@@ -25,6 +24,15 @@ def gen_instance(var_name, p4z3_type):
             instantiated_list.append(const)
         return instantiated_list
     raise RuntimeError(f"{p4z3_type} instantiation not supported!")
+
+
+def copy_attrs(attrs):
+    attr_copy = {}
+    for attr_name, attr_val in attrs.items():
+        if isinstance(attr_val, P4ComplexInstance):
+            attr_val = copy.copy(attr_val)
+        attr_copy[attr_name] = attr_val
+    return attr_copy
 
 
 def z3_cast(val, to_type):
@@ -117,24 +125,6 @@ class P4Declaration(P4Statement):
         return p4z3_expr.eval(p4_state)
 
 
-class P4End(P4Z3Class):
-    ''' This function is a little trick to ensure that chains are executed
-        appropriately. When we reach the end of an execution chain, this
-        expression returns the state of the program at the end of this
-        particular chain.'''
-    @staticmethod
-    def eval(p4_state):
-        return p4_state.get_z3_repr()
-
-
-class P4Exit(P4Expression):
-
-    def eval(self, p4_state):
-        # Exit the chain early and absolutely
-        p4_state.clear_expr_chain()
-        return p4_state.get_z3_repr()
-
-
 class P4Member(P4Expression):
 
     def __init__(self, lval, member):
@@ -188,7 +178,7 @@ class P4ComplexType():
         self.ref_count = 0
         z3_type = z3.Datatype(name)
         stripped_args = []
-        for idx, z3_arg in enumerate(z3_args):
+        for z3_arg in z3_args:
             z3_arg_name = z3_arg[0]
             z3_arg_type = z3_arg[1]
             if isinstance(z3_arg_type, P4ComplexType):
@@ -375,14 +365,6 @@ class P4ComplexInstance():
                     if_expr = z3.If(cond, then_val, attr_val)
                     self.p4_attrs[attr_name] = if_expr
 
-    def copy_attrs(self):
-        attr_copy = {}
-        for attr_name, attr_val in self.p4_attrs.items():
-            if isinstance(attr_val, P4ComplexInstance):
-                attr_val = copy.copy(attr_val)
-            attr_copy[attr_name] = attr_val
-        return attr_copy
-
     def __eq__(self, other):
         # It can happen that we compare to a list
         # comparisons are almost the same just do not use members
@@ -412,12 +394,10 @@ class P4ComplexInstance():
         cls = self.__class__
         result = cls.__new__(cls)
         result.__dict__.update(self.__dict__)
-        result.p4_attrs = {}
+        result.p4_attrs = copy.copy(self.p4_attrs)
         for name, val in self.p4_attrs.items():
             if isinstance(val, P4ComplexInstance):
                 result.p4_attrs[name] = copy.copy(val)
-            else:
-                result.p4_attrs[name] = val
         return result
 
 
@@ -452,10 +432,6 @@ class StructInstance(P4ComplexInstance):
                 member_const = z3.Const(undef_name, member_type)
                 self.set_or_add_var(member_name, member_const)
 
-    def __copy__(self):
-        result = super(StructInstance, self).__copy__()
-        return result
-
 
 class HeaderType(StructType):
 
@@ -481,6 +457,7 @@ class HeaderInstance(StructInstance):
         return self.p4_attrs["valid"]
 
     def set_or_add_var(self, lval, rval):
+        # header is disabled, operations on it are invalid
         if self.p4_attrs["valid"] == z3.BoolVal(False):
             return
         super(HeaderInstance, self).set_or_add_var(lval, rval)
@@ -511,6 +488,8 @@ class HeaderInstance(StructInstance):
 
     def __copy__(self):
         result = super(HeaderInstance, self).__copy__()
+        # we need to update the reference of the function to the new object
+        # quite nasty...
         result.p4_attrs["isValid"] = result.isValid
         result.p4_attrs["setValid"] = result.setValid
         result.p4_attrs["setInvalid"] = result.setInvalid
@@ -892,8 +871,8 @@ class P4StateInstance(P4ComplexInstance):
         return lval, slice_l, slice_r
 
     def set_slice(self, lval, rval):
-        slice_l = lval.slice_l
-        slice_r = lval.slice_r
+        slice_l = self.resolve_expr(lval.slice_l)
+        slice_r = self.resolve_expr(lval.slice_r)
         lval = lval.val
         lval, slice_l, slice_r = self.find_nested_slice(lval, slice_l, slice_r)
 
@@ -937,6 +916,21 @@ class P4StateInstance(P4ComplexInstance):
         # we update the constant
         self._update()
 
+    def checkpoint(self):
+        var_store = {}
+        for attr_name, attr_val in self.p4_attrs.items():
+            if isinstance(attr_val, z3.AstRef):
+                var_store[attr_name] = attr_val
+            elif isinstance(attr_val, P4ComplexInstance):
+                var_store[attr_name] = copy.copy(attr_val)
+        chain = self.copy_expr_chain()
+        return var_store, chain
+
+    def restore(self, var_store, chain):
+        for attr_name, attr_val in var_store.items():
+            self.p4_attrs[attr_name] = attr_val
+        self.expr_chain = chain
+
     def clear_expr_chain(self):
         self.expr_chain.clear()
 
@@ -952,15 +946,19 @@ class P4StateInstance(P4ComplexInstance):
         else:
             self.expr_chain.appendleft(exprs)
 
+    class P4End(P4Z3Class):
+        ''' This function is a little trick to ensure that chains are executed
+            appropriately. When we reach the end of an execution chain, this
+            expression returns the state of the program at the end of this
+            particular chain.'''
+        @staticmethod
+        def eval(p4_state):
+            return p4_state.get_z3_repr()
+
     def pop_next_expr(self):
         if self.expr_chain:
             return self.expr_chain.popleft()
-        return P4End()
-
-    def __copy__(self):
-        result = super(P4StateInstance, self).__copy__()
-        result.expr_chain = copy.copy(self.expr_chain)
-        return result
+        return self.P4End()
 
 
 class Z3Reg():

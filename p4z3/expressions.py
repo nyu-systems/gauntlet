@@ -1,4 +1,5 @@
-from p4z3.base import log, z3_cast, z3, op, copy
+import operator as op
+from p4z3.base import log, z3_cast, z3, copy_attrs
 from p4z3.base import P4ComplexInstance, P4Expression
 from p4z3.callables import P4Method
 
@@ -390,10 +391,12 @@ class P4Mux(P4Expression):
     def eval(self, p4_state):
         cond = p4_state.resolve_expr(self.cond)
         # handle side effects for function calls
-        p4_state_copy = copy.copy(p4_state)
-        then_val = p4_state_copy.resolve_expr(self.then_val)
+        var_store, chain_copy = p4_state.checkpoint()
+        then_val = p4_state.resolve_expr(self.then_val)
+        then_vars = copy_attrs(p4_state.p4_attrs)
+        p4_state.restore(var_store, chain_copy)
         else_val = p4_state.resolve_expr(self.else_val)
-        p4_state.merge_attrs(cond, p4_state_copy.p4_attrs)
+        p4_state.merge_attrs(cond, then_vars)
 
         then_expr = then_val
         else_expr = else_val

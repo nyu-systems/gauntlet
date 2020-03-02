@@ -1,5 +1,5 @@
 from p4z3.base import OrderedDict, z3, log, copy, z3_cast, gen_instance
-from p4z3.base import P4Z3Class, P4ComplexInstance, P4Member
+from p4z3.base import P4Z3Class, P4ComplexInstance
 
 
 class P4Callable(P4Z3Class):
@@ -130,8 +130,8 @@ class P4Context(P4Z3Class):
         self.var_buffer = var_buffer
 
     def restore_context(self, p4_state):
-        #FIXME: This does not respect local context
-        #local variables are overridden in functions and controls
+        # FIXME: This does not respect local context
+        # local variables are overridden in functions and controls
         # restore any variables that may have been overridden
         for param_name, param in self.var_buffer.items():
 
@@ -184,42 +184,14 @@ class P4Function(P4Action):
         self.return_type = return_type
         super(P4Function, self).__init__(name, z3_reg, params, body)
 
-    def explore(self, expr):
-        if z3.is_app_of(expr, z3.Z3_OP_ITE):
-            return self.generate_phi_values(expr)
-        member_list = []
-        for child in expr.children():
-            if isinstance(child, z3.DatatypeRef):
-                member_list.extend(self.explore(child))
-            else:
-                member_list.append(child)
-        return member_list
-
-    def generate_phi_values(self, input_expr):
-        # the first child is usually the condition
-        cond = input_expr.children()[0]
-        z3_then = input_expr.children()[1]
-        z3_else = input_expr.children()[2]
-        z3_then_children = self.explore(z3_then)
-        z3_else_children = self.explore(z3_else)
-        merged_list = []
-        for idx, then_child in enumerate(z3_then_children):
-            else_child = z3_else_children[idx]
-            if_cond = z3.If(cond, then_child, else_child)
-            merged_list.append(z3.simplify(if_cond))
-        return merged_list
-
     def eval_callable(self, p4_state, merged_params, var_buffer):
         # P4Functions always return so we do not need a context object
         # At the end of the execution a value is returned, NOT the p4 state
         # if the function is part of a method-call statement and the return
         # value is ignored, the method-call statement will continue execution
         p4_context = P4Context(var_buffer, None)
-
         self.set_context(p4_state, merged_params, ("out"))
-        # execute the action expression with the new environment
 
-        # p4_state_copy = copy.copy(p4_state)
         p4_state.insert_exprs(p4_context)
         p4_state.insert_exprs(self.statements)
         p4z3_expr = p4_state.pop_next_expr()
@@ -267,9 +239,7 @@ class P4Control(P4Callable):
         if not p4_state:
             # There is no state yet, so use the context of the function
             p4_state = self.z3_reg.init_p4_state(self.name, self.params)
-            p4_context = P4Context({}, None)
-        else:
-            p4_context = P4Context(var_buffer, p4_state)
+        p4_context = P4Context(var_buffer, None)
 
         for const_param_name, const_val in self.merged_consts.items():
             const_arg = const_val[1]
@@ -318,9 +288,7 @@ class P4Method(P4Callable):
         if not p4_state:
             # There is no state yet, so use the context of the function
             p4_state = self.z3_reg.init_p4_state(self.name, merged_params)
-            p4_context = P4Context({}, None)
-        else:
-            p4_context = P4Context(var_buffer, p4_state)
+        p4_context = P4Context(var_buffer, None)
         self.set_context(p4_state, merged_params, ("inout", "out"))
 
         if self.return_type is not None:
@@ -475,7 +443,9 @@ class P4Table(P4Callable):
         const_entries = self.const_entries
         # first evaluate the default entry
         # state forks here
-        expr = self.eval_default(copy.copy(p4_state))
+        var_store, chain_copy = p4_state.checkpoint()
+        expr = self.eval_default(p4_state)
+        p4_state.restore(var_store, chain_copy)
         # then wrap constant entries around it
         for const_keys, action in reversed(const_entries):
             action_name = action[0]
@@ -495,7 +465,9 @@ class P4Table(P4Callable):
             action_match = z3.And(*matches)
             action_tuple = (action_name, p4_action_args)
             log.debug("Evaluating constant action %s...", action_name)
-            action_expr = self.eval_action(copy.copy(p4_state), action_tuple)
+            var_store, chain_copy = p4_state.checkpoint()
+            action_expr = self.eval_action(p4_state, action_tuple)
+            p4_state.restore(var_store, chain_copy)
             expr = z3.If(action_match, action_expr, expr)
 
         # then wrap dynamic table entries around the constant entries
@@ -507,7 +479,9 @@ class P4Table(P4Callable):
             action_tuple = (action_name, p4_action_args)
             log.debug("Evaluating action %s...", action_name)
             # state forks here
-            action_expr = self.eval_action(copy.copy(p4_state), action_tuple)
+            var_store, chain_copy = p4_state.checkpoint()
+            action_expr = self.eval_action(p4_state, action_tuple)
+            p4_state.restore(var_store, chain_copy)
             expr = z3.If(action_match, action_expr, expr)
         # finally return a nested set of if expressions
         return expr

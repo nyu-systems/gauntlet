@@ -81,8 +81,6 @@ xfails = [
     "issue1334.p4",
     "logging.p4",
     "parser-conditional.p4",
-    "psa-example-digest-bmv2.p4",
-    "psa-example-register2-bmv2.p4",
     "runtime-index-2-bmv2.p4",
     "runtime-index-bmv2.p4",
     "side_effects.p4",
@@ -91,10 +89,9 @@ xfails = [
     "table-entries-range-bmv2.p4",
 ]
 
-# these tests show pathological behavior and cannot be tested
+# these tests show pathological behavior and can currently not be tested
 slow_tests = [
     "header-stack-ops-bmv2.p4",
-    # "issue-2123.p4",
     "issue-2123-2-bmv2.p4",  # z3 gets stuck for unclear reasons
     "issue-2123-3-bmv2.p4",  # z3 gets stuck for unclear reasons
 ]

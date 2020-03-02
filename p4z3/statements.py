@@ -2,7 +2,7 @@ import copy
 from collections import OrderedDict
 import z3
 
-from p4z3.base import log
+from p4z3.base import log, copy_attrs
 from p4z3.base import P4ComplexInstance, P4Statement, P4Z3Class
 from p4z3.callables import P4Callable, P4Context
 
@@ -75,14 +75,16 @@ class IfStatement(P4Statement):
         cond = p4_state.resolve_expr(self.cond)
         # conditional branching requires a copy of the state for each branch
         # in some sense this copy acts as a phi function
-        p4_state_copy = copy.copy(p4_state)
-        then_expr = self.then_block.eval(p4_state_copy)
+        var_store, chain_copy = p4_state.checkpoint()
+        then_expr = self.then_block.eval(p4_state)
+        then_vars = copy_attrs(p4_state.p4_attrs)
+        p4_state.restore(var_store, chain_copy)
         if self.else_block:
             else_expr = self.else_block.eval(p4_state)
         else:
             p4z3_expr = p4_state.pop_next_expr()
             else_expr = p4z3_expr.eval(p4_state)
-        p4_state.merge_attrs(cond, p4_state_copy.p4_attrs)
+        p4_state.merge_attrs(cond, then_vars)
         return z3.If(cond, then_expr, else_expr)
 
 
@@ -93,10 +95,13 @@ class SwitchHit(P4Z3Class):
         self.table = None
 
     def eval_cases(self, p4_state, cases):
-        p4_state_cpy = copy.copy(p4_state)
+        var_store, chain_copy = p4_state.checkpoint()
         expr = self.default_case.eval(p4_state)
+        p4_state.restore(var_store, chain_copy)
         for case in reversed(cases.values()):
-            case_expr = case["case_block"].eval(copy.copy(p4_state_cpy))
+            var_store, chain_copy = p4_state.checkpoint()
+            case_expr = case["case_block"].eval(p4_state)
+            p4_state.restore(var_store, chain_copy)
             expr = z3.If(case["match"], case_expr, expr)
         return expr
 
