@@ -272,18 +272,6 @@ class P4rshift(P4BinaryOp):
         P4BinaryOp.__init__(self, lval, rval, operator)
 
 
-class P4lt(P4BinaryOp):
-    def __init__(self, lval, rval):
-        operator = op.lt
-        P4BinaryOp.__init__(self, lval, rval, operator)
-
-
-class P4le(P4BinaryOp):
-    def __init__(self, lval, rval):
-        operator = op.le
-        P4BinaryOp.__init__(self, lval, rval, operator)
-
-
 class P4eq(P4BinaryOp):
     def __init__(self, lval, rval):
         operator = op.eq
@@ -298,15 +286,47 @@ class P4ne(P4BinaryOp):
         P4BinaryOp.__init__(self, lval, rval, operator)
 
 
+class P4lt(P4BinaryOp):
+    def __init__(self, lval, rval):
+        def operator(x, y):
+            # if x and y are ints we might deal with a signed value
+            # we need to use the normal operator in this case
+            if isinstance(x, int) and isinstance(y, int):
+                return op.lt(x, y)
+            return z3.ULT(x, y)
+        P4BinaryOp.__init__(self, lval, rval, operator)
+
+
+class P4le(P4BinaryOp):
+    def __init__(self, lval, rval):
+        def operator(x, y):
+            # if x and y are ints we might deal with a signed value
+            # we need to use the normal operator in this case
+            if isinstance(x, int) and isinstance(y, int):
+                return op.le(x, y)
+            return z3.ULE(x, y)
+        P4BinaryOp.__init__(self, lval, rval, operator)
+
+
 class P4ge(P4BinaryOp):
     def __init__(self, lval, rval):
-        operator = op.ge
+        def operator(x, y):
+            # if x and y are ints we might deal with a signed value
+            # we need to use the normal operator in this case
+            if isinstance(x, int) and isinstance(y, int):
+                return op.ge(x, y)
+            return z3.UGE(x, y)
         P4BinaryOp.__init__(self, lval, rval, operator)
 
 
 class P4gt(P4BinaryOp):
     def __init__(self, lval, rval):
-        operator = op.gt
+        def operator(x, y):
+            # if x and y are ints we might deal with a signed value
+            # we need to use the normal operator in this case
+            if isinstance(x, int) and isinstance(y, int):
+                return op.gt(x, y)
+            return z3.UGT(x, y)
         P4BinaryOp.__init__(self, lval, rval, operator)
 
 
@@ -367,7 +387,7 @@ class P4Mux(P4Expression):
         p4_state_copy = copy.copy(p4_state)
         then_val = p4_state_copy.resolve_expr(self.then_val)
         else_val = p4_state.resolve_expr(self.else_val)
-        p4_state.merge_vars(cond, p4_state_copy)
+        p4_state.merge_attrs(cond, p4_state_copy.p4_attrs)
 
         then_expr = then_val
         else_expr = else_val

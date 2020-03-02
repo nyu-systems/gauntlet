@@ -1,26 +1,36 @@
 #include <core.p4>
 #include <v1model.p4>
 
-header H {
-    bit<8> a;
-    bit<8> b;
+header ethernet_t {
+    bit<48> dst_addr;
+    bit<48> src_addr;
+    bit<16> eth_type;
 }
 
 struct Headers {
-    H    h;
+    ethernet_t    eth_hdr;
 }
 
 struct Meta {
-    H    h;
 }
 
-control ingress(inout Headers h, inout Meta m, inout standard_metadata_t sm) {
-    action do_thing(inout bit<8> val_0) {
-        h.h.a = h.h.b >= 4 ? h.h.b : h.h.b + 1;
+bit<48> do_thing(inout bit<48> val_0, out bit<48> val_1) {
+    if (val_0 <= 100) {
+        if (val_0 <= 50) {
+            val_1 = 48w3;
+            return 48w0;
+        } else {
+            val_1 = 48w12;
+        }
+        if (val_0 <= 25) {
+            val_1 = 48w1452;
+        }
     }
+    return 48w0;
+}
+control ingress(inout Headers h, inout Meta m, inout standard_metadata_t sm) {
     apply {
-        do_thing(h.h.b);
-        do_thing(h.h.a);
+        do_thing(h.eth_hdr.src_addr, h.eth_hdr.src_addr);
     }
 }
 

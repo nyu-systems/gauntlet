@@ -15,6 +15,7 @@ header MOD {
     bit<4> a;
     bit<4> b;
     bit<4> c;
+    bit<4> d;
 }
 
 header RSH {
@@ -31,12 +32,19 @@ header LSH {
     bit<8> b;
 }
 
+header COMPARE {
+    bit<8> a;
+    bit<8> b;
+    bit<8> c;
+}
+
 struct Headers {
     OVERFLOW overflow;
     UNDERFLOW underflow;
     RSH rshift;
     LSH lshift;
     MOD mod;
+    COMPARE comp;
 }
 
 struct Meta {}
@@ -66,6 +74,10 @@ control ingress(inout Headers h, inout Meta m, inout standard_metadata_t sm) {
         //left shift
         h.lshift.a = (bit<8>)(4w4 << 8w2);
         h.lshift.b = (bit<8>)(4w4 << 8w16);
+        // comparing various unsigned constants
+        // if (4w15  > 2) { h.comp.a = 1; }
+        // if (4w3  > 2) { h.comp.b = 1; }
+        // if (-1  > 4w2) { h.comp.c = 1; }
     }
 }
 

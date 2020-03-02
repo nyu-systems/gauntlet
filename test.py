@@ -43,7 +43,7 @@ violation_tests = [
     "copy_out",
     "drop-bmv2",
     "nested_slice",
-    "exit",
+    # "exit", exits are not allowed in functions so we do not have to worry
     "action_exit",
     "equality-1",
     "equality-2",

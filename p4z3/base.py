@@ -359,18 +359,28 @@ class P4ComplexInstance():
                     members.append(member)
         return members
 
-    def merge_vars(self, cond, other_var):
+    def merge_attrs(self, cond, other_attrs):
         for attr_name, attr_val in self.p4_attrs.items():
             try:
-                then_val = other_var.p4_attrs[attr_name]
+                then_val = other_attrs[attr_name]
             except KeyError:
                 continue
             if isinstance(attr_val, P4ComplexInstance):
-                attr_val.merge_vars(cond, then_val)
+                attr_val.merge_attrs(cond, then_val.p4_attrs)
             elif isinstance(attr_val, z3.ExprRef):
                 if not z3.eq(then_val, attr_val):
+                    if then_val.sort() != attr_val.sort():
+                        attr_val = z3_cast(attr_val, then_val.sort())
                     if_expr = z3.If(cond, then_val, attr_val)
                     self.p4_attrs[attr_name] = if_expr
+
+    def copy_attrs(self):
+        attr_copy = {}
+        for attr_name, attr_val in self.p4_attrs.items():
+            if isinstance(attr_val, P4ComplexInstance):
+                attr_val = copy.copy(attr_val)
+            attr_copy[attr_name] = attr_val
+        return attr_copy
 
     def __eq__(self, other):
         # It can happen that we compare to a list
@@ -478,15 +488,11 @@ class HeaderInstance(StructInstance):
         # This is a built-in
         self.p4_attrs["valid"] = z3.BoolVal(True)
         self.activate()
-        p4z3_expr = p4_state.pop_next_expr()
-        return p4z3_expr.eval(p4_state)
 
     def setInvalid(self, p4_state):
         # This is a built-in
         self.deactivate()
         self.p4_attrs["valid"] = z3.BoolVal(False)
-        p4z3_expr = p4_state.pop_next_expr()
-        return p4z3_expr.eval(p4_state)
 
     def __eq__(self, other):
         if isinstance(other, HeaderInstance):
@@ -575,8 +581,6 @@ class HeaderStackInstance(P4ComplexInstance):
                 hdr.p4_attrs["valid"] = z3.BoolVal(True)
             except KeyError:
                 pass
-        p4z3_expr = p4_state.pop_next_expr()
-        return p4z3_expr.eval(p4_state)
 
     def pop_front(self, p4_state, num):
         # This is a built-in
@@ -588,8 +592,6 @@ class HeaderStackInstance(P4ComplexInstance):
                 hdr.p4_attrs["valid"] = z3.BoolVal(False)
             except KeyError:
                 pass
-        p4z3_expr = p4_state.pop_next_expr()
-        return p4z3_expr.eval(p4_state)
 
     def next(self):
         # This is a built-in

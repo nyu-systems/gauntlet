@@ -7,13 +7,6 @@ from p4z3.base import P4ComplexInstance, P4Statement, P4Z3Class
 from p4z3.callables import P4Callable, P4Context
 
 
-def z3_implies(p4_state, cond, then_expr):
-    log.debug("Evaluating no_match...")
-    p4z3_expr = p4_state.pop_next_expr()
-    no_match = p4z3_expr.eval(p4_state)
-    return z3.If(cond, then_expr, no_match)
-
-
 class AssignmentStatement(P4Statement):
     # AssignmentStatements are essentially just a wrapper class for the
     # set_or_add_var ḿethod of the p4 state.
@@ -82,12 +75,15 @@ class IfStatement(P4Statement):
         cond = p4_state.resolve_expr(self.cond)
         # conditional branching requires a copy of the state for each branch
         # in some sense this copy acts as a phi function
-        then_expr = self.then_block.eval(copy.copy(p4_state))
+        p4_state_copy = copy.copy(p4_state)
+        then_expr = self.then_block.eval(p4_state_copy)
         if self.else_block:
             else_expr = self.else_block.eval(p4_state)
-            return z3.If(cond, then_expr, else_expr)
         else:
-            return z3_implies(p4_state, cond, then_expr)
+            p4z3_expr = p4_state.pop_next_expr()
+            else_expr = p4z3_expr.eval(p4_state)
+        p4_state.merge_attrs(cond, p4_state_copy.p4_attrs)
+        return z3.If(cond, then_expr, else_expr)
 
 
 class SwitchHit(P4Z3Class):
@@ -184,11 +180,11 @@ class P4Return(P4Statement):
             # this technique preserves the return value
             if isinstance(p4z3_expr, P4Context):
                 p4_state = p4z3_expr.restore_context(p4_state)
-                p4z3_expr = p4_state.pop_next_expr()
-                return p4z3_expr.eval(p4_state)
+                break
         # since we popped the P4Context object that would take care of this
         # return the z3 expressions of the state AFTER restoring it
         if expr is None:
             p4z3_expr = p4_state.pop_next_expr()
             return p4z3_expr.eval(p4_state)
+
         return expr

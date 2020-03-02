@@ -228,27 +228,12 @@ class P4Function(P4Action):
 
         self.set_context(p4_state, merged_params, ("out"))
         # execute the action expression with the new environment
-        old_expr_chain = p4_state.copy_expr_chain()
-        p4_state.clear_expr_chain()
 
-        p4_state_copy = copy.copy(p4_state)
-        p4_state_copy.insert_exprs(self.statements)
-        p4z3_expr = p4_state_copy.pop_next_expr()
-        return_value = p4z3_expr.eval(p4_state_copy)
-
+        # p4_state_copy = copy.copy(p4_state)
         p4_state.insert_exprs(p4_context)
         p4_state.insert_exprs(self.statements)
-        # reset to the previous execution chain
         p4z3_expr = p4_state.pop_next_expr()
-        expr = p4z3_expr.eval(p4_state)
-        if z3.is_app_of(expr, z3.Z3_OP_ITE):
-            phi_values = self.generate_phi_values(expr)
-            p4_state_members = p4_state.flatten(return_strings=True)
-            for idx, member in enumerate(p4_state_members):
-                p4_state.set_or_add_var(member, phi_values[idx])
-
-        p4_state.expr_chain = old_expr_chain
-        return return_value
+        return p4z3_expr.eval(p4_state)
 
 
 class P4Control(P4Callable):

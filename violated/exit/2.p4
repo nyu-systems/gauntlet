@@ -2,25 +2,29 @@
 #include <v1model.p4>
 
 header H {
-    bit<8> a;
-    bit<8> b;
+    bit<8>  a;
+    bit<8>  b;
 }
 
 struct Headers {
-    H    h;
+    H h;
 }
 
 struct Meta {
-    H    h;
 }
 
-control ingress(inout Headers h, inout Meta m, inout standard_metadata_t sm) {
-    action do_thing(inout bit<8> val_0) {
-        h.h.a = h.h.b >= 4 ? h.h.b : h.h.b + 1;
+bit<8> do_thing(inout bit<32> d) {
+    if (d > 2) {
+        exit;
     }
+    return (bit<8>)32w1;
+}
+control ingress(inout Headers h, inout Meta m, inout standard_metadata_t sm) {
     apply {
-        do_thing(h.h.b);
-        do_thing(h.h.a);
+        h.h.a = 2;
+        do_thing(sm.enq_timestamp);
+        exit;
+        h.h.a = 1;
     }
 }
 
