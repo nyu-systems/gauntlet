@@ -70,6 +70,7 @@ def z3_cast(val, to_type):
 class Z3Int(int):
 
     def __new__(cls, val, bit_size=64):
+        cls.val = val
         cls.bit_size = bit_size
         cls.as_bitvec = z3.BitVecVal(val, 64)
         return int.__new__(cls, val)
@@ -81,6 +82,9 @@ class Z3Int(int):
     @staticmethod
     def size():
         return Z3Int.bit_size
+    # TODO: Overload all other operands...
+    def __neg__(self):
+        return Z3Int(-self.val)
 
 
 class P4Z3Class():

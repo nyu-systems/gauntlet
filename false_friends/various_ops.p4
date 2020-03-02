@@ -36,6 +36,8 @@ header COMPARE {
     bit<8> a;
     bit<8> b;
     bit<8> c;
+    bit<8> d;
+    bit<8> e;
 }
 
 struct Headers {
@@ -51,7 +53,7 @@ struct Meta {}
 
 control ingress(inout Headers h, inout Meta m, inout standard_metadata_t sm) {
     apply {
-        //overflow
+        // //overflow
         h.overflow.a = 8w255 |+| 8w2;
         h.overflow.b = 8w3 |+| 8w0;
         //underflow
@@ -74,10 +76,12 @@ control ingress(inout Headers h, inout Meta m, inout standard_metadata_t sm) {
         //left shift
         h.lshift.a = (bit<8>)(4w4 << 8w2);
         h.lshift.b = (bit<8>)(4w4 << 8w16);
-        // comparing various unsigned constants
-        // if (4w15  > 2) { h.comp.a = 1; }
-        // if (4w3  > 2) { h.comp.b = 1; }
-        // if (-1  > 4w2) { h.comp.c = 1; }
+        // comparing various constants
+        if (4w15  > 2) { h.comp.a = 1; }
+        if (4w3  > 2) { h.comp.b = 1; }
+        if (-1  > 4w8) { h.comp.c = 1; }
+        if (4w8 > -1) { h.comp.d = 1; }
+        if (-1  > 4s8) { h.comp.e = 1; }
     }
 }
 
