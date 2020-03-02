@@ -128,17 +128,10 @@ class P4Context(P4Z3Class):
 
     def __init__(self, var_buffer, old_p4_state):
         self.var_buffer = var_buffer
-        self.old_p4_state = old_p4_state
 
-    def restore_context(self, p4_context):
-        if self.old_p4_state:
-            log.debug("Restoring original p4 state %s to %s ",
-                      p4_context, self.old_p4_state)
-            expr_chain = p4_context.expr_chain
-            old_p4_state = self.old_p4_state
-            old_p4_state.expr_chain = expr_chain
-        else:
-            old_p4_state = p4_context
+    def restore_context(self, p4_state):
+        #FIXME: This does not respect local context
+        #local variables are overridden in functions and controls
         # restore any variables that may have been overridden
         for param_name, param in self.var_buffer.items():
 
@@ -146,27 +139,26 @@ class P4Context(P4Z3Class):
             param_ref = param[1]
             param_val = param[2]
             if is_ref in ("inout", "out"):
-                val = p4_context.resolve_reference(param_name)
+                val = p4_state.resolve_reference(param_name)
             if param_val is None:
                 # value has not existed previously, marked for deletion
                 log.debug("Deleting %s", param_name)
-                old_p4_state.del_var(param_name)
+                p4_state.del_var(param_name)
             else:
                 log.debug("Resetting %s to %s", param_name, type(param_val))
-                old_p4_state.set_or_add_var(param_name, param_val)
+                p4_state.set_or_add_var(param_name, param_val)
 
             if is_ref in ("inout", "out"):
                 # with copy-out we copy from left to right
                 # values on the right override values on the left
                 # the var buffer is an ordered dict that maintains this order
                 log.debug("Copy-out: %s to %s", val, param_val)
-                old_p4_state.set_or_add_var(param_ref, val)
-        return old_p4_state
+                p4_state.set_or_add_var(param_ref, val)
 
     def eval(self, p4_state):
-        old_p4_state = self.restore_context(p4_state)
-        p4z3_expr = old_p4_state.pop_next_expr()
-        return p4z3_expr.eval(old_p4_state)
+        self.restore_context(p4_state)
+        p4z3_expr = p4_state.pop_next_expr()
+        return p4z3_expr.eval(p4_state)
 
 
 class P4Action(P4Callable):
@@ -203,7 +195,7 @@ class P4Function(P4Action):
                 member_list.append(child)
         return member_list
 
-    def generate_phi_values(self, input_expr, conditions=True):
+    def generate_phi_values(self, input_expr):
         # the first child is usually the condition
         cond = input_expr.children()[0]
         z3_then = input_expr.children()[1]
@@ -216,8 +208,6 @@ class P4Function(P4Action):
             if_cond = z3.If(cond, then_child, else_child)
             merged_list.append(z3.simplify(if_cond))
         return merged_list
-        # self.generate_phi_values(z3_then, z3.And(conditions, cond))
-        # self.generate_phi_values(z3_else, z3.And(conditions, z3.Not(cond)))
 
     def eval_callable(self, p4_state, merged_params, var_buffer):
         # P4Functions always return so we do not need a context object
@@ -279,7 +269,7 @@ class P4Control(P4Callable):
             p4_state = self.z3_reg.init_p4_state(self.name, self.params)
             p4_context = P4Context({}, None)
         else:
-            p4_context = P4Context(var_buffer, copy.copy(p4_state))
+            p4_context = P4Context(var_buffer, p4_state)
 
         for const_param_name, const_val in self.merged_consts.items():
             const_arg = const_val[1]
@@ -323,7 +313,6 @@ class P4Method(P4Callable):
                         is_ref, args[idx], m_param_default)
         return init_method
 
-
     def eval_callable(self, p4_state, merged_params, var_buffer):
         # initialize the local context of the function for execution
         if not p4_state:
@@ -331,7 +320,7 @@ class P4Method(P4Callable):
             p4_state = self.z3_reg.init_p4_state(self.name, merged_params)
             p4_context = P4Context({}, None)
         else:
-            p4_context = P4Context(var_buffer, copy.copy(p4_state))
+            p4_context = P4Context(var_buffer, p4_state)
         self.set_context(p4_state, merged_params, ("inout", "out"))
 
         if self.return_type is not None:
@@ -350,7 +339,8 @@ class P4Method(P4Callable):
             # we merge the name
             # FIXME: We do not consider call order
             # and assume that externs are stateless
-            return_instance = gen_instance(f"{self.name}_{var_name}", self.return_type)
+            return_instance = gen_instance(
+                f"{self.name}_{var_name}", self.return_type)
             return return_instance
         p4_state.insert_exprs(p4_context)
         p4z3_expr = p4_state.pop_next_expr()

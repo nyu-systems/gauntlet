@@ -179,7 +179,7 @@ class P4Return(P4Statement):
             # so update the p4_state and then move on to return the expression
             # this technique preserves the return value
             if isinstance(p4z3_expr, P4Context):
-                p4_state = p4z3_expr.restore_context(p4_state)
+                p4z3_expr.restore_context(p4_state)
                 break
         # since we popped the P4Context object that would take care of this
         # return the z3 expressions of the state AFTER restoring it
