@@ -82,9 +82,6 @@ class Z3Int(int):
     @staticmethod
     def size():
         return Z3Int.bit_size
-    # TODO: Overload all other operands...
-    def __neg__(self):
-        return Z3Int(-self.val)
 
 
 class P4Z3Class():

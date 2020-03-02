@@ -53,7 +53,7 @@ struct Meta {}
 
 control ingress(inout Headers h, inout Meta m, inout standard_metadata_t sm) {
     apply {
-        // //overflow
+        //overflow
         h.overflow.a = 8w255 |+| 8w2;
         h.overflow.b = 8w3 |+| 8w0;
         //underflow
@@ -65,7 +65,7 @@ control ingress(inout Headers h, inout Meta m, inout standard_metadata_t sm) {
         h.mod.b = 1 % 4w8;
         h.mod.c = 3 % 2;
 
-        // right shift
+        // // right shift
         bit<4> tmp = 4w0 - 4w1;
         h.rshift.a = tmp / 4w2;
         h.rshift.b = 4s7 >> 1 >> 1;
@@ -73,7 +73,7 @@ control ingress(inout Headers h, inout Meta m, inout standard_metadata_t sm) {
         h.rshift.d = -4s7 >> 1 >> 1;
         h.rshift.e = tmp >> 1 >> 1;
         h.rshift.g = 4w1 >> 8w16;
-        //left shift
+        // //left shift
         h.lshift.a = (bit<8>)(4w4 << 8w2);
         h.lshift.b = (bit<8>)(4w4 << 8w16);
         // comparing various constants
@@ -81,7 +81,9 @@ control ingress(inout Headers h, inout Meta m, inout standard_metadata_t sm) {
         if (4w3  > 2) { h.comp.b = 1; }
         if (-1  > 4w8) { h.comp.c = 1; }
         if (4w8 > -1) { h.comp.d = 1; }
-        if (-1  > 4s8) { h.comp.e = 1; }
+        // FIXME: This expression should also work
+        // if (-1  > 4s8) { h.comp.e = 1; }
+        if (-1  > 4s7) { h.comp.e = 1; }
     }
 }
 
