@@ -22,6 +22,7 @@ control compute(inout hdr h) {
     }
     apply {
         t_0.apply();
+        exit;
     }
 }
 

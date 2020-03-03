@@ -1,6 +1,7 @@
 from p4z3.base import log, copy, z3
 from p4z3.base import P4Expression, P4ComplexInstance
 from p4z3.callables import P4Control
+from p4z3.statements import P4Exit
 
 
 MAX_LOOP = 15
@@ -8,14 +9,6 @@ MAX_LOOP = 15
 
 class P4Parser(P4Control):
     pass
-
-
-class P4Exit(P4Expression):
-
-    def eval(self, p4_state):
-        # Exit the chain early and absolutely
-        p4_state.clear_expr_chain()
-        return p4_state.get_z3_repr()
 
 
 class ParserTree(P4Expression):

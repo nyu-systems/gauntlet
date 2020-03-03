@@ -52,12 +52,8 @@ class P4Callable(P4Z3Class):
                 var_buffer[param_name] = (is_ref, param_ref, None)
         return var_buffer
 
-    def __call__(self, p4_state=None, *args, **kwargs):
-        # for controls and externs, the state is not required
-        # controls can only be executed with apply statements
-        if p4_state:
-            return self.eval(p4_state, *args, **kwargs)
-        return self
+    def __call__(self, p4_state, *args, **kwargs):
+        return self.eval(p4_state, *args, **kwargs)
 
     def eval_callable(self, p4_state, merged_params, var_buffer):
         raise NotImplementedError("Method eval_callable not implemented!")
@@ -91,31 +87,6 @@ class P4Callable(P4Z3Class):
         # now we can set the arguments without influencing subsequent variables
         for param_name, param_val in param_buffer.items():
             p4_state.set_or_add_var(param_name, param_val)
-
-    def explore(self, expr):
-        if z3.is_app_of(expr, z3.Z3_OP_ITE):
-            return self.generate_phi_values(expr)
-        member_list = []
-        for child in expr.children():
-            if isinstance(child, z3.DatatypeRef):
-                member_list.extend(self.explore(child))
-            else:
-                member_list.append(child)
-        return member_list
-
-    def generate_phi_values(self, input_expr):
-        # the first child is usually the condition
-        cond = input_expr.children()[0]
-        z3_then = input_expr.children()[1]
-        z3_else = input_expr.children()[2]
-        z3_then_children = self.explore(z3_then)
-        z3_else_children = self.explore(z3_else)
-        merged_list = []
-        for idx, then_child in enumerate(z3_then_children):
-            else_child = z3_else_children[idx]
-            if_cond = z3.simplify(z3.If(cond, then_child, else_child))
-            merged_list.append(if_cond)
-        return merged_list
 
     def eval(self, p4_state=None, *args, **kwargs):
         self.call_counter += 1
@@ -225,12 +196,6 @@ class P4Control(P4Callable):
             self.const_params, *args, **kwargs)
         return self
 
-    def __call__(self, p4_state, *args, **kwargs):
-        # for controls and externs, the state is not required
-        # controls can only be executed with apply statements
-        # when there is no p4 state provided, the control is instantiated
-        raise RuntimeError()
-
     def apply(self, p4_state, *args, **kwargs):
         return self.eval(p4_state, *args, **kwargs)
 
@@ -285,11 +250,9 @@ class P4Method(P4Callable):
 
     def eval_callable(self, p4_state, merged_params, var_buffer):
         # initialize the local context of the function for execution
-        if not p4_state:
-            # There is no state yet, so use the context of the function
-            p4_state = self.z3_reg.init_p4_state(self.name, merged_params)
         p4_context = P4Context(var_buffer, None)
         self.set_context(p4_state, merged_params, ("inout", "out"))
+        p4_context.restore_context(p4_state)
 
         if self.return_type is not None:
             # methods can return values, we need to generate a new constant
@@ -310,7 +273,6 @@ class P4Method(P4Callable):
             return_instance = gen_instance(
                 f"{self.name}_{var_name}", self.return_type)
             return return_instance
-        p4_state.insert_exprs(p4_context)
         p4z3_expr = p4_state.pop_next_expr()
         return p4z3_expr.eval(p4_state)
 

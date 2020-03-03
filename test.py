@@ -61,6 +61,7 @@ violation_tests = [
     "unused_return",
     "out-params-1",
     "out-params-2",
+    # "variable_shadowing", #disabled until I have found a good solution
 ]
 
 # ***** tests that should not trigger a violation bug *****

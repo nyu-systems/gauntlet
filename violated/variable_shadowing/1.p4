@@ -6,6 +6,14 @@ header hdr {
     bit<32> b;
 }
 
+struct Headers {
+    hdr h;
+}
+
+struct Meta {
+    bit<8> test;
+}
+
 control compute(inout hdr h) {
     @name("a") action a_0() {
         h.b = h.a;
@@ -21,16 +29,13 @@ control compute(inout hdr h) {
         default_action = NoAction();
     }
     apply {
+        bit<8> tmp = 0;
+        Meta m = {0};
         t_0.apply();
+        tmp = 0;
     }
 }
 
-struct Headers {
-    hdr h;
-}
-
-struct Meta {
-}
 
 parser p(packet_in b, out Headers h, inout Meta m, inout standard_metadata_t sm) {
     state start {
@@ -63,8 +68,10 @@ control deparser(packet_out b, in Headers h) {
 control ingress(inout Headers h, inout Meta m, inout standard_metadata_t sm) {
     @name("c") compute() c_0;
     apply {
+        m.test = 1;
+        bit<8> tmp = 1;
         c_0.apply(h.h);
-        sm.egress_spec = 9w0;
+        sm.egress_spec = tmp;
     }
 }
 

@@ -53,7 +53,7 @@ class MethodCallStmt(P4Statement):
 
 class BlockStatement(P4Statement):
 
-    def __init__(self, exprs=[]):
+    def __init__(self, exprs):
         self.exprs = exprs
 
     def eval(self, p4_state):
@@ -70,8 +70,6 @@ class IfStatement(P4Statement):
         self.else_block = else_block
 
     def eval(self, p4_state):
-        if self.cond is None:
-            raise RuntimeError("Missing condition!")
         cond = p4_state.resolve_expr(self.cond)
         # conditional branching requires a copy of the state for each branch
         # in some sense this copy acts as a phi function
@@ -122,7 +120,6 @@ class SwitchHit(P4Z3Class):
 
 
 class SwitchStatement(P4Statement):
-    # TODO: Fix fall through for switch statement
     def __init__(self, table_str, cases):
         self.table_str = table_str
         self.default_case = P4Noop()
@@ -138,7 +135,7 @@ class SwitchStatement(P4Statement):
         if action_str == "default":
             return
         case = {}
-        case["case_block"] = BlockStatement()
+        case["case_block"] = BlockStatement([])
         self.cases[action_str] = case
 
     def add_stmt_to_case(self, action_str, case_stmt):
@@ -189,7 +186,25 @@ class P4Return(P4Statement):
         # since we popped the P4Context object that would take care of this
         # return the z3 expressions of the state AFTER restoring it
         if expr is None:
+            # FIXME: issue1386 requires us to keep running down the chain...
+            # figure out why...
             p4z3_expr = p4_state.pop_next_expr()
             return p4z3_expr.eval(p4_state)
 
         return expr
+
+
+class P4Exit(P4Statement):
+
+    def eval(self, p4_state):
+        # Exit the chain early and absolutely
+        chain_copy = p4_state.copy_expr_chain()
+        # remove all expressions, if we hit a context on the way, update
+        for p4z3_expr in chain_copy:
+            p4_state.expr_chain.popleft()
+            # this is tricky, we need to restore the state before returning
+            # so update the p4_state and then move on to return the expression
+            # this technique preserves the return value
+            if isinstance(p4z3_expr, P4Context):
+                p4z3_expr.restore_context(p4_state)
+        return p4_state.get_z3_repr()
