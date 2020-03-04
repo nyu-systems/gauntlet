@@ -17,6 +17,7 @@ log = logging.getLogger(__name__)
 
 FILE_DIR = Path(__file__).parent.resolve()
 P4C_BIN = FILE_DIR.joinpath("p4c/build/p4c")
+TOFINO_BIN = FILE_DIR.joinpath("tofino/bin/bf-p4c")
 P4Z3_BIN = FILE_DIR.joinpath("p4c/build/p4toz3")
 P4RANDOM_BIN = FILE_DIR.joinpath("p4c/build/p4bludgeon")
 
@@ -26,7 +27,9 @@ CRASH_BUG_DIR = OUTPUT_DIR.joinpath("crash_bugs")
 VALIDATION_BUG_DIR = OUTPUT_DIR.joinpath("validation_bugs")
 TIMEOUT_DIR = OUTPUT_DIR.joinpath("timeout_bugs")
 ITERATIONS = 10000
-NUM_PROCESSES = 5
+NUM_PROCESSES = 4
+USE_EMI = False
+USE_TOFINO = False
 
 KNOWN_BUGS = [
     "Conditional execution",
@@ -66,7 +69,10 @@ def generate_id():
 def generate_p4_dump(p4c_bin, p4_file):
     p4_cmd = f"{p4c_bin} "
     p4_cmd += f"{p4_file} "
-    p4_cmd += f"--flag=0 "
+    if USE_TOFINO:
+        p4_cmd += f"1 "
+    else:
+        p4_cmd += f"0 "
     log.debug("Generating random p4 code with command %s ", p4_cmd)
     return util.exec_process(p4_cmd), p4_file
 
@@ -117,16 +123,18 @@ def validate_p4_emi(p4_file, target_dir, log_file):
     p4z3_cmd += f"-i {p4_file} "
     p4z3_cmd += f"-o {target_dir} "
     p4z3_cmd += f"-l {log_file} "
+    if USE_TOFINO:
+        p4z3_cmd += f"-t "
     return util.exec_process(p4z3_cmd)
 
 
-def check(idx, use_emi=False):
+def check(idx):
     test_id = generate_id()
     test_name = f"{test_id}_{idx}"
     dump_dir = OUTPUT_DIR.joinpath(f"dmp_{test_name}")
     util.check_dir(dump_dir)
-    log_file = OUTPUT_DIR.joinpath(f"{test_name}.log")
-    p4_file = OUTPUT_DIR.joinpath(f"{test_name}.p4")
+    log_file = dump_dir.joinpath(f"{test_name}.log")
+    p4_file = dump_dir.joinpath(f"{test_name}.p4")
 
     log.info("Testing p4 program %s", p4_file)
     result, p4_file = generate_p4_dump(P4RANDOM_BIN, p4_file)
@@ -136,19 +144,23 @@ def check(idx, use_emi=False):
         # reset the dump directory
         util.del_dir(dump_dir)
         return
-
-    result = compile_p4_prog(P4C_BIN, p4_file, dump_dir)
+    if USE_TOFINO:
+        result = compile_p4_prog(TOFINO_BIN, p4_file, dump_dir)
+    else:
+        result = compile_p4_prog(P4C_BIN, p4_file, dump_dir)
     if result.returncode != util.EXIT_SUCCESS:
         if not is_known_bug(result):
             log.info("Failed to compile the P4 code!")
             log.info("Found a new bug!")
             dump_result(result, CRASH_BUG_DIR, p4_file)
             dump_file(CRASH_BUG_DIR, p4_file)
-            # reset the dump directory
-            util.del_dir(dump_dir)
-            return
+        # reset the dump directory
+        util.del_dir(dump_dir)
+        return
     try:
-        if use_emi:
+        # Tofino does not allow insights into the individual passes
+        # So we are forced to use the EMI technique
+        if USE_EMI or USE_TOFINO:
             result = validate_p4_emi(p4_file, dump_dir, log_file)
         else:
             result = validate_p4(p4_file, dump_dir, P4C_BIN, log_file)
@@ -163,16 +175,18 @@ def check(idx, use_emi=False):
         log.info("Failed to validate the P4 code!")
         log.info("Rerun the example with:")
         out_file = VALIDATION_BUG_DIR.joinpath(p4_file.name)
-        log.info("python3 check_p4_compilation.py -i %s", out_file)
-        dump_result(result, VALIDATION_BUG_DIR, p4_file)
-        dump_file(VALIDATION_BUG_DIR, p4_file)
+        if USE_EMI:
+            log.info("python3 check_p4_emi.py -i %s", out_file)
+            stf_name = dump_dir.joinpath(Path(p4_file.stem + ".stf"))
+            dump_file(VALIDATION_BUG_DIR, stf_name)
+        else:
+            log.info("python3 check_p4_compilation.py -i %s", out_file)
         dump_file(VALIDATION_BUG_DIR, log_file)
+        dump_file(VALIDATION_BUG_DIR, p4_file)
         # reset the dump directory
         util.del_dir(dump_dir)
         return
     # reset the dump directory
-    p4_file.unlink()
-    log_file.unlink()
     util.del_dir(dump_dir)
 
 
@@ -186,13 +200,19 @@ def main(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("--use-emi", "-e", dest="use_emi", action='store_true',
-                        help="Use an EMI-like technique instead of translation validation.")
+                        help="Use an EMI-like technique instead of translation"
+                        "validation.")
+    parser.add_argument("--use-tofino", "-t", dest="use_tofino",
+                        action='store_true',
+                        help="Use the Tofino backend instead of BMV2.")
     parser.add_argument("-l", "--log_file", dest="log_file",
                         default="random.log",
                         help="Specifies name of the log file.")
     # Parse options and process argv
     args = parser.parse_args()
-
+    # lazy hack because I do not want to write a wrapper for map()
+    USE_EMI = args.use_emi
+    USE_TOFINO = args.use_tofino
     # configure logging
     logging.basicConfig(filename=args.log_file,
                         format="%(levelname)s:%(message)s",

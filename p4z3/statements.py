@@ -190,7 +190,6 @@ class P4Return(P4Statement):
             # figure out why...
             p4z3_expr = p4_state.pop_next_expr()
             return p4z3_expr.eval(p4_state)
-
         return expr
 
 
@@ -206,5 +205,6 @@ class P4Exit(P4Statement):
             # so update the p4_state and then move on to return the expression
             # this technique preserves the return value
             if isinstance(p4z3_expr, P4Context):
-                p4z3_expr.restore_context(p4_state)
-        return p4_state.get_z3_repr()
+                p4z3_expr.restore_context(p4_state, exit_called=True)
+        p4z3_expr = p4_state.pop_next_expr()
+        return p4z3_expr.eval(p4_state)

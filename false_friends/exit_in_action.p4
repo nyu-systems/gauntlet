@@ -1,35 +1,37 @@
 #include <core.p4>
 #include <v1model.p4>
 
-header H {
-    bit<8>  a;
-    bit<8>  b;
+header ethernet_t {
+    bit<48> dst_addr;
+    bit<48> src_addr;
+    bit<16> eth_type;
 }
 
+
 struct Headers {
-    H h;
+    ethernet_t eth_hdr;
 }
 
 struct Meta {
 }
 
-bit<8> do_thing(inout bit<32> d) {
-    if (d > 2) {
-        exit;
-    }
-    return (bit<8>)32w1;
-}
-control ingress(inout Headers h, inout Meta m, inout standard_metadata_t sm) {
-    apply {
-        h.h.a = 2;
-        do_thing(sm.enq_timestamp);
-        exit;
-        h.h.a = 1;
+parser p(packet_in pkt, out Headers hdr, inout Meta m, inout standard_metadata_t sm) {
+    state start {
+        pkt.extract(hdr.eth_hdr);
+        transition accept;
     }
 }
 
-parser p(packet_in b, out Headers h, inout Meta m, inout standard_metadata_t sm) {
-state start {transition accept;}}
+control ingress(inout Headers h, inout Meta m, inout standard_metadata_t sm) {
+    action do_action(inout bit<16> val_0) {
+        val_0 = 3;
+        exit;
+    }
+    apply {
+        do_action(h.eth_hdr.eth_type);
+
+    }
+}
 
 control vrfy(inout Headers h, inout Meta m) { apply {} }
 
@@ -37,7 +39,7 @@ control update(inout Headers h, inout Meta m) { apply {} }
 
 control egress(inout Headers h, inout Meta m, inout standard_metadata_t sm) { apply {} }
 
-control deparser(packet_out b, in Headers h) { apply {} }
+control deparser(packet_out b, in Headers h) { apply {b.emit(h);} }
 
 V1Switch(p(), vrfy(), ingress(), egress(), update(), deparser()) main;
 

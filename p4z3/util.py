@@ -32,11 +32,15 @@ def del_dir(directory):
 
 
 def copy_file(src, dst):
-    if isinstance(src, list):
-        for src_file in src:
-            shutil.copy2(src_file, dst)
-    else:
-        shutil.copy2(src, dst)
+    try:
+        if isinstance(src, list):
+            for src_file in src:
+                shutil.copy2(src_file, dst)
+        else:
+            shutil.copy2(src, dst)
+    except shutil.SameFileError:
+        # this is fine
+        pass
 
 
 def move_file(src, dst):

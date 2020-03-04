@@ -17,6 +17,7 @@ P4RANDOM_BIN = FILE_DIR.joinpath("p4c/build/p4bludgeon")
 OUT_DIR = FILE_DIR.joinpath("validated")
 P4C_DIR = FILE_DIR.joinpath("p4c")
 NUM_RETRIES = 10
+USE_TOFINO = False
 
 
 @dataclass
@@ -28,6 +29,8 @@ class P4Struct:
 def generate_random_prog(p4c_bin, p4_file):
     p4_cmd = f"{p4c_bin} "
     p4_cmd += f"{p4_file} "
+    if USE_TOFINO:
+        p4_cmd += f"1 "
     log.info("Generating random p4 code with command %s ", p4_cmd)
     return util.exec_process(p4_cmd)
 
@@ -37,6 +40,9 @@ def run_p4_to_py(p4_file, py_file, option_str=""):
     cmd += f"{p4_file} "
     cmd += f"--output {py_file} "
     cmd += option_str
+    if USE_TOFINO:
+        include_dir = FILE_DIR.joinpath("tofino/include")
+        cmd += f"-I {include_dir}"
     log.info("Converting p4 to z3 python with command %s ", cmd)
     return util.exec_process(cmd)
 
@@ -61,13 +67,22 @@ def fill_values(z3_input):
 
 def get_branch_conditions(z3_formula):
     conditions = []
+    table_keys = []
     if z3.is_app_of(z3_formula, z3.Z3_OP_ITE):
         # the first child is usually the condition
         cond = z3_formula.children()[0]
-        conditions.append(cond)
+        cond_vars = z3.z3util.get_vars(cond)
+        is_member = "ingress_0" in [str(x) for x in cond_vars]
+        is_table_key = "table_key" in "".join([str(x) for x in cond_vars])
+        if is_table_key:
+            table_keys.append(cond)
+        elif is_member:
+            conditions.append(cond)
     for child in z3_formula.children():
-        conditions.extend(get_branch_conditions(child))
-    return conditions
+        sub_conds, sub_table_keys = get_branch_conditions(child)
+        conditions.extend(sub_conds)
+        table_keys.extend(sub_table_keys)
+    return conditions, table_keys
 
 
 def convert_to_stf(input_values, input_name, append_values=False):
@@ -231,7 +246,9 @@ def perform_emi_test(out_dir, p4_input, num_subsets, p4_subsets, num_retries):
         generate_random_prog(P4RANDOM_BIN, p4_input)
     else:
         p4_input = Path(p4_input)
-        out_dir = Path(out_dir).joinpath(p4_input.stem)
+        out_dir = Path(out_dir)
+        if out_dir == OUT_DIR:
+            out_dir = out_dir.joinpath(p4_input.stem)
         util.check_dir(out_dir)
         util.copy_file(p4_input, out_dir)
 
@@ -264,17 +281,15 @@ def perform_emi_test(out_dir, p4_input, num_subsets, p4_subsets, num_retries):
     # output conditions
     s = z3.Solver()
     # we currently ignore all other pipelines and focus on the ingress pipeline
-    main_formula = z3_main_prog["ig"]
+    if USE_TOFINO:
+        main_formula = z3_main_prog["Pipeline_ingress"]
+    else:
+        main_formula = z3_main_prog["ig"]
     # this util might come in handy later.
     # z3.z3util.get_vars(main_formula)
-    # conditions = []
-    # for cond in get_branch_conditions(main_formula):
-    #     cond_vars = z3.z3util.get_vars(cond)
-    #     is_member = "ingress_0" in [str(x) for x in cond_vars]
-    #     if is_member:
-    #         conditions.append(cond)
-    # permuts = [[f(var) for var, f in zip(conditions, x)]
-    #            for x in itertools.product([z3.Not, lambda x: x], repeat=len(conditions))]
+    conditions, table_keys = get_branch_conditions(main_formula)
+    permuts = [[f(var) for var, f in zip(conditions, x)]
+               for x in itertools.product([z3.Not, lambda x: x], repeat=len(conditions))]
     output_const = z3.Const("output", main_formula.sort())
     # bind the output constant to the output of the main program
     s.add(main_formula == output_const)
@@ -284,27 +299,34 @@ def perform_emi_test(out_dir, p4_input, num_subsets, p4_subsets, num_retries):
         second_formula = z3_subset_prog["ig"]
         # the output of the main formula should be the same as the sub formula
         s.add(second_formula == output_const)
-
-    ret = s.check()
-    if ret == z3.sat:
-        log.info("Found a solution!")
-        # get the model
-        m = s.model()
-        result = check_with_stf(
-            out_dir, p4_input, p4_subsets, m, output_const)
-    else:
-        log.warning(
-            "Not able to find an input that produces equivalent output!")
-        if args.retry:
-            # remove the context and start fresh
-            s.pop()
-            result = enter_retry_loop(
-                out_dir, p4_input, s, output_const, num_retries)
-        else:
-            log.warning(
-                "Retrying is disabled, enable random subset testing "
-                "with the --retry/-r flag.")
-        return result
+    for permut in permuts:
+        s.push()
+        s.add(permut)
+        for key in table_keys:
+            s.add(z3.Not(key))
+        ret = s.check()
+        if ret == z3.sat:
+            log.info("Found a solution!")
+            # get the model
+            m = s.model()
+            result = check_with_stf(
+                out_dir, p4_input, p4_subsets, m, output_const)
+            if result != util.EXIT_SUCCESS:
+                return result
+        # else:
+        #     log.warning(
+        #         "Not able to find an input that produces equivalent output!")
+        #     if args.retry:
+        #         # remove the context and start fresh
+        #         s.pop()
+        #         result = enter_retry_loop(
+        #             out_dir, p4_input, s, output_const, num_retries)
+        #     else:
+        #         log.warning(
+        #             "Retrying is disabled, enable random subset testing "
+        #             "with the --retry/-r flag.")
+        s.pop()
+        # return result
     return result
 
 
@@ -321,6 +343,9 @@ if __name__ == '__main__':
                         help="The ordered list of programs to compare.")
     parser.add_argument("--retry", "-r", dest="retry", action='store_true',
                         help="Retry with random mutation to find an equivalence solution.")
+    parser.add_argument("--tofino", "-t", dest="use_tofino",
+                        action='store_true',
+                        help="Use the Tofino compiler instead of P4C.")
     parser.add_argument("--num_retries", dest="num_retries",
                         default=NUM_RETRIES, type=int,
                         help="How many times to retry before giving up.")
@@ -339,7 +364,7 @@ if __name__ == '__main__':
     stderr_log = logging.StreamHandler()
     stderr_log.setFormatter(logging.Formatter("%(levelname)s:%(message)s"))
     logging.getLogger().addHandler(stderr_log)
-
+    USE_TOFINO = args.use_tofino
     result = perform_emi_test(args.out_dir, args.p4_input, args.num_subsets,
                               args.subsets, args.num_retries)
     sys.exit(result)
