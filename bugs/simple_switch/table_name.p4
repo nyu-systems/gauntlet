@@ -6,8 +6,6 @@ header ethernet_t {
     bit<48> src_addr;
     bit<16> eth_type;
 }
-
-
 struct Headers {
     ethernet_t eth_hdr;
 }
@@ -16,6 +14,7 @@ struct Meta {
 }
 
 parser p(packet_in pkt, out Headers hdr, inout Meta m, inout standard_metadata_t sm) {
+
     state start {
         pkt.extract(hdr.eth_hdr);
         transition accept;
@@ -23,13 +22,21 @@ parser p(packet_in pkt, out Headers hdr, inout Meta m, inout standard_metadata_t
 }
 
 control ingress(inout Headers h, inout Meta m, inout standard_metadata_t sm) {
-    action do_action(inout bit<16> val_0) {
-        val_0 = 3;
-        exit;
+    bit<8> val_0 = 8w0;
+
+    action do_action() {
+        h.eth_hdr.src_addr = 1;
+    }
+    table UVcfyJ {
+        key = {
+            val_0     : exact;
+        }
+        actions = {
+            do_action();
+        }
     }
     apply {
-        do_action(h.eth_hdr.eth_type);
-
+        UVcfyJ.apply();
     }
 }
 

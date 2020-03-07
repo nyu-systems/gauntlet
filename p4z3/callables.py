@@ -100,7 +100,7 @@ class P4Context(P4Z3Class):
     def __init__(self, var_buffer, old_p4_state):
         self.var_buffer = var_buffer
 
-    def restore_context(self, p4_state, exit_called=False):
+    def restore_context(self, p4_state):
         # FIXME: This does not respect local context
         # local variables are overridden in functions and controls
         # restore any variables that may have been overridden
@@ -119,7 +119,7 @@ class P4Context(P4Z3Class):
                 log.debug("Resetting %s to %s", param_name, type(param_val))
                 p4_state.set_or_add_var(param_name, param_val)
 
-            if is_ref in ("inout", "out") and not exit_called:
+            if is_ref in ("inout", "out"):
                 # with copy-out we copy from left to right
                 # values on the right override values on the left
                 # the var buffer is an ordered dict that maintains this order

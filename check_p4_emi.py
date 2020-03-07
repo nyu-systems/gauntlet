@@ -58,7 +58,7 @@ def fill_values(z3_input):
         elif isinstance(val, z3.BitVecNumRef):
             bitvec_val = val.as_long()
             bitvec_hex_width = (val.size()) // 4
-            hex_str = f"{bitvec_val:0{bitvec_hex_width}}"
+            hex_str = f"{bitvec_val:0{bitvec_hex_width}X}"
             input_values.append(hex_str)
         else:
             raise RuntimeError(f"Type {type(val)} not supported!")
@@ -153,6 +153,7 @@ def run_stf_test(out_dir, p4_input, stf_str):
     cmd = "python "
     cmd += f"{P4C_DIR}/backends/bmv2/run-bmv2-test.py "
     cmd += f"{P4C_DIR} -v "
+    cmd += f"-bd {P4C_DIR}/build "
     cmd += f"{out_dir}/{p4_input.name} "
     result = util.exec_process(cmd)
     if result.returncode != util.EXIT_SUCCESS:
