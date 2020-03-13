@@ -5,13 +5,16 @@ from p4z3.callables import P4Method
 
 
 class P4Initializer(P4Expression):
-    def __init__(self, val, instance):
+    def __init__(self, val, instance=None):
         self.val = val
         self.instance = instance
 
     def eval(self, p4_state):
-        instance = p4_state.resolve_expr(self.instance)
         val = p4_state.resolve_expr(self.val)
+        if self.instance is None:
+            # no type defined, return just the value
+            return val
+        instance = p4_state.resolve_expr(self.instance)
         if isinstance(val, P4ComplexInstance):
             return val
         if isinstance(instance, P4ComplexInstance):
