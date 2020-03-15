@@ -1,4 +1,5 @@
 from collections import deque, OrderedDict
+from dataclasses import dataclass
 import types
 import copy
 import logging
@@ -27,6 +28,28 @@ def gen_instance(var_name, p4z3_type):
             instantiated_list.append(const)
         return instantiated_list
     raise RuntimeError(f"{p4z3_type} instantiation not supported!")
+
+
+def merge_parameters(params, *args, **kwargs):
+    # FIXME: This function could be a lot more efficient...
+    merged_args = {}
+    args_len = len(args)
+    for idx, param in enumerate(params):
+        arg_val = None
+        if idx < args_len:
+            arg_val = args[idx]
+            arg = P4Argument(param.is_ref, param.p4_type, arg_val)
+            merged_args[param.name] = arg
+        elif param.p4_default is not None:
+            # there is no argument but we have a default value, so use that
+            arg_val = param.p4_default
+        # this is expensive but at least clean
+        if param.name in kwargs:
+            arg_val = kwargs[param.name]
+        if arg_val is not None:
+            arg = P4Argument(param.is_ref, param.p4_type, arg_val)
+            merged_args[param.name] = arg
+    return merged_args
 
 
 def copy_attrs(attrs):
@@ -93,6 +116,23 @@ class Z3Int(int):
     @staticmethod
     def size():
         return Z3Int.bit_size
+
+
+@dataclass
+class P4Parameter:
+    __slots__ = ["is_ref", "name", "p4_type", "p4_default"]
+    is_ref: str
+    name: str
+    p4_type: object
+    p4_default: object
+
+
+@dataclass
+class P4Argument:
+    __slots__ = ["is_ref", "p4_type", "p4_val"]
+    is_ref: str
+    p4_type: object
+    p4_val: object
 
 
 class P4Z3Class():
@@ -688,26 +728,22 @@ class P4Extern(P4ComplexType):
     def init_type_params(self, *args, **kwargs):
         # the extern is instantiated, we need to copy it
         init_extern = self.initialize()
-        for attr_name, attr_val in init_extern.p4_attrs.items():
-            init_extern.p4_attrs[attr_name] = copy.copy(attr_val)
-        # bind variables to the runtime types
         for idx, t_param in enumerate(init_extern.type_params):
-            for method_name, method in init_extern.p4_attrs.items():
+            for method in init_extern.p4_attrs.values():
+                # bind the method return type
                 if method.return_type == t_param:
                     method.return_type = args[idx]
-                for m_param_name, method_param in method.params.items():
-                    is_ref = method_param[0]
-                    m_param_type = method_param[1]
-                    m_param_default = method_param[2]
-                    if m_param_type == t_param:
-                        method.params[m_param_name] = (
-                            is_ref, args[idx], m_param_default)
+                # bind the method parameters
+                for method_param in method.params:
+                    if method_param.p4_type == t_param:
+                        method_param.p4_type = args[idx]
         return init_extern
 
     def initialize(self, *args, **kwargs):
         # TODO Figure out what to actually do here
         instance = P4ExternInstance(self, self.name)
-        instance.p4_attrs = self.p4_attrs
+        for attr_name, attr_val in instance.p4_attrs.items():
+            instance.p4_attrs[attr_name] = copy.copy(attr_val)
         return instance
 
     def __call__(self, *args, **kwargs):
@@ -760,18 +796,9 @@ class P4Package():
 
     def __init__(self, z3_reg, name, params):
         self.pipes = OrderedDict()
-        self.params = OrderedDict()
+        self.params = params
         self.name = name
         self.z3_reg = z3_reg
-        for param in params:
-            self._add_parameter(param)
-
-    def _add_parameter(self, param):
-        is_ref = param[0]
-        param_name = param[1]
-        param_type = param[2]
-        param_default = param[3]
-        self.params[param_name] = (is_ref, param_type, param_default)
 
     def init_type_params(self, *args, **kwargs):
         return self
@@ -783,62 +810,39 @@ class P4Package():
             input_string = input_string[:-5]
         return input_string
 
-    def merge_parameters(self, params, *args, **kwargs):
-        merged_params = {}
-        args_len = len(args)
-        for idx, (param_name, param_tuple) in enumerate(params.items()):
-            is_ref = param_tuple[0]
-            param_type = param_tuple[1]
-            param_default = param_tuple[2]
-            if idx < args_len:
-                merged_params[param_name] = (is_ref, param_type, args[idx])
-            elif param_default is not None:
-                # there is no argument but we have a default value, so use that
-                merged_params[param_name] = (is_ref, param_type, param_default)
-        for arg_name, arg_val in kwargs.items():
-            is_ref = params[arg_name][0]
-            merged_params[arg_name] = (is_ref, param_type, arg_val)
-        return merged_params
-
     def initialize(self, *args, **kwargs):
-        merged_params = self.merge_parameters(self.params, *args, **kwargs)
-        for pipe_name, pipe_tuple in merged_params.items():
-            is_ref = pipe_tuple[0]
-            pipe_type = pipe_tuple[1]
-            pipe_arg = pipe_tuple[2]
-            if isinstance(pipe_arg, ConstCallExpr):
-                pipe_str = pipe_arg.p4_method
+        merged_args = merge_parameters(self.params, *args, **kwargs)
+        for pipe_name, pipe_arg in merged_args.items():
+            pipe_val = pipe_arg.p4_val
+            if isinstance(pipe_val, ConstCallExpr):
+                pipe_str = pipe_val.p4_method
                 pipe_str = self.sanitize_string(pipe_str)
                 # TODO: We need to initialize, but can you have arguments here?
                 # TODO: This is a royal mess
                 # FIXME: Do not skip externs here
                 p4_method = self.z3_reg._globals[pipe_str]
                 p4_method = p4_method.initialize(
-                    *pipe_arg.args, **pipe_arg.kwargs)
-                params = p4_method.params
-                if isinstance(pipe_type, P4Extern):
+                    *pipe_val.args, **pipe_val.kwargs)
+                p4_type = pipe_arg.p4_type
+                if isinstance(p4_type, P4Extern):
                     # this should not be necessary but we are forced to
                     # initialize types likes this because of muddy extern
                     # definitions. Fix this eventually.
-                    for type_param in pipe_type.type_params:
-                        is_ref = type_param[0]
-                        param_name = type_param[1]
-                        param_sort = type_param[2]
-                        param_default = type_param[3]
-                        params[param_name] = (
-                            is_ref, param_sort, param_default)
+                    for idx, param in enumerate(p4_type.type_params):
+                        p4_method.params[idx].p4_type = param.p4_type
+                params = p4_method.params
                 p4_state = self.z3_reg.init_p4_state(p4_method.name, params)
                 self.pipes[pipe_name] = p4_method(p4_state)
-            elif isinstance(pipe_arg, str):
-                pipe_arg = self.sanitize_string(pipe_arg)
-                pipe = self.z3_reg._globals[pipe_arg].initialize()
+            elif isinstance(pipe_val, str):
+                pipe_val = self.sanitize_string(pipe_val)
+                pipe = self.z3_reg._globals[pipe_val].initialize()
                 self.pipes[pipe_name] = pipe
-            elif isinstance(pipe_arg, z3.ExprRef):
+            elif isinstance(pipe_val, z3.ExprRef):
                 # for some reason simple expressions are also possible.
-                self.pipes[pipe_name] = pipe_arg
+                self.pipes[pipe_name] = pipe_val
             else:
                 raise RuntimeError(
-                    f"Unsupported value {pipe_arg}, type {type(pipe_arg)}."
+                    f"Unsupported value {pipe_val}, type {type(pipe_val)}."
                     " It does not make sense as a P4 pipeline.")
         return self
 
@@ -1059,16 +1063,14 @@ class Z3Reg():
     def init_p4_state(self, name, p4_params):
         stripped_args = []
         instances = {}
-        for param_name, param in p4_params.items():
-            is_ref = param[0]
-            param_type = param[1]
-            if is_ref in ("inout", "out"):
+        for param in p4_params:
+            if param.is_ref in ("inout", "out"):
                 # only inouts or outs matter as output
-                stripped_args.append((param_name, param_type))
+                stripped_args.append((param.name, param.p4_type))
             else:
                 # for inputs we can instantiate something
-                instance = gen_instance(param_name, param_type)
-                instances[param_name] = instance
+                instance = gen_instance(param.name, param.p4_type)
+                instances[param.name] = instance
         p4_state = P4State(name, stripped_args).instantiate(
             name, self._globals, instances)
         return p4_state

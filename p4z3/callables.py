@@ -1,4 +1,5 @@
-from p4z3.base import OrderedDict, z3, log, copy, z3_cast, gen_instance
+from p4z3.base import OrderedDict, z3, log, copy
+from p4z3.base import merge_parameters, gen_instance, z3_cast
 from p4z3.base import P4Z3Class, P4ComplexInstance
 
 
@@ -7,41 +8,16 @@ class P4Callable(P4Z3Class):
         self.name = name
         self.z3_reg = z3_reg
         self.statements = body
-        self.params = OrderedDict()
+        self.params = params
         self.call_counter = 0
-        for param in params:
-            self._add_parameter(param)
         self.p4_attrs = {}
 
-    def _add_parameter(self, param):
-        is_ref = param[0]
-        param_name = param[1]
-        param_type = param[2]
-        param_default = param[3]
-        self.params[param_name] = (is_ref, param_type, param_default)
-
-    def merge_parameters(self, params, *args, **kwargs):
-        merged_params = {}
-        args_len = len(args)
-        for idx, (param_name, param_tuple) in enumerate(params.items()):
-            is_ref = param_tuple[0]
-            param_default = param_tuple[2]
-            if idx < args_len:
-                merged_params[param_name] = (is_ref, args[idx])
-            elif param_default is not None:
-                # there is no argument but we have a default value, so use that
-                merged_params[param_name] = (is_ref, param_default)
-        for arg_name, arg_val in kwargs.items():
-            is_ref = params[arg_name][0]
-            merged_params[arg_name] = (is_ref, arg_val)
-        return merged_params
-
-    def save_variables(self, p4_state, merged_params):
+    def save_variables(self, p4_state, merged_args):
         var_buffer = OrderedDict()
         # save all the variables that may be overridden
-        for param_name, param in merged_params.items():
-            is_ref = param[0]
-            param_ref = param[1]
+        for param_name, arg in merged_args.items():
+            is_ref = arg.is_ref
+            param_ref = arg.p4_val
             # if the variable does not exist, set the value to None
             try:
                 param_val = p4_state.resolve_reference(param_name)
@@ -55,44 +31,44 @@ class P4Callable(P4Z3Class):
     def __call__(self, p4_state, *args, **kwargs):
         return self.eval(p4_state, *args, **kwargs)
 
-    def eval_callable(self, p4_state, merged_params, var_buffer):
+    def eval_callable(self, p4_state, merged_args, var_buffer):
         raise NotImplementedError("Method eval_callable not implemented!")
 
-    def set_context(self, p4_state, merged_params, ref_criteria):
+    def set_context(self, p4_state, merged_args, ref_criteria):
         param_buffer = OrderedDict()
-        for param_name, param in merged_params.items():
-            is_ref = param[0]
-            arg = param[1]
-            if is_ref in ref_criteria:
+        for param_name, arg in merged_args.items():
+            arg_val = arg.p4_val
+            if arg.is_ref in ref_criteria:
                 # outs are left-values so the arg must be a string
                 arg_name = f"{self.name}_{param_name}"
                 # infer the type value at runtime, param does not work yet
-                arg_expr = p4_state.resolve_expr(arg)
+                arg_expr = p4_state.resolve_expr(arg_val)
                 # outs reset the input
                 # In the case that the instance is a complex type make sure
                 # to propagate the variable through all its members
-                log.debug("Resetting %s to %s", arg, param_name)
+                log.debug("Resetting %s to %s", arg_val, param_name)
                 if isinstance(arg_expr, P4ComplexInstance):
-                    arg = arg_expr.p4z3_type.instantiate(arg_name)
+                    arg_val = arg_expr.p4z3_type.instantiate(arg_name)
                 else:
-                    arg = z3.Const(f"{param_name}", arg_expr.sort())
+                    arg_val = z3.Const(f"{param_name}", arg_expr.sort())
             else:
-                arg = p4_state.resolve_expr(arg)
+                arg_val = p4_state.resolve_expr(arg_val)
             # Sometimes expressions are passed, resolve those first
-            log.debug("Copy-in: %s to %s", arg, param_name)
-            if isinstance(arg, int):
-                arg = z3_cast(arg, self.params[param_name][1])
+            log.debug("Copy-in: %s to %s", arg_val, param_name)
+            if isinstance(arg_val, int):
+                log.info("%s %s ", arg_val, arg.p4_type)
+                arg_val = z3_cast(arg_val, arg.p4_type)
             # buffer the value, do NOT set it yet
-            param_buffer[param_name] = arg
+            param_buffer[param_name] = arg_val
         # now we can set the arguments without influencing subsequent variables
         for param_name, param_val in param_buffer.items():
             p4_state.set_or_add_var(param_name, param_val)
 
     def eval(self, p4_state=None, *args, **kwargs):
         self.call_counter += 1
-        merged_params = self.merge_parameters(self.params, *args, **kwargs)
-        var_buffer = self.save_variables(p4_state, merged_params)
-        return self.eval_callable(p4_state, merged_params, var_buffer)
+        merged_args = merge_parameters(self.params, *args, **kwargs)
+        var_buffer = self.save_variables(p4_state, merged_args)
+        return self.eval_callable(p4_state, merged_args, var_buffer)
 
 
 class P4Context(P4Z3Class):
@@ -105,7 +81,6 @@ class P4Context(P4Z3Class):
         # local variables are overridden in functions and controls
         # restore any variables that may have been overridden
         for param_name, param in self.var_buffer.items():
-
             is_ref = param[0]
             param_ref = param[1]
             param_val = param[2]
@@ -134,12 +109,12 @@ class P4Context(P4Z3Class):
 
 class P4Action(P4Callable):
 
-    def eval_callable(self, p4_state, merged_params, var_buffer):
+    def eval_callable(self, p4_state, merged_args, var_buffer):
         # actions can modify global variables so do not save the p4 state
         # the only variables that do need to be restored are copy-ins/outs
         p4_context = P4Context(var_buffer, None)
 
-        self.set_context(p4_state, merged_params, ("out"))
+        self.set_context(p4_state, merged_args, ("out"))
 
         # execute the action expression with the new environment
         p4_state.insert_exprs(p4_context)
@@ -155,13 +130,13 @@ class P4Function(P4Action):
         self.return_type = return_type
         super(P4Function, self).__init__(name, z3_reg, params, body)
 
-    def eval_callable(self, p4_state, merged_params, var_buffer):
+    def eval_callable(self, p4_state, merged_args, var_buffer):
         # P4Functions always return so we do not need a context object
         # At the end of the execution a value is returned, NOT the p4 state
         # if the function is part of a method-call statement and the return
         # value is ignored, the method-call statement will continue execution
         p4_context = P4Context(var_buffer, None)
-        self.set_context(p4_state, merged_params, ("out"))
+        self.set_context(p4_state, merged_args, ("out"))
 
         p4_state.insert_exprs(p4_context)
         p4_state.insert_exprs(self.statements)
@@ -174,40 +149,32 @@ class P4Control(P4Callable):
     def __init__(self, name, z3_reg, params, const_params, body, local_decls):
         super(P4Control, self).__init__(name, z3_reg, params, body)
         self.locals = local_decls
-        self.const_params = OrderedDict()
+        self.const_params = const_params
         self.merged_consts = OrderedDict()
-        for param in const_params:
-            is_ref = param[0]
-            const_name = param[1]
-            const_type = param[2]
-            const_default = param[3]
-            self.const_params[const_name] = (is_ref, const_type, const_default)
         self.p4_attrs["apply"] = self.apply
 
     def init_type_params(self, *args, **kwargs):
-        for idx, (c_name, c_param) in enumerate(self.const_params.items()):
-            is_ref = c_param[0]
-            const_default = c_param[2]
-            self.const_params[c_name] = (is_ref, args[idx], const_default)
+        for idx, c_param in enumerate(self.const_params):
+            c_param.p4_type = args[idx]
         return self
 
     def initialize(self, *args, **kwargs):
-        self.merged_consts = self.merge_parameters(
+        self.merged_consts = merge_parameters(
             self.const_params, *args, **kwargs)
         return self
 
     def apply(self, p4_state, *args, **kwargs):
         return self.eval(p4_state, *args, **kwargs)
 
-    def eval_callable(self, p4_state, merged_params, var_buffer):
+    def eval_callable(self, p4_state, merged_args, var_buffer):
         # initialize the local context of the function for execution
         p4_context = P4Context(var_buffer, None)
 
-        for const_param_name, const_val in self.merged_consts.items():
-            const_arg = const_val[1]
-            const_arg = p4_state.resolve_expr(const_arg)
-            p4_state.set_or_add_var(const_param_name, const_arg)
-        self.set_context(p4_state, merged_params, ("out"))
+        for const_param_name, const_arg in self.merged_consts.items():
+            const_val = const_arg.p4_val
+            const_val = p4_state.resolve_expr(const_val)
+            p4_state.set_or_add_var(const_param_name, const_val)
+        self.set_context(p4_state, merged_args, ("out"))
         # execute the action expression with the new environment
         p4_state.insert_exprs(p4_context)
         p4_state.insert_exprs(self.statements)
@@ -218,8 +185,7 @@ class P4Control(P4Callable):
 
 class P4Method(P4Callable):
 
-    # TODO: This is quite brittle, requires concrete examination
-    def __init__(self, name, z3_reg, type_params, params=[]):
+    def __init__(self, name, z3_reg, type_params, params):
         super(P4Method, self).__init__(name, z3_reg, params)
         # P4Methods, which are also black-box functions, can have return types
         self.return_type = type_params[0]
@@ -227,35 +193,30 @@ class P4Method(P4Callable):
 
     def initialize(self, *args, **kwargs):
         # TODO Figure out what to actually do here
-        init_method = copy.copy(self)
-        if len(args) < len(init_method.type_params):
-            type_list = init_method.type_params[1:]
+        # init_method = copy.copy(self)
+        if len(args) < len(self.type_params):
+            type_list = self.type_params[1:]
         else:
-            type_list = init_method.type_params
+            type_list = self.type_params
         for idx, t_param in enumerate(type_list):
-            if init_method.return_type == t_param:
-                init_method.return_type = args[idx]
-            for m_param_name, method_param in init_method.params.items():
-                is_ref = method_param[0]
-                m_param_type = method_param[1]
-                m_param_default = method_param[2]
-                if m_param_type == t_param:
-                    init_method.params[m_param_name] = (
-                        is_ref, args[idx], m_param_default)
-        return init_method
+            if self.return_type == t_param:
+                self.return_type = args[idx]
+            for method_param in self.params:
+                method_param.p4_type = args[idx]
+        return self
 
-    def eval_callable(self, p4_state, merged_params, var_buffer):
+    def eval_callable(self, p4_state, merged_args, var_buffer):
         # initialize the local context of the function for execution
         p4_context = P4Context(var_buffer, None)
-        self.set_context(p4_state, merged_params, ("inout", "out"))
+        self.set_context(p4_state, merged_args, ("inout", "out"))
         p4_context.restore_context(p4_state)
 
         if self.return_type is not None:
             # methods can return values, we need to generate a new constant
             # we generate the name based on the input arguments
             var_name = ""
-            for is_ref, arg_val in merged_params.values():
-                arg = p4_state.resolve_expr(arg_val)
+            for arg in merged_args.values():
+                arg = p4_state.resolve_expr(arg.p4_val)
                 # Because we do not know what the extern is doing
                 # we initiate a new z3 const and
                 # just overwrite all reference types
@@ -378,14 +339,13 @@ class P4Table(P4Callable):
             raise TypeError(f"Expected a P4Action got {type(p4_action)}!")
         action_args = []
         p4_action_args_len = len(p4_action_args) - 1
-        for idx, (arg_name, param) in enumerate(p4_action.params.items()):
+        for idx, param in enumerate(p4_action.params):
             if idx > p4_action_args_len:
-                arg_type = param[1]
-                if isinstance(arg_type, z3.SortRef):
+                if isinstance(param.p4_type, z3.SortRef):
                     action_args.append(
-                        z3.Const(f"{self.name}{arg_name}", arg_type))
+                        z3.Const(f"{self.name}{param.name}", param.p4_type))
                 else:
-                    action_args.append(arg_type)
+                    action_args.append(param.p4_type)
             else:
                 action_args.append(p4_action_args[idx])
         return p4_action(p4_state, *action_args)
