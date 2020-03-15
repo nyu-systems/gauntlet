@@ -201,9 +201,6 @@ class P4Control(P4Callable):
 
     def eval_callable(self, p4_state, merged_params, var_buffer):
         # initialize the local context of the function for execution
-        if not p4_state:
-            # There is no state yet, so use the context of the function
-            p4_state = self.z3_reg.init_p4_state(self.name, self.params)
         p4_context = P4Context(var_buffer, None)
 
         for const_param_name, const_val in self.merged_consts.items():
@@ -211,7 +208,6 @@ class P4Control(P4Callable):
             const_arg = p4_state.resolve_expr(const_arg)
             p4_state.set_or_add_var(const_param_name, const_arg)
         self.set_context(p4_state, merged_params, ("out"))
-
         # execute the action expression with the new environment
         p4_state.insert_exprs(p4_context)
         p4_state.insert_exprs(self.statements)

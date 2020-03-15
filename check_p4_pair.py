@@ -71,8 +71,11 @@ def evaluate_package(p4_package):
                 name = f"{p4_pipe_ast.name}_{key}"
                 z3_asts[name] = val
         # all other types are nonsense and we should not bother with them
-        elif isinstance(p4_pipe_ast, P4Z3Class):
-            z3_asts[pipe_name] = p4_pipe_ast.eval()
+        elif isinstance(p4_pipe_ast, z3.AstRef):
+            z3_asts[pipe_name] = p4_pipe_ast
+        else:
+            raise RuntimeError(
+                f"Unexpected Input Pipe {p4_pipe_ast} Type: {type(p4_pipe_ast)} !")
     return z3_asts
 
 

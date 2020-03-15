@@ -15,6 +15,9 @@ def gen_instance(var_name, p4z3_type):
         p4z3_type.ref_count += 1
         z3_cls = p4z3_type.instantiate(var_name)
         return z3_cls
+    elif isinstance(p4z3_type, P4ComplexInstance):
+        # static type, just return
+        return p4z3_type
     elif isinstance(p4z3_type, z3.SortRef):
         return z3.Const(f"{var_name}", p4z3_type)
     elif isinstance(p4z3_type, list):
@@ -722,66 +725,125 @@ class P4ExternInstance(P4ComplexInstance):
         super(P4ExternInstance, self).__init__(z3p4_type, name)
         self.p4_attrs = z3p4_type.p4_attrs
         self.type_params = z3p4_type.type_params
+        self.params = OrderedDict()
 
-    def eval(self):
+    def get_z3_repr(self):
         return z3.Const(self.name, self.z3_type)
+
+    def __call__(self, *args, **kwargs):
+        # TODO Figure out what to actually do here
+        return self.get_z3_repr()
 
     def initialize(self, *args, **kwargs):
         # TODO Figure out what to actually do here
         return self
 
 
+class ConstCallExpr(P4Expression):
+
+    def __init__(self, p4_method, *args, **kwargs):
+        self.p4_method = p4_method
+        self.args = args
+        self.kwargs = kwargs
+
+    def eval(self, p4_state):
+        p4_method = self.p4_method
+        # if we get a reference just try to find the method in the state
+        # FIXME: Not sure if this is what this is supposed to like
+        if not callable(p4_method):
+            p4_method = p4_state.resolve_expr(p4_method)
+        return p4_method.initialize(*self.args, **self.kwargs)
+        raise TypeError(f"Unsupported method type {type(p4_method)}!")
+
+
 class P4Package():
 
     def __init__(self, z3_reg, name, params):
         self.pipes = OrderedDict()
+        self.params = OrderedDict()
         self.name = name
         self.z3_reg = z3_reg
-        for arg in params:
-            is_ref = arg[0]
-            param_name = arg[1]
-            param_sort = arg[2]
-            param_default = arg[3]
-            # for now this is None, should be the type.
-            self.pipes[param_name] = arg[2]
+        for param in params:
+            self._add_parameter(param)
+
+    def _add_parameter(self, param):
+        is_ref = param[0]
+        param_name = param[1]
+        param_type = param[2]
+        param_default = param[3]
+        self.params[param_name] = (is_ref, param_type, param_default)
 
     def init_type_params(self, *args, **kwargs):
         return self
 
+    def sanitize_string(self, input_string):
+        # stupid hack to deal with weird naming schemes in p4c...
+        # FIXME: Figure out what this is even supposed to mean
+        if input_string.endswith("<...>"):
+            input_string = input_string[:-5]
+        return input_string
+
+    def merge_parameters(self, params, *args, **kwargs):
+        merged_params = {}
+        args_len = len(args)
+        for idx, (param_name, param_tuple) in enumerate(params.items()):
+            is_ref = param_tuple[0]
+            param_type = param_tuple[1]
+            param_default = param_tuple[2]
+            if idx < args_len:
+                merged_params[param_name] = (is_ref, param_type, args[idx])
+            elif param_default is not None:
+                # there is no argument but we have a default value, so use that
+                merged_params[param_name] = (is_ref, param_type, param_default)
+        for arg_name, arg_val in kwargs.items():
+            is_ref = params[arg_name][0]
+            merged_params[arg_name] = (is_ref, param_type, arg_val)
+        return merged_params
+
     def initialize(self, *args, **kwargs):
-        pipe_list = list(self.pipes.keys())
-        merged_args = {}
-        for idx, arg in enumerate(args):
-            name = pipe_list[idx]
-            merged_args[name] = arg
-        for name, arg in kwargs.items():
-            merged_args[name] = arg
-        for name, arg in merged_args.items():
-            if isinstance(arg, str):
-                # stupid hack to deal with weird naming schemes in p4c...
-                # FIXME: Figure out what this is even supposed to mean
-                if arg.endswith("<...>"):
-                    arg = arg[:-5]
-            # only add valid values that are initializable
-            if arg in self.z3_reg._globals:
-                pipe = self.z3_reg._globals[arg]
-                pipe_type = self.pipes[name]
+        merged_params = self.merge_parameters(self.params, *args, **kwargs)
+        for pipe_name, pipe_tuple in merged_params.items():
+            is_ref = pipe_tuple[0]
+            pipe_type = pipe_tuple[1]
+            pipe_arg = pipe_tuple[2]
+            if isinstance(pipe_arg, ConstCallExpr):
+                pipe_str = pipe_arg.p4_method
+                pipe_str = self.sanitize_string(pipe_str)
                 # TODO: We need to initialize, but can you have arguments here?
                 # TODO: This is a royal mess
                 # FIXME: Do not skip externs here
+                p4_method = self.z3_reg._globals[pipe_str]
+                p4_method = p4_method.initialize(
+                    *pipe_arg.args, **pipe_arg.kwargs)
+                params = p4_method.params
                 if isinstance(pipe_type, P4Extern):
+                    # this should not be necessary but we are forced to
+                    # initialize types likes this because of muddy extern
+                    # definitions. Fix this eventually.
                     for type_param in pipe_type.type_params:
                         is_ref = type_param[0]
                         param_name = type_param[1]
                         param_sort = type_param[2]
                         param_default = type_param[3]
-                        pipe.params[param_name] = (
+                        params[param_name] = (
                             is_ref, param_sort, param_default)
-                self.pipes[name] = pipe.initialize()
+                p4_state = self.z3_reg.init_p4_state(p4_method.name, params)
+                self.pipes[pipe_name] = p4_method(p4_state)
+            elif isinstance(pipe_arg, str):
+                pipe_arg = self.sanitize_string(pipe_arg)
+                pipe = self.z3_reg._globals[pipe_arg].initialize()
+                self.pipes[pipe_name] = pipe
+            elif isinstance(pipe_arg, z3.ExprRef):
+                # for some reason simple expressions are also possible.
+                self.pipes[pipe_name] = pipe_arg
             else:
-                log.warning(
-                    "Skipping value %s, type %s because it does not make "
-                    "sense as a P4 pipeline.", arg, type(arg))
+                raise RuntimeError(
+                    f"Unsupported value {pipe_arg}, type {type(pipe_arg)}."
+                    " It does not make sense as a P4 pipeline.")
+        return self
+
+    def __call__(self, *args, **kwargs):
+        # TODO Figure out what to actually do here
         return self
 
 
