@@ -17,7 +17,7 @@ log = logging.getLogger(__name__)
 
 FILE_DIR = Path(__file__).parent.resolve()
 P4C_BIN = FILE_DIR.joinpath("p4c/build/p4c")
-TOFINO_BIN = FILE_DIR.joinpath("tofino/bin/bf-p4c")
+TOFINO_BIN = FILE_DIR.joinpath("tofino/bf_src/install/bin/bf-p4c")
 P4Z3_BIN = FILE_DIR.joinpath("p4c/build/p4toz3")
 P4RANDOM_BIN = FILE_DIR.joinpath("p4c/build/p4bludgeon")
 
@@ -26,7 +26,7 @@ GENERATOR_BUG_DIR = OUTPUT_DIR.joinpath("generator_bugs")
 CRASH_BUG_DIR = OUTPUT_DIR.joinpath("crash_bugs")
 VALIDATION_BUG_DIR = OUTPUT_DIR.joinpath("validation_bugs")
 TIMEOUT_DIR = OUTPUT_DIR.joinpath("timeout_bugs")
-ITERATIONS = 10000
+ITERATIONS = 1
 NUM_PROCESSES = 4
 USE_EMI = False
 USE_TOFINO = False
@@ -157,6 +157,7 @@ def check(idx):
         # reset the dump directory
         util.del_dir(dump_dir)
         return
+    return
     try:
         # Tofino does not allow insights into the individual passes
         # So we are forced to use the EMI technique
@@ -192,6 +193,9 @@ def check(idx):
 
 def main(args):
     util.check_dir(OUTPUT_DIR)
+    if USE_TOFINO:
+        # tofino only supports single threaded mode for now
+        NUM_PROCESSES = 1
     with Pool(NUM_PROCESSES) as p:
         p.map(check, range(ITERATIONS))
     return util.EXIT_SUCCESS

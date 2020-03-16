@@ -1,7 +1,11 @@
 import argparse
 import logging
 import sys
+import os
+import signal
+import time
 import itertools
+from subprocess import Popen
 from pathlib import Path
 from dataclasses import dataclass
 
@@ -16,6 +20,8 @@ P4Z3_BIN = FILE_DIR.joinpath("p4c/build/p4toz3")
 P4RANDOM_BIN = FILE_DIR.joinpath("p4c/build/p4bludgeon")
 OUT_DIR = FILE_DIR.joinpath("validated")
 P4C_DIR = FILE_DIR.joinpath("p4c")
+TOFINO_DIR = FILE_DIR.joinpath("tofino/bf_src")
+
 NUM_RETRIES = 10
 USE_TOFINO = False
 
@@ -41,7 +47,7 @@ def run_p4_to_py(p4_file, py_file, option_str=""):
     cmd += f"--output {py_file} "
     cmd += option_str
     if USE_TOFINO:
-        include_dir = FILE_DIR.joinpath("tofino/include")
+        include_dir = TOFINO_DIR.joinpath(f"install/share/p4c/p4include/ ")
         cmd += f"-I {include_dir}"
     log.info("Converting p4 to z3 python with command %s ", cmd)
     return util.exec_process(cmd)
@@ -143,6 +149,64 @@ def get_semantics(out_dir, p4_input):
     return z3_prog, util.EXIT_SUCCESS
 
 
+def run_bmv2_test(out_dir, p4_input):
+    cmd = "python "
+    cmd += f"{P4C_DIR}/backends/bmv2/run-bmv2-test.py "
+    cmd += f"{P4C_DIR} -v "
+    cmd += f"-bd {P4C_DIR}/build "
+    cmd += f"{out_dir}/{p4_input.name} "
+    return util.exec_process(cmd)
+
+
+def open_process(cmd, python):
+    os_env = os.environ.copy()
+    os_env["PYTHONPATH"] = f"${{PYTHONPATH}}:{FILE_DIR}"
+    return Popen(cmd, shell=True, env=os_env,
+                 universal_newlines=True,
+                 preexec_fn=os.setsid)
+
+
+def run_tofino_test(out_dir, p4_input, stf_file_name):
+    os.chdir(out_dir)
+    prog_name = p4_input.stem
+    test_dir = out_dir.joinpath("test_dir")
+    util.check_dir(test_dir)
+    util.copy_file(stf_file_name, test_dir)
+    template_name = test_dir.joinpath(f"{prog_name}.py")
+    util.copy_file(f"{FILE_DIR}/tofino_test_template.py", template_name)
+    config_cmd = f"{TOFINO_DIR}/pkgsrc/p4-build/configure "
+    config_cmd += f"--with-tofino --with-p4c=bf-p4c "
+    config_cmd += f"--prefix={TOFINO_DIR}/install "
+    config_cmd += f"--bindir={TOFINO_DIR}/install/bin "
+    config_cmd += f"P4_NAME={prog_name} "
+    config_cmd += f"P4_PATH={p4_input.resolve()} "
+    config_cmd += f"P4_VERSION=p4-16 "
+    config_cmd += f"P4_ARCHITECTURE=tna "
+    result = util.exec_process(config_cmd)
+    make_cmd = f"make -C {out_dir} "
+    result = util.exec_process(make_cmd)
+    make_cmd = f"make install -C {out_dir} "
+    result = util.exec_process(make_cmd)
+    model_cmd = f"{TOFINO_DIR}/run_tofino_model.sh "
+    model_cmd += f"-p {prog_name} "
+    model_proc = open_process(model_cmd)
+    time.sleep(10)
+    switch_cmd = f"{TOFINO_DIR}/run_switchd.sh "
+    switch_cmd += f"--arch tofino "
+    switch_cmd += f"-p {prog_name} &"
+    switch_proc = open_process(switch_cmd)
+    time.sleep(10)
+    test_cmd = f"{TOFINO_DIR}/run_p4_tests.sh "
+    test_cmd += f"-t {test_dir} "
+    result = util.exec_process(test_cmd)
+    os.killpg(os.getpgid(model_proc.pid), signal.SIGHUP)
+    os.killpg(os.getpgid(switch_proc.pid), signal.SIGHUP)
+    os.killpg(os.getpgid(model_proc.pid), signal.SIGTERM)
+    os.killpg(os.getpgid(switch_proc.pid), signal.SIGTERM)
+    os.chdir(FILE_DIR)
+    return result
+
+
 def run_stf_test(out_dir, p4_input, stf_str):
     log.info("Running stf test on file %s", p4_input)
     p4_input = Path(p4_input)
@@ -150,12 +214,10 @@ def run_stf_test(out_dir, p4_input, stf_str):
     stf_file_name = out_dir.joinpath(f"{p4_input.stem}.stf")
     with open(stf_file_name, 'w+') as stf_file:
         stf_file.write(stf_str)
-    cmd = "python "
-    cmd += f"{P4C_DIR}/backends/bmv2/run-bmv2-test.py "
-    cmd += f"{P4C_DIR} -v "
-    cmd += f"-bd {P4C_DIR}/build "
-    cmd += f"{out_dir}/{p4_input.name} "
-    result = util.exec_process(cmd)
+    if USE_TOFINO:
+        result = run_tofino_test(out_dir, p4_input, stf_file_name)
+    else:
+        result = run_bmv2_test(out_dir, p4_input)
     if result.returncode != util.EXIT_SUCCESS:
         log.error("Failed to validate %s with a stf test:", p4_input.name)
         log.error("*" * 60)
