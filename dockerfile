@@ -24,7 +24,8 @@ ENV P4C_DEPS bison \
 
 ENV PIP_PACKAGES wheel \
                  z3-solver \
-                 pytest
+                 pytest \
+                 dataclasses
 
 RUN apt update
 RUN apt install -y $DEPS $P4C_DEPS
