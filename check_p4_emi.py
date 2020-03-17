@@ -1,11 +1,9 @@
 import argparse
 import logging
-import sys
-import os
-import signal
 import time
+import os
+import sys
 import itertools
-from subprocess import Popen
 from pathlib import Path
 from dataclasses import dataclass
 
@@ -145,7 +143,6 @@ def get_semantics(out_dir, p4_input):
     z3_prog, result = z3check.get_z3_formulization(py_file, fail_dir)
     if result != util.EXIT_SUCCESS:
         return None, result
-
     return z3_prog, util.EXIT_SUCCESS
 
 
@@ -158,22 +155,35 @@ def run_bmv2_test(out_dir, p4_input):
     return util.exec_process(cmd)
 
 
-def open_process(cmd, python):
-    os_env = os.environ.copy()
-    os_env["PYTHONPATH"] = f"${{PYTHONPATH}}:{FILE_DIR}"
-    return Popen(cmd, shell=True, env=os_env,
-                 universal_newlines=True,
-                 preexec_fn=os.setsid)
+# def report_error(result, text):
+#     log.error(text)
+#     log.error("*" * 60)
+#     log.error(result.stdout.decode("utf-8"))
+#     log.error("*" * 60)
+#     return result
+
+
+def cleanup(procs):
+    sighup = 1
+    sigkill = 9
+    for proc in procs:
+        os.killpg(os.getpgid(proc.pid), sighup)
+        os.killpg(os.getpgid(proc.pid), sigkill)
 
 
 def run_tofino_test(out_dir, p4_input, stf_file_name):
-    os.chdir(out_dir)
+    # we need to change the working directory
+    # tofino scripts make some assumptions where to dump files
     prog_name = p4_input.stem
+    # we need to create a specific test dir in which we can run tests
     test_dir = out_dir.joinpath("test_dir")
     util.check_dir(test_dir)
     util.copy_file(stf_file_name, test_dir)
     template_name = test_dir.joinpath(f"{prog_name}.py")
+    # use a test template that runs stf tests
     util.copy_file(f"{FILE_DIR}/tofino_test_template.py", template_name)
+
+    # initialize the target install
     config_cmd = f"{TOFINO_DIR}/pkgsrc/p4-build/configure "
     config_cmd += f"--with-tofino --with-p4c=bf-p4c "
     config_cmd += f"--prefix={TOFINO_DIR}/install "
@@ -182,28 +192,39 @@ def run_tofino_test(out_dir, p4_input, stf_file_name):
     config_cmd += f"P4_PATH={p4_input.resolve()} "
     config_cmd += f"P4_VERSION=p4-16 "
     config_cmd += f"P4_ARCHITECTURE=tna "
-    result = util.exec_process(config_cmd)
+    result = util.exec_process(config_cmd, cwd=out_dir)
+    if result.returncode != util.EXIT_SUCCESS:
+        return result
+    # create the target
     make_cmd = f"make -C {out_dir} "
     result = util.exec_process(make_cmd)
+    if result.returncode != util.EXIT_SUCCESS:
+        return result
+    # install the target in the tofino folder
     make_cmd = f"make install -C {out_dir} "
     result = util.exec_process(make_cmd)
+    if result.returncode != util.EXIT_SUCCESS:
+        return result
+    # start the target in the background
     model_cmd = f"{TOFINO_DIR}/run_tofino_model.sh "
     model_cmd += f"-p {prog_name} "
-    model_proc = open_process(model_cmd)
-    time.sleep(10)
+    model_proc = util.start_process(
+        model_cmd, preexec_fn=os.setsid, cwd=out_dir)
+    # start the binary for the target in the background
     switch_cmd = f"{TOFINO_DIR}/run_switchd.sh "
     switch_cmd += f"--arch tofino "
-    switch_cmd += f"-p {prog_name} &"
-    switch_proc = open_process(switch_cmd)
-    time.sleep(10)
+    switch_cmd += f"-p {prog_name} "
+    switch_proc = util.start_process(
+        switch_cmd, preexec_fn=os.setsid, cwd=out_dir)
+    # wait for a bit
+    time.sleep(2)
+    # finally we can run the test
     test_cmd = f"{TOFINO_DIR}/run_p4_tests.sh "
     test_cmd += f"-t {test_dir} "
-    result = util.exec_process(test_cmd)
-    os.killpg(os.getpgid(model_proc.pid), signal.SIGHUP)
-    os.killpg(os.getpgid(switch_proc.pid), signal.SIGHUP)
-    os.killpg(os.getpgid(model_proc.pid), signal.SIGTERM)
-    os.killpg(os.getpgid(switch_proc.pid), signal.SIGTERM)
-    os.chdir(FILE_DIR)
+    os_env = os.environ.copy()
+    os_env["PYTHONPATH"] = f"${{PYTHONPATH}}:{FILE_DIR}"
+    result = util.exec_process(test_cmd, env=os_env, cwd=out_dir)
+    cleanup([model_proc, switch_proc])
     return result
 
 
@@ -222,6 +243,8 @@ def run_stf_test(out_dir, p4_input, stf_str):
         log.error("Failed to validate %s with a stf test:", p4_input.name)
         log.error("*" * 60)
         log.error(result.stdout.decode("utf-8"))
+        log.error("*" * 60)
+        log.error(result.stderr.decode("utf-8"))
         log.error("*" * 60)
         util.check_dir(fail_dir)
         with open(f"{fail_dir}/{p4_input.stem}_error.txt", 'w+') as err_file:

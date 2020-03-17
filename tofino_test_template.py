@@ -1,7 +1,6 @@
 from pathlib import Path
 FILE_DIR = Path(__file__).parent.resolve()
 FILE_NAME = Path(__file__).stem
-
 import ptf.testutils as testutils
 from bfruntime_client_base_tests import BfRuntimeTest
 from p4c.tools.stf.stf_parser import STFParser
@@ -17,7 +16,7 @@ class VerifyTest(BfRuntimeTest):
         stf_parser = STFParser()
         # the test will have the same name as the file
         stf_file = FILE_DIR.joinpath(f"{FILE_NAME}.stf")
-        parsed_stf, errs = stf_parser.parse(filename=stf_file)
+        parsed_stf, _ = stf_parser.parse(filename=stf_file)
         input_pkts = []
         expect_pkts = []
         for entry in parsed_stf:
@@ -33,9 +32,14 @@ class VerifyTest(BfRuntimeTest):
             input_bytes = bytes.fromhex(input_pkt[1])
             pkt = Ether(input_bytes)
             testutils.send_packet(self, input_port, pkt)
-
-        for expect_pkt in expect_pkts:
-            expect_port = expect_pkt[0]
-            expect_bytes = bytes.fromhex(expect_pkt[1])
-            pkt = Ether(expect_bytes)
-            testutils.verify_packet(self, pkt, expect_port)
+        try:
+            for expect_pkt in expect_pkts:
+                expect_port = expect_pkt[0]
+                expect_bytes = bytes.fromhex(expect_pkt[1])
+                pkt = Ether(expect_bytes)
+                testutils.verify_packet(self, pkt, expect_port)
+        except AssertionError as e:
+            with open(f"{FILE_NAME}_ptf_err.log", 'w+') as err_file:
+                err_file.write(str(e))
+                err_file.flush()
+            raise AssertionError("Test failed, see error above")

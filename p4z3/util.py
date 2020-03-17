@@ -67,20 +67,31 @@ def natural_sort(l):
     return sorted(l, key=alphanum_key)
 
 
-def exec_process(cmd, out_file=subprocess.STDOUT):
+def start_process(cmd, *args, out_file=subprocess.STDOUT, **kwargs):
     log.debug("Executing %s ", cmd)
     if out_file is subprocess.STDOUT:
-        result = subprocess.run(
-            cmd.split(), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        if result.stdout:
-            log.debug("Process output: %s", result.stdout.decode("utf-8"))
-        if result.returncode != 0:
-            log.error("BEGIN " + 40 * "#")
-            log.error("Failed while executing:\n%s\n", cmd)
-            log.error("Output:\n%s", result.stderr.decode("utf-8"))
-            log.error("END " + 40 * "#")
-        return result
-    err = out_file + ".err"
-    out = out_file + ".out"
-    with open(out, "w+") as f_out, open(err, "w+") as f_err:
-        return subprocess.run(cmd.split(), stdout=f_out, stderr=f_err)
+        proc = subprocess.Popen(cmd.split(), *args, **kwargs)
+    elif out_file is subprocess.PIPE:
+        proc = subprocess.Popen(
+            cmd.split(), stdout=out_file, stderr=out_file, *args, **kwargs)
+    else:
+        err = out_file + ".err"
+        out = out_file + ".out"
+        with open(out, "w+") as f_out, open(err, "w+") as f_err:
+            proc = subprocess.Popen(cmd.split(), stdout=f_out,
+                                    stderr=f_err, *args, **kwargs)
+    return proc
+
+
+def exec_process(cmd, *args, **kwargs):
+    log.debug("Executing %s ", cmd)
+    result = subprocess.run(cmd.split(), stdout=subprocess.PIPE,
+                            stderr=subprocess.PIPE, *args, **kwargs)
+    if result.stdout:
+        log.debug("Process output: %s", result.stdout.decode("utf-8"))
+    if result.returncode != 0:
+        log.error("BEGIN " + 40 * "#")
+        log.error("Failed while executing:\n%s\n", cmd)
+        log.error("Output:\n%s", result.stderr.decode("utf-8"))
+        log.error("END " + 40 * "#")
+    return result

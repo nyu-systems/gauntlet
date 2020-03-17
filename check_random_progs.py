@@ -26,7 +26,7 @@ GENERATOR_BUG_DIR = OUTPUT_DIR.joinpath("generator_bugs")
 CRASH_BUG_DIR = OUTPUT_DIR.joinpath("crash_bugs")
 VALIDATION_BUG_DIR = OUTPUT_DIR.joinpath("validation_bugs")
 TIMEOUT_DIR = OUTPUT_DIR.joinpath("timeout_bugs")
-ITERATIONS = 1
+ITERATIONS = 10
 NUM_PROCESSES = 4
 USE_EMI = False
 USE_TOFINO = False
@@ -60,9 +60,12 @@ def timeout(seconds=10, error_message=os.strerror(errno.ETIME)):
 
 
 def generate_id():
-    sw_id = "".join(random.choice("".join([random.choice(
-        string.ascii_letters + string.digits)
-        for ch in range(4)])) for _ in range(4))
+    # try to generate a valid C identifier
+    # first letter cannot be a number
+    sw_id = random.choice(string.ascii_letters)
+    appendix = [random.choice(
+        string.ascii_letters + string.digits) for ch in range(4)]
+    sw_id += "".join(appendix)
     return sw_id
 
 
@@ -139,25 +142,24 @@ def check(idx):
     log.info("Testing p4 program %s", p4_file)
     result, p4_file = generate_p4_dump(P4RANDOM_BIN, p4_file)
     if result.returncode != util.EXIT_SUCCESS:
-        log.info("Failed generate P4 code!")
+        log.error("Failed generate P4 code!")
         dump_result(result, GENERATOR_BUG_DIR, p4_file)
         # reset the dump directory
         util.del_dir(dump_dir)
-        return
+        return result.returncode
     if USE_TOFINO:
         result = compile_p4_prog(TOFINO_BIN, p4_file, dump_dir)
     else:
         result = compile_p4_prog(P4C_BIN, p4_file, dump_dir)
     if result.returncode != util.EXIT_SUCCESS:
         if not is_known_bug(result):
-            log.info("Failed to compile the P4 code!")
-            log.info("Found a new bug!")
+            log.error("Failed to compile the P4 code!")
+            log.error("Found a new bug!")
             dump_result(result, CRASH_BUG_DIR, p4_file)
             dump_file(CRASH_BUG_DIR, p4_file)
         # reset the dump directory
         util.del_dir(dump_dir)
-        return
-    return
+        return result.returncode
     try:
         # Tofino does not allow insights into the individual passes
         # So we are forced to use the EMI technique
@@ -171,34 +173,40 @@ def check(idx):
         dump_file(TIMEOUT_DIR, log_file)
         # reset the dump directory
         util.del_dir(dump_dir)
-        return
+        return util.EXIT_FAILURE
     if result.returncode != util.EXIT_SUCCESS:
-        log.info("Failed to validate the P4 code!")
-        log.info("Rerun the example with:")
+        log.error("Failed to validate the P4 code!")
+        log.error("Rerun the example with:")
         out_file = VALIDATION_BUG_DIR.joinpath(p4_file.name)
+        if USE_TOFINO:
+            err_log = dump_dir.joinpath(Path(p4_file.stem + "_ptf_err.log"))
+            dump_file(VALIDATION_BUG_DIR, err_log)
         if USE_EMI:
-            log.info("python3 check_p4_emi.py -i %s", out_file)
+            log.error("python3 check_p4_emi.py -i %s", out_file)
             stf_name = dump_dir.joinpath(Path(p4_file.stem + ".stf"))
             dump_file(VALIDATION_BUG_DIR, stf_name)
         else:
-            log.info("python3 check_p4_compilation.py -i %s", out_file)
+            log.error("python3 check_p4_compilation.py -i %s", out_file)
         dump_file(VALIDATION_BUG_DIR, log_file)
         dump_file(VALIDATION_BUG_DIR, p4_file)
         # reset the dump directory
         util.del_dir(dump_dir)
-        return
+        return result.returncode
     # reset the dump directory
     util.del_dir(dump_dir)
+    return util.EXIT_SUCCESS
 
 
 def main(args):
     util.check_dir(OUTPUT_DIR)
     if USE_TOFINO:
         # tofino only supports single threaded mode for now
-        NUM_PROCESSES = 1
+        for idx in range(ITERATIONS):
+            check(idx)
+        return
     with Pool(NUM_PROCESSES) as p:
         p.map(check, range(ITERATIONS))
-    return util.EXIT_SUCCESS
+    return
 
 
 if __name__ == '__main__':
