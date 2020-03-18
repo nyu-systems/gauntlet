@@ -161,15 +161,5 @@ def test_xfails(request, test_name):
     request.node.custom_err = run_z3p4_test(p4_file, target_dir)
     assert request.node.custom_err == util.EXIT_SUCCESS
 
-
-@pytest.mark.run_default
-@pytest.mark.skip(reason="binary currently broken")
-def test_issue1863_broken():
-    # ***** actual custom violation *****
-    p4_dir = Path("violated/issue1863/")
-    p4_file, target_dir = prep_test("issue1863-bmv2.p4", p4_dir)
-    result = p4c_check.validate_translation(p4_file, target_dir, P4C_BIN_1863)
-    assert result == util.EXIT_VIOLATION
-
 # cat analysis.log |
 # grep -Po '(?<=(Node )).*(?=not implemented)' | sort | uniq -c

@@ -190,7 +190,7 @@ class P4mod(P4BinaryOp):
             # use normal modulo ops instead
             if isinstance(y, int) and isinstance(x, int):
                 return op.mod(x, y)
-            return z3.SRem(x, y)
+            return z3.URem(x, y)
         P4BinaryOp.__init__(self, lval, rval, operator)
 
 

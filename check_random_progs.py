@@ -26,17 +26,15 @@ GENERATOR_BUG_DIR = OUTPUT_DIR.joinpath("generator_bugs")
 CRASH_BUG_DIR = OUTPUT_DIR.joinpath("crash_bugs")
 VALIDATION_BUG_DIR = OUTPUT_DIR.joinpath("validation_bugs")
 TIMEOUT_DIR = OUTPUT_DIR.joinpath("timeout_bugs")
-ITERATIONS = 10
+ITERATIONS = 10000
 NUM_PROCESSES = 4
 USE_EMI = False
 USE_TOFINO = False
 
 KNOWN_BUGS = [
     "Conditional execution",
-    "At this point in the compilation typechecking should not",
-    "Null cst",
-    "format-string referred to more arguments than were passed",
     "Unimplemented compiler support",
+    "width of left operand of shift needs to be specified",
 ]
 
 
