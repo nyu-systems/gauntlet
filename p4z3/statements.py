@@ -2,7 +2,7 @@ import copy
 from collections import OrderedDict
 import z3
 
-from p4z3.base import log, copy_attrs
+from p4z3.base import log, copy_attrs, DefaultExpression
 from p4z3.base import P4ComplexInstance, P4Statement, P4Z3Class
 from p4z3.callables import P4Callable, P4Context
 
@@ -132,14 +132,14 @@ class SwitchStatement(P4Statement):
 
     def add_case(self, action_str):
         # skip default statements, they are handled separately
-        if action_str == "default":
+        if isinstance(action_str, DefaultExpression):
             return
         case = {}
         case["case_block"] = BlockStatement([])
         self.cases[action_str] = case
 
     def add_stmt_to_case(self, action_str, case_stmt):
-        if action_str == "default":
+        if isinstance(action_str, DefaultExpression):
             self.default_case = case_stmt
         else:
             self.cases[action_str]["case_block"] = case_stmt

@@ -152,6 +152,11 @@ class P4Statement(P4Z3Class):
         raise NotImplementedError("Method eval not implemented!")
 
 
+class DefaultExpression(P4Z3Class):
+    def __init__(self):
+        pass
+
+
 class P4Declaration(P4Statement):
     # the difference between a P4Declaration and a P4Assignment is that
     # we resolve the variable in the P4Assignment
@@ -584,16 +589,54 @@ class HeaderStack(P4ComplexType):
         return HeaderStackInstance(self, name)
 
 
+class HeaderStackDict(dict):
+    def __init__(self, init_dict, parent_hdr):
+        self.parent_hdr = parent_hdr
+        dict.__init__(self)
+        for key, val in init_dict.items():
+            dict.__setitem__(self, key, val)
+
+    def __getitem__(self, key):
+        if key == "next":
+            # This is a built-in
+            # TODO: Check if this implementation makes sense
+            try:
+                hdr = self.parent_hdr.p4_attrs[f"{self.parent_hdr.next_idx}"]
+            except KeyError:
+                # if the header does not exist use it to break out of the loop?
+                size = self.parent_hdr.p4_attrs["size"]
+                hdr = self.parent_hdr.p4_attrs[f"{size -1}"]
+            self.parent_hdr.next_idx += 1
+            self.parent_hdr.p4_attrs["lastIndex"] += 1
+            return hdr
+        if key == "last":
+            # This is a built-in
+            # TODO: Check if this implementation makes sense
+            last = 0 if self.parent_hdr.p4_attrs["size"] < 1 else self.parent_hdr.p4_attrs["size"] - 1
+            hdr = self.parent_hdr.p4_attrs[f"{last}"]
+            return hdr
+
+        val = dict.__getitem__(self, key)
+        return val
+
+    def __setitem__(self, key, val):
+        dict.__setitem__(self, key, val)
+
+
 class HeaderStackInstance(P4ComplexInstance):
 
     def __init__(self, z3p4_type, name):
         super(HeaderStackInstance, self).__init__(z3p4_type, name)
+
+        # this is completely nuts but it works for now
+        # no idea how to deal with properties
+        # this intercepts dictionary lookups and modifies the header in place
+        self.p4_attrs = HeaderStackDict(self.p4_attrs, self)
         self.next_idx = 0
         self.p4_attrs["push_front"] = self.push_front
         self.p4_attrs["pop_front"] = self.pop_front
-        self.p4_attrs["next"] = self.next
-        self.p4_attrs["last"] = self.last
         self.p4_attrs["size"] = len(self.members)
+        self.p4_attrs["lastIndex"] = z3.BitVecVal(self.next_idx, 32) - 1
 
     def push_front(self, p4_state, num):
         # This is a built-in
@@ -617,6 +660,7 @@ class HeaderStackInstance(P4ComplexInstance):
             except KeyError:
                 pass
 
+    @property
     def next(self):
         # This is a built-in
         # TODO: Check if this implementation makes sense
@@ -626,8 +670,11 @@ class HeaderStackInstance(P4ComplexInstance):
             # if the header does not exist use it to break out of the loop?
             size = self.p4_attrs["size"]
             hdr = self.p4_attrs[f"{size -1}"]
+        self.next_idx += 1
+        self.p4_attrs["lastIndex"] += 1
         return hdr
 
+    @property
     def last(self):
         # This is a built-in
         # TODO: Check if this implementation makes sense
@@ -645,10 +692,9 @@ class HeaderStackInstance(P4ComplexInstance):
 
     def __copy__(self):
         result = super(HeaderStackInstance, self).__copy__()
+        # update references to the method calls
         result.p4_attrs["push_front"] = result.push_front
         result.p4_attrs["pop_front"] = result.pop_front
-        result.p4_attrs["next"] = result.next
-        result.p4_attrs["last"] = result.last
         return result
 
 

@@ -17,7 +17,7 @@ log = logging.getLogger(__name__)
 # TODO: Fix these, likely by using simulation relations
 SKIPPED_PASSES = ["FlattenHeaders", "FlattenInterfaceStructs",
                   "NestedStructs", "UniqueNames", "UniqueParameters",
-                  "Inline", "SpecializeAll"]
+                  "Inline", "SpecializeAll", "ExpandLookahead"]
 
 
 def needs_skipping(post):

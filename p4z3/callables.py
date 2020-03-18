@@ -1,6 +1,6 @@
 from p4z3.base import OrderedDict, z3, log, copy
 from p4z3.base import merge_parameters, gen_instance, z3_cast
-from p4z3.base import P4Z3Class, P4ComplexInstance
+from p4z3.base import P4Z3Class, P4ComplexInstance, DefaultExpression
 
 
 class P4Callable(P4Z3Class):
@@ -376,7 +376,7 @@ class P4Table(P4Callable):
                 const_key = const_keys[index]
                 # default implies don't care, do not add
                 # TODO: Verify that this assumption is right...
-                if str(const_key) == "default":
+                if isinstance(const_key, DefaultExpression):
                     continue
                 c_key_eval = p4_state.resolve_expr(const_keys[index])
                 matches.append(key_eval == c_key_eval)
