@@ -30,11 +30,23 @@ ITERATIONS = 10000
 NUM_PROCESSES = 4
 USE_EMI = False
 USE_TOFINO = False
+DO_VALIDATE = False
 
 KNOWN_BUGS = [
     "Conditional execution",
     "Unimplemented compiler support",
     "width of left operand of shift needs to be specified",
+    # bf
+    "Unsupported on target",
+    "Unsupported action spanning multiple stages",
+    "shift count must be",
+    "Null cst",
+    "no definitions",
+    "failed command assembler",
+    "condition too complex",
+    "source of modify_field invalid",
+    "Please consider simplifying",
+    "Operands of arithmetic operations cannot be greater"
 ]
 
 
@@ -129,35 +141,7 @@ def validate_p4_emi(p4_file, target_dir, log_file):
     return util.exec_process(p4z3_cmd)
 
 
-def check(idx):
-    test_id = generate_id()
-    test_name = f"{test_id}_{idx}"
-    dump_dir = OUTPUT_DIR.joinpath(f"dmp_{test_name}")
-    util.check_dir(dump_dir)
-    log_file = dump_dir.joinpath(f"{test_name}.log")
-    p4_file = dump_dir.joinpath(f"{test_name}.p4")
-
-    log.info("Testing p4 program %s", p4_file)
-    result, p4_file = generate_p4_dump(P4RANDOM_BIN, p4_file)
-    if result.returncode != util.EXIT_SUCCESS:
-        log.error("Failed generate P4 code!")
-        dump_result(result, GENERATOR_BUG_DIR, p4_file)
-        # reset the dump directory
-        util.del_dir(dump_dir)
-        return result.returncode
-    if USE_TOFINO:
-        result = compile_p4_prog(TOFINO_BIN, p4_file, dump_dir)
-    else:
-        result = compile_p4_prog(P4C_BIN, p4_file, dump_dir)
-    if result.returncode != util.EXIT_SUCCESS:
-        if not is_known_bug(result):
-            log.error("Failed to compile the P4 code!")
-            log.error("Found a new bug!")
-            dump_result(result, CRASH_BUG_DIR, p4_file)
-            dump_file(CRASH_BUG_DIR, p4_file)
-        # reset the dump directory
-        util.del_dir(dump_dir)
-        return result.returncode
+def validate(dump_dir, p4_file, log_file):
     try:
         # Tofino does not allow insights into the individual passes
         # So we are forced to use the EMI technique
@@ -170,7 +154,6 @@ def check(idx):
         dump_file(TIMEOUT_DIR, p4_file)
         dump_file(TIMEOUT_DIR, log_file)
         # reset the dump directory
-        util.del_dir(dump_dir)
         return util.EXIT_FAILURE
     if result.returncode != util.EXIT_SUCCESS:
         log.error("Failed to validate the P4 code!")
@@ -187,17 +170,50 @@ def check(idx):
             log.error("python3 check_p4_compilation.py -i %s", out_file)
         dump_file(VALIDATION_BUG_DIR, log_file)
         dump_file(VALIDATION_BUG_DIR, p4_file)
+    return result.returncode
+
+
+def check(idx):
+    test_id = generate_id()
+    test_name = f"{test_id}_{idx}"
+    dump_dir = OUTPUT_DIR.joinpath(f"dmp_{test_name}")
+    util.check_dir(dump_dir)
+    log_file = dump_dir.joinpath(f"{test_name}.log")
+    p4_file = dump_dir.joinpath(f"{test_name}.p4")
+    log.info("Testing p4 program %s", p4_file)
+    # generate a random program
+    result, p4_file = generate_p4_dump(P4RANDOM_BIN, p4_file)
+    if result.returncode != util.EXIT_SUCCESS:
+        log.error("Failed generate P4 code!")
+        dump_result(result, GENERATOR_BUG_DIR, p4_file)
         # reset the dump directory
         util.del_dir(dump_dir)
         return result.returncode
+    # check compilation
+    if USE_TOFINO:
+        result = compile_p4_prog(TOFINO_BIN, p4_file, dump_dir)
+    else:
+        result = compile_p4_prog(P4C_BIN, p4_file, dump_dir)
+    if result.returncode != util.EXIT_SUCCESS:
+        if not is_known_bug(result):
+            log.error("Failed to compile the P4 code!")
+            log.error("Found a new bug!")
+            dump_result(result, CRASH_BUG_DIR, p4_file)
+            dump_file(CRASH_BUG_DIR, p4_file)
+        # reset the dump directory
+        util.del_dir(dump_dir)
+        return result
+    # check validation
+    if DO_VALIDATE:
+        result = validate(dump_dir, p4_file, log_file)
     # reset the dump directory
     util.del_dir(dump_dir)
-    return util.EXIT_SUCCESS
+    return result
 
 
 def main(args):
     util.check_dir(OUTPUT_DIR)
-    if USE_TOFINO:
+    if USE_TOFINO and DO_VALIDATE:
         # tofino only supports single threaded mode for now
         for idx in range(ITERATIONS):
             check(idx)
@@ -218,11 +234,15 @@ if __name__ == '__main__':
     parser.add_argument("-l", "--log_file", dest="log_file",
                         default="random.log",
                         help="Specifies name of the log file.")
+    parser.add_argument("-v", "--validate", dest="do_validate",
+                        action='store_true',
+                        help="Also perform validation on programs.")
     # Parse options and process argv
     args = parser.parse_args()
     # lazy hack because I do not want to write a wrapper for map()
     USE_EMI = args.use_emi
     USE_TOFINO = args.use_tofino
+    DO_VALIDATE = args.do_validate
     # configure logging
     logging.basicConfig(filename=args.log_file,
                         format="%(levelname)s:%(message)s",

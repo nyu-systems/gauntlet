@@ -1,4 +1,4 @@
-from p4z3.base import log, copy, z3
+from p4z3.base import log, z3
 from p4z3.base import P4Expression, P4ComplexInstance, DefaultExpression
 from p4z3.callables import P4Control
 from p4z3.statements import P4Exit
@@ -55,14 +55,13 @@ class ParserSelect(P4Expression):
         self.cases = []
         self.default = "accept"
         for case_key, case_state in cases:
-            if str(case_key) == "default":
+            if isinstance(case_key, DefaultExpression):
                 self.default = case_state
             else:
                 self.cases.append((case_key, case_state))
 
     def eval(self, p4_state):
-        p4_state_cpy = copy.copy(p4_state)
-        expr = p4_state.resolve_expr(self.default)
+        switches = []
         for case_val, case_name in reversed(self.cases):
             case_expr = p4_state.resolve_expr(case_val)
             select_cond = []
@@ -89,7 +88,12 @@ class ParserSelect(P4Expression):
                     select_cond.append(cond)
             if not select_cond:
                 select_cond = [z3.BoolVal(False)]
-            state_expr = copy.copy(p4_state_cpy).resolve_expr(case_name)
-            expr = z3.If(z3.And(*select_cond), state_expr, expr)
+            var_store, chain_copy = p4_state.checkpoint()
+            state_expr = p4_state.resolve_expr(case_name)
+            p4_state.restore(var_store, chain_copy)
+            switches.append((z3.And(*select_cond), state_expr))
 
+        expr = p4_state.resolve_expr(self.default)
+        for cond, state_expr in switches:
+            expr = z3.If(cond, state_expr, expr)
         return expr

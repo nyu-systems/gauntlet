@@ -32,6 +32,7 @@ def gen_instance(var_name, p4z3_type):
 
 def merge_parameters(params, *args, **kwargs):
     # FIXME: This function could be a lot more efficient...
+    # FIXME: Overloading does not work correctly here
     merged_args = {}
     args_len = len(args)
     for idx, param in enumerate(params):

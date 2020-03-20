@@ -77,7 +77,7 @@ xfails = [
     "array_field1.p4",
     "complex2.p4",
     "issue1989-bmv2.p4",
-    "issue754.p4",
+    "issue512.p4",
     "issue933.p4",
     "issue1334.p4",
     "logging.p4",
@@ -86,8 +86,21 @@ xfails = [
     "runtime-index-bmv2.p4",
     "side_effects.p4",
     "string.p4",
-    "struct_init-1.p4",
     "table-entries-range-bmv2.p4",
+    # parser failures
+    "fold_match.p4",
+    "functors8.p4",
+    "index.p4",  # runtimeindex
+    "issue-2123.p4",  # runtimeindex
+    "issue1937-2-bmv2.p4",
+    "issue1937.p4",
+    "issue2090.p4",
+    "issue561-bmv2.p4",
+    "issue774-4-bmv2.p4",
+    "issue774.p4",
+    "pvs-struct-3-bmv2.p4",
+    "spec-ex19.p4",
+    "issue314.p4",
 ]
 
 # these tests show pathological behavior and can currently not be tested

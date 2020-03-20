@@ -169,7 +169,6 @@ class P4Control(P4Callable):
     def eval_callable(self, p4_state, merged_args, var_buffer):
         # initialize the local context of the function for execution
         p4_context = P4Context(var_buffer, None)
-
         for const_param_name, const_arg in self.merged_consts.items():
             const_val = const_arg.p4_val
             const_val = p4_state.resolve_expr(const_val)
