@@ -7,30 +7,72 @@ header ethernet_t {
     bit<16> eth_type;
 }
 
+header H {
+    bit<8> a;
+    bit<8> b;
+    bit<8> c;
+    bit<8> d;
+    bit<8> e;
+    bit<8> f;
+    bit<8> g;
+    bit<8> h;
+    bit<8> i;
+    bit<8> j;
+    bit<8> k;
+    bit<8> l;
+    bit<8> m;
+    bit<8> n;
+    bit<8> o;
+}
+
 struct Headers {
     ethernet_t eth_hdr;
+    H h;
 }
 
 struct Meta {
 }
 
-bit<16> function_with_side_effect(inout bit<16> eth_type) {
-    eth_type = 0x0806;
-    return 16w2;
+bit<8> function_with_side_effect(inout bit<8> val) {
+    val = 1;
+    return 8w2;
 }
+
+bool bool_with_side_effect(inout bit<8> val) {
+    val = 1;
+    return true;
+}
+
+
+
 parser p(packet_in pkt, out Headers hdr, inout Meta m, inout standard_metadata_t sm) {
     state start {
         pkt.extract(hdr.eth_hdr);
+        pkt.extract(hdr.h);
         transition accept;
     }
 }
 
 control ingress(inout Headers h, inout Meta m, inout standard_metadata_t sm) {
     apply {
-        bit<16> dummy_var;
-        dummy_var = 16w0 & function_with_side_effect(h.eth_hdr.eth_type);
-        dummy_var = 16w0 * function_with_side_effect(h.eth_hdr.eth_type);
-        dummy_var = 16w0 >> function_with_side_effect(h.eth_hdr.eth_type);
+        bit<8> dummy_var;
+        bool dummy_bool;
+        dummy_var = 8w0 & function_with_side_effect(h.h.a);
+        dummy_var = 8w0 * function_with_side_effect(h.h.b);
+        dummy_var = 8w0 / function_with_side_effect(h.h.c);
+        dummy_var = 8w0 >> function_with_side_effect(h.h.d);
+        dummy_var = 8w0 << function_with_side_effect(h.h.e);
+        dummy_var = 8w0 % function_with_side_effect(h.h.f);
+        dummy_var = 8w0 ^ function_with_side_effect(h.h.g);
+        dummy_var = 8w0 |-| function_with_side_effect(h.h.h);
+        dummy_var = 8w255 |+| function_with_side_effect(h.h.i);
+        dummy_var = 8w255 + function_with_side_effect(h.h.h);
+        dummy_var = 8w255 | function_with_side_effect(h.h.j);
+        dummy_var = 8w0 - function_with_side_effect(h.h.k);
+        dummy_bool = function_with_side_effect(h.h.l) != function_with_side_effect(h.h.l);
+        dummy_bool = function_with_side_effect(h.h.m) == function_with_side_effect(h.h.m);
+        dummy_bool = true || bool_with_side_effect(h.h.n);
+        dummy_bool = false && bool_with_side_effect(h.h.o);
     }
 }
 

@@ -217,11 +217,29 @@ class P4land(P4BinaryOp):
         operator = z3.And
         P4BinaryOp.__init__(self, lval, rval, operator)
 
+    def eval(self, p4_state):
+        # we make the assumption that we get a z3 value back
+        lval_expr = z3.simplify(p4_state.resolve_expr(self.lval))
+        # boolean expressions can short-circuit
+        if lval_expr == z3.BoolVal(False):
+            return lval_expr
+        rval_expr = p4_state.resolve_expr(self.rval)
+        return self.operator(lval_expr, rval_expr)
+
 
 class P4lor(P4BinaryOp):
     def __init__(self, lval, rval):
         operator = z3.Or
         P4BinaryOp.__init__(self, lval, rval, operator)
+
+    def eval(self, p4_state):
+        # we make the assumption that we get a z3 value back
+        lval_expr = z3.simplify(p4_state.resolve_expr(self.lval))
+        # boolean expressions can short-circuit
+        if lval_expr == z3.BoolVal(True):
+            return lval_expr
+        rval_expr = p4_state.resolve_expr(self.rval)
+        return self.operator(lval_expr, rval_expr)
 
 
 class P4xor(P4BinaryOp):
