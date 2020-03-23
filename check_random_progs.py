@@ -42,11 +42,14 @@ KNOWN_BUGS = [
     "shift count must be",
     "Null cst",
     "no definitions",
-    "failed command assembler",
     "condition too complex",
     "source of modify_field invalid",
     "Please consider simplifying",
-    "Operands of arithmetic operations cannot be greater"
+    "Operands of arithmetic operations cannot be greater",
+    "ListCompileTimeValue",
+    "does not appear on the hash function",
+    "Match group map doesn't match format size",
+    "operating on container ",
 ]
 
 

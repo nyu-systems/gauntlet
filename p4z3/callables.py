@@ -192,17 +192,17 @@ class P4Method(P4Callable):
 
     def initialize(self, *args, **kwargs):
         # TODO Figure out what to actually do here
-        # init_method = copy.copy(self)
-        if len(args) < len(self.type_params):
-            type_list = self.type_params[1:]
+        init_method = copy.copy(self)
+        if len(args) < len(init_method.type_params):
+            type_list = init_method.type_params[1:]
         else:
-            type_list = self.type_params
+            type_list = init_method.type_params
         for idx, t_param in enumerate(type_list):
-            if self.return_type == t_param:
-                self.return_type = args[idx]
-            for method_param in self.params:
+            if init_method.return_type == t_param:
+                init_method.return_type = args[idx]
+            for method_param in init_method.params:
                 method_param.p4_type = args[idx]
-        return self
+        return init_method
 
     def eval_callable(self, p4_state, merged_args, var_buffer):
         # initialize the local context of the function for execution

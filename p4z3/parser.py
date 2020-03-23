@@ -4,7 +4,7 @@ from p4z3.callables import P4Control
 from p4z3.statements import P4Exit
 
 
-MAX_LOOP = 15
+MAX_LOOP = 1
 
 
 class P4Parser(P4Control):
@@ -43,7 +43,7 @@ class ParserState(P4Expression):
         else:
             self.counter += 1
             select = p4_state.resolve_reference(self.select)
-            self.components.append(select)
+            p4_state.insert_exprs(select)
             p4_state.insert_exprs(self.components)
         p4z3_expr = p4_state.pop_next_expr()
         return p4z3_expr.eval(p4_state)
