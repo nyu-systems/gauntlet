@@ -95,7 +95,6 @@ xfails = [
     "issue1937-2-bmv2.p4",
     "issue1937.p4",
     "issue2090.p4",
-    "issue561-bmv2.p4",
     "issue774-4-bmv2.p4",
     "issue774.p4",
     "pvs-struct-3-bmv2.p4",
@@ -108,6 +107,7 @@ slow_tests = [
     "header-stack-ops-bmv2.p4",
     "issue-2123-2-bmv2.p4",  # z3 gets stuck for unclear reasons
     "issue-2123-3-bmv2.p4",  # z3 gets stuck for unclear reasons
+    "issue561-bmv2.p4",      # causes a segmentation fault
 ]
 
 
