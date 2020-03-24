@@ -442,9 +442,9 @@ class P4Mux(P4Expression):
         then_is_const = isinstance(then_expr, (z3.BitVecRef, int))
         else_is_const = isinstance(else_expr, (z3.BitVecRef, int))
         if then_is_const and else_is_const:
-            # align the bitvectors to allow operations
-            if else_expr.size() < then_expr.size():
-                else_expr = z3_cast(else_expr, then_expr.size())
+            # align the bitvectors to allow operations, we cast ints downwards
             if else_expr.size() > then_expr.size():
+                else_expr = z3_cast(else_expr, then_expr.size())
+            if else_expr.size() < then_expr.size():
                 then_expr = z3_cast(then_expr, else_expr.size())
         return z3.If(cond, then_expr, else_expr)
