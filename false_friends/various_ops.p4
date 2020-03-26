@@ -25,6 +25,7 @@ header RSH {
     int<4>  d;
     bit<4>  e;
     bit<4>  g;
+    bit<8>  h;
 }
 
 header LSH {
@@ -78,7 +79,8 @@ control pipe(inout Headers h, out bool pass) {
         h.rshift.d = -4s7 >> 1 >> 1;
         h.rshift.e = tmp >> 1 >> 1;
         h.rshift.g = 4w1 >> 8w16;
-        // //left shift
+        h.rshift.h = (bit<8>)~(4w1 >> 8w1);
+        //left shift
         h.lshift.a = (bit<8>)(4w4 << 8w2);
         h.lshift.b = (bit<8>)(4w4 << 8w16);
         // comparing various constants

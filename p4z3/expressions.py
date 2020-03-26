@@ -261,9 +261,7 @@ class P4div(P4BinaryOp):
 
 class P4lshift(P4BinaryOp):
     def __init__(self, lval, rval):
-        def operator(x, y):
-            return z3_cast(op.lshift(x, y), x.size())
-        P4BinaryOp.__init__(self, lval, rval, operator)
+        P4BinaryOp.__init__(self, lval, rval, None)
 
     def eval(self, p4_state):
         # z3 does not like to shift operators of different size
@@ -285,13 +283,28 @@ class P4lshift(P4BinaryOp):
 
 class P4rshift(P4BinaryOp):
     def __init__(self, lval, rval):
-        def operator(x, y):
+        P4BinaryOp.__init__(self, lval, rval, None)
+
+    def eval(self, p4_state):
+        # z3 does not like to shift operators of different size
+        # but casting both values could lead to missing an overflow
+        # so after the operation cast the lvalue down to its original size
+        lval_expr = p4_state.resolve_expr(self.lval)
+        rval_expr = p4_state.resolve_expr(self.rval)
+        if isinstance(lval_expr, int):
             # if x is an int we might get a signed value
             # we need to use the arithmetic right shift in this case
-            if isinstance(x, int):
-                return op.rshift(x, y)
-            return z3.LShR(x, y)
-        P4BinaryOp.__init__(self, lval, rval, operator)
+            return op.rshift(lval_expr, rval_expr)
+        # align the bitvectors to allow operations
+        lval_is_bitvec = isinstance(lval_expr, z3.BitVecRef)
+        rval_is_bitvec = isinstance(rval_expr, z3.BitVecRef)
+        orig_lval_size = lval_expr.size()
+        if lval_is_bitvec and rval_is_bitvec:
+            if lval_expr.size() < rval_expr.size():
+                lval_expr = z3_cast(lval_expr, rval_expr.size())
+            if lval_expr.size() > rval_expr.size():
+                rval_expr = z3_cast(rval_expr, lval_expr.size())
+        return z3_cast(z3.LShR(lval_expr, rval_expr), orig_lval_size)
 
 
 class P4eq(P4BinaryOp):

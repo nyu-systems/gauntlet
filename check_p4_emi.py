@@ -1,6 +1,7 @@
 import argparse
 import logging
 import time
+import math
 import os
 import sys
 import itertools
@@ -90,36 +91,39 @@ def get_branch_conditions(z3_formula):
 
 
 def convert_to_stf(input_values, input_name, append_values=False):
-    stf_str = ""
+    stf_lst = []
     for val in input_values:
         if isinstance(val, P4Struct):
             if val.name == input_name:
-                stf_str += convert_to_stf(
-                    val.values, input_name, True)
+                stf_lst.extend(convert_to_stf(val.values, input_name, True))
             else:
-                stf_str += convert_to_stf(
-                    val.values, input_name, append_values)
+                stf_lst.extend(convert_to_stf(
+                    val.values, input_name, append_values))
         elif isinstance(val, str):
             if append_values:
-                stf_str += val
+                stf_lst.extend(list(val))
         else:
             raise RuntimeError(f"Type {type(val)} not supported!")
-    return stf_str
+    return stf_lst
 
 
 def insert_spaces(text, dist):
     return " ".join(text[i:i + dist] for i in range(0, len(text), dist))
 
 
-def get_stf_str(z3_model, z3_const):
-    z3_input_header = z3_model[z3_model[0]]
+def get_stf_str(z3_model, z3_const, dont_care_map):
+    z3_input_header = z3_model[z3.Const("ingress_0", z3_const.sort())]
     log.debug("Input header: %s", z3_input_header)
     input_values = fill_values(z3_input_header)
-    input_pkt_str = convert_to_stf(input_values, "Headers")
+    input_pkt_str = "".join(convert_to_stf(input_values, "Headers"))
     z3_output_header = z3_model[z3_const]
     log.debug("Output header: %s", z3_output_header)
     output_values = fill_values(z3_output_header)
-    output_pkt_str = convert_to_stf(output_values, "Headers")
+    out_pkt_list = convert_to_stf(output_values, "Headers")
+    for idx, marker in enumerate(dont_care_map):
+        if marker == "*":
+            out_pkt_list[idx] = "*"
+    output_pkt_str = "".join(out_pkt_list)
     stf_str = "packet 0 "
     stf_str += insert_spaces(input_pkt_str, 2)
     stf_str += "\nexpect 0 "
@@ -153,14 +157,6 @@ def run_bmv2_test(out_dir, p4_input):
     cmd += f"-bd {P4C_DIR}/build "
     cmd += f"{out_dir}/{p4_input.name} "
     return util.exec_process(cmd)
-
-
-# def report_error(result, text):
-#     log.error(text)
-#     log.error("*" * 60)
-#     log.error(result.stdout.decode("utf-8"))
-#     log.error("*" * 60)
-#     return result
 
 
 def cleanup(procs):
@@ -255,11 +251,11 @@ def run_stf_test(out_dir, p4_input, stf_str):
     return result.returncode
 
 
-def check_with_stf(out_dir, file_1, file_2, model, output_const):
+def check_with_stf(out_dir, file_1, file_2, model, output_const, dont_care_map):
     # both the input and the output variable are then used to generate
     # a stf file with an input and expected output packet on port 0
     log.info("Generating stf file...")
-    stf_str = get_stf_str(model, output_const)
+    stf_str = get_stf_str(model, output_const, dont_care_map)
     result = run_stf_test(out_dir, file_1, stf_str)
     if result != util.EXIT_SUCCESS:
         return result
@@ -321,6 +317,40 @@ def enter_retry_loop(out_dir, p4_input, s, output_const, num_retries):
         iters += 1
     else:
         log.warning("Exceeded number of retries without success. Exiting.")
+
+
+def assemble_dont_care_map(z3_input, dont_care_vals):
+    dont_care_map = []
+    for var in z3_input.children():
+        if isinstance(var, z3.DatatypeRef):
+            dont_care_map.extend(assemble_dont_care_map(var, dont_care_vals))
+        elif isinstance(var, z3.BitVecRef):
+            bitvec_hex_width = math.ceil(var.size() / 4)
+            dont_care = False
+            for val in dont_care_vals:
+                if val in str(var):
+                    dont_care = True
+            if dont_care:
+                bitvec_map = ["*"] * bitvec_hex_width
+            else:
+                bitvec_map = ["x"] * bitvec_hex_width
+            dont_care_map.extend(bitvec_map)
+        else:
+            raise RuntimeError(f"Type {type(var)} not supported!")
+    return dont_care_map
+
+
+def get_dont_care_map(z3_input):
+    for child in z3_input.children():
+        if "Headers" in child.sort().name():
+            dont_care_vals = []
+            for val in z3.z3util.get_vars(z3_input):
+                if str(val) != "ingress_0":
+                    dont_care_vals.append(str(val))
+            return assemble_dont_care_map(child, dont_care_vals)
+        else:
+            return get_dont_care_map(child)
+    return []
 
 
 def perform_emi_test(out_dir, p4_input, num_subsets, p4_subsets, num_retries):
@@ -385,18 +415,22 @@ def perform_emi_test(out_dir, p4_input, num_subsets, p4_subsets, num_retries):
         second_formula = z3_subset_prog["ig"]
         # the output of the main formula should be the same as the sub formula
         s.add(second_formula == output_const)
+    for key in table_keys:
+        # all keys must be false for now
+        s.add(z3.Not(key))
     for permut in permuts:
         s.push()
         s.add(permut)
-        for key in table_keys:
-            s.add(z3.Not(key))
         ret = s.check()
         if ret == z3.sat:
             log.info("Found a solution!")
             # get the model
             m = s.model()
-            result = check_with_stf(
-                out_dir, p4_input, p4_subsets, m, output_const)
+            # this does not work with if-then-else expressions...
+            # FIXME: Figure out a way to solve this, might not be solvable
+            dont_care_map = get_dont_care_map(s.units()[0])
+            result = check_with_stf(out_dir, p4_input, p4_subsets, m,
+                                    output_const, dont_care_map)
             if result != util.EXIT_SUCCESS:
                 return result
         # else:
