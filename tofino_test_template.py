@@ -2,6 +2,7 @@ from pathlib import Path
 FILE_DIR = Path(__file__).parent.resolve()
 FILE_NAME = Path(__file__).stem
 import ptf.testutils as testutils
+from ptf import mask
 from bfruntime_client_base_tests import BfRuntimeTest
 from p4c.tools.stf.stf_parser import STFParser
 
@@ -30,13 +31,22 @@ class VerifyTest(BfRuntimeTest):
         for input_pkt in input_pkts:
             input_port = input_pkt[0]
             input_bytes = bytes.fromhex(input_pkt[1])
-            pkt = Ether(input_bytes)
-            testutils.send_packet(self, input_port, pkt)
+            testutils.send_packet(self, input_port, input_bytes)
         try:
             for expect_pkt in expect_pkts:
                 expect_port = expect_pkt[0]
-                expect_bytes = bytes.fromhex(expect_pkt[1])
-                pkt = Ether(expect_bytes)
+                expect_bytes = list(expect_pkt[1])
+                dont_care_bits = []
+                for idx, hexbit in enumerate(expect_bytes):
+                    if hexbit == "*":
+                        dont_care_bits.append(idx)
+                        expect_bytes[idx] = "0"
+                expect_bytes = "".join(expect_bytes)
+                expect_bytes = bytes.fromhex(expect_bytes)
+                pkt = mask.Mask(expect_bytes)
+                pkt.set_ignore_extra_bytes()
+                for dont_care_bit in dont_care_bits:
+                    pkt.set_do_not_care(dont_care_bit, 4)
                 testutils.verify_packet(self, pkt, expect_port)
         except AssertionError as e:
             with open(f"{FILE_NAME}_ptf_err.log", 'w+') as err_file:

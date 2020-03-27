@@ -70,24 +70,40 @@ def fill_values(z3_input):
     return input_values
 
 
+# def dissect_table_keys(cond):
+#     table_keys = []
+#     if z3.is_app_of(cond, z3.Z3_OP_AND) or z3.is_app_of(cond, z3.Z3_OP_OR):
+#         for child in cond.children():
+#             table_keys.extend(dissect_table_keys(child))
+#     else:
+#         table_keys.append(cond)
+#     return table_keys
+
+
 def get_branch_conditions(z3_formula):
     conditions = []
     table_keys = []
+    table_actions = []
     if z3.is_app_of(z3_formula, z3.Z3_OP_ITE):
         # the first child is usually the condition
         cond = z3_formula.children()[0]
         cond_vars = z3.z3util.get_vars(cond)
         is_member = "ingress_0" in [str(x) for x in cond_vars]
         is_table_key = "table_key" in "".join([str(x) for x in cond_vars])
+        is_table_action = "action" in "".join([str(x) for x in cond_vars])
         if is_table_key:
             table_keys.append(cond)
+        elif is_table_action:
+            table_actions.append(cond)
         elif is_member:
             conditions.append(cond)
     for child in z3_formula.children():
-        sub_conds, sub_table_keys = get_branch_conditions(child)
+        sub_conds, sub_table_keys, sub_table_actions = get_branch_conditions(
+            child)
         conditions.extend(sub_conds)
         table_keys.extend(sub_table_keys)
-    return conditions, table_keys
+        table_actions.extend(sub_table_actions)
+    return conditions, table_keys, table_actions
 
 
 def convert_to_stf(input_values, input_name, append_values=False):
@@ -349,7 +365,9 @@ def get_dont_care_map(z3_input):
                     dont_care_vals.append(str(val))
             return assemble_dont_care_map(child, dont_care_vals)
         else:
-            return get_dont_care_map(child)
+            dont_care_map = get_dont_care_map(child)
+            if dont_care_map:
+                return dont_care_map
     return []
 
 
@@ -403,10 +421,11 @@ def perform_emi_test(out_dir, p4_input, num_subsets, p4_subsets, num_retries):
         main_formula = z3_main_prog["ig"]
     # this util might come in handy later.
     # z3.z3util.get_vars(main_formula)
-    conditions, table_keys = get_branch_conditions(main_formula)
+    conditions, table_keys, table_actions = get_branch_conditions(main_formula)
     permuts = [[f(var) for var, f in zip(conditions, x)]
                for x in itertools.product([z3.Not, lambda x: x], repeat=len(conditions))]
     output_const = z3.Const("output", main_formula.sort())
+    input_const = z3.Const("ingress_0", main_formula.sort())
     # bind the output constant to the output of the main program
     s.add(main_formula == output_const)
     # create a context for all the subsets
@@ -415,9 +434,8 @@ def perform_emi_test(out_dir, p4_input, num_subsets, p4_subsets, num_retries):
         second_formula = z3_subset_prog["ig"]
         # the output of the main formula should be the same as the sub formula
         s.add(second_formula == output_const)
-    for key in table_keys:
-        # all keys must be false for now
-        s.add(z3.Not(key))
+    # all keys must be false for now
+    s.add(z3.Not(z3.Or(*table_keys)))
     for permut in permuts:
         s.push()
         s.add(permut)
@@ -426,9 +444,16 @@ def perform_emi_test(out_dir, p4_input, num_subsets, p4_subsets, num_retries):
             log.info("Found a solution!")
             # get the model
             m = s.model()
-            # this does not work with if-then-else expressions...
+            # this does not work well yet... desperate hack
             # FIXME: Figure out a way to solve this, might not be solvable
-            dont_care_map = get_dont_care_map(s.units()[0])
+            key_matches = z3.Not(z3.Or(*table_keys))
+            action_matches = z3.Not(z3.Or(*table_actions))
+            g = z3.Goal()
+            g.add(main_formula == output_const, action_matches, key_matches)
+            t = z3.Tactic("propagate-values")
+            constrained_output = t.apply(g)
+            dont_care_map = get_dont_care_map(constrained_output[0][0])
+
             result = check_with_stf(out_dir, p4_input, p4_subsets, m,
                                     output_const, dont_care_map)
             if result != util.EXIT_SUCCESS:

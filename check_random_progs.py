@@ -38,6 +38,7 @@ KNOWN_BUGS = [
     "width of left operand of shift needs to be specified",
     # bf
     "Unsupported on target",
+    "PHV allocation was not successful",
     "Unsupported action spanning multiple stages",
     "shift count must be",
     "Null cst",
@@ -112,7 +113,10 @@ def dump_result(result, target_dir, p4_file):
 def dump_file(target_dir, p4_file):
     util.check_dir(target_dir)
     target = target_dir.joinpath(p4_file.name)
-    p4_file.rename(target)
+    try:
+        p4_file.rename(target)
+    except FileNotFoundError:
+        log.warning("Could not move file %s, file not found!", p4_file)
 
 
 def is_known_bug(result):
@@ -148,7 +152,7 @@ def validate(dump_dir, p4_file, log_file):
     try:
         # Tofino does not allow insights into the individual passes
         # So we are forced to use the EMI technique
-        if USE_EMI or USE_TOFINO:
+        if USE_EMI:
             result = validate_p4_emi(p4_file, dump_dir, log_file)
         else:
             result = validate_p4(p4_file, dump_dir, P4C_BIN, log_file)
@@ -243,7 +247,7 @@ if __name__ == '__main__':
     # Parse options and process argv
     args = parser.parse_args()
     # lazy hack because I do not want to write a wrapper for map()
-    USE_EMI = args.use_emi
+    USE_EMI = args.use_emi or args.use_tofino
     USE_TOFINO = args.use_tofino
     DO_VALIDATE = args.do_validate
     # configure logging

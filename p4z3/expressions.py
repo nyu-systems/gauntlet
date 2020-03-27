@@ -269,6 +269,12 @@ class P4lshift(P4BinaryOp):
         # so after the operation cast the lvalue down to its original size
         lval_expr = p4_state.resolve_expr(self.lval)
         rval_expr = p4_state.resolve_expr(self.rval)
+        log.info(type(lval_expr))
+        if isinstance(lval_expr, int):
+            # if lval_expr is an int we might get a signed value
+            # the only size adjustment is to make the rval expr large enough
+            # for some reason a small rval leads to erroneous shifts...
+            return op.lshift(lval_expr, z3_cast(rval_expr, 64))
         # align the bitvectors to allow operations
         lval_is_bitvec = isinstance(lval_expr, z3.BitVecRef)
         rval_is_bitvec = isinstance(rval_expr, z3.BitVecRef)
