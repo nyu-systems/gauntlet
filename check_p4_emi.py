@@ -82,28 +82,14 @@ def fill_values(z3_input):
 
 def get_branch_conditions(z3_formula):
     conditions = []
-    table_keys = []
-    table_actions = []
     if z3.is_app_of(z3_formula, z3.Z3_OP_ITE):
         # the first child is usually the condition
         cond = z3_formula.children()[0]
-        cond_vars = z3.z3util.get_vars(cond)
-        is_member = "ingress_0" in [str(x) for x in cond_vars]
-        is_table_key = "table_key" in "".join([str(x) for x in cond_vars])
-        is_table_action = "action" in "".join([str(x) for x in cond_vars])
-        if is_table_key:
-            table_keys.append(cond)
-        elif is_table_action:
-            table_actions.append(cond)
-        elif is_member:
-            conditions.append(cond)
+        conditions.append(cond)
     for child in z3_formula.children():
-        sub_conds, sub_table_keys, sub_table_actions = get_branch_conditions(
-            child)
+        sub_conds = get_branch_conditions(child)
         conditions.extend(sub_conds)
-        table_keys.extend(sub_table_keys)
-        table_actions.extend(sub_table_actions)
-    return conditions, table_keys, table_actions
+    return conditions
 
 
 def convert_to_stf(input_values, input_name, append_values=False):
@@ -371,6 +357,37 @@ def get_dont_care_map(z3_input):
     return []
 
 
+def dissect_conds(conditions):
+    controllable_conds = []
+    fixed_conds = []
+    undefined_conds = []
+    undefined_vars = set()
+    for cond in conditions:
+        has_member = False
+        has_table_key = False
+        has_table_action = False
+        has_undefined_var = False
+        for cond_var in z3.z3util.get_vars(cond):
+            if "ingress_0" in str(cond_var):
+                has_member = True
+            elif "table_key" in str(cond_var):
+                has_table_key = True
+            elif "action" in str(cond_var):
+                has_table_action = True
+            else:
+                undefined_vars.add(cond_var)
+                has_undefined_var = True
+        if has_member and not (has_table_key or has_table_action or has_undefined_var):
+            controllable_conds.append(cond)
+        elif has_undefined_var and not (has_table_key or has_table_action or has_member):
+            pass
+        else:
+            fixed_conds.append(cond)
+    for var in undefined_vars:
+        undefined_conds.append(var == 0)
+    return controllable_conds, fixed_conds, undefined_conds
+
+
 def perform_emi_test(out_dir, p4_input, num_subsets, p4_subsets, num_retries):
     if not p4_input:
         out_dir = Path(out_dir).joinpath("rnd_test")
@@ -421,11 +438,11 @@ def perform_emi_test(out_dir, p4_input, num_subsets, p4_subsets, num_retries):
         main_formula = z3_main_prog["ig"]
     # this util might come in handy later.
     # z3.z3util.get_vars(main_formula)
-    conditions, table_keys, table_actions = get_branch_conditions(main_formula)
-    permuts = [[f(var) for var, f in zip(conditions, x)]
-               for x in itertools.product([z3.Not, lambda x: x], repeat=len(conditions))]
+    conditions = get_branch_conditions(main_formula)
+    permut_conditions, avoid_conds, undefined_conds = dissect_conds(conditions)
+    permuts = [[f(var) for var, f in zip(permut_conditions, x)]
+               for x in itertools.product([z3.Not, lambda x: x], repeat=len(permut_conditions))]
     output_const = z3.Const("output", main_formula.sort())
-    input_const = z3.Const("ingress_0", main_formula.sort())
     # bind the output constant to the output of the main program
     s.add(main_formula == output_const)
     # create a context for all the subsets
@@ -435,7 +452,8 @@ def perform_emi_test(out_dir, p4_input, num_subsets, p4_subsets, num_retries):
         # the output of the main formula should be the same as the sub formula
         s.add(second_formula == output_const)
     # all keys must be false for now
-    s.add(z3.Not(z3.Or(*table_keys)))
+    s.add(z3.Not(z3.Or(*avoid_conds)))
+    s.add(z3.And(*undefined_conds))
     for permut in permuts:
         s.push()
         s.add(permut)
@@ -446,14 +464,18 @@ def perform_emi_test(out_dir, p4_input, num_subsets, p4_subsets, num_retries):
             m = s.model()
             # this does not work well yet... desperate hack
             # FIXME: Figure out a way to solve this, might not be solvable
-            key_matches = z3.Not(z3.Or(*table_keys))
-            action_matches = z3.Not(z3.Or(*table_actions))
+            avoid_matches = z3.Not(z3.Or(*avoid_conds))
+            undefined_conds = z3.And(*undefined_conds)
             g = z3.Goal()
-            g.add(main_formula == output_const, action_matches, key_matches)
-            t = z3.Tactic("propagate-values")
+            g.add(main_formula == output_const, avoid_matches, undefined_conds)
+            t = z3.Then(
+                # z3.Tactic("normalize-bounds"),
+                # z3.Tactic("propagate-values"),
+                z3.Tactic("ctx-solver-simplify"),
+                z3.Tactic("elim-and")
+            )
             constrained_output = t.apply(g)
             dont_care_map = get_dont_care_map(constrained_output[0][0])
-
             result = check_with_stf(out_dir, p4_input, p4_subsets, m,
                                     output_const, dont_care_map)
             if result != util.EXIT_SUCCESS:
