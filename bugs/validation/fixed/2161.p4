@@ -22,7 +22,7 @@ struct Meta {
 
 control ingress(inout Headers h, inout Meta m, inout standard_metadata_t sm) {
     apply {
-        bit<4> tmp = 4w1;
+        bit<8> tmp = 8w1;
         h.h.a = tmp >> 3 >> 8;
     }
 }

@@ -465,9 +465,10 @@ def perform_emi_test(out_dir, p4_input, num_subsets, p4_subsets, num_retries):
             # this does not work well yet... desperate hack
             # FIXME: Figure out a way to solve this, might not be solvable
             avoid_matches = z3.Not(z3.Or(*avoid_conds))
-            undefined_conds = z3.And(*undefined_conds)
+            undefined_matches = z3.And(*undefined_conds)
             g = z3.Goal()
-            g.add(main_formula == output_const, avoid_matches, undefined_conds)
+            g.add(main_formula == output_const,
+                  avoid_matches, undefined_matches)
             t = z3.Then(
                 # z3.Tactic("normalize-bounds"),
                 # z3.Tactic("propagate-values"),
