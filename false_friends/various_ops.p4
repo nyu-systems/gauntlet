@@ -41,6 +41,11 @@ header COMPARE {
     bit<8> e;
 }
 
+header DIV {
+    bit<8> a;
+}
+
+
 struct Headers {
     OVERFLOW overflow;
     UNDERFLOW underflow;
@@ -48,6 +53,7 @@ struct Headers {
     LSH lshift;
     MOD mod;
     COMPARE comp;
+    DIV div;
 }
 
 parser prs(packet_in p, out Headers headers) {
@@ -58,6 +64,7 @@ parser prs(packet_in p, out Headers headers) {
 
 control pipe(inout Headers h, out bool pass) {
     apply {
+        pass = true;
         //overflow
         h.overflow.a = 8w255 |+| 8w2;
         h.overflow.b = 8w3 |+| 8w0;
@@ -70,7 +77,6 @@ control pipe(inout Headers h, out bool pass) {
         // signed mod
         h.mod.c = 1 % 4w8;
         h.mod.d = 3 % 2;
-
         // // right shift
         bit<4> tmp = 4w0 - 4w1;
         h.rshift.a = tmp / 4w2;
@@ -91,6 +97,8 @@ control pipe(inout Headers h, out bool pass) {
         // FIXME: This expression should also work
         // if (-1  > 4s8) { h.comp.e = 1; }
         if (-1  > 4s7) { h.comp.e = 1; }
+        // Division
+        h.div.a = (bit<8>)(4 / 1w1);
     }
 }
 

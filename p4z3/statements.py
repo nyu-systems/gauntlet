@@ -93,14 +93,15 @@ class SwitchHit(P4Z3Class):
         self.table = None
 
     def eval_cases(self, p4_state, cases):
-        var_store, chain_copy = p4_state.checkpoint()
-        expr = self.default_case.eval(p4_state)
-        p4_state.restore(var_store, chain_copy)
+        case_exprs = []
         for case in reversed(cases.values()):
             var_store, chain_copy = p4_state.checkpoint()
             case_expr = case["case_block"].eval(p4_state)
             p4_state.restore(var_store, chain_copy)
-            expr = z3.If(case["match"], case_expr, expr)
+            case_exprs.append((case["match"], case_expr))
+        expr = self.default_case.eval(p4_state)
+        for cond, case_expr in case_exprs:
+            expr = z3.If(cond, case_expr, expr)
         return expr
 
     def set_table(self, table):
