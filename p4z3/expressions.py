@@ -202,13 +202,25 @@ class P4pow(P4BinaryOp):
 
 class P4band(P4BinaryOp):
     def __init__(self, lval, rval):
-        operator = op.and_
+        def operator(x, y):
+            # this extra check is necessary because of z3...
+            if z3.is_int(x) and isinstance(y, z3.BitVecRef):
+                x = z3_cast(x, y)
+            if z3.is_int(y) and isinstance(x, z3.BitVecRef):
+                y = z3_cast(y, x)
+            return op.and_(x, y)
         P4BinaryOp.__init__(self, lval, rval, operator)
 
 
 class P4bor(P4BinaryOp):
     def __init__(self, lval, rval):
-        operator = op.or_
+        def operator(x, y):
+            # this extra check is necessary because of z3...
+            if z3.is_int(x) and isinstance(y, z3.BitVecRef):
+                x = z3_cast(x, y)
+            if z3.is_int(y) and isinstance(x, z3.BitVecRef):
+                y = z3_cast(y, x)
+            return op.or_(x, y)
         P4BinaryOp.__init__(self, lval, rval, operator)
 
 
@@ -255,7 +267,7 @@ class P4div(P4BinaryOp):
             if isinstance(y, int) and isinstance(x, int):
                 x = x.as_bitvec
                 y = y.as_bitvec
-                return op.floordiv(x, y)
+                return op.truediv(x, y)
             return z3.UDiv(x, y)
         P4BinaryOp.__init__(self, lval, rval, operator)
 

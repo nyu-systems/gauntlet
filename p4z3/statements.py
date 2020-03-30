@@ -2,7 +2,7 @@ import copy
 from collections import OrderedDict
 import z3
 
-from p4z3.base import log, copy_attrs, DefaultExpression
+from p4z3.base import log, copy_attrs, DefaultExpression, z3_cast
 from p4z3.base import P4ComplexInstance, P4Statement, P4Z3Class
 from p4z3.callables import P4Callable, P4Context
 
@@ -83,7 +83,12 @@ class IfStatement(P4Statement):
             p4z3_expr = p4_state.pop_next_expr()
             else_expr = p4z3_expr.eval(p4_state)
         p4_state.merge_attrs(cond, then_vars)
-        return z3.If(cond, then_expr, else_expr)
+        # some z3 shenaningens, nested expressions are arithrefs...
+        if isinstance(then_expr, z3.ArithRef) and not isinstance(else_expr, z3.ArithRef):
+            then_expr = z3_cast(then_expr, else_expr)
+        if isinstance(else_expr, z3.ArithRef) and not isinstance(then_expr, z3.ArithRef):
+            else_expr = z3_cast(else_expr, then_expr)
+        return z3.simplify(z3.If(cond, then_expr, else_expr))
 
 
 class SwitchHit(P4Z3Class):
