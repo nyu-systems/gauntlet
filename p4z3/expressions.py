@@ -231,7 +231,9 @@ class P4land(P4BinaryOp):
 
     def eval(self, p4_state):
         # we make the assumption that we get a z3 value back
-        lval_expr = z3.simplify(p4_state.resolve_expr(self.lval))
+        lval_expr = p4_state.resolve_expr(self.lval)
+        if isinstance(lval_expr, z3.AstRef):
+            lval_expr = z3.simplify(lval_expr)
         # boolean expressions can short-circuit
         if lval_expr == z3.BoolVal(False):
             return lval_expr
@@ -246,7 +248,9 @@ class P4lor(P4BinaryOp):
 
     def eval(self, p4_state):
         # we make the assumption that we get a z3 value back
-        lval_expr = z3.simplify(p4_state.resolve_expr(self.lval))
+        lval_expr = p4_state.resolve_expr(self.lval)
+        if isinstance(lval_expr, z3.AstRef):
+            lval_expr = z3.simplify(lval_expr)
         # boolean expressions can short-circuit
         if lval_expr == z3.BoolVal(True):
             return lval_expr

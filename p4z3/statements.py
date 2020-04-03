@@ -84,11 +84,13 @@ class IfStatement(P4Statement):
             else_expr = p4z3_expr.eval(p4_state)
         p4_state.merge_attrs(cond, then_vars)
         # some z3 shenaningens, nested expressions are arithrefs...
-        if isinstance(then_expr, z3.ArithRef) and not isinstance(else_expr, z3.ArithRef):
+        then_is_arith_ref = isinstance(then_expr, z3.ArithRef)
+        else_is_arith_ref = isinstance(else_expr, z3.ArithRef)
+        if then_is_arith_ref and not else_is_arith_ref:
             then_expr = z3_cast(then_expr, else_expr)
-        if isinstance(else_expr, z3.ArithRef) and not isinstance(then_expr, z3.ArithRef):
+        if then_is_arith_ref and not else_is_arith_ref:
             else_expr = z3_cast(else_expr, then_expr)
-        return z3.simplify(z3.If(cond, then_expr, else_expr))
+        return z3.If(cond, then_expr, else_expr)
 
 
 class SwitchHit(P4Z3Class):

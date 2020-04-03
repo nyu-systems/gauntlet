@@ -502,15 +502,16 @@ class HeaderInstance(StructInstance):
         self.p4_attrs["valid"] = z3.BoolVal(True)
         StructInstance.set_list(self, rvals)
 
-    def isValid(self, p4_state=None):
-        # This is a built-in
-        return self.p4_attrs["valid"]
 
     def set_or_add_var(self, lval, rval):
         # header is disabled, operations on it are invalid
         if self.p4_attrs["valid"] == z3.BoolVal(False):
             return
         super(HeaderInstance, self).set_or_add_var(lval, rval)
+
+    def isValid(self, p4_state=None):
+        # This is a built-in
+        return self.p4_attrs["valid"]
 
     def setValid(self, p4_state):
         # This is a built-in
@@ -602,12 +603,12 @@ class HeaderStackDict(dict):
             # This is a built-in
             # TODO: Check if this implementation makes sense
             try:
-                hdr = self.parent_hdr.p4_attrs[f"{self.parent_hdr.next_idx}"]
+                hdr = self.parent_hdr.p4_attrs[f"{self.parent_hdr.nextIndex}"]
             except KeyError:
                 # if the header does not exist use it to break out of the loop?
                 size = self.parent_hdr.p4_attrs["size"]
                 hdr = self.parent_hdr.p4_attrs[f"{size -1}"]
-            self.parent_hdr.next_idx += 1
+            self.parent_hdr.nextIndex += 1
             self.parent_hdr.p4_attrs["lastIndex"] += 1
             return hdr
         if key == "last":
@@ -633,11 +634,11 @@ class HeaderStackInstance(P4ComplexInstance):
         # no idea how to deal with properties
         # this intercepts dictionary lookups and modifies the header in place
         self.p4_attrs = HeaderStackDict(self.p4_attrs, self)
-        self.next_idx = 0
+        self.nextIndex = 0
         self.p4_attrs["push_front"] = self.push_front
         self.p4_attrs["pop_front"] = self.pop_front
         self.p4_attrs["size"] = len(self.members)
-        self.p4_attrs["lastIndex"] = z3.BitVecVal(self.next_idx, 32) - 1
+        self.p4_attrs["lastIndex"] = z3.BitVecVal(self.nextIndex, 32) - 1
 
     def push_front(self, p4_state, num):
         # This is a built-in
@@ -666,12 +667,12 @@ class HeaderStackInstance(P4ComplexInstance):
         # This is a built-in
         # TODO: Check if this implementation makes sense
         try:
-            hdr = self.p4_attrs[f"{self.next_idx}"]
+            hdr = self.p4_attrs[f"{self.nextIndex}"]
         except KeyError:
             # if the header does not exist use it to break out of the loop?
             size = self.p4_attrs["size"]
             hdr = self.p4_attrs[f"{size -1}"]
-        self.next_idx += 1
+        self.nextIndex += 1
         self.p4_attrs["lastIndex"] += 1
         return hdr
 
@@ -686,8 +687,8 @@ class HeaderStackInstance(P4ComplexInstance):
     def __setattr__(self, name, val):
         # TODO: Fix this workaround for next attributes
         if name == "next":
-            self.__setattr__(f"{self.next_idx}", val)
-            self.next_idx += 1
+            self.__setattr__(f"{self.nextIndex}", val)
+            self.nextIndex += 1
         else:
             self.__dict__[name] = val
 
