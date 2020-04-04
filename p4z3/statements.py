@@ -88,7 +88,7 @@ class IfStatement(P4Statement):
         else_is_arith_ref = isinstance(else_expr, z3.ArithRef)
         if then_is_arith_ref and not else_is_arith_ref:
             then_expr = z3_cast(then_expr, else_expr)
-        if then_is_arith_ref and not else_is_arith_ref:
+        if else_is_arith_ref and not then_is_arith_ref:
             else_expr = z3_cast(else_expr, then_expr)
         return z3.If(cond, then_expr, else_expr)
 

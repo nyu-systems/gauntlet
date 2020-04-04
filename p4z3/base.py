@@ -4,6 +4,7 @@ import types
 import copy
 import logging
 import z3
+from z3int import Z3Int
 
 log = logging.getLogger(__name__)
 
@@ -101,23 +102,6 @@ def z3_cast(val, to_type):
     else:
         # nothing to do
         return val
-
-
-class Z3Int(int):
-
-    def __new__(cls, val, bit_size=64):
-        cls.val = val
-        cls.bit_size = bit_size
-        cls.as_bitvec = z3.BitVecVal(val, 64)
-        return int.__new__(cls, val)
-
-    @staticmethod
-    def sort():
-        return z3.BitVecSort(Z3Int.bit_size)
-
-    @staticmethod
-    def size():
-        return Z3Int.bit_size
 
 
 @dataclass
@@ -501,7 +485,6 @@ class HeaderInstance(StructInstance):
     def set_list(self, rvals):
         self.p4_attrs["valid"] = z3.BoolVal(True)
         StructInstance.set_list(self, rvals)
-
 
     def set_or_add_var(self, lval, rval):
         # header is disabled, operations on it are invalid
