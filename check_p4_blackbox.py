@@ -5,6 +5,7 @@ import math
 import os
 import sys
 import itertools
+import signal
 from pathlib import Path
 from dataclasses import dataclass
 
@@ -21,7 +22,6 @@ OUT_DIR = FILE_DIR.joinpath("validated")
 P4C_DIR = FILE_DIR.joinpath("p4c")
 TOFINO_DIR = FILE_DIR.joinpath("tofino/bf_src")
 
-NUM_RETRIES = 10
 USE_TOFINO = False
 
 
@@ -152,11 +152,8 @@ def run_bmv2_test(out_dir, p4_input):
 
 
 def cleanup(procs):
-    sighup = 1
-    sigkill = 9
     for proc in procs:
-        os.killpg(os.getpgid(proc.pid), sighup)
-        os.killpg(os.getpgid(proc.pid), sigkill)
+        os.killpg(os.getpgid(proc.pid), signal.SIGTERM)
 
 
 def run_tofino_test(out_dir, p4_input, stf_file_name):
@@ -193,17 +190,21 @@ def run_tofino_test(out_dir, p4_input, stf_file_name):
     result = util.exec_process(make_cmd)
     if result.returncode != util.EXIT_SUCCESS:
         return result
+    procs = []
+    test_proc = None
     # start the target in the background
     model_cmd = f"{TOFINO_DIR}/run_tofino_model.sh "
     model_cmd += f"-p {prog_name} "
-    model_proc = util.start_process(
-        model_cmd, preexec_fn=os.setsid, cwd=out_dir)
+    proc = util.start_process(model_cmd, preexec_fn=os.setsid, cwd=out_dir)
+    procs.append(proc)
     # start the binary for the target in the background
     switch_cmd = f"{TOFINO_DIR}/run_switchd.sh "
     switch_cmd += f"--arch tofino "
     switch_cmd += f"-p {prog_name} "
-    switch_proc = util.start_process(
+    proc = util.start_process(
         switch_cmd, preexec_fn=os.setsid, cwd=out_dir)
+    procs.append(proc)
+
     # wait for a bit
     time.sleep(2)
     # finally we can run the test
@@ -211,9 +212,19 @@ def run_tofino_test(out_dir, p4_input, stf_file_name):
     test_cmd += f"-t {test_dir} "
     os_env = os.environ.copy()
     os_env["PYTHONPATH"] = f"${{PYTHONPATH}}:{FILE_DIR}"
-    result = util.exec_process(test_cmd, env=os_env, cwd=out_dir)
-    cleanup([model_proc, switch_proc])
-    return result
+    test_proc = util.start_process(test_cmd, env=os_env, cwd=out_dir)
+
+    def signal_handler(sig, frame):
+        log.warning("run_tofino_test: Caught Interrupt, exiting...")
+        cleanup(procs)
+        os.kill(test_proc.pid)
+        sys.exit(1)
+    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGTERM, signal_handler)
+
+    test_proc.communicate()
+    cleanup(procs)
+    return test_proc
 
 
 def run_stf_test(out_dir, p4_input, stf_str):

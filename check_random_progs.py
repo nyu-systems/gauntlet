@@ -6,6 +6,7 @@ from multiprocessing import Pool
 from functools import wraps
 import errno
 import os
+import sys
 import signal
 
 from pathlib import Path
@@ -139,7 +140,8 @@ def validate_p4(p4_file, target_dir, p4c_bin, log_file):
     p4z3_cmd += f"-o {target_dir} "
     p4z3_cmd += f"-p {p4c_bin} "
     p4z3_cmd += f"-l {log_file} "
-    return util.exec_process(p4z3_cmd)
+    result = util.exec_process(p4z3_cmd)
+    return result.returncode
 
 
 @timeout(seconds=600)
@@ -150,7 +152,8 @@ def validate_p4_blackbox(p4_file, target_dir, log_file):
     p4z3_cmd += f"-l {log_file} "
     if USE_TOFINO:
         p4z3_cmd += f"-t "
-    return util.exec_process(p4z3_cmd)
+    result = util.exec_process(p4z3_cmd)
+    return result.returncode
 
 
 def validate(dump_dir, p4_file, log_file):
@@ -167,7 +170,7 @@ def validate(dump_dir, p4_file, log_file):
         dump_file(TIMEOUT_DIR, log_file)
         # reset the dump directory
         return util.EXIT_FAILURE
-    if result.returncode != util.EXIT_SUCCESS:
+    if result != util.EXIT_SUCCESS:
         log.error("Failed to validate the P4 code!")
         log.error("Rerun the example with:")
         out_file = VALIDATION_BUG_DIR.joinpath(p4_file.name)
@@ -182,7 +185,7 @@ def validate(dump_dir, p4_file, log_file):
             log.error("python3 check_p4_whitebox.py -i %s", out_file)
         dump_file(VALIDATION_BUG_DIR, log_file)
         dump_file(VALIDATION_BUG_DIR, p4_file)
-    return result.returncode
+    return result
 
 
 def check(idx):
