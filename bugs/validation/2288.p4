@@ -7,18 +7,13 @@ header ethernet_t {
     bit<16> eth_type;
 }
 
-
-header simple_header {
-    bit<8>  TvsD;
-}
-
-header nested_header {
-    simple_header s;
+header H {
+    bit<8> a;
 }
 
 struct Headers {
     ethernet_t eth_hdr;
-    nested_header n;
+    H h;
 }
 
 struct Meta {
@@ -31,14 +26,23 @@ parser p(packet_in pkt, out Headers hdr, inout Meta m, inout standard_metadata_t
     }
     state parse_hdrs {
         pkt.extract(hdr.eth_hdr);
+        pkt.extract(hdr.h);
         transition accept;
     }
 }
 
+bit<8> f(inout bit<8> x, in bit<8> z) {
+    return 8w4;
+}
+
+bit<8> g(inout bit<8> z) {
+    z = 8w3;
+    return 8w1;
+}
 control ingress(inout Headers h, inout Meta m, inout standard_metadata_t sm) {
 
     apply {
-
+        f(h.h.a, g(h.h.a));
     }
 }
 

@@ -26,16 +26,17 @@ GENERATOR_BUG_DIR = OUTPUT_DIR.joinpath("generator_bugs")
 CRASH_BUG_DIR = OUTPUT_DIR.joinpath("crash_bugs")
 VALIDATION_BUG_DIR = OUTPUT_DIR.joinpath("validation_bugs")
 TIMEOUT_DIR = OUTPUT_DIR.joinpath("timeout_bugs")
-ITERATIONS = 10000
+ITERATIONS = 200
 NUM_PROCESSES = 4
-USE_EMI = False
+USE_BLACKBOX = False
 USE_TOFINO = False
 DO_VALIDATE = False
 
 KNOWN_BUGS = [
     "Conditional execution",
     "Unimplemented compiler support",
-    "width of left operand of shift needs to be specified",
+    "Null stat",
+    "IR loop detected",
     # bf
     "Unsupported on target",
     "PHV allocation was not successful",
@@ -51,6 +52,10 @@ KNOWN_BUGS = [
     "does not appear on the hash function",
     "Match group map doesn't match format size",
     "operating on container ",
+    "Unable to find hi field slice associated with",
+    "not yet handled by the ActionAnalysis pass",
+    "invalid shift",
+    "invalid slice on slice",
 ]
 
 
@@ -129,7 +134,7 @@ def is_known_bug(result):
 
 @timeout(seconds=600)
 def validate_p4(p4_file, target_dir, p4c_bin, log_file):
-    p4z3_cmd = "python3 check_p4_compilation.py "
+    p4z3_cmd = "python3 check_p4_whitebox.py "
     p4z3_cmd += f"-i {p4_file} "
     p4z3_cmd += f"-o {target_dir} "
     p4z3_cmd += f"-p {p4c_bin} "
@@ -138,8 +143,8 @@ def validate_p4(p4_file, target_dir, p4c_bin, log_file):
 
 
 @timeout(seconds=600)
-def validate_p4_emi(p4_file, target_dir, log_file):
-    p4z3_cmd = "python3 check_p4_emi.py "
+def validate_p4_blackbox(p4_file, target_dir, log_file):
+    p4z3_cmd = "python3 check_p4_blackbox.py "
     p4z3_cmd += f"-i {p4_file} "
     p4z3_cmd += f"-o {target_dir} "
     p4z3_cmd += f"-l {log_file} "
@@ -151,9 +156,9 @@ def validate_p4_emi(p4_file, target_dir, log_file):
 def validate(dump_dir, p4_file, log_file):
     try:
         # Tofino does not allow insights into the individual passes
-        # So we are forced to use the EMI technique
-        if USE_EMI:
-            result = validate_p4_emi(p4_file, dump_dir, log_file)
+        # So we are forced to use the blackbox technique
+        if USE_BLACKBOX:
+            result = validate_p4_blackbox(p4_file, dump_dir, log_file)
         else:
             result = validate_p4(p4_file, dump_dir, P4C_BIN, log_file)
     except TimeoutError:
@@ -169,12 +174,12 @@ def validate(dump_dir, p4_file, log_file):
         if USE_TOFINO:
             err_log = dump_dir.joinpath(Path(p4_file.stem + "_ptf_err.log"))
             dump_file(VALIDATION_BUG_DIR, err_log)
-        if USE_EMI:
-            log.error("python3 check_p4_emi.py -i %s", out_file)
+        if USE_BLACKBOX:
+            log.error("python3 check_p4_blackbox.py -i %s", out_file)
             stf_name = dump_dir.joinpath(Path(p4_file.stem + ".stf"))
             dump_file(VALIDATION_BUG_DIR, stf_name)
         else:
-            log.error("python3 check_p4_compilation.py -i %s", out_file)
+            log.error("python3 check_p4_whitebox.py -i %s", out_file)
         dump_file(VALIDATION_BUG_DIR, log_file)
         dump_file(VALIDATION_BUG_DIR, p4_file)
     return result.returncode
@@ -232,9 +237,10 @@ def main(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument("--use-emi", "-e", dest="use_emi", action='store_true',
-                        help="Use an EMI-like technique instead of translation"
-                        "validation.")
+    parser.add_argument("--use-blackbox", "-b", dest="use_BLACKBOX",
+                        action='store_true',
+                        help="Use the blackbox technique instead of"
+                        "translation validation.")
     parser.add_argument("--use-tofino", "-t", dest="use_tofino",
                         action='store_true',
                         help="Use the Tofino backend instead of BMV2.")
@@ -247,7 +253,7 @@ if __name__ == '__main__':
     # Parse options and process argv
     args = parser.parse_args()
     # lazy hack because I do not want to write a wrapper for map()
-    USE_EMI = args.use_emi or args.use_tofino
+    USE_BLACKBOX = args.use_BLACKBOX or args.use_tofino
     USE_TOFINO = args.use_tofino
     DO_VALIDATE = args.do_validate
     # configure logging

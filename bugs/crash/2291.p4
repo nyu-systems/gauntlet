@@ -6,6 +6,7 @@ header ethernet_t {
     bit<48> src_addr;
     bit<16> eth_type;
 }
+
 struct Headers {
     ethernet_t eth_hdr;
 }
@@ -13,30 +14,32 @@ struct Headers {
 struct Meta {
 }
 
+bit<16> do_function_0(in bit<16> MIIj) {
+    return 16w4;
+}
+bit<16> do_function_1() {
+    return do_function_0(16w6);
+}
 parser p(packet_in pkt, out Headers hdr, inout Meta m, inout standard_metadata_t sm) {
-
     state start {
+        transition parse_hdrs;
+    }
+    state parse_hdrs {
         pkt.extract(hdr.eth_hdr);
         transition accept;
     }
 }
 
 control ingress(inout Headers h, inout Meta m, inout standard_metadata_t sm) {
-    bit<8> val_0 = 8w0;
+    action simple_action() {
+        do_function_0(16w5);
+        do_function_1();
+    }
 
-    action do_action() {
-        h.eth_hdr.src_addr = 1;
-    }
-    table simple_table {
-        key = {
-            val_0     : exact;
-        }
-        actions = {
-            do_action();
-        }
-    }
     apply {
-        simple_table.apply();
+        do_function_0(do_function_0(16w5));
+        simple_action();
+
     }
 }
 

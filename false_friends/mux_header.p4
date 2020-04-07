@@ -13,31 +13,31 @@ struct Headers {
 struct Meta {
 }
 
-bit<32> TJRRFYE() {
-    H[2] EpaeHp;
-    H[2] DkBlyx;
+bit<32> simple_function() {
+    H[2] tmp1;
+    H[2] tmp2;
 
-    if (DkBlyx[0].a <= 3) {
-        EpaeHp[0] = DkBlyx[1];
-        DkBlyx[1] = EpaeHp[1];
+    if (tmp2[0].a <= 3) {
+        tmp1[0] = tmp2[1];
+        tmp2[1] = tmp1[1];
     }
-    return EpaeHp[0].a;
+    return tmp1[0].a;
 }
 control ingress(inout Headers h, inout Meta m, inout standard_metadata_t sm) {
-    action ikKPp() {
-        h.h.a = (bit<32>)(TJRRFYE());
+    action simple_action() {
+        h.h.a = (bit<32>)(simple_function());
 
     }
-    table ldAxlM {
+    table simple_table {
         key = {
-            sm.egress_spec        : exact @name("nRNQnO") ;
+            sm.egress_spec        : exact @name("key") ;
         }
         actions = {
-            ikKPp();
+            simple_action();
         }
     }
     apply {
-        ldAxlM.apply();
+        simple_table.apply();
     }
 }
 

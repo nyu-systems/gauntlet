@@ -21,13 +21,20 @@ header H {
     bit<8> k;
     bit<8> l;
     bit<8> m;
-    bit<8> n;
-    bit<8> o;
 }
+header B {
+    bit<8> a;
+    bit<8> b;
+    bit<8> c;
+    bit<8> d;
+}
+
+
 
 struct Headers {
     ethernet_t eth_hdr;
     H h;
+    B b;
 }
 
 struct Meta {
@@ -43,12 +50,11 @@ bool bool_with_side_effect(inout bit<8> val) {
     return true;
 }
 
-
-
 parser p(packet_in pkt, out Headers hdr, inout Meta m, inout standard_metadata_t sm) {
     state start {
         pkt.extract(hdr.eth_hdr);
         pkt.extract(hdr.h);
+        pkt.extract(hdr.b);
         transition accept;
     }
 }
@@ -66,13 +72,15 @@ control ingress(inout Headers h, inout Meta m, inout standard_metadata_t sm) {
         dummy_var = 8w0 ^ function_with_side_effect(h.h.g);
         dummy_var = 8w0 |-| function_with_side_effect(h.h.h);
         dummy_var = 8w255 |+| function_with_side_effect(h.h.i);
-        dummy_var = 8w255 + function_with_side_effect(h.h.h);
-        dummy_var = 8w255 | function_with_side_effect(h.h.j);
-        dummy_var = 8w0 - function_with_side_effect(h.h.k);
-        dummy_bool = function_with_side_effect(h.h.l) != function_with_side_effect(h.h.l);
-        dummy_bool = function_with_side_effect(h.h.m) == function_with_side_effect(h.h.m);
-        dummy_bool = true || bool_with_side_effect(h.h.n);
-        dummy_bool = false && bool_with_side_effect(h.h.o);
+        dummy_var = 8w255 + function_with_side_effect(h.h.j);
+        dummy_var = 8w255 | function_with_side_effect(h.h.k);
+        dummy_var = 8w0 - function_with_side_effect(h.h.l);
+        dummy_var = (16w1 ++ function_with_side_effect(h.h.m))[15:8];
+
+        dummy_bool = true || bool_with_side_effect(h.b.a);
+        dummy_bool = false && bool_with_side_effect(h.b.b);
+        dummy_bool = function_with_side_effect(h.b.c) != function_with_side_effect(h.b.c);
+        dummy_bool = function_with_side_effect(h.b.d) == function_with_side_effect(h.b.d);
     }
 }
 

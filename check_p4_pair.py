@@ -4,7 +4,7 @@ import os
 import sys
 import importlib
 import logging
-from p4z3 import Z3Reg, P4Package, P4Z3Class, z3
+from p4z3 import Z3Reg, P4Package, z3
 import p4z3.util as util
 sys.setrecursionlimit(15000)
 

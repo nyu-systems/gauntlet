@@ -7,42 +7,34 @@ header ethernet_t {
     bit<16> eth_type;
 }
 
-header H {
-    bit<8> a;
-}
+
 
 struct Headers {
     ethernet_t eth_hdr;
-    H h;
 }
 
 struct Meta {
 }
 
-bit<8> f(inout bit<8> x, in bit<8> z) {
-    return 8w4;
+bit<16> do_function(inout bit<16> val) {
+    val = 16w1;
+    return 1;
 }
-
-bit<8> g(inout bit<8> z) {
-    z = 8w3;
-    return 8w1;
-}
-
 parser p(packet_in pkt, out Headers hdr, inout Meta m, inout standard_metadata_t sm) {
     state start {
         transition parse_hdrs;
     }
     state parse_hdrs {
         pkt.extract(hdr.eth_hdr);
-        pkt.extract(hdr.h);
         transition accept;
     }
 }
 
 control ingress(inout Headers h, inout Meta m, inout standard_metadata_t sm) {
 
+
     apply {
-        f(h.h.a, g(h.h.a));
+        bit<16> tmp = (h.eth_hdr.eth_type ++ do_function(h.eth_hdr.eth_type))[31:16];
     }
 }
 

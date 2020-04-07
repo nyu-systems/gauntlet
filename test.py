@@ -21,7 +21,6 @@ TARGET_DIR = FILE_DIR.joinpath("generated")
 VIOLATION_DIR = FILE_DIR.joinpath("violated")
 FALSE_FRIENDS_DIR = FILE_DIR.joinpath("false_friends")
 P4_DIR = FILE_DIR.joinpath("p4c/testdata/p4_16_samples/")
-
 # p4c binaries
 P4C_BIN = FILE_DIR.joinpath("p4c/build/p4c")
 P4C_BIN_1863 = FILE_DIR.joinpath("p4c_bins/issue1863")
@@ -108,6 +107,7 @@ slow_tests = [
     "issue-2123-2-bmv2.p4",  # z3 gets stuck for unclear reasons
     "issue-2123-3-bmv2.p4",  # z3 gets stuck for unclear reasons
     "issue561-bmv2.p4",      # causes a segmentation fault
+    "table_call_in_expression.p4",
 ]
 
 
