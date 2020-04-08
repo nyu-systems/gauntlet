@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 import p4z3.util as util
-import check_p4_compilation as p4c_check
+import check_p4_whitebox as p4c_check
 import check_p4_pair as z3_check
 
 # configure logging
@@ -42,7 +42,7 @@ violation_tests = [
     "copy_out",
     "drop-bmv2",
     "nested_slice",
-    # "exit", exits are not allowed in functions so we do not have to worry
+    # "exit", exits are not allowed in functions so we do not have to worry... for now
     "action_exit",
     "equality-1",
     "equality-2",
@@ -60,7 +60,7 @@ violation_tests = [
     "unused_return",
     "out-params-1",
     "out-params-2",
-    # "variable_shadowing", #disabled until I have found a good solution
+    # "variable_shadowing", # disabled until I have found a good solution
 ]
 
 # ***** tests that should not trigger a violation bug *****
@@ -107,7 +107,7 @@ slow_tests = [
     "issue-2123-2-bmv2.p4",  # z3 gets stuck for unclear reasons
     "issue-2123-3-bmv2.p4",  # z3 gets stuck for unclear reasons
     "issue561-bmv2.p4",      # causes a segmentation fault
-    "table_call_in_expression.p4",
+    "table_call_in_expression.p4",  # design flaw...
 ]
 
 

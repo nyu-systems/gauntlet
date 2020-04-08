@@ -6,7 +6,6 @@ from multiprocessing import Pool
 from functools import wraps
 import errno
 import os
-import sys
 import signal
 
 from pathlib import Path
@@ -38,6 +37,8 @@ KNOWN_BUGS = [
     "Unimplemented compiler support",
     "Null stat",
     "IR loop detected",
+    "Modulo by zero",
+    "Division by zero",
     # bf
     "Unsupported on target",
     "PHV allocation was not successful",
