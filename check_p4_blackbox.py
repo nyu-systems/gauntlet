@@ -385,16 +385,19 @@ def perform_blackbox_test(out_dir, p4_input):
             # FIXME: Figure out a way to solve this, might not be solvable
             avoid_matches = z3.Not(z3.Or(*avoid_conds))
             undefined_matches = z3.And(*undefined_conds)
+            permut_match = z3.And(*permut)
             g = z3.Goal()
             g.add(main_formula == output_const,
-                  avoid_matches, undefined_matches)
+                  avoid_matches, undefined_matches, permut_match)
             t = z3.Then(
                 # z3.Tactic("normalize-bounds"),
                 # z3.Tactic("propagate-values"),
                 z3.Tactic("ctx-solver-simplify"),
                 z3.Tactic("elim-and")
             )
+            log.info("Inferring simplified input and output")
             constrained_output = t.apply(g)
+            log.info("Inferring dont-care map...")
             dont_care_map = get_dont_care_map(constrained_output[0][0])
             result = check_with_stf(out_dir, p4_input, m,
                                     output_const, dont_care_map)
@@ -431,5 +434,16 @@ if __name__ == '__main__':
     stderr_log.setFormatter(logging.Formatter("%(levelname)s:%(message)s"))
     logging.getLogger().addHandler(stderr_log)
     USE_TOFINO = args.use_tofino
-    result = perform_blackbox_test(args.out_dir, args.p4_input)
+    p4_input = Path(args.p4_input)
+    out_dir = Path(args.out_dir)
+    if os.path.isfile(p4_input):
+        out_dir = out_dir.joinpath(p4_input.stem)
+        util.del_dir(out_dir)
+        result = perform_blackbox_test(out_dir, p4_input)
+    else:
+        util.check_dir(out_dir)
+        for p4_file in list(p4_input.glob("**/*.p4")):
+            output_dir = out_dir.joinpath(p4_file.stem)
+            util.del_dir(output_dir)
+            result = perform_blackbox_test(output_dir, p4_file)
     sys.exit(result)
