@@ -67,7 +67,7 @@ def natural_sort(l):
     return sorted(l, key=alphanum_key)
 
 
-def start_process(cmd, *args, out_file=subprocess.STDOUT, **kwargs):
+def start_process(cmd, *args, out_file=subprocess.PIPE, **kwargs):
     log.debug("Executing %s ", cmd)
     if out_file is subprocess.STDOUT:
         proc = subprocess.Popen(cmd.split(), *args, **kwargs)

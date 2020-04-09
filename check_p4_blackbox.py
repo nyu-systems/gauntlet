@@ -148,12 +148,35 @@ def run_bmv2_test(out_dir, p4_input):
     cmd += f"{P4C_DIR} -v "
     cmd += f"-bd {P4C_DIR}/build "
     cmd += f"{out_dir}/{p4_input.name} "
-    return util.exec_process(cmd)
+    test_proc = util.start_process(cmd, cwd=out_dir)
+
+    def signal_handler(sig, frame):
+        log.warning("run_tofino_test: Caught Interrupt, exiting...")
+        os.kill(test_proc.pid)
+        sys.exit(1)
+    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGTERM, signal_handler)
+
+    stdout, stderr = test_proc.communicate()
+
+    return test_proc, stdout, stderr
 
 
 def cleanup(procs):
     for proc in procs:
         os.killpg(os.getpgid(proc.pid), signal.SIGTERM)
+
+
+def save_error(err_path, stdout, stderr):
+    log.error("*" * 60)
+    log.error(stdout.decode("utf-8"))
+    log.error("*" * 60)
+    log.error(stderr.decode("utf-8"))
+    log.error("*" * 60)
+    util.check_dir(err_path)
+    with open(f"{err_path}_error.txt", 'w+') as err_file:
+        err_file.write(stdout.decode("utf-8"))
+        err_file.write(stderr.decode("utf-8"))
 
 
 def run_tofino_test(out_dir, p4_input, stf_file_name):
@@ -179,30 +202,36 @@ def run_tofino_test(out_dir, p4_input, stf_file_name):
     config_cmd += f"P4_ARCHITECTURE=tna "
     result = util.exec_process(config_cmd, cwd=out_dir)
     if result.returncode != util.EXIT_SUCCESS:
-        return result
+        return result, result.stdout, result.stderr
     # create the target
     make_cmd = f"make -C {out_dir} "
     result = util.exec_process(make_cmd)
     if result.returncode != util.EXIT_SUCCESS:
-        return result
+        return result, result.stdout, result.stderr
     # install the target in the tofino folder
     make_cmd = f"make install -C {out_dir} "
     result = util.exec_process(make_cmd)
     if result.returncode != util.EXIT_SUCCESS:
-        return result
+        return result, result.stdout, result.stderr
     procs = []
     test_proc = None
     # start the target in the background
     model_cmd = f"{TOFINO_DIR}/run_tofino_model.sh "
     model_cmd += f"-p {prog_name} "
+    os_env = os.environ.copy()
+    os_env["SDE"] = f"{TOFINO_DIR}"
+    os_env["SDE_INSTALL"] = f"{TOFINO_DIR}/install"
     proc = util.start_process(model_cmd, preexec_fn=os.setsid, cwd=out_dir)
     procs.append(proc)
     # start the binary for the target in the background
     switch_cmd = f"{TOFINO_DIR}/run_switchd.sh "
     switch_cmd += f"--arch tofino "
     switch_cmd += f"-p {prog_name} "
+    os_env = os.environ.copy()
+    os_env["SDE"] = f"{TOFINO_DIR}"
+    os_env["SDE_INSTALL"] = f"{TOFINO_DIR}/install"
     proc = util.start_process(
-        switch_cmd, preexec_fn=os.setsid, cwd=out_dir)
+        switch_cmd, preexec_fn=os.setsid, env=os_env, cwd=out_dir)
     procs.append(proc)
 
     # wait for a bit
@@ -211,6 +240,8 @@ def run_tofino_test(out_dir, p4_input, stf_file_name):
     test_cmd = f"{TOFINO_DIR}/run_p4_tests.sh "
     test_cmd += f"-t {test_dir} "
     os_env = os.environ.copy()
+    os_env["SDE"] = f"{TOFINO_DIR}"
+    os_env["SDE_INSTALL"] = f"{TOFINO_DIR}/install"
     os_env["PYTHONPATH"] = f"${{PYTHONPATH}}:{FILE_DIR}"
     test_proc = util.start_process(test_cmd, env=os_env, cwd=out_dir)
 
@@ -222,9 +253,9 @@ def run_tofino_test(out_dir, p4_input, stf_file_name):
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)
 
-    test_proc.communicate()
+    stdout, stderr = test_proc.communicate()
     cleanup(procs)
-    return test_proc
+    return test_proc, stdout, stderr
 
 
 def run_stf_test(out_dir, p4_input, stf_str):
@@ -235,20 +266,14 @@ def run_stf_test(out_dir, p4_input, stf_str):
     with open(stf_file_name, 'w+') as stf_file:
         stf_file.write(stf_str)
     if USE_TOFINO:
-        result = run_tofino_test(out_dir, p4_input, stf_file_name)
+        result, stdout, stderr = run_tofino_test(
+            out_dir, p4_input, stf_file_name)
     else:
-        result = run_bmv2_test(out_dir, p4_input)
+        result, stdout, stderr = run_bmv2_test(out_dir, p4_input)
     if result.returncode != util.EXIT_SUCCESS:
         log.error("Failed to validate %s with a stf test:", p4_input.name)
-        log.error("*" * 60)
-        log.error(result.stdout.decode("utf-8"))
-        log.error("*" * 60)
-        log.error(result.stderr.decode("utf-8"))
-        log.error("*" * 60)
-        util.check_dir(fail_dir)
-        with open(f"{fail_dir}/{p4_input.stem}_error.txt", 'w+') as err_file:
-            err_file.write(result.stdout.decode("utf-8"))
-            err_file.write(result.stderr.decode("utf-8"))
+        err_file = Path(f"{fail_dir}/{p4_input.stem}_error.txt")
+        save_error(err_file, stdout, stderr)
     else:
         log.info("Validation of %s with an stf test succeeded.", p4_input.name)
     return result.returncode
