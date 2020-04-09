@@ -1,6 +1,6 @@
 import operator as op
 from p4z3.base import log, z3_cast, z3, copy_attrs
-from p4z3.base import P4ComplexInstance, P4Expression
+from p4z3.base import P4ComplexInstance, P4Expression, P4ComplexType
 from p4z3.callables import P4Method
 
 
@@ -425,6 +425,24 @@ class P4Cast(P4BinaryOp):
         self.to_size = to_size
         operator = z3_cast
         P4BinaryOp.__init__(self, val, to_size, operator)
+
+    def eval(self, p4_state):
+        lval_expr = p4_state.resolve_expr(self.lval)
+        # it can happen that we cast to a complex type...
+        if isinstance(self.rval, P4ComplexType):
+            instance = self.rval.instantiate(self.rval.name)
+            initializer = P4Initializer(lval_expr, instance)
+            return initializer.eval(p4_state)
+        rval_expr = p4_state.resolve_expr(self.rval)
+        # align the bitvectors to allow operations
+        lval_is_bitvec = isinstance(lval_expr, z3.BitVecRef)
+        rval_is_bitvec = isinstance(rval_expr, z3.BitVecRef)
+        if lval_is_bitvec and rval_is_bitvec:
+            if lval_expr.size() < rval_expr.size():
+                rval_expr = z3_cast(rval_expr, lval_expr.size())
+            if lval_expr.size() > rval_expr.size():
+                lval_expr = z3_cast(lval_expr, rval_expr.size())
+        return self.operator(lval_expr, rval_expr)
 
 
 class P4Mux(P4Expression):

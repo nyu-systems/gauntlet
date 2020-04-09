@@ -99,6 +99,7 @@ xfails = [
     "pvs-struct-3-bmv2.p4",
     "spec-ex19.p4",
     "issue314.p4",
+    "issue1638.p4",
 ]
 
 # these tests show pathological behavior and can currently not be tested
