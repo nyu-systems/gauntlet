@@ -173,8 +173,8 @@ def save_error(err_path, stdout, stderr):
     log.error("*" * 60)
     log.error(stderr.decode("utf-8"))
     log.error("*" * 60)
-    util.check_dir(err_path)
-    with open(f"{err_path}_error.txt", 'w+') as err_file:
+    util.check_dir(err_path.parent)
+    with open(f"{err_path}", 'w+') as err_file:
         err_file.write(stdout.decode("utf-8"))
         err_file.write(stderr.decode("utf-8"))
 
@@ -434,22 +434,7 @@ def perform_blackbox_test(out_dir, p4_input):
     return result
 
 
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument("-i", "--p4_input", dest="p4_input", default=None,
-                        type=lambda x: util.is_valid_file(parser, x),
-                        help="The main reference p4 file.")
-    parser.add_argument("--tofino", "-t", dest="use_tofino",
-                        action='store_true',
-                        help="Use the Tofino compiler instead of P4C.")
-    parser.add_argument("-o", "--out_dir", dest="out_dir", default=OUT_DIR,
-                        help="The output folder where all passes are dumped.")
-    parser.add_argument("-l", "--log_file", dest="log_file",
-                        default="blackbox.log",
-                        help="Specifies name of the log file.")
-    # Parse options and process argv
-    args = parser.parse_args()
-
+def main(args):
     # configure logging
     logging.basicConfig(filename=args.log_file,
                         format="%(levelname)s:%(message)s",
@@ -472,3 +457,21 @@ if __name__ == '__main__':
             util.del_dir(output_dir)
             result = perform_blackbox_test(output_dir, p4_file)
     sys.exit(result)
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-i", "--p4_input", dest="p4_input", default=None,
+                        type=lambda x: util.is_valid_file(parser, x),
+                        help="The main reference p4 file.")
+    parser.add_argument("--tofino", "-t", dest="use_tofino",
+                        action='store_true',
+                        help="Use the Tofino compiler instead of P4C.")
+    parser.add_argument("-o", "--out_dir", dest="out_dir", default=OUT_DIR,
+                        help="The output folder where all passes are dumped.")
+    parser.add_argument("-l", "--log_file", dest="log_file",
+                        default="blackbox.log",
+                        help="Specifies name of the log file.")
+    # Parse options and process argv
+    args = parser.parse_args()
+    main(args)

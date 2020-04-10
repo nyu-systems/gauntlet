@@ -26,11 +26,8 @@ GENERATOR_BUG_DIR = OUTPUT_DIR.joinpath("generator_bugs")
 CRASH_BUG_DIR = OUTPUT_DIR.joinpath("crash_bugs")
 VALIDATION_BUG_DIR = OUTPUT_DIR.joinpath("validation_bugs")
 TIMEOUT_DIR = OUTPUT_DIR.joinpath("timeout_bugs")
-ITERATIONS = 500
+ITERATIONS = 100
 NUM_PROCESSES = 4
-USE_BLACKBOX = False
-USE_TOFINO = False
-DO_VALIDATE = False
 
 KNOWN_BUGS = [
     "Conditional execution",
@@ -90,10 +87,10 @@ def generate_id():
     return sw_id
 
 
-def generate_p4_dump(p4c_bin, p4_file):
+def generate_p4_dump(p4c_bin, p4_file, config):
     p4_cmd = f"{p4c_bin} "
     p4_cmd += f"{p4_file} "
-    if USE_TOFINO:
+    if config["use_tofino"]:
         p4_cmd += f"1 "
     else:
         p4_cmd += f"0 "
@@ -146,23 +143,24 @@ def validate_p4(p4_file, target_dir, p4c_bin, log_file):
 
 
 @timeout(seconds=600)
-def validate_p4_blackbox(p4_file, target_dir, log_file):
+def validate_p4_blackbox(p4_file, target_dir, log_file, config):
     p4z3_cmd = "python3 check_p4_blackbox.py "
     p4z3_cmd += f"-i {p4_file} "
     p4z3_cmd += f"-o {target_dir} "
     p4z3_cmd += f"-l {log_file} "
-    if USE_TOFINO:
+    if config["use_tofino"]:
         p4z3_cmd += f"-t "
     result = util.exec_process(p4z3_cmd)
     return result.returncode
 
 
-def validate(dump_dir, p4_file, log_file):
+def validate(dump_dir, p4_file, log_file, config):
     try:
         # Tofino does not allow insights into the individual passes
         # So we are forced to use the blackbox technique
-        if USE_BLACKBOX:
-            result = validate_p4_blackbox(p4_file, dump_dir, log_file)
+        if config["use_blackbox"]:
+            result = validate_p4_blackbox(
+                p4_file, dump_dir, log_file, config)
         else:
             result = validate_p4(p4_file, dump_dir, P4C_BIN, log_file)
     except TimeoutError:
@@ -175,10 +173,10 @@ def validate(dump_dir, p4_file, log_file):
         log.error("Failed to validate the P4 code!")
         log.error("Rerun the example with:")
         out_file = VALIDATION_BUG_DIR.joinpath(p4_file.name)
-        if USE_TOFINO:
+        if config["use_tofino"]:
             err_log = dump_dir.joinpath(Path(p4_file.stem + "_ptf_err.log"))
             dump_file(VALIDATION_BUG_DIR, err_log)
-        if USE_BLACKBOX:
+        if config["use_blackbox"]:
             log.error("python3 check_p4_blackbox.py -i %s", out_file)
             stf_name = dump_dir.joinpath(Path(p4_file.stem + ".stf"))
             dump_file(VALIDATION_BUG_DIR, stf_name)
@@ -189,7 +187,7 @@ def validate(dump_dir, p4_file, log_file):
     return result
 
 
-def check(idx):
+def check(idx, config):
     test_id = generate_id()
     test_name = f"{test_id}_{idx}"
     dump_dir = OUTPUT_DIR.joinpath(f"dmp_{test_name}")
@@ -198,7 +196,7 @@ def check(idx):
     p4_file = dump_dir.joinpath(f"{test_name}.p4")
     log.info("Testing p4 program %s", p4_file)
     # generate a random program
-    result, p4_file = generate_p4_dump(P4RANDOM_BIN, p4_file)
+    result, p4_file = generate_p4_dump(P4RANDOM_BIN, p4_file, config)
     if result.returncode != util.EXIT_SUCCESS:
         log.error("Failed generate P4 code!")
         dump_result(result, GENERATOR_BUG_DIR, p4_file)
@@ -206,7 +204,7 @@ def check(idx):
         util.del_dir(dump_dir)
         return result.returncode
     # check compilation
-    if USE_TOFINO:
+    if config["use_tofino"]:
         result = compile_p4_prog(TOFINO_BIN, p4_file, dump_dir)
     else:
         result = compile_p4_prog(P4C_BIN, p4_file, dump_dir)
@@ -220,28 +218,56 @@ def check(idx):
         util.del_dir(dump_dir)
         return result
     # check validation
-    if DO_VALIDATE:
-        result = validate(dump_dir, p4_file, log_file)
+    if config["do_validate"]:
+        result = validate(dump_dir, p4_file, log_file, config)
     # reset the dump directory
     util.del_dir(dump_dir)
     return result
 
 
+class TestLauncher():
+    def __init__(self, config):
+        self._config = config
+
+    def __call__(self, idx):
+        return check(idx, self._config)
+
+
 def main(args):
+
+    config = {}
+    config["do_validate"] = args.do_validate
+    config["use_tofino"] = args.use_tofino
+    config["use_blackbox"] = args.do_validate
+
+    # configure logging
+    logging.basicConfig(filename=args.log_file,
+                        format="%(levelname)s:%(message)s",
+                        level=logging.INFO,
+                        filemode='w')
+    stderr_log = logging.StreamHandler()
+    stderr_log.setFormatter(logging.Formatter("%(levelname)s:%(message)s"))
+    log.addHandler(stderr_log)
+
     util.check_dir(OUTPUT_DIR)
-    if USE_TOFINO and DO_VALIDATE:
+
+    # initialize with some pre-configured state
+    launch = TestLauncher(config)
+
+    if args.use_tofino and args.do_validate:
         # tofino only supports single threaded mode for now
-        for idx in range(ITERATIONS):
-            check(idx)
+        for idx in range(args.iterations):
+            launch(idx)
         return
-    with Pool(NUM_PROCESSES) as p:
-        p.map(check, range(ITERATIONS))
+
+    with Pool(args.num_processes) as p:
+        p.map(launch, range(args.iterations))
     return
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument("--use-blackbox", "-b", dest="use_BLACKBOX",
+    parser.add_argument("--use-blackbox", "-b", dest="use_blackbox",
                         action='store_true',
                         help="Use the blackbox technique instead of"
                         "translation validation.")
@@ -254,18 +280,15 @@ if __name__ == '__main__':
     parser.add_argument("-v", "--validate", dest="do_validate",
                         action='store_true',
                         help="Also perform validation on programs.")
+    parser.add_argument("-i", "--iterations", dest="iterations",
+                        default=ITERATIONS, type=int,
+                        help="How many iterations to run.")
+    parser.add_argument("-p", "--num_processes", dest="num_processes",
+                        default=NUM_PROCESSES, type=int,
+                        help="How many processes to launch.")
+    parser.add_argument("-o", "--out_dir", dest="out_dir",
+                        default=OUTPUT_DIR,
+                        help="The output folder where all tests are dumped.")
     # Parse options and process argv
     args = parser.parse_args()
-    # lazy hack because I do not want to write a wrapper for map()
-    USE_BLACKBOX = args.use_BLACKBOX or args.use_tofino
-    USE_TOFINO = args.use_tofino
-    DO_VALIDATE = args.do_validate
-    # configure logging
-    logging.basicConfig(filename=args.log_file,
-                        format="%(levelname)s:%(message)s",
-                        level=logging.INFO,
-                        filemode='w')
-    stderr_log = logging.StreamHandler()
-    stderr_log.setFormatter(logging.Formatter("%(levelname)s:%(message)s"))
-    log.addHandler(stderr_log)
     main(args)
