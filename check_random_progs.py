@@ -238,7 +238,7 @@ def main(args):
     config = {}
     config["do_validate"] = args.do_validate
     config["use_tofino"] = args.use_tofino
-    config["use_blackbox"] = args.do_validate
+    config["use_blackbox"] = args.use_blackbox
 
     # configure logging
     logging.basicConfig(filename=args.log_file,

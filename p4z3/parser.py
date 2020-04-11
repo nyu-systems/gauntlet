@@ -1,7 +1,7 @@
 from p4z3.base import log, z3
 from p4z3.base import P4Expression, P4ComplexInstance, DefaultExpression
 from p4z3.callables import P4Control
-from p4z3.statements import P4Exit
+from p4z3.statements import P4Statement, P4Return
 
 
 MAX_LOOP = 1
@@ -9,6 +9,13 @@ MAX_LOOP = 1
 
 class P4Parser(P4Control):
     pass
+
+
+class RejectState(P4Statement):
+
+    def eval(self, p4_state):
+        p4_state.clear_expr_chain()
+        return z3.Const("rejected", p4_state.z3_type)
 
 
 class ParserTree(P4Expression):
@@ -23,8 +30,8 @@ class ParserTree(P4Expression):
     def eval(self, p4_state):
         for state_name, state in self.states.items():
             p4_state.set_or_add_var(state_name, state)
-        for state_name in self.exit_states:
-            p4_state.set_or_add_var(state_name, P4Exit())
+        p4_state.set_or_add_var("accept", P4Return())
+        p4_state.set_or_add_var("reject", RejectState())
         return self.states["start"].eval(p4_state)
 
 

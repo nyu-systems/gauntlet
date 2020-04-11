@@ -443,6 +443,8 @@ def main(args):
     stderr_log = logging.StreamHandler()
     stderr_log.setFormatter(logging.Formatter("%(levelname)s:%(message)s"))
     logging.getLogger().addHandler(stderr_log)
+    # fix this
+    global USE_TOFINO
     USE_TOFINO = args.use_tofino
     p4_input = Path(args.p4_input)
     out_dir = Path(args.out_dir)

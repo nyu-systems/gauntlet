@@ -50,7 +50,7 @@ class P4Callable(P4Z3Class):
                 if isinstance(arg_expr, P4ComplexInstance):
                     arg_expr = arg_expr.p4z3_type.instantiate(arg_name)
                 else:
-                    arg_expr = z3.Const(f"{param_name}", arg_expr.sort())
+                    arg_expr = z3.Const(f"{arg_name}", arg_expr.sort())
             # FIXME: Awful code...
             if isinstance(arg_expr, list) and isinstance(arg.p4_type, P4ComplexType):
                 arg_name = f"{self.name}_{param_name}"
