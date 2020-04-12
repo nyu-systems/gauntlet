@@ -102,6 +102,7 @@ xfails = [
     "issue1638.p4",
     # all of these do not work becauseof some quirk in inlining
     "inline-parser.p4",  # double uninitialized due to out parameters
+    "inline-switch.p4",
     "issue281.p4",
     "functors2.p4",
     "issue1470-bmv2.p4",

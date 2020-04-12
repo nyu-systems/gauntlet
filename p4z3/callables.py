@@ -39,22 +39,23 @@ class P4Callable(P4Z3Class):
         param_buffer = OrderedDict()
         for param_name, arg in merged_args.items():
             arg_expr = p4_state.resolve_expr(arg.p4_val)
+            # for now use the param name, not the arg_name constructed here
+            # FIXME: there are some passes that rename causing issues
+            arg_name = f"{self.name}_{param_name}"
             if arg.is_ref in ref_criteria:
                 # outs are left-values so the arg must be a string
-                arg_name = f"{self.name}_{param_name}"
                 # infer the type value at runtime, param does not work yet
                 # outs reset the input
                 # In the case that the instance is a complex type make sure
                 # to propagate the variable through all its members
                 log.debug("Resetting %s to %s", arg_expr, param_name)
                 if isinstance(arg_expr, P4ComplexInstance):
-                    arg_expr = arg_expr.p4z3_type.instantiate(arg_name)
+                    arg_expr = arg_expr.p4z3_type.instantiate(param_name)
                 else:
-                    arg_expr = z3.Const(f"{arg_name}", arg_expr.sort())
+                    arg_expr = z3.Const(f"{param_name}", arg_expr.sort())
             # FIXME: Awful code...
             if isinstance(arg_expr, list) and isinstance(arg.p4_type, P4ComplexType):
-                arg_name = f"{self.name}_{param_name}"
-                instance = arg.p4_type.instantiate(arg_name)
+                instance = arg.p4_type.instantiate(param_name)
                 instance.set_list(arg_expr)
                 arg_expr = instance
             # Sometimes expressions are passed, resolve those first
@@ -144,7 +145,12 @@ class P4Function(P4Action):
         p4_state.insert_exprs(p4_context)
         p4_state.insert_exprs(self.statements)
         p4z3_expr = p4_state.pop_next_expr()
-        return p4z3_expr.eval(p4_state)
+        # functions cast the returned value down to their actual return type
+        # FIXME: We can only cast bitvecs right now
+        if isinstance(self.return_type, z3.BitVecSortRef):
+            return z3_cast(p4z3_expr.eval(p4_state), self.return_type)
+        else:
+            return p4z3_expr.eval(p4_state)
 
 
 class P4Control(P4Callable):

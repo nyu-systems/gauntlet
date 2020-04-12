@@ -89,9 +89,10 @@ class P4BinaryOp(P4Op):
     def eval(self, p4_state):
         lval_expr = p4_state.resolve_expr(self.lval)
         rval_expr = p4_state.resolve_expr(self.rval)
+
         # align the bitvectors to allow operations
-        lval_is_bitvec = isinstance(lval_expr, z3.BitVecRef)
-        rval_is_bitvec = isinstance(rval_expr, z3.BitVecRef)
+        lval_is_bitvec = isinstance(lval_expr, (z3.BitVecRef, z3.BitVecNumRef))
+        rval_is_bitvec = isinstance(rval_expr, (z3.BitVecRef, z3.BitVecNumRef))
         if lval_is_bitvec and rval_is_bitvec:
             if lval_expr.size() < rval_expr.size():
                 rval_expr = z3_cast(rval_expr, lval_expr.size())
@@ -151,7 +152,12 @@ class P4add(P4BinaryOp):
 
 class P4sub(P4BinaryOp):
     def __init__(self, lval, rval):
-        operator = op.sub
+        def operator(x, y):
+            # for some reason, z3 borks if you use an int as x?
+            if isinstance(x, int) and isinstance(y, z3.BitVecRef):
+                x = z3_cast(x, y)
+            return op.sub(x, y)
+
         P4BinaryOp.__init__(self, lval, rval, operator)
 
 

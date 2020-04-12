@@ -43,6 +43,8 @@ header COMPARE {
 
 header DIV {
     bit<8> a;
+    bit<8> b;
+    bit<8> c;
 }
 
 
@@ -99,6 +101,8 @@ control pipe(inout Headers h, out bool pass) {
         if (-1  > 4s7) { h.comp.e = 1; }
         // Division
         h.div.a = (bit<8>)(4 / 1w1);
+        h.div.b = (3 - 8w2 / 2);
+        h.div.c = (8w2 / 2 - 3 );
         // nested int operations
         bit<48> tmp2 = (1 | 2) |+| 48w0;
 
