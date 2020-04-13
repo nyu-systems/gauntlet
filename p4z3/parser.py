@@ -60,12 +60,13 @@ class ParserSelect(P4Expression):
     def __init__(self, match, *cases):
         self.match = match
         self.cases = []
-        self.default = "accept"
+        self.default = "reject"
         for case_key, case_state in cases:
             if isinstance(case_key, DefaultExpression):
                 self.default = case_state
-            else:
-                self.cases.append((case_key, case_state))
+                # anything after default is considered unreachable
+                break
+            self.cases.append((case_key, case_state))
 
     def eval(self, p4_state):
         switches = []

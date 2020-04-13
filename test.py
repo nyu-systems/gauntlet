@@ -77,7 +77,6 @@ xfails = [
     "complex2.p4",
     "issue1989-bmv2.p4",
     "issue512.p4",
-    "issue933.p4",
     "issue1334.p4",
     "logging.p4",
     "parser-conditional.p4",
@@ -91,33 +90,20 @@ xfails = [
     "functors8.p4",
     "index.p4",  # runtimeindex
     "issue-2123.p4",  # runtimeindex
-    "issue1937-2-bmv2.p4",
-    "issue1937.p4",
-    "issue2090.p4",
     "issue774-4-bmv2.p4",
     "issue774.p4",
     "pvs-struct-3-bmv2.p4",
-    "spec-ex19.p4",
     "issue314.p4",
     "issue1638.p4",
     # all of these do not work becauseof some quirk in inlining
-    "inline-parser.p4",  # double uninitialized due to out parameters
     "inline-switch.p4",
     "issue281.p4",
-    "functors2.p4",
     "issue1470-bmv2.p4",
     "issue1897-bmv2.p4",
     "issue1955.p4",
-    "issue823.p4",
     "issue982.p4",
-    "named-arg1.p4",
     "psa-example-counters-bmv2.p4",
     "psa-example-digest-bmv2.p4",
-    "subparser-with-header-stack-bmv2.p4",
-    "default2.p4",
-    "issue1406.p4",
-    "issue1409-bmv2.p4",
-    "unreachable-accept.p4",
 ]
 
 # these tests show pathological behavior and can currently not be tested

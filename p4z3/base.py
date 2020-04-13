@@ -1021,6 +1021,9 @@ class P4StateInstance(P4ComplexInstance):
                 var_store[attr_name] = attr_val
             elif isinstance(attr_val, P4ComplexInstance):
                 var_store[attr_name] = copy.copy(attr_val)
+            # this should not be necessary FIXME.
+            elif isinstance(attr_val, P4Expression):
+                var_store[attr_name] = copy.copy(attr_val)
         chain = self.copy_expr_chain()
         return var_store, chain
 

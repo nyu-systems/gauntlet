@@ -34,8 +34,6 @@ KNOWN_BUGS = [
     "Unimplemented compiler support",
     "Null stat",
     "IR loop detected",
-    "Modulo by zero",
-    "Division by zero",
     # bf
     "Unsupported on target",
     "PHV allocation was not successful",
@@ -259,7 +257,7 @@ def main(args):
         for idx in range(args.iterations):
             launch(idx)
         return
-
+    # this sometimes deadlocks, no idea why....
     with Pool(args.num_processes) as p:
         p.map(launch, range(args.iterations))
     return
