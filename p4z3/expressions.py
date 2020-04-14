@@ -1,5 +1,5 @@
 import operator as op
-from p4z3.base import log, z3_cast, z3, copy_attrs
+from p4z3.base import log, z3_cast, z3, copy_attrs, copy
 from p4z3.base import P4ComplexInstance, P4Expression, P4ComplexType
 from p4z3.callables import P4Method
 
@@ -16,7 +16,8 @@ class P4Initializer(P4Expression):
             return val
         instance = p4_state.resolve_expr(self.instance)
         if isinstance(val, P4ComplexInstance):
-            return val
+            # copy the reference if we initialize with another complex type
+            return copy.copy(val)
         if isinstance(instance, P4ComplexInstance):
             if isinstance(val, dict):
                 for name, val in val.items():

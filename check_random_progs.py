@@ -252,7 +252,8 @@ def main(args):
     # initialize with some pre-configured state
     launch = TestLauncher(config)
 
-    if args.use_tofino and args.do_validate:
+    if config["use_tofino"] and config["do_validate"]:
+        config["use_blackbox"] = True
         # tofino only supports single threaded mode for now
         for idx in range(args.iterations):
             launch(idx)

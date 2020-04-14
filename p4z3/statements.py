@@ -1,8 +1,7 @@
-import copy
 from collections import OrderedDict
 import z3
 
-from p4z3.base import log, copy_attrs, DefaultExpression, z3_cast
+from p4z3.base import log, copy_attrs, DefaultExpression, z3_cast, copy
 from p4z3.base import P4ComplexInstance, P4Statement, P4Z3Class
 from p4z3.callables import P4Callable, P4Context
 

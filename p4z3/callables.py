@@ -51,8 +51,9 @@ class P4Callable(P4Z3Class):
                 log.debug("Resetting %s to %s", arg_expr, param_name)
                 if isinstance(arg_expr, P4ComplexInstance):
                     arg_expr = arg_expr.p4z3_type.instantiate(param_name)
+                    arg_expr.deactivate()
                 else:
-                    arg_expr = z3.Const(f"{param_name}", arg_expr.sort())
+                    arg_expr = z3.Const(f"undefined", arg_expr.sort())
             # FIXME: Awful code...
             if isinstance(arg_expr, list) and isinstance(arg.p4_type, P4ComplexType):
                 instance = arg.p4_type.instantiate(param_name)
@@ -198,6 +199,44 @@ class P4Method(P4Callable):
         # P4Methods, which are also black-box functions, can have return types
         self.return_type = type_params[0]
         self.type_params = type_params[1]
+
+    def set_context(self, p4_state, merged_args, ref_criteria):
+        # we have to subclass because of slight different behavior
+        # inout and out parameters are not undefined they are set
+        # with a new free constant
+        param_buffer = OrderedDict()
+        for param_name, arg in merged_args.items():
+            arg_expr = p4_state.resolve_expr(arg.p4_val)
+            # for now use the param name, not the arg_name constructed here
+            # FIXME: there are some passes that rename causing issues
+            arg_name = f"{self.name}_{param_name}"
+            if arg.is_ref in ref_criteria:
+                # outs are left-values so the arg must be a string
+                # infer the type value at runtime, param does not work yet
+                # outs reset the input
+                # In the case that the instance is a complex type make sure
+                # to propagate the variable through all its members
+                log.debug("Resetting %s to %s", arg_expr, param_name)
+                if isinstance(arg_expr, P4ComplexInstance):
+                    arg_expr = arg_expr.p4z3_type.instantiate(param_name)
+                else:
+                    arg_expr = z3.Const(f"{param_name}", arg_expr.sort())
+            # FIXME: Awful code...
+            if isinstance(arg_expr, list) and isinstance(arg.p4_type, P4ComplexType):
+                instance = arg.p4_type.instantiate(param_name)
+                instance.set_list(arg_expr)
+                arg_expr = instance
+            # Sometimes expressions are passed, resolve those first
+            log.debug("Copy-in: %s to %s", arg_expr, param_name)
+            if isinstance(arg_expr, int):
+                arg_expr = z3_cast(arg_expr, arg.p4_type)
+            # buffer the value, do NOT set it yet
+            param_buffer[param_name] = arg_expr
+        # now we can set the arguments without influencing subsequent variables
+        for param_name, param_val in param_buffer.items():
+            p4_state.set_or_add_var(param_name, param_val)
+
+
 
     def initialize(self, *args, **kwargs):
         # TODO Figure out what to actually do here

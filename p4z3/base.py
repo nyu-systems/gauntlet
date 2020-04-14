@@ -462,7 +462,7 @@ class StructInstance(P4ComplexInstance):
                 member_val.deactivate()
             else:
                 member_type = member_val.sort()
-                undef_name = f"{self.name}_{member_name}_undefined"
+                undef_name = f"undefined"
                 member_const = z3.Const(undef_name, member_type)
                 self.set_or_add_var(member_name, member_const)
 
@@ -794,6 +794,10 @@ class P4ExternInstance(P4ComplexInstance):
         self.p4_attrs = z3p4_type.p4_attrs
         self.type_params = z3p4_type.type_params
         self.params = OrderedDict()
+
+    def deactivate(self):
+        log.warning("This method should not be called...")
+        pass
 
     def get_z3_repr(self):
         return z3.Const(self.name, self.z3_type)

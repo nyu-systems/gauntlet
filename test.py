@@ -97,13 +97,14 @@ xfails = [
     "issue1638.p4",
     # all of these do not work becauseof some quirk in inlining
     "inline-switch.p4",
-    "issue281.p4",
-    "issue1470-bmv2.p4",
+    "issue281.p4",  # fixed by setting everything undefined
+    "issue1470-bmv2.p4",  # fixed by setting everything undefined
     "issue1897-bmv2.p4",
     "issue1955.p4",
-    "issue982.p4",
-    "psa-example-counters-bmv2.p4",
+    "issue982.p4",  # fixed by setting everything undefined
+    "psa-example-counters-bmv2.p4",  # fixed by setting everything undefined
     "psa-example-digest-bmv2.p4",
+    "issue2303.p4",
 ]
 
 # these tests show pathological behavior and can currently not be tested
