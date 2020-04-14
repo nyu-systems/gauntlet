@@ -39,7 +39,7 @@ class VerifyTest(BfRuntimeTest):
                 dont_care_bits = []
                 for idx, hexbit in enumerate(expect_bytes):
                     if hexbit == "*":
-                        dont_care_bits.append(idx)
+                        dont_care_bits.append(idx * 4)
                         expect_bytes[idx] = "0"
                 expect_bytes = "".join(expect_bytes)
                 expect_bytes = bytes.fromhex(expect_bytes)

@@ -53,6 +53,7 @@ KNOWN_BUGS = [
     "not yet handled by the ActionAnalysis pass",
     "invalid shift",
     "invalid slice on slice",
+    "must be a PHV"
 ]
 
 
