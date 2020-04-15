@@ -797,7 +797,6 @@ class P4ExternInstance(P4ComplexInstance):
 
     def deactivate(self):
         log.warning("This method should not be called...")
-        pass
 
     def get_z3_repr(self):
         return z3.Const(self.name, self.z3_type)

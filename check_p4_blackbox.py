@@ -9,9 +9,11 @@ import signal
 from pathlib import Path
 from dataclasses import dataclass
 
+
 import z3
 import p4z3.util as util
 import check_p4_pair as z3check
+
 
 log = logging.getLogger(__name__)
 
@@ -373,7 +375,6 @@ def perform_blackbox_test(out_dir, p4_input):
     z3_main_prog, result = get_semantics(out_dir, p4_input)
     if result != util.EXIT_SUCCESS:
         return result
-
     # now we actually verify that we can find an input
     s = z3.Solver()
     # we currently ignore all other pipelines and focus on the ingress pipeline
@@ -414,9 +415,9 @@ def perform_blackbox_test(out_dir, p4_input):
             g = z3.Goal()
             g.add(main_formula == output_const,
                   avoid_matches, undefined_matches, permut_match)
+            log.debug(z3.tactics())
             t = z3.Then(
-                # z3.Tactic("normalize-bounds"),
-                # z3.Tactic("propagate-values"),
+                z3.Tactic("propagate-values"),
                 z3.Tactic("ctx-solver-simplify"),
                 z3.Tactic("elim-and")
             )
@@ -443,6 +444,12 @@ def main(args):
     stderr_log = logging.StreamHandler()
     stderr_log.setFormatter(logging.Formatter("%(levelname)s:%(message)s"))
     logging.getLogger().addHandler(stderr_log)
+
+    if args.randomize_input:
+        z3.set_param("smt.phase_selection", 5,
+                     "smt.arith.random_initial_value", True,
+                     "sat.phase", "random",)
+
     # fix this
     global USE_TOFINO
     USE_TOFINO = args.use_tofino
@@ -474,6 +481,9 @@ if __name__ == '__main__':
     parser.add_argument("-l", "--log_file", dest="log_file",
                         default="blackbox.log",
                         help="Specifies name of the log file.")
+    parser.add_argument("-r", "--randomize-input", dest="randomize_input",
+                        action='store_true',
+                        help="Whether to randomize the z3 input variables.")
     # Parse options and process argv
     args = parser.parse_args()
     main(args)
