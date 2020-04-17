@@ -507,4 +507,5 @@ class P4Mux(P4Expression):
                 else_expr = z3_cast(else_expr, then_expr.size())
             if else_expr.size() < then_expr.size():
                 then_expr = z3_cast(then_expr, else_expr.size())
+        log.info(then_expr, else_expr)
         return z3.If(cond, then_expr, else_expr)

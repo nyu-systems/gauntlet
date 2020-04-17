@@ -11,9 +11,9 @@ log = logging.getLogger(__name__)
 
 @dataclass
 class Z3Wrapper:
-    __slots__ = ["structure", "state"]
-    structure: list
-    state: list
+    __slots__ = ["state", "z3_type"]
+    state: dict
+    z3_type: z3.SortRef
 
 
 @dataclass
@@ -44,6 +44,26 @@ def gen_instance(var_name, p4z3_type):
             instantiated_list.append(const)
         return instantiated_list
     raise RuntimeError(f"{p4z3_type} instantiation not supported!")
+
+
+def get_z3_repr(object_wrapper) -> z3.DatatypeRef:
+    ''' This method returns the current representation of the object in z3
+    logic. Use the z3 constant variable of the object and propagate it
+    through all its children.'''
+    z3_structure = []
+    state = object_wrapper.state
+    z3_type = object_wrapper.z3_type
+    for member_val, member_type in state:
+        if isinstance(member_val, Z3Wrapper):
+            # we have a complex type
+            # retrieve the member and call the constructor
+            # call the constructor of the complex type
+            z3_structure.append(get_z3_repr(member_val))
+        else:
+            if member_val.sort() != member_type:
+                member_val = z3_cast(member_val, member_type)
+            z3_structure.append(member_val)
+    return z3_type.constructor(0)(*z3_structure)
 
 
 def merge_parameters(params, *args, **kwargs):
@@ -300,25 +320,14 @@ class P4ComplexInstance():
         self.const = self.z3_type.constructor(0)(*members)
 
     def get_z3_obj(self):
-        structure = []
-        state = []
-        for member_name in self.members:
-            member = self.resolve_reference(member_name)
-            member_sort = member.sort()
-            if isinstance(member, P4ComplexInstance):
-                sub_wrapper = member.get_z3_obj()
-                for idx, sub_member in enumerate(sub_wrapper.structure):
-                    sub_member_name = sub_member[0]
-                    sub_member_sort = sub_member[1]
-                    merged_member = f"{member_name}.{sub_member_name}"
-                    merged_tuple = (merged_member, sub_member_sort)
-                    sub_wrapper.structure[idx] = merged_tuple
-                structure.extend(sub_wrapper.structure)
-                state.extend(sub_wrapper.state)
-            else:
-                structure.append((member_name, member_sort))
-                state.append(member)
-        return Z3Wrapper(structure, state)
+        members = []
+        for member_name, member_constructor in self.members.items():
+            member_type = member_constructor.range()
+            member_val = self.resolve_reference(member_name)
+            if isinstance(member_val, P4ComplexInstance):
+                member_val = member_val.get_z3_obj()
+            members.append((member_val, member_type))
+        return Z3Wrapper(members, self.sort())
 
     def resolve_reference(self, var):
         log.debug("Resolving reference %s", var)

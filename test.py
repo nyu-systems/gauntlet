@@ -83,6 +83,7 @@ xfails = [
     "side_effects.p4",
     "string.p4",
     "table-entries-range-bmv2.p4",
+    "functors8.p4",
     # parser failures
     "fold_match.p4",
     "index.p4",  # runtimeindex

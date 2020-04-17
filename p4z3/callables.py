@@ -1,6 +1,6 @@
 from p4z3.base import OrderedDict, z3, log, copy
 from p4z3.base import merge_parameters, gen_instance, z3_cast, Z3If
-from p4z3.base import P4Z3Class, P4ComplexInstance
+from p4z3.base import P4Z3Class, P4ComplexInstance, HeaderInstance
 from p4z3.base import DefaultExpression, P4ComplexType
 
 
@@ -50,8 +50,11 @@ class P4Callable(P4Z3Class):
                 # to propagate the variable through all its members
                 log.debug("Resetting %s to %s", arg_expr, param_name)
                 if isinstance(arg_expr, P4ComplexInstance):
-                    arg_expr = arg_expr.p4z3_type.instantiate(param_name)
-                    arg_expr.deactivate()
+                    # arg_expr = arg_expr.p4z3_type.instantiate(param_name)
+                    if isinstance(arg_expr, HeaderInstance):
+                        arg_expr.setInvalid(p4_state)
+                    else:
+                        arg_expr.deactivate()
                 else:
                     arg_expr = z3.Const(f"undefined", arg_expr.sort())
             # FIXME: Awful code...
