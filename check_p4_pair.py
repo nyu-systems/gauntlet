@@ -4,7 +4,7 @@ import os
 import sys
 import importlib
 import logging
-from p4z3 import Z3Reg, P4Package, z3
+from p4z3 import Z3Reg, P4Package, z3, Z3If, Z3Wrapper
 import p4z3.util as util
 sys.setrecursionlimit(15000)
 
@@ -61,22 +61,22 @@ def evaluate_package(p4_package):
     # only P4Package instances are valid inputs
     if not isinstance(p4_package, P4Package):
         return z3_asts
+
     for pipe_name, p4_pipe_ast in p4_package.pipes.items():
         # if pipe_name != "ig":
         #     continue
-        log.info("Formalizing %s pipe...", pipe_name)
         if isinstance(p4_pipe_ast, P4Package):
             # it is apparently possible to have nested packages...
             z3_tmp_asts = evaluate_package(p4_pipe_ast)
             for key, val in z3_tmp_asts.items():
                 name = f"{p4_pipe_ast.name}_{key}"
                 z3_asts[name] = val
-        # all other types are nonsense and we should not bother with them
-        elif isinstance(p4_pipe_ast, z3.AstRef):
-            z3_asts[pipe_name] = p4_pipe_ast
         else:
-            raise RuntimeError(
-                f"Unexpected Input Pipe {p4_pipe_ast} Type: {type(p4_pipe_ast)} !")
+            z3_asts[pipe_name] = p4_pipe_ast
+        # all other types are nonsense and we should not bother with them
+        # else:
+            # raise RuntimeError(
+            # f"Unexpected Input Pipe {p4_pipe_ast} Type: {type(p4_pipe_ast)} !")
     return z3_asts
 
 
@@ -99,15 +99,49 @@ def get_z3_asts(p4_module, p4_path, fail_dir):
     return z3_asts, util.EXIT_SUCCESS
 
 
+def generate_datatype(input_prog):
+    while isinstance(input_prog, Z3If):
+        input_prog = input_prog.left
+    name = "input"
+    if isinstance(input_prog, Z3Wrapper):
+        z3_type = z3.Datatype(name)
+        z3_type.declare(f"mk_{name}", *input_prog.structure)
+        z3_type = z3_type.create()
+        return z3_type
+    elif isinstance(input_prog, z3.AstRef):
+        return input_prog.sort()
+    else:
+        log.exception("Type not %s supported :\n", input_prog)
+        sys.exit(1)
+
+
+def produce_z3_tree(input_prog, z3_type):
+    if isinstance(input_prog, Z3If):
+        cond = input_prog.cond
+        left = produce_z3_tree(input_prog.left, z3_type)
+        right = produce_z3_tree(input_prog.right, z3_type)
+        return z3.If(cond, left, right)
+    if isinstance(input_prog, Z3Wrapper):
+        return z3_type.constructor(0)(*input_prog.state)
+    elif isinstance(input_prog, z3.AstRef):
+        return input_prog
+    else:
+        log.exception("Type not %s supported :\n", input_prog)
+        sys.exit(1)
+
+
 def check_equivalence(prog_before, prog_after):
     # The equivalence check of the solver
     # For all input packets and possible table matches the programs should
     # be the same
     ''' SOLVER '''
     s = z3.Solver()
+    output_type = generate_datatype(prog_before)
+    prog_before_z3 = produce_z3_tree(prog_before, output_type)
+    prog_after_z3 = produce_z3_tree(prog_after, output_type)
     # the equivalence equation
-    prog_before_simpl = z3.simplify(prog_before)
-    prog_after_simpl = z3.simplify(prog_after)
+    prog_before_simpl = z3.simplify(prog_before_z3)
+    prog_after_simpl = z3.simplify(prog_after_z3)
     try:
         tv_equiv = prog_before_simpl != prog_after_simpl
     except z3.Z3Exception as e:

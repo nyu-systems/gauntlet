@@ -16,7 +16,9 @@ import p4z3.util as util
 log = logging.getLogger(__name__)
 
 FILE_DIR = Path(__file__).parent.resolve()
-P4C_BIN = FILE_DIR.joinpath("p4c/build/p4c")
+# whitebox should be p4test, but this is quite slow right now...
+WHITEBOX_BIN = FILE_DIR.joinpath("p4c/build/p4c")
+BLACKBOX_BIN = FILE_DIR.joinpath("p4c/build/p4c")
 TOFINO_BIN = FILE_DIR.joinpath("tofino/bf_src/install/bin/bf-p4c")
 P4Z3_BIN = FILE_DIR.joinpath("p4c/build/p4toz3")
 P4RANDOM_BIN = FILE_DIR.joinpath("p4c/build/p4bludgeon")
@@ -161,7 +163,7 @@ def validate(dump_dir, p4_file, log_file, config):
             result = validate_p4_blackbox(
                 p4_file, dump_dir, log_file, config)
         else:
-            result = validate_p4(p4_file, dump_dir, P4C_BIN, log_file)
+            result = validate_p4(p4_file, dump_dir, WHITEBOX_BIN, log_file)
     except TimeoutError:
         log.error("Validation timed out.")
         dump_file(TIMEOUT_DIR, p4_file)
@@ -205,8 +207,10 @@ def check(idx, config):
     # check compilation
     if config["use_tofino"]:
         result = compile_p4_prog(TOFINO_BIN, p4_file, dump_dir)
+    elif config["use_blackbox"]:
+        result = compile_p4_prog(BLACKBOX_BIN, p4_file, dump_dir)
     else:
-        result = compile_p4_prog(P4C_BIN, p4_file, dump_dir)
+        result = compile_p4_prog(WHITEBOX_BIN, p4_file, dump_dir)
     if result.returncode != util.EXIT_SUCCESS:
         if not is_known_bug(result):
             log.error("Failed to compile the P4 code!")

@@ -1,5 +1,5 @@
 from p4z3.base import OrderedDict, z3, log, copy
-from p4z3.base import merge_parameters, gen_instance, z3_cast
+from p4z3.base import merge_parameters, gen_instance, z3_cast, Z3If
 from p4z3.base import P4Z3Class, P4ComplexInstance
 from p4z3.base import DefaultExpression, P4ComplexType
 
@@ -143,15 +143,19 @@ class P4Function(P4Action):
         p4_context = P4Context(var_buffer, None)
         self.set_context(p4_state, merged_args, ("out"))
 
+        old_expr_chain = p4_state.copy_expr_chain()
+        p4_state.clear_expr_chain()
         p4_state.insert_exprs(p4_context)
         p4_state.insert_exprs(self.statements)
         p4z3_expr = p4_state.pop_next_expr()
+        state_expr = p4z3_expr.eval(p4_state)
+        p4_state.expr_chain = old_expr_chain
         # functions cast the returned value down to their actual return type
         # FIXME: We can only cast bitvecs right now
-        if isinstance(self.return_type, z3.BitVecSortRef):
-            return z3_cast(p4z3_expr.eval(p4_state), self.return_type)
+        if isinstance(state_expr, (z3.BitVecSortRef, int)):
+            return z3_cast(state_expr, self.return_type)
         else:
-            return p4z3_expr.eval(p4_state)
+            return state_expr
 
 
 class P4Control(P4Callable):
@@ -235,8 +239,6 @@ class P4Method(P4Callable):
         # now we can set the arguments without influencing subsequent variables
         for param_name, param_val in param_buffer.items():
             p4_state.set_or_add_var(param_name, param_val)
-
-
 
     def initialize(self, *args, **kwargs):
         # TODO Figure out what to actually do here
@@ -406,12 +408,8 @@ class P4Table(P4Callable):
     def eval_table(self, p4_state):
         actions = self.actions
         const_entries = self.const_entries
-        # first evaluate the default entry
-        # state forks here
-        var_store, chain_copy = p4_state.checkpoint()
-        expr = self.eval_default(p4_state)
-        p4_state.restore(var_store, chain_copy)
-        # then wrap constant entries around it
+        action_exprs = []
+        # first evaluate all the constant entries
         for const_keys, action in reversed(const_entries):
             action_name = action[0]
             p4_action_args = action[1]
@@ -430,12 +428,13 @@ class P4Table(P4Callable):
             action_match = z3.And(*matches)
             action_tuple = (action_name, p4_action_args)
             log.debug("Evaluating constant action %s...", action_name)
+            # state forks here
             var_store, chain_copy = p4_state.checkpoint()
             action_expr = self.eval_action(p4_state, action_tuple)
             p4_state.restore(var_store, chain_copy)
-            expr = z3.If(action_match, action_expr, expr)
+            action_exprs.append((action_match, action_expr))
 
-        # then wrap dynamic table entries around the constant entries
+        # then append dynamic table entries to the constant entries
         for action in reversed(actions.values()):
             p4_action_id = action[0]
             action_name = action[1]
@@ -447,17 +446,17 @@ class P4Table(P4Callable):
             var_store, chain_copy = p4_state.checkpoint()
             action_expr = self.eval_action(p4_state, action_tuple)
             p4_state.restore(var_store, chain_copy)
-            expr = z3.If(action_match, action_expr, expr)
-        # finally return a nested set of if expressions
-        return expr
+            action_exprs.append((action_match, action_expr))
+
+        # finally evaluate the default entry
+        table_expr = self.eval_default(p4_state)
+        default_expr = table_expr
+        # generate a nested set of if expressions per available action
+        for cond, action_expr in action_exprs:
+            table_expr = Z3If(cond, action_expr, table_expr)
+        # if we hit return the table expr
+        # otherwise just return the default expr
+        return Z3If(self.p4_attrs["hit"], table_expr, default_expr)
 
     def eval(self, p4_state):
-        # This is a table match where we look up the provided key
-        # If we match select the associated action,
-        # else use the default action
-        # TODO: Check the exact semantics how default actions can be called
-        # Right now, they can be called in either the table match or miss
-        tbl_match = self.p4_attrs["hit"]
-        table_expr = self.eval_table(p4_state)
-        def_expr = self.eval_default(p4_state)
-        return z3.If(tbl_match, table_expr, def_expr)
+        return self.eval_table(p4_state)

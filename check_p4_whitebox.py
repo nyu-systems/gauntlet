@@ -25,8 +25,8 @@ PASSES += "FrontEnd,MidEnd "
 def generate_p4_dump(p4c_bin, p4_file, p4_dmp_dir):
     p4_cmd = f"{p4c_bin} "
     p4_cmd += f"{PASSES} "
-    p4_cmd += f"--dump {p4_dmp_dir} {p4_file} "
     p4_cmd += f"-o {p4_dmp_dir} "
+    p4_cmd += f"--dump {p4_dmp_dir} {p4_file} "
     log.debug("Running dumps with command %s ", p4_cmd)
     return util.exec_process(p4_cmd)
 
@@ -80,8 +80,8 @@ def run_p4_to_py(p4_file, py_file):
 
 def list_passes(p4c_bin, p4_file, p4_dmp_dir):
     p4_pass_cmd = f"{p4c_bin} -v "
-    p4_pass_cmd += f"{p4_file} 2>&1 "
     p4_pass_cmd += f"-o {p4_dmp_dir} "
+    p4_pass_cmd += f"{p4_file} 2>&1 "
     p4_pass_cmd += "| sed -e '/FrontEnd\\|MidEnd/!d' | "
     # p4_pass_cmd += "| sed -e '/FrontEnd\\|MidEnd\\|PassManager/!d' | "
     p4_pass_cmd += "sed -e '/Writing program to/d' "

@@ -1,8 +1,8 @@
 from collections import OrderedDict
 import z3
 
-from p4z3.base import log, copy_attrs, DefaultExpression, z3_cast, copy
-from p4z3.base import P4ComplexInstance, P4Statement, P4Z3Class
+from p4z3.base import log, copy_attrs, DefaultExpression, copy, z3_cast
+from p4z3.base import P4ComplexInstance, P4Statement, P4Z3Class, Z3If
 from p4z3.callables import P4Callable, P4Context
 
 
@@ -63,15 +63,14 @@ class BlockStatement(P4Statement):
 
 class IfStatement(P4Statement):
 
-    def __init__(self, cond, then_block, else_block=None):
+    def __init__(self, cond, in_function, then_block, else_block=None):
         self.cond = cond
         self.then_block = then_block
         self.else_block = else_block
+        self.in_function = in_function
 
     def eval(self, p4_state):
         cond = p4_state.resolve_expr(self.cond)
-        # conditional branching requires a copy of the state for each branch
-        # in some sense this copy acts as a phi function
         var_store, chain_copy = p4_state.checkpoint()
         then_expr = self.then_block.eval(p4_state)
         then_vars = copy_attrs(p4_state.p4_attrs)
@@ -81,15 +80,26 @@ class IfStatement(P4Statement):
         else:
             p4z3_expr = p4_state.pop_next_expr()
             else_expr = p4z3_expr.eval(p4_state)
-        p4_state.merge_attrs(cond, then_vars)
-        # some z3 shenaningens, nested expressions are arithrefs...
-        then_is_arith_ref = isinstance(then_expr, z3.ArithRef)
-        else_is_arith_ref = isinstance(else_expr, z3.ArithRef)
-        if then_is_arith_ref and not else_is_arith_ref:
-            then_expr = z3_cast(then_expr, else_expr)
-        if else_is_arith_ref and not then_is_arith_ref:
-            else_expr = z3_cast(else_expr, then_expr)
-        return z3.If(cond, then_expr, else_expr)
+        # this is a temporary hack to deal with functions and their return
+        if self.in_function:
+            # need to propagate side effects, thankfully functions do not
+            # support exit statements, otherwise this would not work
+            p4_state.merge_attrs(cond, then_vars)
+            # we hit a void function, just return the merged state...
+            if not isinstance(then_expr, (z3.AstRef, int)):
+                return p4_state.get_z3_obj()
+            # some z3 shenaningens, nested expressions are arithrefs
+            # but arithrefs are not accepted as proper type
+            # z3 is really stupid sometimes...
+            then_is_arith_ref = isinstance(then_expr, z3.ArithRef)
+            else_is_arith_ref = isinstance(else_expr, z3.ArithRef)
+            if then_is_arith_ref and not else_is_arith_ref:
+                then_expr = z3_cast(then_expr, else_expr)
+            if else_is_arith_ref and not then_is_arith_ref:
+                else_expr = z3_cast(else_expr, then_expr)
+            return z3.If(cond, then_expr, else_expr)
+        else:
+            return Z3If(cond, then_expr, else_expr)
 
 
 class SwitchHit(P4Z3Class):
@@ -107,7 +117,7 @@ class SwitchHit(P4Z3Class):
             case_exprs.append((case["match"], case_expr))
         expr = self.default_case.eval(p4_state)
         for cond, case_expr in case_exprs:
-            expr = z3.If(cond, case_expr, expr)
+            expr = Z3If(cond, case_expr, expr)
         return expr
 
     def set_table(self, table):
@@ -194,9 +204,9 @@ class P4Return(P4Statement):
         # return the z3 expressions of the state AFTER restoring it
         if expr is None:
             # FIXME: issue1386 requires us to keep running down the chain...
-            # figure out why...
+            # Need to run down to the remaining execution path after the return.
             p4z3_expr = p4_state.pop_next_expr()
-            return p4z3_expr.eval(p4_state)
+            expr = p4z3_expr.eval(p4_state)
         return expr
 
 

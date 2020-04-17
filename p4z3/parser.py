@@ -1,4 +1,4 @@
-from p4z3.base import log, z3
+from p4z3.base import log, z3, Z3If
 from p4z3.base import P4Expression, P4ComplexInstance, DefaultExpression
 from p4z3.callables import P4Control
 from p4z3.statements import P4Statement, P4Return
@@ -15,7 +15,9 @@ class RejectState(P4Statement):
 
     def eval(self, p4_state):
         p4_state.clear_expr_chain()
-        return z3.Const("rejected", p4_state.z3_type)
+        p4_state.deactivate("rejected")
+        p4z3_expr = p4_state.pop_next_expr()
+        return p4z3_expr.eval(p4_state)
 
 
 class ParserTree(P4Expression):
@@ -97,11 +99,13 @@ class ParserSelect(P4Expression):
             if not select_cond:
                 select_cond = [z3.BoolVal(False)]
             var_store, chain_copy = p4_state.checkpoint()
-            state_expr = p4_state.resolve_expr(case_name)
+            parser_state = p4_state.resolve_reference(case_name)
+            state_expr = parser_state.eval(p4_state)
             p4_state.restore(var_store, chain_copy)
             switches.append((z3.And(*select_cond), state_expr))
 
-        expr = p4_state.resolve_expr(self.default)
+        default_parser_state = p4_state.resolve_reference(self.default)
+        expr = default_parser_state.eval(p4_state)
         for cond, state_expr in switches:
-            expr = z3.If(cond, state_expr, expr)
+            expr = Z3If(cond, state_expr, expr)
         return expr

@@ -23,7 +23,6 @@ FALSE_FRIENDS_DIR = FILE_DIR.joinpath("false_friends")
 P4_DIR = FILE_DIR.joinpath("p4c/testdata/p4_16_samples/")
 # p4c binaries
 P4C_BIN = FILE_DIR.joinpath("p4c/build/p4c")
-P4C_BIN_1863 = FILE_DIR.joinpath("p4c_bins/issue1863")
 
 # ***** working tests *****
 p416_tests = []
@@ -76,7 +75,6 @@ xfails = [
     "array_field1.p4",
     "complex2.p4",
     "issue1989-bmv2.p4",
-    "issue512.p4",
     "issue1334.p4",
     "logging.p4",
     "parser-conditional.p4",
@@ -87,7 +85,6 @@ xfails = [
     "table-entries-range-bmv2.p4",
     # parser failures
     "fold_match.p4",
-    "functors8.p4",
     "index.p4",  # runtimeindex
     "issue-2123.p4",  # runtimeindex
     "issue774-4-bmv2.p4",
@@ -97,11 +94,12 @@ xfails = [
     "issue1638.p4",
     # all of these do not work becauseof some quirk in inlining
     "inline-switch.p4",
-    "issue281.p4",  # fixed by setting everything undefined
     "issue1897-bmv2.p4",
     "issue1955.p4",
     "psa-example-digest-bmv2.p4",
     "issue2303.p4",
+    "issue982.p4",  # something wrong with duplicate states, I do not get it...
+    "issue1879-bmv2.p4",
 ]
 
 # these tests show pathological behavior and can currently not be tested
