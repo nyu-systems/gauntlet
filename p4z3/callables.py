@@ -51,10 +51,7 @@ class P4Callable(P4Z3Class):
                 log.debug("Resetting %s to %s", arg_expr, param_name)
                 if isinstance(arg_expr, P4ComplexInstance):
                     # arg_expr = arg_expr.p4z3_type.instantiate(param_name)
-                    if isinstance(arg_expr, HeaderInstance):
-                        arg_expr.setInvalid(p4_state)
-                    else:
-                        arg_expr.deactivate()
+                    arg_expr.deactivate()
                 else:
                     arg_expr = z3.Const(f"undefined", arg_expr.sort())
             # FIXME: Awful code...

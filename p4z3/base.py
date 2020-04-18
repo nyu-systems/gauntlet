@@ -467,10 +467,13 @@ class P4ComplexInstance():
         # structs can be contained in headers so they can also be activated...
         for member_name in self.members:
             member_val = self.resolve_reference(member_name)
-            if isinstance(member_val, P4ComplexType):
+            if isinstance(member_val, P4ComplexInstance):
                 member_val.activate()
+            else:
+                allocated_var = z3.Const("undefined", member_val.sort())
+                self.set_or_add_var(member_name, allocated_var)
 
-    def deactivate(self, label="undefined"):
+    def deactivate(self, label="invalid"):
         # structs can be contained in headers so they can also be deactivated...
         for member_name in self.members:
             member_val = self.resolve_reference(member_name)
@@ -515,23 +518,7 @@ class HeaderInstance(StructInstance):
         self.p4_attrs["valid"] = z3.BoolVal(True)
         StructInstance.set_list(self, rvals)
 
-    def deactivate(self, label="undefined"):
-        # structs can be contained in headers so they can also be deactivated...
-        for member_name in self.members:
-            member_val = self.resolve_reference(member_name)
-            if isinstance(member_val, P4ComplexInstance):
-                member_val.deactivate(label)
-            else:
-                member_type = member_val.sort()
-                undef_name = label
-                member_const = z3.Const(undef_name, member_type)
-                # because headers can be invalid we need to force assignment
-                self.set_or_add_var(member_name, member_const, force=True)
-
-    def set_or_add_var(self, lval, rval, force=False):
-        # header is disabled, operations on it are invalid
-        if self.p4_attrs["valid"] == z3.BoolVal(False) and not force:
-            return
+    def set_or_add_var(self, lval, rval):
         super(HeaderInstance, self).set_or_add_var(lval, rval)
 
     def isValid(self, p4_state=None):

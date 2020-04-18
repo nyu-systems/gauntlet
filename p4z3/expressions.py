@@ -237,14 +237,14 @@ class P4land(P4BinaryOp):
         P4BinaryOp.__init__(self, lval, rval, operator)
 
     def eval(self, p4_state):
-        # we make the assumption that we get a z3 value back
-        lval_expr = p4_state.resolve_expr(self.lval)
-        if isinstance(lval_expr, z3.AstRef):
-            lval_expr = z3.simplify(lval_expr)
         # boolean expressions can short-circuit
-        if lval_expr == z3.BoolVal(False):
-            return lval_expr
+        # so we save the result of the right-hand expression and merge
+        var_store, chain_copy = p4_state.checkpoint()
         rval_expr = p4_state.resolve_expr(self.rval)
+        else_vars = copy_attrs(p4_state.p4_attrs)
+        p4_state.restore(var_store, chain_copy)
+        lval_expr = p4_state.resolve_expr(self.lval)
+        p4_state.merge_attrs(lval_expr, else_vars)
         return self.operator(lval_expr, rval_expr)
 
 
@@ -254,14 +254,15 @@ class P4lor(P4BinaryOp):
         P4BinaryOp.__init__(self, lval, rval, operator)
 
     def eval(self, p4_state):
-        # we make the assumption that we get a z3 value back
-        lval_expr = p4_state.resolve_expr(self.lval)
-        if isinstance(lval_expr, z3.AstRef):
-            lval_expr = z3.simplify(lval_expr)
         # boolean expressions can short-circuit
-        if lval_expr == z3.BoolVal(True):
-            return lval_expr
+        # so we save the result of the right-hand expression and merge
+        var_store, chain_copy = p4_state.checkpoint()
         rval_expr = p4_state.resolve_expr(self.rval)
+        else_vars = copy_attrs(p4_state.p4_attrs)
+        p4_state.restore(var_store, chain_copy)
+        lval_expr = p4_state.resolve_expr(self.lval)
+        p4_state.merge_attrs(z3.Not(lval_expr), else_vars)
+
         return self.operator(lval_expr, rval_expr)
 
 
@@ -507,5 +508,4 @@ class P4Mux(P4Expression):
                 else_expr = z3_cast(else_expr, then_expr.size())
             if else_expr.size() < then_expr.size():
                 then_expr = z3_cast(then_expr, else_expr.size())
-        log.info(then_expr, else_expr)
         return z3.If(cond, then_expr, else_expr)
