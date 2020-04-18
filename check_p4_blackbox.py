@@ -301,9 +301,13 @@ def assemble_dont_care_map(z3_input, dont_care_vals):
             dont_care_map.extend(assemble_dont_care_map(var, dont_care_vals))
         elif isinstance(var, z3.BitVecRef):
             bitvec_hex_width = math.ceil(var.size() / 4)
+            dont_care = False
+            for dont_care_val in dont_care_vals:
+                if dont_care_val in str(var):
+                    dont_care = True
             if str(var) == "invalid":
                 bitvec_map = ["x"] * bitvec_hex_width
-            elif str(var) in dont_care_vals:
+            elif dont_care:
                 bitvec_map = ["*"] * bitvec_hex_width
             else:
                 bitvec_map = ["."] * bitvec_hex_width
