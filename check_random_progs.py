@@ -7,6 +7,7 @@ from functools import wraps
 import errno
 import os
 import signal
+import time
 
 from pathlib import Path
 import p4z3.util as util
@@ -55,7 +56,10 @@ KNOWN_BUGS = [
     "not yet handled by the ActionAnalysis pass",
     "invalid shift",
     "invalid slice on slice",
-    "must be a PHV"
+    "must be a PHV",
+    "Cannot operate on values with different types",
+    "operands have different types",
+    "Fields involved in the same MAU operations have conflicting PARDE",
 ]
 
 
@@ -151,7 +155,10 @@ def validate_p4_blackbox(p4_file, target_dir, log_file, config):
     p4z3_cmd += f"-l {log_file} "
     if config["use_tofino"]:
         p4z3_cmd += f"-t "
+    if config["randomize_input"]:
+        p4z3_cmd += f"-r "
     result = util.exec_process(p4z3_cmd)
+    time.sleep(3)
     return result.returncode
 
 
@@ -242,6 +249,7 @@ def main(args):
     config["do_validate"] = args.do_validate
     config["use_tofino"] = args.use_tofino
     config["use_blackbox"] = args.use_blackbox
+    config["randomize_input"] = args.randomize_input
 
     # configure logging
     logging.basicConfig(filename=args.log_file,
@@ -293,6 +301,9 @@ if __name__ == '__main__':
     parser.add_argument("-o", "--out_dir", dest="out_dir",
                         default=OUTPUT_DIR,
                         help="The output folder where all tests are dumped.")
+    parser.add_argument("-r", "--randomize-input", dest="randomize_input",
+                        action='store_true',
+                        help="Whether to randomize the z3 input variables.")
     # Parse options and process argv
     args = parser.parse_args()
     main(args)

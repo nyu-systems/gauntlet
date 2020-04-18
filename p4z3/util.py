@@ -26,8 +26,9 @@ def check_dir(directory):
 
 def del_dir(directory):
     try:
-        shutil.rmtree(directory)
+        shutil.rmtree(directory, ignore_errors=True)
     except OSError as e:
+        log.warning("Could not delete directory, reason:")
         log.warning("%s - %s.", e.filename, e.strerror)
 
 

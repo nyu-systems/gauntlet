@@ -115,8 +115,13 @@ def get_stf_str(z3_model, z3_const, dont_care_map):
     output_values = fill_values(z3_output_header)
     out_pkt_list = convert_to_stf(output_values, "Headers")
     for idx, marker in enumerate(dont_care_map):
+        # this is an uninterpreted value, it can be anything
         if marker == "*":
             out_pkt_list[idx] = "*"
+        # this means that these bytes should be removed
+        # since the header is marked as invalid
+        elif marker == "x":
+            out_pkt_list[idx] = ""
     output_pkt_str = "".join(out_pkt_list)
     stf_str = "packet 0 "
     stf_str += insert_spaces(input_pkt_str, 2)
@@ -296,14 +301,12 @@ def assemble_dont_care_map(z3_input, dont_care_vals):
             dont_care_map.extend(assemble_dont_care_map(var, dont_care_vals))
         elif isinstance(var, z3.BitVecRef):
             bitvec_hex_width = math.ceil(var.size() / 4)
-            dont_care = False
-            for val in dont_care_vals:
-                if val in str(var):
-                    dont_care = True
-            if dont_care:
+            if str(var) == "invalid":
+                bitvec_map = ["x"] * bitvec_hex_width
+            elif str(var) in dont_care_vals:
                 bitvec_map = ["*"] * bitvec_hex_width
             else:
-                bitvec_map = ["x"] * bitvec_hex_width
+                bitvec_map = ["."] * bitvec_hex_width
             dont_care_map.extend(bitvec_map)
         else:
             raise RuntimeError(f"Type {type(var)} not supported!")
@@ -313,10 +316,14 @@ def assemble_dont_care_map(z3_input, dont_care_vals):
 def get_dont_care_map(z3_input):
     for child in z3_input.children():
         if "Headers" in child.sort().name():
-            dont_care_vals = []
+            dont_care_vals = set()
             for val in z3.z3util.get_vars(z3_input):
-                if str(val) != "ingress_0":
-                    dont_care_vals.append(str(val))
+                str_val = str(val)
+                # both of these strings are special
+                # ingress means it is a variable we have control over
+                # invalid means that there is no byte output
+                if str(val) not in ("ingress_0", "invalid"):
+                    dont_care_vals.add(str_val)
             return assemble_dont_care_map(child, dont_care_vals)
         else:
             dont_care_map = get_dont_care_map(child)
