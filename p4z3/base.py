@@ -305,7 +305,7 @@ class P4ComplexInstance():
                 # use the default z3 constructor
                 self.p4_attrs[z3_arg_name] = member_accessor(self.const)
             self.members[z3_arg_name] = member_accessor
-        self.p4_attrs["valid"] = z3.Bool(f"{name}_valid")
+        self.valid = z3.Bool(f"{name}_valid")
 
     def propagate_type(self, parent_const: z3.AstRef):
         members = []
@@ -333,7 +333,7 @@ class P4ComplexInstance():
             if isinstance(member_val, P4ComplexInstance):
                 member_val = member_val.get_z3_obj()
             members.append((member_val, member_type))
-        return Z3Wrapper(members, self.sort(), self.p4_attrs["valid"])
+        return Z3Wrapper(members, self.sort(), self.valid)
 
     def resolve_reference(self, var):
         log.debug("Resolving reference %s", var)
@@ -477,10 +477,10 @@ class P4ComplexInstance():
                 member_val.activate()
             else:
                 # only if the header was invalid, reallocate all variables
-                if self.p4_attrs["valid"] == z3.BoolVal(False):
+                if self.valid == z3.BoolVal(False):
                     allocated_var = z3.Const(label, member_val.sort())
                     self.set_or_add_var(member_name, allocated_var)
-        self.p4_attrs["valid"] = z3.BoolVal(True)
+        self.valid = z3.BoolVal(True)
 
     def deactivate(self, label="undefined"):
         # structs can be contained in headers so they can also be deactivated...
@@ -492,7 +492,7 @@ class P4ComplexInstance():
                 member_type = member_val.sort()
                 member_const = z3.Const(label, member_type)
                 self.set_or_add_var(member_name, member_const)
-        self.p4_attrs["valid"] = z3.BoolVal(False)
+        self.valid = z3.BoolVal(False)
 
 
 class StructType(P4ComplexType):
@@ -523,15 +523,13 @@ class HeaderInstance(StructInstance):
         self.p4_attrs["setInvalid"] = self.setInvalid
 
     def set_list(self, rvals):
-        self.p4_attrs["valid"] = z3.BoolVal(True)
+        self.valid = z3.BoolVal(True)
         StructInstance.set_list(self, rvals)
 
-    def set_or_add_var(self, lval, rval):
-        super(HeaderInstance, self).set_or_add_var(lval, rval)
 
     def isValid(self, p4_state=None):
         # This is a built-in
-        return self.p4_attrs["valid"]
+        return self.valid
 
     def setValid(self, p4_state):
         # This is a built-in
