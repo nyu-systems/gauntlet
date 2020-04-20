@@ -159,7 +159,7 @@ def run_bmv2_test(out_dir, p4_input):
 
     def signal_handler(sig, frame):
         log.warning("run_tofino_test: Caught Interrupt, exiting...")
-        os.kill(test_proc.pid)
+        os.kill(test_proc.pid, signal.SIGINT)
         sys.exit(1)
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)
@@ -199,6 +199,7 @@ def run_tofino_test(out_dir, p4_input, stf_file_name):
     util.copy_file(f"{FILE_DIR}/tofino_test_template.py", template_name)
 
     # initialize the target install
+    log.info("Building the tofino target...")
     config_cmd = f"{TOFINO_DIR}/pkgsrc/p4-build/configure "
     config_cmd += f"--with-tofino --with-p4c=bf-p4c "
     config_cmd += f"--prefix={TOFINO_DIR}/install "
@@ -223,6 +224,7 @@ def run_tofino_test(out_dir, p4_input, stf_file_name):
     procs = []
     test_proc = None
     # start the target in the background
+    log.info("Starting the tofino model...")
     model_cmd = f"{TOFINO_DIR}/run_tofino_model.sh "
     model_cmd += f"-p {prog_name} "
     os_env = os.environ.copy()
@@ -231,6 +233,7 @@ def run_tofino_test(out_dir, p4_input, stf_file_name):
     proc = util.start_process(model_cmd, preexec_fn=os.setsid, cwd=out_dir)
     procs.append(proc)
     # start the binary for the target in the background
+    log.info("Launching switchd...")
     switch_cmd = f"{TOFINO_DIR}/run_switchd.sh "
     switch_cmd += f"--arch tofino "
     switch_cmd += f"-p {prog_name} "
@@ -244,6 +247,7 @@ def run_tofino_test(out_dir, p4_input, stf_file_name):
     # wait for a bit
     time.sleep(2)
     # finally we can run the test
+    log.info("Running the actual test...")
     test_cmd = f"{TOFINO_DIR}/run_p4_tests.sh "
     test_cmd += f"-t {test_dir} "
     os_env = os.environ.copy()
@@ -255,7 +259,8 @@ def run_tofino_test(out_dir, p4_input, stf_file_name):
     def signal_handler(sig, frame):
         log.warning("run_tofino_test: Caught Interrupt, exiting...")
         cleanup(procs)
-        os.kill(test_proc.pid)
+        os.kill(test_proc.pid, signal.SIGINT)
+        os.kill(test_proc.pid, signal.SIGTERM)
         sys.exit(1)
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)
@@ -409,6 +414,17 @@ def perform_blackbox_test(out_dir, p4_input):
     # FIXME: Some of them should be usable
     s.add(z3.Not(z3.Or(*avoid_conds)))
     s.add(z3.And(*undefined_conds))
+    log.info(15 * "#")
+    log.info("Undefined conditions:")
+    for cond in undefined_conds:
+        log.info(cond)
+    log.info("Conditions to avoid:")
+    for cond in avoid_conds:
+        log.info(cond)
+    log.info("Permissible permutations:")
+    for cond in permuts:
+        log.info(cond)
+    log.info(15 * "#")
     for permut in permuts:
         s.push()
         s.add(permut)

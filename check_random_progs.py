@@ -36,7 +36,6 @@ KNOWN_BUGS = [
     "Conditional execution",
     "Unimplemented compiler support",
     "Null stat",
-    "IR loop detected",
     # bf
     "Unsupported on target",
     "PHV allocation was not successful",
@@ -45,6 +44,7 @@ KNOWN_BUGS = [
     "Null cst",
     "no definitions",
     "condition too complex",
+    "condition expression too complex",
     "source of modify_field invalid",
     "Please consider simplifying",
     "Operands of arithmetic operations cannot be greater",
@@ -307,3 +307,38 @@ if __name__ == '__main__':
     # Parse options and process argv
     args = parser.parse_args()
     main(args)
+
+
+
+
+# class TestLauncher(multiprocessing.Process):
+
+#     def __init__(self, config, idx_range):
+#         multiprocessing.Process.__init__(self)
+#         self.name = "TestLauncher"
+#         self._config = config
+#         self.kill = multiprocessing.Event()
+#         self.idx_range = idx_range
+
+#     def run(self):
+#         for idx in self.idx_range:
+#             check(idx, self._config)
+
+#     def terminate(self):
+#         log.info("%s: Received termination signal! Exiting..", self.name)
+#         self.kill.set()
+
+#     def baskets_from(items, bucket_size):
+#         baskets = [[] for _ in range(bucket_size)]
+#         for i, item in enumerate(items):
+#             baskets[i % bucket_size].append(item)
+#         return filter(None, baskets)
+#     distributions = baskets_from(range(args.iterations), NUM_PROCESSES)
+#     procs = []
+#     for dis in distributions:
+#         proc = TestLauncher(config, dis)
+#         procs.append(proc)
+#         proc.start()
+
+#     for p in procs:
+#         p.join()
