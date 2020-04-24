@@ -391,7 +391,9 @@ class P4ComplexInstance():
                 # make sure the assignment is aligned appropriately
                 # this can happen because we also evaluate before the
                 # BindTypeVariables pass
-                if isinstance(rval, int):
+                # we can only align if tmp_val is a bitvector
+                # example test: instance_overwrite.p4
+                if isinstance(rval, int) and isinstance(tmp_lval, (z3.BitVecSortRef, z3.BitVecRef)):
                     rval = z3_cast(rval, tmp_lval.sort())
             self.p4_attrs[lval] = rval
 
@@ -428,11 +430,10 @@ class P4ComplexInstance():
             if isinstance(attr_val, P4ComplexInstance):
                 attr_val.merge_attrs(cond, then_val.p4_attrs)
             elif isinstance(attr_val, z3.ExprRef):
-                if not z3.eq(then_val, attr_val):
-                    if then_val.sort() != attr_val.sort():
-                        attr_val = z3_cast(attr_val, then_val.sort())
-                    if_expr = z3.If(cond, then_val, attr_val)
-                    self.p4_attrs[attr_name] = if_expr
+                if then_val.sort() != attr_val.sort():
+                    attr_val = z3_cast(attr_val, then_val.sort())
+                if_expr = z3.simplify(z3.If(cond, then_val, attr_val))
+                self.p4_attrs[attr_name] = if_expr
 
     def __eq__(self, other):
         # It can happen that we compare to a list
@@ -525,7 +526,6 @@ class HeaderInstance(StructInstance):
     def set_list(self, rvals):
         self.valid = z3.BoolVal(True)
         StructInstance.set_list(self, rvals)
-
 
     def isValid(self, p4_state=None):
         # This is a built-in

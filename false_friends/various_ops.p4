@@ -106,6 +106,8 @@ control pipe(inout Headers h, out bool pass) {
         // nested int operations
         bit<48> tmp2 = (1 | 2) |+| 48w0;
 
+        int int_def = 1;
+
     }
 }
 

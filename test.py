@@ -101,6 +101,7 @@ xfails = [
     "issue2303.p4",
     "issue982.p4",  # something wrong with duplicate states, I do not get it...
     "issue1879-bmv2.p4",
+    "shadow-after-use.p4", # another issue with shadowing
 ]
 
 # these tests show pathological behavior and can currently not be tested
