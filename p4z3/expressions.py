@@ -239,11 +239,11 @@ class P4land(P4BinaryOp):
     def eval(self, p4_state):
         # boolean expressions can short-circuit
         # so we save the result of the right-hand expression and merge
+        lval_expr = p4_state.resolve_expr(self.lval)
         var_store, chain_copy = p4_state.checkpoint()
         rval_expr = p4_state.resolve_expr(self.rval)
         else_vars = copy_attrs(p4_state.p4_attrs)
         p4_state.restore(var_store, chain_copy)
-        lval_expr = p4_state.resolve_expr(self.lval)
         p4_state.merge_attrs(lval_expr, else_vars)
         return self.operator(lval_expr, rval_expr)
 
@@ -256,11 +256,11 @@ class P4lor(P4BinaryOp):
     def eval(self, p4_state):
         # boolean expressions can short-circuit
         # so we save the result of the right-hand expression and merge
+        lval_expr = p4_state.resolve_expr(self.lval)
         var_store, chain_copy = p4_state.checkpoint()
         rval_expr = p4_state.resolve_expr(self.rval)
         else_vars = copy_attrs(p4_state.p4_attrs)
         p4_state.restore(var_store, chain_copy)
-        lval_expr = p4_state.resolve_expr(self.lval)
         p4_state.merge_attrs(z3.Not(lval_expr), else_vars)
 
         return self.operator(lval_expr, rval_expr)

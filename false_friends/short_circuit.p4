@@ -14,9 +14,19 @@ header H {
     bit<8> d;
 }
 
+header B {
+    bit<8> a;
+    bit<8> b;
+}
+
+bit<8> do_function(out bit<8> val) {
+    return val;
+}
+
 struct Headers {
     ethernet_t eth_hdr;
     H h;
+    B b;
 }
 
 struct Meta {
@@ -34,6 +44,7 @@ parser p(packet_in pkt, out Headers hdr, inout Meta m, inout standard_metadata_t
     state start {
         pkt.extract(hdr.eth_hdr);
         pkt.extract(hdr.h);
+        pkt.extract(hdr.b);
         transition accept;
     }
 }
@@ -45,6 +56,7 @@ control ingress(inout Headers h, inout Meta m, inout standard_metadata_t sm) {
         dummy_bool = (false || true) || bool_with_side_effect(h.h.b);
         dummy_bool = false && bool_with_side_effect(h.h.c);
         dummy_bool = (true && false) && bool_with_side_effect(h.h.d);
+        h.b.a = (8w1 != do_function(h.b.b) || false) ? 8w1 : 8w2;
     }
 }
 
