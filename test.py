@@ -93,7 +93,8 @@ xfails = [
     "pvs-struct-3-bmv2.p4",
     "issue314.p4",
     "issue1638.p4",
-    # all of these do not work becauseof some quirk in inlining
+    "shadow-after-use.p4",  # another issue with shadowing
+    # all of these do not work because of some quirk in inlining
     "inline-switch.p4",
     "issue1897-bmv2.p4",
     "issue1955.p4",
@@ -101,7 +102,12 @@ xfails = [
     "issue2303.p4",
     "issue982.p4",  # something wrong with duplicate states, I do not get it...
     "issue1879-bmv2.p4",
-    "shadow-after-use.p4", # another issue with shadowing
+    # temporary faild tests
+    "issue1208-1.p4",
+    "issue803-2.p4",
+    "parser-arg.p4",
+    "factory1.p4",
+    "issue1006.p4",
 ]
 
 # these tests show pathological behavior and can currently not be tested

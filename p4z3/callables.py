@@ -1,7 +1,7 @@
-from p4z3.base import OrderedDict, z3, log, copy
-from p4z3.base import merge_parameters, gen_instance, z3_cast, Z3If
-from p4z3.base import P4Z3Class, P4ComplexInstance, HeaderInstance
-from p4z3.base import DefaultExpression, P4ComplexType
+from p4z3.base import OrderedDict, z3, log, copy, types
+from p4z3.base import merge_parameters, gen_instance, z3_cast, save_variables
+from p4z3.base import P4Z3Class, P4ComplexInstance, P4Extern, Z3If
+from p4z3.base import DefaultExpression, P4ComplexType, P4Expression
 
 
 class P4Callable(P4Z3Class):
@@ -13,27 +13,17 @@ class P4Callable(P4Z3Class):
         self.call_counter = 0
         self.p4_attrs = {}
 
-    def save_variables(self, p4_state, merged_args):
-        var_buffer = OrderedDict()
-        # save all the variables that may be overridden
-        for param_name, arg in merged_args.items():
-            is_ref = arg.is_ref
-            param_ref = arg.p4_val
-            # if the variable does not exist, set the value to None
-            try:
-                param_val = p4_state.resolve_reference(param_name)
-                if not isinstance(param_val, z3.AstRef):
-                    param_val = copy.copy(param_val)
-                var_buffer[param_name] = (is_ref, param_ref, param_val)
-            except KeyError:
-                var_buffer[param_name] = (is_ref, param_ref, None)
-        return var_buffer
+    def eval_callable(self, p4_state, merged_args, var_buffer):
+        raise NotImplementedError("Method eval_callable not implemented!")
+
+    def eval(self, p4_state, *args, **kwargs):
+        self.call_counter += 1
+        merged_args = merge_parameters(self.params, *args, **kwargs)
+        var_buffer = save_variables(p4_state, merged_args)
+        return self.eval_callable(p4_state, merged_args, var_buffer)
 
     def __call__(self, p4_state, *args, **kwargs):
         return self.eval(p4_state, *args, **kwargs)
-
-    def eval_callable(self, p4_state, merged_args, var_buffer):
-        raise NotImplementedError("Method eval_callable not implemented!")
 
     def set_context(self, p4_state, merged_args, ref_criteria):
         param_buffer = OrderedDict()
@@ -69,11 +59,100 @@ class P4Callable(P4Z3Class):
         for param_name, param_val in param_buffer.items():
             p4_state.set_or_add_var(param_name, param_val)
 
-    def eval(self, p4_state=None, *args, **kwargs):
-        self.call_counter += 1
+
+class MethodCallExpr(P4Expression):
+
+    def __init__(self, p4_method, type_args, *args, **kwargs):
+        self.p4_method = p4_method
+        self.args = args
+        self.kwargs = kwargs
+        self.type_args = type_args
+
+    def eval(self, p4_state):
+        p4_method = self.p4_method
+        # if we get a reference just try to find the method in the state
+        if not callable(p4_method):
+            p4_method = p4_state.resolve_expr(p4_method)
+        # TODO: Figure out how these type bindings work
+        if isinstance(p4_method, P4Method) and self.type_args:
+            p4_method = p4_method.initialize(*self.type_args)
+        return p4_method(p4_state, *self.args, **self.kwargs)
+
+
+class ConstCallExpr(P4Expression):
+
+    def __init__(self, p4_method, *args, **kwargs):
+        self.p4_method = p4_method
+        self.args = args
+        self.kwargs = kwargs
+
+    def eval(self, p4_state):
+        p4_method = self.p4_method
+        # if we get a reference just try to find the method in the state
+        p4_method_name = sanitize_string(self.p4_method)
+        p4_method = p4_state.resolve_expr(p4_method_name)
+        if isinstance(p4_method, P4Control):
+            init_ctrl = p4_method(*self.args, **self.kwargs)
+            expr = init_ctrl.apply(p4_state)
+        else:
+            expr = p4_method(p4_state, *self.args, **self.kwargs)
+        return expr
+
+
+def sanitize_string(input_string):
+    # stupid hack to deal with weird naming schemes in p4c...
+    # FIXME: Figure out what this is even supposed to mean
+    if input_string.endswith("<...>"):
+        input_string = input_string[:-5]
+    return input_string
+
+
+class P4Package():
+
+    def __init__(self, z3_reg, name, params):
+        self.pipes = OrderedDict()
+        self.params = params
+        self.name = name
+        self.z3_reg = z3_reg
+
+    def init_type_params(self, *args, **kwargs):
+        return self
+
+    def initialize(self, *args, **kwargs):
         merged_args = merge_parameters(self.params, *args, **kwargs)
-        var_buffer = self.save_variables(p4_state, merged_args)
-        return self.eval_callable(p4_state, merged_args, var_buffer)
+        for pipe_name, pipe_arg in merged_args.items():
+            log.info("Loading %s pipe...", pipe_name)
+            pipe_val = pipe_arg.p4_val
+            if isinstance(pipe_val, ConstCallExpr):
+                p4_type = pipe_arg.p4_type
+                p4_method_name = sanitize_string(pipe_val.p4_method)
+                # if we get a reference just try to find the method in the state
+                p4_method_obj = self.z3_reg._globals[p4_method_name]
+                if isinstance(p4_type, P4Extern):
+                    # this should not be necessary but we are forced to
+                    # initialize types likes this because of muddy extern
+                    # definitions. Fix this eventually.
+                    for idx, param in enumerate(p4_type.type_params):
+                        p4_method_obj.params[idx].p4_type = param.p4_type
+                params = p4_method_obj.params
+                p4_state = self.z3_reg.init_p4_state(pipe_name, params)
+                self.pipes[pipe_name] = pipe_val.eval(p4_state)
+            elif isinstance(pipe_val, str):
+                pipe_val = sanitize_string(pipe_val)
+                pipe = self.z3_reg._globals[pipe_val]
+                self.pipes[pipe_name] = pipe
+            elif isinstance(pipe_val, z3.ExprRef):
+                # for some reason simple expressions are also possible.
+                self.pipes[pipe_name] = pipe_val
+            else:
+                raise RuntimeError(
+                    f"Unsupported value {pipe_val}, type {type(pipe_val)}."
+                    " It does not make sense as a P4 pipeline.")
+        return self
+
+    def __call__(self, *args, **kwargs):
+        # TODO Figure out what to actually do here
+        return self
 
 
 class P4Context(P4Z3Class):
@@ -176,6 +255,9 @@ class P4Control(P4Callable):
         self.merged_consts = merge_parameters(
             self.const_params, *args, **kwargs)
         return self
+
+    def __call__(self, *args, **kwargs):
+        return self.initialize(*args, **kwargs)
 
     def apply(self, p4_state, *args, **kwargs):
         return self.eval(p4_state, *args, **kwargs)
@@ -300,8 +382,7 @@ def resolve_action(action_expr):
 class P4Table(P4Callable):
 
     def __init__(self, name, **properties):
-        self.name = name
-        self.p4_attrs = {}
+        super(P4Table, self).__init__(name, None, {})
         self.keys = []
         self.const_entries = []
         self.actions = OrderedDict()
@@ -362,11 +443,6 @@ class P4Table(P4Callable):
         # the table is probably applied after the value has been assigned
         p4_state.insert_exprs(self)
         return self
-
-    def __call__(self, p4_state, *args, **kwargs):
-        # tables can only be executed after apply statements
-        p4z3_expr = p4_state.pop_next_expr()
-        return p4z3_expr.eval(p4_state)
 
     def eval_keys(self, p4_state):
         key_pairs = []
@@ -457,6 +533,9 @@ class P4Table(P4Callable):
         # if we hit return the table expr
         # otherwise just return the default expr
         return Z3If(self.p4_attrs["hit"], table_expr, default_expr)
+
+    def eval_callable(self, p4_state, merged_args, var_buffer):
+        return self.eval_table(p4_state)
 
     def eval(self, p4_state):
         return self.eval_table(p4_state)

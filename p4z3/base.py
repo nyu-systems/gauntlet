@@ -95,6 +95,23 @@ def merge_parameters(params, *args, **kwargs):
     return merged_args
 
 
+def save_variables(p4_state, merged_args):
+    var_buffer = OrderedDict()
+    # save all the variables that may be overridden
+    for param_name, arg in merged_args.items():
+        is_ref = arg.is_ref
+        param_ref = arg.p4_val
+        # if the variable does not exist, set the value to None
+        try:
+            param_val = p4_state.resolve_reference(param_name)
+            if not isinstance(param_val, z3.AstRef):
+                param_val = copy.copy(param_val)
+            var_buffer[param_name] = (is_ref, param_ref, param_val)
+        except KeyError:
+            var_buffer[param_name] = (is_ref, param_ref, None)
+    return var_buffer
+
+
 def copy_attrs(attrs):
     attr_copy = {}
     for attr_name, attr_val in attrs.items():
@@ -272,12 +289,12 @@ class P4ComplexType():
     def __repr__(self):
         return self.name
 
-    def __eq__(self, other):
-        if isinstance(other, P4ComplexType):
-            return self.z3_type == other.z3_type
-        elif isinstance(other, z3.AstRef):
-            return self.z3_type == other
-        return super(P4ComplexType).__eq__(other)
+    # def __eq__(self, other):
+    #     if isinstance(other, P4ComplexType):
+    #         return self.z3_type == other.z3_type
+    #     elif isinstance(other, z3.AstRef):
+    #         return self.z3_type == other
+    #     return super(P4ComplexType).__eq__(other)
 
 
 class P4ComplexInstance():
@@ -435,6 +452,16 @@ class P4ComplexInstance():
                 if_expr = z3.simplify(z3.If(cond, then_val, attr_val))
                 self.p4_attrs[attr_name] = if_expr
 
+    def __copy__(self):
+        cls = self.__class__
+        result = cls.__new__(cls)
+        result.__dict__.update(self.__dict__)
+        result.p4_attrs = copy.copy(self.p4_attrs)
+        for name, val in self.p4_attrs.items():
+            if isinstance(val, P4ComplexInstance):
+                result.p4_attrs[name] = copy.copy(val)
+        return result
+
     def __eq__(self, other):
         # It can happen that we compare to a list
         # comparisons are almost the same just do not use members
@@ -459,16 +486,6 @@ class P4ComplexInstance():
             z3_eq = self_member == other_member
             eq_members.append(z3_eq)
         return z3.And(*eq_members)
-
-    def __copy__(self):
-        cls = self.__class__
-        result = cls.__new__(cls)
-        result.__dict__.update(self.__dict__)
-        result.p4_attrs = copy.copy(self.p4_attrs)
-        for name, val in self.p4_attrs.items():
-            if isinstance(val, P4ComplexInstance):
-                result.p4_attrs[name] = copy.copy(val)
-        return result
 
     def activate(self, label="undefined"):
         # structs can be contained in headers so they can also be activated...
@@ -599,7 +616,7 @@ class ListInstance(P4ComplexInstance):
         pass
 
 
-class HeaderStack(P4ComplexType):
+class HeaderStack(StructType):
 
     def __init__(self, name, z3_args):
         for idx, arg in enumerate(z3_args):
@@ -645,7 +662,7 @@ class HeaderStackDict(dict):
         dict.__setitem__(self, key, val)
 
 
-class HeaderStackInstance(P4ComplexInstance):
+class HeaderStackInstance(StructInstance):
 
     def __init__(self, z3p4_type, name):
         super(HeaderStackInstance, self).__init__(z3p4_type, name)
@@ -813,7 +830,7 @@ class P4Extern(P4ComplexType):
         return instance
 
     def __call__(self, *args, **kwargs):
-        return self
+        return self.initialize(*args, **kwargs)
 
     def instantiate(self, name):
         # TODO Figure out what to actually do here
@@ -834,86 +851,9 @@ class P4ExternInstance(P4ComplexInstance):
 
     def __call__(self, *args, **kwargs):
         # TODO Figure out what to actually do here
-        return z3.Const(self.name, self.z3_type)
+        return self
 
     def initialize(self, *args, **kwargs):
-        # TODO Figure out what to actually do here
-        return self
-
-
-class ConstCallExpr(P4Expression):
-
-    def __init__(self, p4_method, *args, **kwargs):
-        self.p4_method = p4_method
-        self.args = args
-        self.kwargs = kwargs
-
-    def eval(self, p4_state):
-        p4_method = self.p4_method
-        # if we get a reference just try to find the method in the state
-        # FIXME: Not sure if this is what this is supposed to like
-        if not callable(p4_method):
-            p4_method = p4_state.resolve_reference(p4_method)
-        return p4_method.initialize(*self.args, **self.kwargs)
-        raise TypeError(f"Unsupported method type {type(p4_method)}!")
-
-
-class P4Package():
-
-    def __init__(self, z3_reg, name, params):
-        self.pipes = OrderedDict()
-        self.params = params
-        self.name = name
-        self.z3_reg = z3_reg
-
-    def init_type_params(self, *args, **kwargs):
-        return self
-
-    def sanitize_string(self, input_string):
-        # stupid hack to deal with weird naming schemes in p4c...
-        # FIXME: Figure out what this is even supposed to mean
-        if input_string.endswith("<...>"):
-            input_string = input_string[:-5]
-        return input_string
-
-    def initialize(self, *args, **kwargs):
-        merged_args = merge_parameters(self.params, *args, **kwargs)
-        for pipe_name, pipe_arg in merged_args.items():
-            log.info("Loading %s pipe...", pipe_name)
-            pipe_val = pipe_arg.p4_val
-            if isinstance(pipe_val, ConstCallExpr):
-                pipe_str = pipe_val.p4_method
-                pipe_str = self.sanitize_string(pipe_str)
-                # TODO: We need to initialize, but can you have arguments here?
-                # TODO: This is a royal mess
-                # FIXME: Do not skip externs here
-                p4_method = self.z3_reg._globals[pipe_str]
-                p4_method = p4_method.initialize(
-                    *pipe_val.args, **pipe_val.kwargs)
-                p4_type = pipe_arg.p4_type
-                if isinstance(p4_type, P4Extern):
-                    # this should not be necessary but we are forced to
-                    # initialize types likes this because of muddy extern
-                    # definitions. Fix this eventually.
-                    for idx, param in enumerate(p4_type.type_params):
-                        p4_method.params[idx].p4_type = param.p4_type
-                params = p4_method.params
-                p4_state = self.z3_reg.init_p4_state(p4_method.name, params)
-                self.pipes[pipe_name] = p4_method(p4_state)
-            elif isinstance(pipe_val, str):
-                pipe_val = self.sanitize_string(pipe_val)
-                pipe = self.z3_reg._globals[pipe_val].initialize()
-                self.pipes[pipe_name] = pipe
-            elif isinstance(pipe_val, z3.ExprRef):
-                # for some reason simple expressions are also possible.
-                self.pipes[pipe_name] = pipe_val
-            else:
-                raise RuntimeError(
-                    f"Unsupported value {pipe_val}, type {type(pipe_val)}."
-                    " It does not make sense as a P4 pipeline.")
-        return self
-
-    def __call__(self, *args, **kwargs):
         # TODO Figure out what to actually do here
         return self
 
@@ -937,22 +877,32 @@ class P4StateInstance(P4ComplexInstance):
         # this is all we do so this works well
         super(P4StateInstance, self).__init__(z3p4_type, name)
         self.expr_chain = deque()
-        for global_name, global_val in global_values.items():
-            # since the local function shadow the global declarations
-            # do not add variables that have already been declared
-            # TODO: Globals should not be part of p4_attrs anyway, waste of space
-            if global_name in self.p4_attrs:
-                continue
-            self.p4_attrs[global_name] = global_val
+        self.globals = global_values
+        self.locals = self.p4_attrs
         for instance_name, instance_val in instances.items():
             self.set_or_add_var(instance_name, instance_val)
 
-    def _update(self):
-        self.const = z3.Const(f"{self.name}_1", self.z3_type)
-
     def del_var(self, var_string):
         # simple wrapper for delattr
-        self.p4_attrs.pop(var_string, None)
+        self.locals.pop(var_string, None)
+
+    def resolve_reference(self, var):
+        log.debug("Resolving reference %s", var)
+        if isinstance(var, str):
+            sub_class = self
+            if '.' in var:
+                # this means we are accessing a complex member
+                # get the parent class and update its value
+                prefix, suffix = var.rsplit(".", 1)
+                # prefix may be a pointer to an actual complex type, resolve it
+                sub_class = self.resolve_reference(prefix)
+                var = sub_class.p4_attrs[suffix]
+            else:
+                try:
+                    var = self.locals[var]
+                except KeyError:
+                    var = self.globals[var]
+        return var
 
     def resolve_expr(self, expr):
         # Resolves to z3 and z3p4 expressions, ints, lists, and dicts are also okay
@@ -1038,14 +988,49 @@ class P4StateInstance(P4ComplexInstance):
         if isinstance(lval, P4Slice):
             self.set_slice(lval, rval)
             return
-        super(P4StateInstance, self).set_or_add_var(lval, rval)
-        # as soon as we have updated a variable in this state object
-        # we update the constant
-        self._update()
+        # now that all the preprocessing is done we can assign the value
+        log.debug("Setting %s(%s) to %s(%s) ",
+                  lval, type(lval), rval, type(rval))
+        if '.' in lval:
+            # this means we are accessing a complex member
+            # get the parent class and update its value
+            prefix, suffix = lval.rsplit(".", 1)
+            # prefix may be a pointer to an actual complex type, resolve it
+            target_class = self.resolve_reference(prefix)
+            target_class.set_or_add_var(suffix, rval)
+        else:
+            # TODO: Fix this method, has hideous performance impact
+            if lval in self.locals:
+                tmp_lval = self.resolve_reference(lval)
+                # the target variable exists
+                # do not override an existing variable with a string reference!
+                # resolve any possible rvalue reference
+                log.debug("Recursing with %s and %s ", lval, rval)
+                rval = self.resolve_reference(rval)
+                # rvals could be a list, unroll the assignment
+                if isinstance(rval, list):
+                    if isinstance(tmp_lval, P4ComplexInstance):
+                        tmp_lval.set_list(rval)
+                    elif isinstance(tmp_lval, list):
+                        for idx, val in enumerate(rval):
+                            tmp_lval[idx] = val
+                    else:
+                        raise TypeError(
+                            f"set_list {type(tmp_lval)} not supported!")
+                    return
+
+                # make sure the assignment is aligned appropriately
+                # this can happen because we also evaluate before the
+                # BindTypeVariables pass
+                # we can only align if tmp_val is a bitvector
+                # example test: instance_overwrite.p4
+                if isinstance(rval, int) and isinstance(tmp_lval, (z3.BitVecSortRef, z3.BitVecRef)):
+                    rval = z3_cast(rval, tmp_lval.sort())
+            self.locals[lval] = rval
 
     def checkpoint(self):
         var_store = {}
-        for attr_name, attr_val in self.p4_attrs.items():
+        for attr_name, attr_val in self.locals.items():
             if isinstance(attr_val, z3.AstRef):
                 var_store[attr_name] = attr_val
             elif isinstance(attr_val, P4ComplexInstance):
@@ -1059,7 +1044,7 @@ class P4StateInstance(P4ComplexInstance):
 
     def restore(self, var_store, chain):
         for attr_name, attr_val in var_store.items():
-            self.p4_attrs[attr_name] = attr_val
+            self.locals[attr_name] = attr_val
         self.expr_chain = chain
 
     def clear_expr_chain(self):
@@ -1090,6 +1075,23 @@ class P4StateInstance(P4ComplexInstance):
         if self.expr_chain:
             return self.expr_chain.popleft()
         return self.P4End()
+
+    def merge_attrs(self, cond, other_attrs):
+        for attr_name, attr_val in self.locals.items():
+            try:
+                then_val = other_attrs[attr_name]
+            except KeyError:
+                # if the attribute does not exist it is not relevant
+                # this is because of scoping
+                # FIXME: Make sure this is actually the case...
+                continue
+            if isinstance(attr_val, P4ComplexInstance):
+                attr_val.merge_attrs(cond, then_val.p4_attrs)
+            elif isinstance(attr_val, z3.ExprRef):
+                if then_val.sort() != attr_val.sort():
+                    attr_val = z3_cast(attr_val, then_val.sort())
+                if_expr = z3.simplify(z3.If(cond, then_val, attr_val))
+                self.locals[attr_name] = if_expr
 
 
 class Z3Reg():

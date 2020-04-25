@@ -1,7 +1,6 @@
 import operator as op
-from p4z3.base import log, z3_cast, z3, copy_attrs, copy
+from p4z3.base import log, z3_cast, z3, copy_attrs, copy, merge_parameters
 from p4z3.base import P4ComplexInstance, P4Expression, P4ComplexType
-from p4z3.callables import P4Method
 
 
 class P4Initializer(P4Expression):
@@ -35,27 +34,6 @@ class P4Initializer(P4Expression):
             if isinstance(val, int) and isinstance(instance, (z3.BitVecSortRef, z3.BitVecRef)):
                 val = z3_cast(val, instance.sort())
             return val
-
-
-class MethodCallExpr(P4Expression):
-
-    def __init__(self, p4_method, type_args, *args, **kwargs):
-        self.p4_method = p4_method
-        self.args = args
-        self.kwargs = kwargs
-        self.type_args = type_args
-
-    def eval(self, p4_state):
-        p4_method = self.p4_method
-        # if we get a reference just try to find the method in the state
-        if not callable(p4_method):
-            p4_method = p4_state.resolve_expr(p4_method)
-        # TODO: Figure out how these type bindings work
-        if isinstance(p4_method, P4Method) and self.type_args:
-            p4_method = p4_method.initialize(*self.type_args)
-        if callable(p4_method):
-            return p4_method(p4_state, *self.args, **self.kwargs)
-        raise TypeError(f"Unsupported method type {type(p4_method)}!")
 
 
 class P4Op(P4Expression):
@@ -242,7 +220,7 @@ class P4land(P4BinaryOp):
         lval_expr = p4_state.resolve_expr(self.lval)
         var_store, chain_copy = p4_state.checkpoint()
         rval_expr = p4_state.resolve_expr(self.rval)
-        else_vars = copy_attrs(p4_state.p4_attrs)
+        else_vars = copy_attrs(p4_state.locals)
         p4_state.restore(var_store, chain_copy)
         p4_state.merge_attrs(lval_expr, else_vars)
         return self.operator(lval_expr, rval_expr)
@@ -259,7 +237,7 @@ class P4lor(P4BinaryOp):
         lval_expr = p4_state.resolve_expr(self.lval)
         var_store, chain_copy = p4_state.checkpoint()
         rval_expr = p4_state.resolve_expr(self.rval)
-        else_vars = copy_attrs(p4_state.p4_attrs)
+        else_vars = copy_attrs(p4_state.locals)
         p4_state.restore(var_store, chain_copy)
         p4_state.merge_attrs(z3.Not(lval_expr), else_vars)
 
@@ -475,7 +453,7 @@ class P4Mux(P4Expression):
         # handle side effects for function calls
         var_store, chain_copy = p4_state.checkpoint()
         then_val = p4_state.resolve_expr(self.then_val)
-        then_vars = copy_attrs(p4_state.p4_attrs)
+        then_vars = copy_attrs(p4_state.locals)
         p4_state.restore(var_store, chain_copy)
         else_val = p4_state.resolve_expr(self.else_val)
         p4_state.merge_attrs(cond, then_vars)

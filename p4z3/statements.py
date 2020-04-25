@@ -3,7 +3,7 @@ import z3
 
 from p4z3.base import log, copy_attrs, DefaultExpression, copy, z3_cast
 from p4z3.base import P4ComplexInstance, P4Statement, P4Z3Class, Z3If
-from p4z3.callables import P4Callable, P4Context
+from p4z3.callables import P4Context
 
 
 class AssignmentStatement(P4Statement):
@@ -21,11 +21,6 @@ class AssignmentStatement(P4Statement):
         # in assignments all complex types values are copied
         if isinstance(rval_expr, P4ComplexInstance):
             rval_expr = copy.copy(rval_expr)
-
-        # this check only exists for exit statements
-        is_data_type = isinstance(rval_expr, z3.DatatypeRef)
-        if is_data_type and (rval_expr.sort() == p4_state.sort()):
-            return rval_expr
         p4_state.set_or_add_var(self.lval, rval_expr)
 
         p4z3_expr = p4_state.pop_next_expr()
@@ -39,10 +34,6 @@ class MethodCallStmt(P4Statement):
 
     def eval(self, p4_state):
         expr = self.method_expr.eval(p4_state)
-        if isinstance(expr, P4Callable):
-            args = self.method_expr.args
-            kwargs = self.method_expr.kwargs
-            expr = expr(p4_state, *args, **kwargs)
         if p4_state.expr_chain:
             p4z3_expr = p4_state.pop_next_expr()
             return p4z3_expr.eval(p4_state)
@@ -73,7 +64,7 @@ class IfStatement(P4Statement):
         cond = p4_state.resolve_expr(self.cond)
         var_store, chain_copy = p4_state.checkpoint()
         then_expr = self.then_block.eval(p4_state)
-        then_vars = copy_attrs(p4_state.p4_attrs)
+        then_vars = copy_attrs(p4_state.locals)
         p4_state.restore(var_store, chain_copy)
         if self.else_block:
             else_expr = self.else_block.eval(p4_state)
