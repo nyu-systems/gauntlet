@@ -1,4 +1,4 @@
-from p4z3.base import OrderedDict, z3, log, copy, types
+from p4z3.base import OrderedDict, z3, log, copy
 from p4z3.base import merge_parameters, gen_instance, z3_cast, save_variables
 from p4z3.base import P4Z3Class, P4ComplexInstance, P4Extern, Z3If
 from p4z3.base import DefaultExpression, P4ComplexType, P4Expression

@@ -204,9 +204,10 @@ class P4Declaration(P4Statement):
     # we resolve the variable in the P4Assignment
     # in the declaration we assign variables as is.
     # they are resolved at runtime by other classes
-    def __init__(self, lval, rval):
+    def __init__(self, lval, rval, z3_type=None):
         self.lval = lval
         self.rval = rval
+        self.z3_type = z3_type
 
     def eval(self, p4_state):
         # this will only resolve expressions no other classes
@@ -288,13 +289,6 @@ class P4ComplexType():
 
     def __repr__(self):
         return self.name
-
-    # def __eq__(self, other):
-    #     if isinstance(other, P4ComplexType):
-    #         return self.z3_type == other.z3_type
-    #     elif isinstance(other, z3.AstRef):
-    #         return self.z3_type == other
-    #     return super(P4ComplexType).__eq__(other)
 
 
 class P4ComplexInstance():
