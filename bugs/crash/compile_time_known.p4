@@ -28,7 +28,7 @@ parser p(packet_in pkt, out Headers hdr, inout Meta m, inout standard_metadata_t
 control ingress(inout Headers h, inout Meta m, inout standard_metadata_t sm) {
 
     apply {
-        const bool tmp = 1 != ((bit<8>)2)[7:0];
+        const bool tmp = 1 != 8w2[7:0];
     }
 }
 

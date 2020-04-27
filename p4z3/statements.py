@@ -21,6 +21,14 @@ class AssignmentStatement(P4Statement):
         # in assignments all complex types values are copied
         if isinstance(rval_expr, P4ComplexInstance):
             rval_expr = copy.copy(rval_expr)
+        # make sure the assignment is aligned appropriately
+        # this can happen because we also evaluate before the
+        # BindTypeVariables pass
+        # we can only align if tmp_val is a bitvector
+        # example test: instance_overwrite.p4
+        lval = p4_state.resolve_expr(self.lval)
+        if isinstance(rval_expr, int) and isinstance(lval, (z3.BitVecSortRef, z3.BitVecRef)):
+            rval_expr = z3_cast(rval_expr, lval.sort())
         p4_state.set_or_add_var(self.lval, rval_expr)
 
         p4z3_expr = p4_state.pop_next_expr()
@@ -82,8 +90,8 @@ class IfStatement(P4Statement):
             # some z3 shenaningens, nested expressions are arithrefs
             # but arithrefs are not accepted as proper type
             # z3 is really stupid sometimes...
-            then_is_arith_ref = isinstance(then_expr, z3.ArithRef)
-            else_is_arith_ref = isinstance(else_expr, z3.ArithRef)
+            then_is_arith_ref = isinstance(then_expr, (z3.ArithRef, int))
+            else_is_arith_ref = isinstance(else_expr, (z3.ArithRef, int))
             if then_is_arith_ref and not else_is_arith_ref:
                 then_expr = z3_cast(then_expr, else_expr)
             if else_is_arith_ref and not then_is_arith_ref:

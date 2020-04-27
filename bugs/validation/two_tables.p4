@@ -16,8 +16,8 @@ struct Meta {
 
 bit<32> simple_function() {
     H tmp1;
-    if (tmp1.a <= 3) {
-        tmp1.a = 10;
+    if (tmp1.a != 10) {
+        tmp1.a = tmp1.a + 10;
     }
     return tmp1.a;
 }

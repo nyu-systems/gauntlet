@@ -1,6 +1,6 @@
 from p4z3.base import OrderedDict, z3, log, copy
 from p4z3.base import merge_parameters, gen_instance, z3_cast, save_variables
-from p4z3.base import P4Z3Class, P4ComplexInstance, P4Extern, Z3If
+from p4z3.base import P4Z3Class, P4ComplexInstance, Z3If
 from p4z3.base import DefaultExpression, P4ComplexType, P4Expression
 
 
@@ -124,16 +124,9 @@ class P4Package():
             log.info("Loading %s pipe...", pipe_name)
             pipe_val = pipe_arg.p4_val
             if isinstance(pipe_val, ConstCallExpr):
-                p4_type = pipe_arg.p4_type
                 p4_method_name = sanitize_string(pipe_val.p4_method)
                 # if we get a reference just try to find the method in the state
                 p4_method_obj = self.z3_reg._globals[p4_method_name]
-                if isinstance(p4_type, P4Extern):
-                    # this should not be necessary but we are forced to
-                    # initialize types likes this because of muddy extern
-                    # definitions. Fix this eventually.
-                    for idx, param in enumerate(p4_type.type_params):
-                        p4_method_obj.params[idx].p4_type = param.p4_type
                 params = p4_method_obj.params
                 p4_state = self.z3_reg.init_p4_state(pipe_name, params)
                 self.pipes[pipe_name] = pipe_val.eval(p4_state)
@@ -157,7 +150,7 @@ class P4Package():
 
 class P4Context(P4Z3Class):
 
-    def __init__(self, var_buffer, old_p4_state):
+    def __init__(self, var_buffer):
         self.var_buffer = var_buffer
 
     def restore_context(self, p4_state):
@@ -196,7 +189,7 @@ class P4Action(P4Callable):
     def eval_callable(self, p4_state, merged_args, var_buffer):
         # actions can modify global variables so do not save the p4 state
         # the only variables that do need to be restored are copy-ins/outs
-        p4_context = P4Context(var_buffer, None)
+        p4_context = P4Context(var_buffer)
 
         self.set_context(p4_state, merged_args, ("out"))
 
@@ -219,7 +212,7 @@ class P4Function(P4Action):
         # At the end of the execution a value is returned, NOT the p4 state
         # if the function is part of a method-call statement and the return
         # value is ignored, the method-call statement will continue execution
-        p4_context = P4Context(var_buffer, None)
+        p4_context = P4Context(var_buffer)
         self.set_context(p4_state, merged_args, ("out"))
 
         old_expr_chain = p4_state.copy_expr_chain()
@@ -264,7 +257,7 @@ class P4Control(P4Callable):
 
     def eval_callable(self, p4_state, merged_args, var_buffer):
         # initialize the local context of the function for execution
-        p4_context = P4Context(var_buffer, None)
+        p4_context = P4Context(var_buffer)
         for const_param_name, const_arg in self.merged_consts.items():
             const_val = const_arg.p4_val
             const_val = p4_state.resolve_expr(const_val)
@@ -338,7 +331,7 @@ class P4Method(P4Callable):
 
     def eval_callable(self, p4_state, merged_args, var_buffer):
         # initialize the local context of the function for execution
-        p4_context = P4Context(var_buffer, None)
+        p4_context = P4Context(var_buffer)
         self.set_context(p4_state, merged_args, ("inout", "out"))
         p4_context.restore_context(p4_state)
 

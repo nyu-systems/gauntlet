@@ -34,7 +34,7 @@ def gen_instance(var_name, p4z3_type):
         z3_cls = p4z3_type.instantiate(var_name)
         return z3_cls
     elif isinstance(p4z3_type, P4ComplexInstance):
-        # static type, just return
+        # static complex type, just return
         return p4z3_type
     elif isinstance(p4z3_type, z3.SortRef):
         return z3.Const(f"{var_name}", p4z3_type)
@@ -212,6 +212,12 @@ class P4Declaration(P4Statement):
     def eval(self, p4_state):
         # this will only resolve expressions no other classes
         rval = p4_state.resolve_expr(self.rval)
+        if self.z3_type is not None and not isinstance(rval, int):
+            if self.z3_type != rval.sort():
+                msg = f"There was an problem setting {self.lval} to {rval}. " \
+                    f"Type Mismatch! Target type {self.z3_type} " \
+                    f"does not match with input type {rval.sort()}"
+                raise RuntimeError(msg)
         p4_state.set_or_add_var(self.lval, rval)
         p4z3_expr = p4_state.pop_next_expr()
         return p4z3_expr.eval(p4_state)
@@ -290,6 +296,15 @@ class P4ComplexType():
     def __repr__(self):
         return self.name
 
+    def __eq__(self, other):
+        # lets us compare different z3 types with each other
+        # needed for type checking
+        if isinstance(other, P4ComplexType):
+            return self.z3_type == other.z3_type
+        elif isinstance(other, z3.AstRef):
+            return self.z3_type == other
+        return super(P4ComplexType).__eq__(other)
+
 
 class P4ComplexInstance():
     def __init__(self, p4z3_type, name):
@@ -366,8 +381,7 @@ class P4ComplexInstance():
             val = rvals[index]
             self.set_or_add_var(member_name, val)
 
-    def set_or_add_var(self, lval, rval):
-
+    def _update_dict(self, lval, rval, target_dict):
         # now that all the preprocessing is done we can assign the value
         log.debug("Setting %s(%s) to %s(%s) ",
                   lval, type(lval), rval, type(rval))
@@ -375,38 +389,29 @@ class P4ComplexInstance():
             # this means we are accessing a complex member
             # get the parent class and update its value
             prefix, suffix = lval.rsplit(".", 1)
+            log.debug("Recursing with %s and %s ", prefix, suffix)
             # prefix may be a pointer to an actual complex type, resolve it
             target_class = self.resolve_reference(prefix)
             target_class.set_or_add_var(suffix, rval)
         else:
-            # TODO: Fix this method, has hideous performance impact
-            if lval in self.p4_attrs:
+            if lval in target_dict:
                 tmp_lval = self.resolve_reference(lval)
                 # the target variable exists
                 # do not override an existing variable with a string reference!
                 # resolve any possible rvalue reference
-                log.debug("Recursing with %s and %s ", lval, rval)
                 rval = self.resolve_reference(rval)
                 # rvals could be a list, unroll the assignment
                 if isinstance(rval, list):
                     if isinstance(tmp_lval, P4ComplexInstance):
                         tmp_lval.set_list(rval)
-                    elif isinstance(tmp_lval, list):
-                        for idx, val in enumerate(rval):
-                            tmp_lval[idx] = val
                     else:
                         raise TypeError(
                             f"set_list {type(tmp_lval)} not supported!")
                     return
+        target_dict[lval] = rval
 
-                # make sure the assignment is aligned appropriately
-                # this can happen because we also evaluate before the
-                # BindTypeVariables pass
-                # we can only align if tmp_val is a bitvector
-                # example test: instance_overwrite.p4
-                if isinstance(rval, int) and isinstance(tmp_lval, (z3.BitVecSortRef, z3.BitVecRef)):
-                    rval = z3_cast(rval, tmp_lval.sort())
-            self.p4_attrs[lval] = rval
+    def set_or_add_var(self, lval, rval):
+        self._update_dict(lval, rval, self.p4_attrs)
 
     def sort(self):
         return self.z3_type
@@ -731,10 +736,9 @@ class HeaderStackInstance(StructInstance):
         return result
 
 
-class Enum(P4ComplexType):
+class Enum(P4ComplexInstance):
 
     def __init__(self, name, z3_args):
-        # TODO: Implement this class correctly...
         self.p4_attrs = {}
         self.name = name
         self.z3_type = z3.BitVecSort(32)
@@ -743,12 +747,7 @@ class Enum(P4ComplexType):
         self.z3_args = z3_args
 
     def instantiate(self, name):
-        instance = EnumInstance(self, name)
-        instance.p4_attrs = self.p4_attrs
         return self
-
-
-class EnumInstance(P4ComplexInstance):
 
     def propagate_type(self, parent_const: z3.AstRef):
         # Enums are static so they do not have variable types.
@@ -781,26 +780,25 @@ class SerEnum(Enum):
             z3_arg_val = z3_arg[1]
             self.p4_attrs[z3_arg_name] = z3_arg_val
 
-    # TODO: Implement this class correctly...
     def instantiate(self, name):
-        instance = SerEnumInstance(self, name)
-        instance.p4_attrs = self.p4_attrs
-        return instance
+        return self
 
 
-class SerEnumInstance(EnumInstance):
-    pass
-
-
-class P4Extern(P4ComplexType):
+class P4Extern(P4ComplexInstance):
     def __init__(self, name, type_params=[], methods=[]):
         # Externs are this weird bastard child of callables and a complex type
-        super(P4Extern, self).__init__(name, [])
+        z3_type = z3.Datatype(name)
+        z3_type.declare(f"mk_{name}")
+        self.z3_type = z3_type.create()
+        self.const = z3.Const(name, self.z3_type)
         self.p4_attrs = {}
+        # simple fix for now until I know how to initialize params for externs
+        self.params = {}
         self.name = name
         self.type_params = type_params
+        # these are method declarations, not methods
         for method in methods:
-            self.p4_attrs[method.name] = method
+            self.p4_attrs[method.lval] = method.rval
 
     def init_type_params(self, *args, **kwargs):
         # the extern is instantiated, we need to copy it
@@ -818,38 +816,22 @@ class P4Extern(P4ComplexType):
 
     def initialize(self, *args, **kwargs):
         # TODO Figure out what to actually do here
-        instance = P4ExternInstance(self, self.name)
-        for attr_name, attr_val in instance.p4_attrs.items():
-            instance.p4_attrs[attr_name] = copy.copy(attr_val)
+        instance = copy.copy(self)
         return instance
 
     def __call__(self, *args, **kwargs):
         return self.initialize(*args, **kwargs)
 
-    def instantiate(self, name):
-        # TODO Figure out what to actually do here
-        instance = P4ExternInstance(self, name)
-        return instance
-
-
-class P4ExternInstance(P4ComplexInstance):
-
-    def __init__(self, z3p4_type, name):
-        super(P4ExternInstance, self).__init__(z3p4_type, name)
-        self.p4_attrs = z3p4_type.p4_attrs
-        self.type_params = z3p4_type.type_params
-        self.params = OrderedDict()
-
     def deactivate(self):
         log.warning("This method should not be called...")
 
-    def __call__(self, *args, **kwargs):
-        # TODO Figure out what to actually do here
-        return self
 
-    def initialize(self, *args, **kwargs):
-        # TODO Figure out what to actually do here
-        return self
+class P4ControlType(P4Extern):
+    pass
+
+
+class P4ParserType(P4Extern):
+    pass
 
 
 class P4State(P4ComplexType):
@@ -879,24 +861,6 @@ class P4StateInstance(P4ComplexInstance):
     def del_var(self, var_string):
         # simple wrapper for delattr
         self.locals.pop(var_string, None)
-
-    def resolve_reference(self, var):
-        log.debug("Resolving reference %s", var)
-        if isinstance(var, str):
-            sub_class = self
-            if '.' in var:
-                # this means we are accessing a complex member
-                # get the parent class and update its value
-                prefix, suffix = var.rsplit(".", 1)
-                # prefix may be a pointer to an actual complex type, resolve it
-                sub_class = self.resolve_reference(prefix)
-                var = sub_class.p4_attrs[suffix]
-            else:
-                try:
-                    var = self.locals[var]
-                except KeyError:
-                    var = self.globals[var]
-        return var
 
     def resolve_expr(self, expr):
         # Resolves to z3 and z3p4 expressions, ints, lists, and dicts are also okay
@@ -982,45 +946,27 @@ class P4StateInstance(P4ComplexInstance):
         if isinstance(lval, P4Slice):
             self.set_slice(lval, rval)
             return
-        # now that all the preprocessing is done we can assign the value
-        log.debug("Setting %s(%s) to %s(%s) ",
-                  lval, type(lval), rval, type(rval))
-        if '.' in lval:
-            # this means we are accessing a complex member
-            # get the parent class and update its value
-            prefix, suffix = lval.rsplit(".", 1)
-            # prefix may be a pointer to an actual complex type, resolve it
-            target_class = self.resolve_reference(prefix)
-            target_class.set_or_add_var(suffix, rval)
-        else:
-            # TODO: Fix this method, has hideous performance impact
-            if lval in self.locals:
-                tmp_lval = self.resolve_reference(lval)
-                # the target variable exists
-                # do not override an existing variable with a string reference!
-                # resolve any possible rvalue reference
-                log.debug("Recursing with %s and %s ", lval, rval)
-                rval = self.resolve_reference(rval)
-                # rvals could be a list, unroll the assignment
-                if isinstance(rval, list):
-                    if isinstance(tmp_lval, P4ComplexInstance):
-                        tmp_lval.set_list(rval)
-                    elif isinstance(tmp_lval, list):
-                        for idx, val in enumerate(rval):
-                            tmp_lval[idx] = val
-                    else:
-                        raise TypeError(
-                            f"set_list {type(tmp_lval)} not supported!")
-                    return
+        self._update_dict(lval, rval, self.locals)
 
-                # make sure the assignment is aligned appropriately
-                # this can happen because we also evaluate before the
-                # BindTypeVariables pass
-                # we can only align if tmp_val is a bitvector
-                # example test: instance_overwrite.p4
-                if isinstance(rval, int) and isinstance(tmp_lval, (z3.BitVecSortRef, z3.BitVecRef)):
-                    rval = z3_cast(rval, tmp_lval.sort())
-            self.locals[lval] = rval
+    def resolve_reference(self, var):
+        if isinstance(var, P4Member):
+            var = var.eval(self)
+        log.debug("Resolving reference %s", var)
+        if isinstance(var, str):
+            sub_class = self
+            if '.' in var:
+                # this means we are accessing a complex member
+                # get the parent class and update its value
+                prefix, suffix = var.rsplit(".", 1)
+                # prefix may be a pointer to an actual complex type, resolve it
+                sub_class = self.resolve_reference(prefix)
+                var = sub_class.p4_attrs[suffix]
+            else:
+                try:
+                    var = self.locals[var]
+                except KeyError:
+                    var = self.globals[var]
+        return var
 
     def checkpoint(self):
         var_store = {}
@@ -1100,26 +1046,26 @@ class Z3Reg():
         if isinstance(p4_class, P4ComplexType):
             name = p4_class.name
             self._types[name] = p4_class
-            if isinstance(p4_class, (Enum)):
-                # enums are special static types
-                # we need to add them to the list of accessible variables
-                # and their type is actually the z3 type, not the class type
-                self._globals[name] = p4_class
-                self._types[name] = p4_class.z3_type
-            if isinstance(p4_class, P4Extern):
-                # I hate externs so much...
-                self._globals[name] = p4_class.initialize()
+        elif isinstance(p4_class, P4Extern):
+            name = p4_class.name
+            self._types[name] = p4_class
+            # I hate externs so much...
+            self._globals[name] = p4_class.initialize()
+        elif isinstance(p4_class, (Enum)):
+            # enums are special static types
+            # we need to add them to the list of accessible variables
+            # and their type is actually the z3 type, not the class type
+            name = p4_class.name
+            self._globals[name] = p4_class
+            self._types[name] = p4_class.z3_type
         elif isinstance(p4_class, P4Declaration):
             # FIXME: Typedefs should not be added here
             name = p4_class.lval
             self._globals[name] = p4_class.rval
             self._types[name] = p4_class.rval
         else:
-            # FIXME: I do not even know what kind of crap is added here
-            # parsers, controls, that sort of random stuff...
-            name = p4_class.name
-            self._globals[name] = p4_class
-            self._types[name] = p4_class
+            raise RuntimeError(
+                "Unsupported global declaration %s" % type(p4_class))
 
     def init_p4_state(self, name, p4_params):
         stripped_args = []

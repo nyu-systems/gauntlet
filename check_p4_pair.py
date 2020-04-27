@@ -5,7 +5,7 @@ import sys
 import importlib
 import logging
 from p4z3 import Z3Reg, P4Package, z3, Z3If, Z3Wrapper, get_z3_repr
-from p4z3 import P4ExternInstance
+from p4z3 import P4Extern
 import p4z3.util as util
 sys.setrecursionlimit(15000)
 
@@ -68,7 +68,7 @@ def produce_z3_tree(input_prog):
     elif isinstance(input_prog, z3.AstRef):
         return input_prog
     # FIX THE DAMN EXTERNS JFC
-    elif isinstance(input_prog, P4ExternInstance):
+    elif isinstance(input_prog, P4Extern):
         return input_prog.const
     else:
         log.error("Error generating the z3 tree:\n"
