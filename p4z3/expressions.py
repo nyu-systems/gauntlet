@@ -1,24 +1,27 @@
 import operator as op
-from p4z3.base import log, z3_cast, z3, copy_attrs, copy, merge_parameters
+from p4z3.base import log, z3_cast, z3, copy_attrs, copy, gen_instance
 from p4z3.base import P4ComplexInstance, P4Expression, P4ComplexType
 
 
 class P4Initializer(P4Expression):
-    def __init__(self, val, instance=None):
+    def __init__(self, val, instance_type=None):
         self.val = val
-        self.instance = instance
+        self.instance_type = instance_type
 
     def eval(self, p4_state):
         val = p4_state.resolve_expr(self.val)
-        if self.instance is None:
+        if self.instance_type is None:
             # no type defined, return just the value
             return val
-        instance = p4_state.resolve_expr(self.instance)
+        else:
+            instance = gen_instance("None", self.instance_type)
+
         if isinstance(val, P4ComplexInstance):
             # copy the reference if we initialize with another complex type
             return copy.copy(val)
         if isinstance(instance, P4ComplexInstance):
             if isinstance(val, dict):
+                instance.setValid()
                 for name, val in val.items():
                     val_expr = p4_state.resolve_expr(val)
                     instance.set_or_add_var(name, val_expr)

@@ -35,7 +35,7 @@ NUM_PROCESSES = 4
 KNOWN_BUGS = [
     "Conditional execution",
     "Unimplemented compiler support",
-    "Null stat",
+    # "Null stat",
     # bf
     "Unsupported on target",
     "PHV allocation was not successful",

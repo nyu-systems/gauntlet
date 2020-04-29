@@ -211,13 +211,16 @@ class P4Declaration(P4Statement):
 
     def eval(self, p4_state):
         # this will only resolve expressions no other classes
-        rval = p4_state.resolve_expr(self.rval)
-        if self.z3_type is not None and not isinstance(rval, int):
-            if self.z3_type != rval.sort():
-                msg = f"There was an problem setting {self.lval} to {rval}. " \
-                    f"Type Mismatch! Target type {self.z3_type} " \
-                    f"does not match with input type {rval.sort()}"
-                raise RuntimeError(msg)
+        if self.rval is not None:
+            rval = p4_state.resolve_expr(self.rval)
+            if self.z3_type is not None and not isinstance(rval, int):
+                if self.z3_type != rval.sort():
+                    msg = f"There was an problem setting {self.lval} to {rval}. " \
+                        f"Type Mismatch! Target type {self.z3_type} " \
+                        f"does not match with input type {rval.sort()}"
+                    raise RuntimeError(msg)
+        else:
+            rval = gen_instance("undefined", self.z3_type)
         p4_state.set_or_add_var(self.lval, rval)
         p4z3_expr = p4_state.pop_next_expr()
         return p4z3_expr.eval(p4_state)
@@ -331,7 +334,7 @@ class P4ComplexInstance():
                 # use the default z3 constructor
                 self.p4_attrs[z3_arg_name] = member_accessor(self.const)
             self.members[z3_arg_name] = member_accessor
-        self.valid = z3.Bool(f"{name}_valid")
+        self.valid = z3.BoolVal(False)
 
     def propagate_type(self, parent_const: z3.AstRef):
         members = []
@@ -377,6 +380,7 @@ class P4ComplexInstance():
         return var
 
     def set_list(self, rvals):
+        self.valid = z3.BoolVal(True)
         for index, member_name in enumerate(self.members):
             val = rvals[index]
             self.set_or_add_var(member_name, val)
@@ -395,13 +399,13 @@ class P4ComplexInstance():
             target_class.set_or_add_var(suffix, rval)
         else:
             if lval in target_dict:
-                tmp_lval = self.resolve_reference(lval)
                 # the target variable exists
                 # do not override an existing variable with a string reference!
                 # resolve any possible rvalue reference
                 rval = self.resolve_reference(rval)
                 # rvals could be a list, unroll the assignment
                 if isinstance(rval, list):
+                    tmp_lval = self.resolve_reference(lval)
                     if isinstance(tmp_lval, P4ComplexInstance):
                         tmp_lval.set_list(rval)
                     else:
@@ -511,6 +515,15 @@ class P4ComplexInstance():
                 self.set_or_add_var(member_name, member_const)
         self.valid = z3.BoolVal(False)
 
+    def propagate_validity_bit(self, var):
+        # structs can be contained in headers so they can also be deactivated...
+        for member_name in self.members:
+            member_val = self.resolve_reference(member_name)
+            if isinstance(member_val, P4ComplexInstance):
+                sub_var = z3.Bool(f"{member_val.name}_valid")
+                member_val.propagate_validity_bit(sub_var)
+        self.valid = var
+
 
 class StructType(P4ComplexType):
 
@@ -538,10 +551,6 @@ class HeaderInstance(StructInstance):
         self.p4_attrs["isValid"] = self.isValid
         self.p4_attrs["setValid"] = self.setValid
         self.p4_attrs["setInvalid"] = self.setInvalid
-
-    def set_list(self, rvals):
-        self.valid = z3.BoolVal(True)
-        StructInstance.set_list(self, rvals)
 
     def isValid(self, p4_state=None):
         # This is a built-in
@@ -1080,6 +1089,7 @@ class Z3Reg():
                 instances[param.name] = instance
         p4_state = P4State(name, stripped_args).instantiate(
             name, self._globals, instances)
+        p4_state.propagate_validity_bit(z3.Bool(f"{p4_state.name}_valid"))
         return p4_state
 
     def type(self, type_name):

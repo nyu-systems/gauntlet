@@ -51,7 +51,7 @@ class P4Callable(P4Z3Class):
                 arg_expr = instance
             # Sometimes expressions are passed, resolve those first
             log.debug("Copy-in: %s to %s", arg_expr, param_name)
-            if isinstance(arg_expr, int):
+            if isinstance(arg_expr, int) and isinstance(arg.p4_type, (z3.BitVecSortRef, z3.BitVecRef)):
                 arg_expr = z3_cast(arg_expr, arg.p4_type)
             # buffer the value, do NOT set it yet
             param_buffer[param_name] = arg_expr
@@ -297,7 +297,11 @@ class P4Method(P4Callable):
                 # to propagate the variable through all its members
                 log.debug("Resetting %s to %s", arg_expr, param_name)
                 if isinstance(arg_expr, P4ComplexInstance):
+                    valid = arg_expr.valid
                     arg_expr = arg_expr.p4z3_type.instantiate(param_name)
+                    # assume that for inout header validity is not touched
+                    if arg.is_ref == "inout":
+                        arg_expr.propagate_validity_bit(valid)
                 else:
                     arg_expr = z3.Const(f"{param_name}", arg_expr.sort())
             # FIXME: Awful code...
@@ -307,7 +311,7 @@ class P4Method(P4Callable):
                 arg_expr = instance
             # Sometimes expressions are passed, resolve those first
             log.debug("Copy-in: %s to %s", arg_expr, param_name)
-            if isinstance(arg_expr, int):
+            if isinstance(arg_expr, int) and isinstance(arg.p4_type, (z3.BitVecSortRef, z3.BitVecRef)):
                 arg_expr = z3_cast(arg_expr, arg.p4_type)
             # buffer the value, do NOT set it yet
             param_buffer[param_name] = arg_expr

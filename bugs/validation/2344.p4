@@ -3,7 +3,6 @@
 
 header H {
     bit<32> a;
-    bit<32> b;
 }
 
 
@@ -16,23 +15,26 @@ struct Meta {
 
 bit<32> simple_function() {
     H tmp1;
-    if (tmp1.a != 10) {
-        tmp1.a = tmp1.a + 10;
+    if (!tmp1.isValid()) {
+        tmp1.setValid();
+        tmp1.a = 10;
+    } else {
+        tmp1.a = tmp1.a + 15;
     }
     return tmp1.a;
 }
 
 control ingress(inout Headers h, inout Meta m, inout standard_metadata_t sm) {
     action simple_action() {
-        h.h.a = (bit<32>)(simple_function());
+        h.h.a = simple_function();
     }
     table simple_table {
         key = {
-            h.h.b        : exact @name("key") ;
         }
         actions = {
             simple_action();
         }
+        default_action = simple_action;
     }
     apply {
         simple_table.apply();
