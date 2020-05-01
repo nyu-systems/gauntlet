@@ -14,15 +14,10 @@ struct Headers {
 struct Meta {
 }
 
-bit<8> do_function_1(out bit<32> tmp) {
-    return 8w1;
+bit<16> do_function() {
+    return 16w1;
 }
 
-bit<48> do_function_2() {
-    int val = 1;
-    do_function_1(val);
-    return 48w1;
-}
 
 parser p(packet_in pkt, out Headers hdr, inout Meta m, inout standard_metadata_t sm) {
     state start {
@@ -37,7 +32,8 @@ parser p(packet_in pkt, out Headers hdr, inout Meta m, inout standard_metadata_t
 control ingress(inout Headers h, inout Meta m, inout standard_metadata_t sm) {
 
     apply {
-        h.eth_hdr.src_addr = do_function_2();
+        bit<8> tmp;
+        tmp = (do_function() << 8w8)[7:0];
     }
 }
 

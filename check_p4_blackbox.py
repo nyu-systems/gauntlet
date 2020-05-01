@@ -106,7 +106,7 @@ def insert_spaces(text, dist):
 
 
 def get_stf_str(z3_model, z3_const, dont_care_map):
-    z3_input_header = z3_model[z3.Const("ig_0", z3_const.sort())]
+    z3_input_header = z3_model[z3.Const("ingress_0", z3_const.sort())]
     log.debug("Input header: %s", z3_input_header)
     input_values = fill_values(z3_input_header)
     input_pkt_str = "".join(convert_to_stf(input_values, "Headers"))
@@ -369,7 +369,8 @@ def dissect_conds(conditions):
             fixed_conds.append(cond)
     for var in undefined_vars:
         # fixme does not handle undefined data types
-        undefined_conds.append(var == 0)
+        if isinstance(var, z3.BitVecRef):
+            undefined_conds.append(var == 0)
     return controllable_conds, fixed_conds, undefined_conds
 
 
