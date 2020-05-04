@@ -25,39 +25,24 @@ parser p(packet_in pkt, out Headers hdr, inout Meta m, inout standard_metadata_t
 }
 
 control ingress(inout Headers h, inout Meta m, inout standard_metadata_t sm) {
-    action do_action1(in int val) {
-        bool test = 8w1 == val;
+    action NoAction() {
     }
-    action do_action2(in int val) {
-        h.eth_hdr.eth_type = h.eth_hdr.eth_type + val;
+    action call_exit(inout bit<48> val, in bit<48> val1) {
+            val = 1;
+            exit;
     }
-
     apply {
-        do_action1(1);
-        do_action2(1);
+        call_exit(h.eth_hdr.src_addr, h.eth_hdr.src_addr);
     }
 }
 
-control vrfy(inout Headers h, inout Meta m) {
-    apply {
-    }
-}
+control vrfy(inout Headers h, inout Meta m) { apply {} }
 
-control update(inout Headers h, inout Meta m) {
-    apply {
-    }
-}
+control update(inout Headers h, inout Meta m) { apply {} }
 
-control egress(inout Headers h, inout Meta m, inout standard_metadata_t sm) {
-    apply {
-    }
-}
+control egress(inout Headers h, inout Meta m, inout standard_metadata_t sm) { apply {} }
 
-control deparser(packet_out pkt, in Headers h) {
-    apply {
-        pkt.emit(h);
-    }
-}
+control deparser(packet_out b, in Headers h) { apply {b.emit(h);} }
 
 V1Switch(p(), vrfy(), ingress(), egress(), update(), deparser()) main;
 

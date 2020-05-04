@@ -44,7 +44,7 @@ class Z3Int(int):
         return Z3Int(res, self.bit_size)
 
     def __invert__(self):
-        res = int.__invert__()
+        res = int.__invert__(self)
         return Z3Int(res, self.bit_size)
 
     def __or__(self, other):

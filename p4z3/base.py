@@ -28,8 +28,8 @@ class Z3If:
 def gen_instance(var_name, p4z3_type):
     if isinstance(p4z3_type, P4ComplexType):
         type_name = p4z3_type.name
-        if not var_name:
-            var_name = f"{type_name}_{p4z3_type.ref_count}"
+        if var_name is None:
+            var_name = f"{type_name}"
         p4z3_type.ref_count += 1
         z3_cls = p4z3_type.instantiate(var_name)
         return z3_cls
@@ -439,9 +439,9 @@ class P4ComplexInstance():
         return members
 
     def merge_attrs(self, cond, other_attrs):
-        for attr_name, attr_val in self.p4_attrs.items():
+        for attr_name, then_val in other_attrs.items():
             try:
-                then_val = other_attrs[attr_name]
+                attr_val = self.resolve_reference(attr_name)
             except KeyError:
                 # if the attribute does not exist it is not relevant
                 # this is because of scoping
@@ -464,6 +464,10 @@ class P4ComplexInstance():
             if isinstance(val, P4ComplexInstance):
                 result.p4_attrs[name] = copy.copy(val)
         return result
+
+    def __repr__(self):
+        ref_count = self.p4z3_type.ref_count
+        return f"{self.__class__.__name__}_{ref_count}"
 
     def __eq__(self, other):
         # It can happen that we compare to a list

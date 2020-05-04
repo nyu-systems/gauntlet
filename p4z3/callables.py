@@ -17,10 +17,11 @@ class P4Callable(P4Z3Class):
         raise NotImplementedError("Method eval_callable not implemented!")
 
     def eval(self, p4_state, *args, **kwargs):
-        self.call_counter += 1
         merged_args = merge_parameters(self.params, *args, **kwargs)
         var_buffer = save_variables(p4_state, merged_args)
-        return self.eval_callable(p4_state, merged_args, var_buffer)
+        expr = self.eval_callable(p4_state, merged_args, var_buffer)
+        self.call_counter += 1
+        return expr
 
     def __call__(self, p4_state, *args, **kwargs):
         return self.eval(p4_state, *args, **kwargs)
@@ -350,7 +351,7 @@ class P4Method(P4Callable):
                 # just overwrite all reference types
                 # input arguments influence the output behavior
                 # add the input value to the return constant
-                var_name.join(str(arg))
+                var_name += str(arg)
             # If we return something, instantiate the type and return it
             # we merge the name
             # FIXME: We do not consider call order

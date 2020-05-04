@@ -71,28 +71,28 @@ for test in all_tests:
 
 # ***** broken tests, need fixing *****
 xfails = [
-    "array_field.p4",
-    "array_field1.p4",
-    "complex2.p4",
-    "issue1989-bmv2.p4",
-    "issue1334.p4",
-    "logging.p4",
-    "parser-conditional.p4",
-    "runtime-index-2-bmv2.p4",
-    "runtime-index-bmv2.p4",
-    "side_effects.p4",
-    "string.p4",
-    "table-entries-range-bmv2.p4",
+    "array_field.p4",  # runtime index
+    "array_field1.p4",  # runtime index
+    "complex2.p4",  # runtime index
+    "issue1989-bmv2.p4",  # runtime index
+    "issue1334.p4",  # overloading
+    "logging.p4",  # string literal
+    "parser-conditional.p4",  # runtime index
+    "runtime-index-2-bmv2.p4",  # runtime index
+    "runtime-index-bmv2.p4",  # runtime index
+    "side_effects.p4",  # runtime index
+    "string.p4",  # string literal
+    "table-entries-range-bmv2.p4",  # range
     "functors8.p4",
     # parser failures
-    "fold_match.p4",
-    "index.p4",  # runtimeindex
-    "issue-2123.p4",  # runtimeindex
-    "issue774-4-bmv2.p4",
-    "issue774.p4",
-    "pvs-struct-3-bmv2.p4",
-    "issue314.p4",
-    "issue1638.p4",
+    "fold_match.p4",  # range
+    "index.p4",  # runtime index
+    "issue-2123.p4",  # runtime index
+    "issue774-4-bmv2.p4",  # defaultexpression sort
+    "issue774.p4",  # defaultexpression sort
+    "pvs-struct-3-bmv2.p4",  # range
+    "issue314.p4",  # runtime index
+    "issue1638.p4",  # casting
     "shadow-after-use.p4",  # another issue with shadowing
     "generic1.p4",  # complicated type inference
     # all of these do not work because of some quirk in inlining
