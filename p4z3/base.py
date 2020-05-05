@@ -555,18 +555,42 @@ class HeaderInstance(StructInstance):
         self.p4_attrs["isValid"] = self.isValid
         self.p4_attrs["setValid"] = self.setValid
         self.p4_attrs["setInvalid"] = self.setInvalid
+        self.union_parent = None
 
     def isValid(self, p4_state=None):
         # This is a built-in
         return self.valid
 
     def setValid(self, p4_state):
+        if self.union_parent:
+            # this is a hacky way to invalidate other members
+            # in the case that this header is part of a union
+            union = self.union_parent
+            for member in union.members:
+                member_hdr = union.resolve_reference(member)
+                # check whether the header is the same object
+                # any other header is now invalid
+                if member_hdr is not self:
+                    member_hdr.setInvalid(p4_state)
         # This is a built-in
         self.activate()
 
     def setInvalid(self, p4_state):
-        # This is a built-in
-        self.deactivate()
+        if self.union_parent:
+            # this is a hacky way to invalidate other members
+            # in the case that this header is part of a union
+            union = self.union_parent
+            for member in union.members:
+                member_hdr = union.resolve_reference(member)
+                # check whether the header is the same object
+                # any other header is now invalid
+                member_hdr.deactivate()
+        else:
+            # This is a built-in
+            self.deactivate()
+
+    def bind_to_union(self, union_instance):
+        self.union_parent = union_instance
 
     def __eq__(self, other):
         if isinstance(other, HeaderInstance):
@@ -597,14 +621,25 @@ class HeaderInstance(StructInstance):
 
 
 class HeaderUnionType(HeaderType):
-    # TODO: Implement this class correctly...
     def instantiate(self, name):
         return HeaderUnionInstance(self, name)
 
 
 class HeaderUnionInstance(HeaderInstance):
-    # TODO: Implement this class correctly...
-    pass
+
+    def __init__(self, p4z3_type, name):
+        # TODO: Check if this class is implemented correctly...
+        super(HeaderUnionInstance, self).__init__(p4z3_type, name)
+        for member in self.members:
+            member_hdr = self.resolve_reference(member)
+            member_hdr.bind_to_union(self)
+
+    def isValid(self, p4_state=None):
+        valid_list = []
+        for member in self.members:
+            member_hdr = self.resolve_reference(member)
+            valid_list.append(member_hdr.isValid())
+        return z3.Or(*valid_list)
 
 
 class ListType(P4ComplexType):
