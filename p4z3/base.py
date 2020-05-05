@@ -835,6 +835,9 @@ class P4Extern(P4ComplexInstance):
     def __call__(self, *args, **kwargs):
         return self.initialize(*args, **kwargs)
 
+    def __repr__(self):
+        return self.name
+
     def deactivate(self):
         log.warning("This method should not be called...")
 
@@ -995,13 +998,17 @@ class P4StateInstance(P4ComplexInstance):
         chain = self.copy_expr_chain()
         return var_store, chain
 
-    def restore(self, var_store, chain):
+    def restore(self, var_store, chain=None):
         for attr_name, attr_val in var_store.items():
             self.locals[attr_name] = attr_val
-        self.expr_chain = chain
+        if chain:
+            self.expr_chain = chain
 
     def clear_expr_chain(self):
         self.expr_chain.clear()
+
+    def clear_locals(self):
+        self.locals.clear()
 
     def copy_expr_chain(self):
         return self.expr_chain.copy()

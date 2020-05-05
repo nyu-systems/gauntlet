@@ -1,6 +1,6 @@
 from p4z3.base import OrderedDict, z3, log, copy
 from p4z3.base import merge_parameters, gen_instance, z3_cast, save_variables
-from p4z3.base import P4Z3Class, P4ComplexInstance, Z3If
+from p4z3.base import P4Z3Class, P4ComplexInstance, Z3If, P4Extern
 from p4z3.base import DefaultExpression, P4ComplexType, P4Expression
 
 
@@ -91,10 +91,9 @@ class ConstCallExpr(P4Expression):
         p4_method = self.p4_method
         # if we get a reference just try to find the method in the state
         p4_method_name = sanitize_string(self.p4_method)
-        p4_method = p4_state.resolve_expr(p4_method_name)
+        p4_method = p4_state.resolve_reference(p4_method_name)
         if isinstance(p4_method, P4Control):
-            init_ctrl = p4_method(*self.args, **self.kwargs)
-            expr = init_ctrl.apply(p4_state)
+            expr = p4_method(*self.args, **self.kwargs)
         else:
             expr = p4_method(p4_state, *self.args, **self.kwargs)
         return expr
@@ -129,8 +128,20 @@ class P4Package():
                 # if we get a reference just try to find the method in the state
                 p4_method_obj = self.z3_reg._globals[p4_method_name]
                 params = p4_method_obj.params
-                p4_state = self.z3_reg.init_p4_state(pipe_name, params)
-                self.pipes[pipe_name] = pipe_val.eval(p4_state)
+                name = p4_method_obj.name
+                p4_state = self.z3_reg.init_p4_state(name, params)
+                expr = pipe_val.eval(p4_state)
+                if isinstance(expr, P4Control):
+                    self.pipes[pipe_name] = expr.apply(p4_state)
+                elif isinstance(expr, P4Extern):
+                    self.pipes[pipe_name] = expr.const
+                elif isinstance(expr, P4Package):
+                    self.pipes[pipe_name] = expr
+                else:
+                    raise RuntimeError(
+                        f"Unsupported value {expr}, type {type(expr)}."
+                        " It does not make sense as a P4 pipeline.")
+
             elif isinstance(pipe_val, str):
                 pipe_val = sanitize_string(pipe_val)
                 pipe = self.z3_reg._globals[pipe_val]
@@ -533,7 +544,4 @@ class P4Table(P4Callable):
         return Z3If(self.p4_attrs["hit"], table_expr, default_expr)
 
     def eval_callable(self, p4_state, merged_args, var_buffer):
-        return self.eval_table(p4_state)
-
-    def eval(self, p4_state):
         return self.eval_table(p4_state)

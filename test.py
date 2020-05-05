@@ -75,7 +75,7 @@ xfails = [
     "array_field1.p4",  # runtime index
     "complex2.p4",  # runtime index
     "issue1989-bmv2.p4",  # runtime index
-    "issue1334.p4",  # overloading
+    "issue1334.p4",  # overloading, this test should normally not be skipped
     "logging.p4",  # string literal
     "parser-conditional.p4",  # runtime index
     "runtime-index-2-bmv2.p4",  # runtime index
@@ -83,7 +83,6 @@ xfails = [
     "side_effects.p4",  # runtime index
     "string.p4",  # string literal
     "table-entries-range-bmv2.p4",  # range
-    "functors8.p4",
     # parser failures
     "fold_match.p4",  # range
     "index.p4",  # runtime index
@@ -102,13 +101,6 @@ xfails = [
     "psa-example-digest-bmv2.p4",
     "issue2303.p4",
     "issue982.p4",  # something wrong with duplicate states, I do not get it...
-    "issue1879-bmv2.p4",
-    # temporary faild tests
-    "issue1208-1.p4",
-    "issue803-2.p4",
-    "parser-arg.p4",
-    "factory1.p4",
-    "issue1006.p4",
 ]
 
 # these tests show pathological behavior and can currently not be tested

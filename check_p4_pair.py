@@ -128,11 +128,11 @@ def check_equivalence(prog_before, prog_after):
     ''' SOLVER '''
     s = z3.Solver()
     # the equivalence equation
-    prog_before_simpl = z3.simplify(prog_before)
-    prog_after_simpl = z3.simplify(prog_after)
     try:
-        tv_equiv = prog_before_simpl != prog_after_simpl
+        tv_equiv = prog_before != prog_after
     except z3.Z3Exception as e:
+        prog_before_simpl = z3.simplify(prog_before)
+        prog_after_simpl = z3.simplify(prog_after)
         log.error("Failed to compare z3 formulas!\nReason: %s", e)
         log.error("PROGRAM BEFORE\n%s", prog_before_simpl)
         log.error("PROGRAM AFTER\n%s", prog_after_simpl)
@@ -144,6 +144,8 @@ def check_equivalence(prog_before, prog_after):
     log.debug(tv_equiv)
     log.debug(ret)
     if ret == z3.sat:
+        prog_before_simpl = z3.simplify(prog_before)
+        prog_after_simpl = z3.simplify(prog_after)
         log.error("Detected an equivalence violation!")
         log.error("PROGRAM BEFORE\n%s", prog_before_simpl)
         log.error("PROGRAM AFTER\n%s", prog_after_simpl)
