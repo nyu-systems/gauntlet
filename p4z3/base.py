@@ -315,7 +315,7 @@ class P4ComplexInstance():
         self.name = name
         self.z3_type = p4z3_type.z3_type
         self.p4z3_type = p4z3_type
-        self.const = z3.Const(f"{name}_0", self.z3_type)
+        self.const = z3.Const(f"{name}", self.z3_type)
         self.members = OrderedDict()
         # set the members of this class
         for type_index, z3_arg in enumerate(p4z3_type.z3_args):
@@ -324,19 +324,16 @@ class P4ComplexInstance():
             member_accessor = self.z3_type.accessor(0, type_index)
             if isinstance(z3_arg_type, P4ComplexType):
                 # this is a complex datatype, create a P4ComplexType
-                member_cls = z3_arg_type.instantiate(z3_arg_name)
-                # since the child type is dependent on its parent
-                # we propagate the parent constant down to all members
-                member_cls.propagate_type(member_accessor(self.const))
-                # and add it to the members, this is a little inefficient...
+                member_cls = z3_arg_type.instantiate(f"{name}.{z3_arg_name}")
                 self.p4_attrs[z3_arg_name] = member_cls
             else:
                 # use the default z3 constructor
-                self.p4_attrs[z3_arg_name] = member_accessor(self.const)
+                self.p4_attrs[z3_arg_name] = z3.Const(
+                    f"{name}.{z3_arg_name}", z3_arg_type)
             self.members[z3_arg_name] = member_accessor
         self.valid = z3.BoolVal(False)
 
-    def propagate_type(self, parent_const: z3.AstRef):
+    def bind(self, parent_const: z3.AstRef):
         members = []
         for member_name, member_constructor in self.members.items():
             # a z3 constructor dependent on the parent constant
@@ -346,7 +343,7 @@ class P4ComplexInstance():
             if isinstance(member, P4ComplexInstance):
                 # it is a complex type
                 # propagate the parent constant to all children
-                member.propagate_type(z3_member)
+                member.bind(z3_member)
             else:
                 # a simple z3 type, just update the constructor
                 self.p4_attrs[member_name] = z3_member
@@ -657,7 +654,7 @@ class ListType(P4ComplexType):
 
 class ListInstance(P4ComplexInstance):
 
-    def propagate_type(self, parent_const: z3.AstRef):
+    def bind(self, parent_const: z3.AstRef):
         # Lists are static so they do not have variable types.
         pass
 
@@ -796,7 +793,7 @@ class Enum(P4ComplexInstance):
     def instantiate(self, name):
         return self
 
-    def propagate_type(self, parent_const: z3.AstRef):
+    def bind(self, parent_const: z3.AstRef):
         # Enums are static so they do not have variable types.
         pass
 
@@ -1132,9 +1129,12 @@ class Z3Reg():
                 # for inputs we can instantiate something
                 instance = gen_instance(param.name, param.p4_type)
                 instances[param.name] = instance
+        instance_name = f"{name}"
         p4_state = P4State(name, stripped_args).instantiate(
-            name, self._globals, instances)
-        p4_state.propagate_validity_bit(z3.Bool(f"{p4_state.name}_valid"))
+            instance_name, self._globals, instances)
+        p4_state.propagate_validity_bit(z3.Bool(f"{instance_name}_valid"))
+        # this is now our input, bind to the p4 state class we have created
+        p4_state.bind(p4_state.const)
         return p4_state
 
     def type(self, type_name):

@@ -24,7 +24,10 @@ OUT_DIR = FILE_DIR.joinpath("validated")
 P4C_DIR = FILE_DIR.joinpath("p4c")
 TOFINO_DIR = FILE_DIR.joinpath("tofino/bf_src")
 
-USE_TOFINO = False
+# signifies an invalid header
+INVALID_VAR = "invalid"
+# the main input header key word
+HEADER_VAR = "Headers"
 
 
 @dataclass
@@ -33,21 +36,23 @@ class P4Struct:
     values: list
 
 
-def generate_random_prog(p4c_bin, p4_file):
+def generate_random_prog(p4c_bin, p4_file, config):
     p4_cmd = f"{p4c_bin} "
     p4_cmd += f"{p4_file} "
-    if USE_TOFINO:
+    if config["use_tofino"]:
         p4_cmd += f"1 "
+    else:
+        p4_cmd += f"0 "
     log.info("Generating random p4 code with command %s ", p4_cmd)
     return util.exec_process(p4_cmd)
 
 
-def run_p4_to_py(p4_file, py_file, option_str=""):
+def run_p4_to_py(p4_file, py_file, config, option_str=""):
     cmd = f"{P4Z3_BIN} "
     cmd += f"{p4_file} "
     cmd += f"--output {py_file} "
     cmd += option_str
-    if USE_TOFINO:
+    if config["use_tofino"]:
         include_dir = TOFINO_DIR.joinpath(f"install/share/p4c/p4include/ ")
         cmd += f"-I {include_dir}"
     log.info("Converting p4 to z3 python with command %s ", cmd)
@@ -105,15 +110,16 @@ def insert_spaces(text, dist):
     return " ".join(text[i:i + dist] for i in range(0, len(text), dist))
 
 
-def get_stf_str(z3_model, z3_const, dont_care_map):
-    z3_input_header = z3_model[z3.Const("ig_0", z3_const.sort())]
+def get_stf_str(config, z3_model, z3_const, dont_care_map):
+    z3_input_header = z3_model[z3.Const(
+        config["ingress_var"], z3_const.sort())]
     log.debug("Input header: %s", z3_input_header)
     input_values = fill_values(z3_input_header)
-    input_pkt_str = "".join(convert_to_stf(input_values, "Headers"))
+    input_pkt_str = "".join(convert_to_stf(input_values, HEADER_VAR))
     z3_output_header = z3_model[z3_const]
     log.debug("Output header: %s", z3_output_header)
     output_values = fill_values(z3_output_header)
-    out_pkt_list = convert_to_stf(output_values, "Headers")
+    out_pkt_list = convert_to_stf(output_values, HEADER_VAR)
     for idx, marker in enumerate(dont_care_map):
         # this is an uninterpreted value, it can be anything
         if marker == "*":
@@ -130,12 +136,13 @@ def get_stf_str(z3_model, z3_const, dont_care_map):
     return stf_str
 
 
-def get_semantics(out_dir, p4_input):
-    p4_input = Path(p4_input)
+def get_semantics(config):
+    p4_input = config["p4_input"]
+    out_dir = config["out_dir"]
     py_file = Path(f"{out_dir}/{p4_input.stem}.py")
     fail_dir = out_dir.joinpath("failed")
 
-    result = run_p4_to_py(p4_input, py_file)
+    result = run_p4_to_py(p4_input, py_file, config)
     if result.returncode != util.EXIT_SUCCESS:
         log.error("Failed to translate P4 to Python.")
         util.check_dir(fail_dir)
@@ -270,14 +277,16 @@ def run_tofino_test(out_dir, p4_input, stf_file_name):
     return test_proc, stdout, stderr
 
 
-def run_stf_test(out_dir, p4_input, stf_str):
+def run_stf_test(config, stf_str):
+    out_dir = config["out_dir"]
+    p4_input = config["p4_input"]
     log.info("Running stf test on file %s", p4_input)
-    p4_input = Path(p4_input)
+
     fail_dir = out_dir.joinpath("failed")
     stf_file_name = out_dir.joinpath(f"{p4_input.stem}.stf")
     with open(stf_file_name, 'w+') as stf_file:
         stf_file.write(stf_str)
-    if USE_TOFINO:
+    if config["use_tofino"]:
         result, stdout, stderr = run_tofino_test(
             out_dir, p4_input, stf_file_name)
     else:
@@ -291,12 +300,12 @@ def run_stf_test(out_dir, p4_input, stf_str):
     return result.returncode
 
 
-def check_with_stf(out_dir, file, model, output_const, dont_care_map):
+def check_with_stf(config, model, output_const, dont_care_map):
     # both the input and the output variable are then used to generate
     # a stf file with an input and expected output packet on port 0
     log.info("Generating stf file...")
-    stf_str = get_stf_str(model, output_const, dont_care_map)
-    return run_stf_test(out_dir, file, stf_str)
+    stf_str = get_stf_str(config, model, output_const, dont_care_map)
+    return run_stf_test(config, stf_str)
 
 
 def assemble_dont_care_map(z3_input, dont_care_vals):
@@ -310,7 +319,7 @@ def assemble_dont_care_map(z3_input, dont_care_vals):
             for dont_care_val in dont_care_vals:
                 if dont_care_val in str(var):
                     dont_care = True
-            if str(var) == "invalid":
+            if str(var) == INVALID_VAR:
                 bitvec_map = ["x"] * bitvec_hex_width
             elif dont_care:
                 bitvec_map = ["*"] * bitvec_hex_width
@@ -322,26 +331,26 @@ def assemble_dont_care_map(z3_input, dont_care_vals):
     return dont_care_map
 
 
-def get_dont_care_map(z3_input):
+def get_dont_care_map(config, z3_input):
     for child in z3_input.children():
-        if "Headers" in child.sort().name():
+        if HEADER_VAR in child.sort().name():
             dont_care_vals = set()
             for val in z3.z3util.get_vars(z3_input):
                 str_val = str(val)
                 # both of these strings are special
                 # ingress means it is a variable we have control over
                 # invalid means that there is no byte output
-                if str(val) not in ("ig_0", "invalid"):
+                if str(val) not in (config["ingress_var"], INVALID_VAR):
                     dont_care_vals.add(str_val)
             return assemble_dont_care_map(child, dont_care_vals)
         else:
-            dont_care_map = get_dont_care_map(child)
+            dont_care_map = get_dont_care_map(config, child)
             if dont_care_map:
                 return dont_care_map
     return []
 
 
-def dissect_conds(conditions):
+def dissect_conds(config, conditions):
     controllable_conds = []
     fixed_conds = []
     undefined_conds = []
@@ -352,7 +361,7 @@ def dissect_conds(conditions):
         has_table_action = False
         has_undefined_var = False
         for cond_var in z3.z3util.get_vars(cond):
-            if "ig_0" in str(cond_var):
+            if config["ingress_var"] in str(cond_var):
                 has_member = True
             elif "table_key" in str(cond_var):
                 has_table_key = True
@@ -368,47 +377,40 @@ def dissect_conds(conditions):
         else:
             fixed_conds.append(cond)
     for var in undefined_vars:
-        # fixme does not handle undefined data types
+        # FIXME: does not handle undefined data types
         if isinstance(var, z3.BitVecRef):
             undefined_conds.append(var == 0)
     return controllable_conds, fixed_conds, undefined_conds
 
 
-def perform_blackbox_test(out_dir, p4_input):
-    if not p4_input:
-        out_dir = Path(out_dir).joinpath("rnd_test")
-        util.check_dir(out_dir)
-        p4_input = out_dir.joinpath("rnd_test.p4")
-        # generate a random program from scratch
-        generate_random_prog(P4RANDOM_BIN, p4_input)
-    else:
-        p4_input = Path(p4_input)
-        out_dir = Path(out_dir)
-        if out_dir == OUT_DIR:
-            out_dir = out_dir.joinpath(p4_input.stem)
-        util.check_dir(out_dir)
-        util.copy_file(p4_input, out_dir)
+def perform_blackbox_test(config):
+    out_dir = config["out_dir"]
+    p4_input = config["p4_input"]
+    if out_dir == OUT_DIR:
+        out_dir = out_dir.joinpath(p4_input.stem)
+    util.check_dir(out_dir)
+    util.copy_file(p4_input, out_dir)
+    config["out_dir"] = out_dir
+    config["p4_input"] = p4_input
 
     # get the semantic representation of the original program
-    z3_main_prog, result = get_semantics(out_dir, p4_input)
+    z3_main_prog, result = get_semantics(config)
     if result != util.EXIT_SUCCESS:
         return result
     # now we actually verify that we can find an input
     s = z3.Solver()
     # we currently ignore all other pipelines and focus on the ingress pipeline
-    if USE_TOFINO:
-        main_formula = z3.simplify(z3_main_prog["Pipeline_ingress"])
-    else:
-        main_formula = z3.simplify(z3_main_prog["ig"])
+    main_formula = z3.simplify(z3_main_prog[config["pipe_name"]])
     # this util might come in handy later.
     # z3.z3util.get_vars(main_formula)
     conditions = get_branch_conditions(main_formula)
-    permut_conditions, avoid_conds, undefined_conds = dissect_conds(conditions)
+    cond_tuple = dissect_conds(config, conditions)
+    permut_conds, avoid_conds, undefined_conds = cond_tuple
     log.info("Computing permutations...")
     # FIXME: This does not scale well...
-    permuts = [[f(var) for var, f in zip(permut_conditions, x)]
+    permuts = [[f(var) for var, f in zip(permut_conds, x)]
                for x in itertools.product([z3.Not, lambda x: x],
-                                          repeat=len(permut_conditions))]
+                                          repeat=len(permut_conds))]
     output_const = z3.Const("output", main_formula.sort())
     # bind the output constant to the output of the main program
     s.add(main_formula == output_const)
@@ -453,9 +455,9 @@ def perform_blackbox_test(out_dir, p4_input):
             log.info("Inferring simplified input and output")
             constrained_output = t.apply(g)
             log.info("Inferring dont-care map...")
-            dont_care_map = get_dont_care_map(constrained_output[0][0])
-            result = check_with_stf(out_dir, p4_input, m,
-                                    output_const, dont_care_map)
+            output_var = constrained_output[0][0]
+            dont_care_map = get_dont_care_map(config, output_var)
+            result = check_with_stf(config, m, output_const, dont_care_map)
             if result != util.EXIT_SUCCESS:
                 return result
         else:
@@ -479,21 +481,39 @@ def main(args):
                      "smt.arith.random_initial_value", True,
                      "sat.phase", "random",)
 
-    # fix this
-    global USE_TOFINO
-    USE_TOFINO = args.use_tofino
-    p4_input = Path(args.p4_input)
-    out_dir = Path(args.out_dir)
-    if os.path.isfile(p4_input):
-        out_dir = out_dir.joinpath(p4_input.stem)
-        util.del_dir(out_dir)
-        result = perform_blackbox_test(out_dir, p4_input)
+    config = {}
+    config["use_tofino"] = args.use_tofino
+    if args.use_tofino:
+        config["pipe_name"] = "Pipeline_ingress"
+        config["ingress_var"] = "ingress"
     else:
-        util.check_dir(out_dir)
+        config["pipe_name"] = "ig"
+        config["ingress_var"] = "ig"
+
+    if args.p4_input:
+        p4_input = Path(args.p4_input)
+        out_base_dir = Path(args.out_dir)
+    else:
+        out_base_dir = Path(args.out_dir).joinpath("rnd_test")
+        util.check_dir(out_base_dir)
+        p4_input = out_base_dir.joinpath("rnd_test.p4")
+        # generate a random program from scratch
+        generate_random_prog(P4RANDOM_BIN, p4_input, config)
+
+    if os.path.isfile(p4_input):
+        out_dir = out_base_dir.joinpath(p4_input.stem)
+        util.del_dir(out_dir)
+        config["out_dir"] = out_dir
+        config["p4_input"] = p4_input
+        result = perform_blackbox_test(config)
+    else:
+        util.check_dir(out_base_dir)
         for p4_file in list(p4_input.glob("**/*.p4")):
-            output_dir = out_dir.joinpath(p4_file.stem)
-            util.del_dir(output_dir)
-            result = perform_blackbox_test(output_dir, p4_file)
+            out_dir = out_base_dir.joinpath(p4_file.stem)
+            util.del_dir(out_dir)
+            config["out_dir"] = out_dir
+            config["p4_input"] = p4_input
+            result = perform_blackbox_test(config)
     sys.exit(result)
 
 
