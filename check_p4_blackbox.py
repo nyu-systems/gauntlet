@@ -488,7 +488,7 @@ def main(args):
         config["ingress_var"] = "ingress"
     else:
         config["pipe_name"] = "ig"
-        config["ingress_var"] = "ig"
+        config["ingress_var"] = "ingress"
 
     if args.p4_input:
         p4_input = Path(args.p4_input)

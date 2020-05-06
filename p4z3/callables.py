@@ -92,7 +92,7 @@ class ConstCallExpr(P4Expression):
         # if we get a reference just try to find the method in the state
         p4_method_name = sanitize_string(self.p4_method)
         p4_method = p4_state.resolve_reference(p4_method_name)
-        if isinstance(p4_method, P4Control):
+        if isinstance(p4_method, (P4Control, P4Package)):
             expr = p4_method(*self.args, **self.kwargs)
         else:
             expr = p4_method(p4_state, *self.args, **self.kwargs)
@@ -128,7 +128,8 @@ class P4Package():
                 # if we get a reference just try to find the method in the state
                 p4_method_obj = self.z3_reg._globals[p4_method_name]
                 params = p4_method_obj.params
-                p4_state = self.z3_reg.init_p4_state(pipe_name, params)
+                obj_name = p4_method_obj.name
+                p4_state = self.z3_reg.init_p4_state(obj_name, params)
                 expr = pipe_val.eval(p4_state)
                 if isinstance(expr, P4Control):
                     self.pipes[pipe_name] = expr.apply(p4_state)
@@ -308,10 +309,11 @@ class P4Method(P4Callable):
                 # to propagate the variable through all its members
                 log.debug("Resetting %s to %s", arg_expr, param_name)
                 if isinstance(arg_expr, P4ComplexInstance):
+                    # important, get the validity before re-instantiating
+                    valid = arg_expr.valid
                     arg_expr = arg_expr.p4z3_type.instantiate(param_name)
                     # assume that for inout header validity is not touched
                     if arg.is_ref == "inout":
-                        valid = arg_expr.valid
                         arg_expr.propagate_validity_bit(valid)
                 else:
                     arg_expr = z3.Const(f"{param_name}", arg_expr.sort())
