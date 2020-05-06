@@ -585,9 +585,8 @@ class HeaderInstance(StructInstance):
                 # check whether the header is the same object
                 # any other header is now invalid
                 member_hdr.deactivate()
-        else:
-            # This is a built-in
-            self.deactivate()
+        # This is a built-in
+        self.deactivate()
 
     def bind_to_union(self, union_instance):
         self.union_parent = union_instance
