@@ -311,8 +311,9 @@ class P4Method(P4Callable):
                 if isinstance(arg_expr, P4ComplexInstance):
                     # important, get the validity before re-instantiating
                     valid = arg_expr.valid
-                    arg_expr = arg_expr.p4z3_type.instantiate(param_name)
                     # assume that for inout header validity is not touched
+                    arg_expr = arg_expr.p4z3_type.instantiate(arg_name)
+                    arg_expr.bind(arg_expr.const)
                     if arg.is_ref == "inout":
                         arg_expr.propagate_validity_bit(valid)
                 else:

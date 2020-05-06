@@ -1,10 +1,10 @@
 from p4z3.base import log, z3, Z3If
 from p4z3.base import P4Expression, P4ComplexInstance, DefaultExpression
-from p4z3.callables import P4Control, P4Context
-from p4z3.statements import P4Statement, P4Return
+from p4z3.callables import P4Control
+from p4z3.statements import P4Statement, P4Return, P4Exit
 
 
-MAX_LOOP = 1
+MAX_LOOP = 2
 
 
 class P4Parser(P4Control):
@@ -41,7 +41,6 @@ class ParserTree(P4Expression):
         return expr
 
 
-
 class ParserState(P4Expression):
 
     def __init__(self, name, select, components):
@@ -60,7 +59,7 @@ class ParserState(P4Expression):
     def eval(self, p4_state):
         if self.counter > MAX_LOOP:
             log.warning("Parser exceeded current loop limit, aborting...")
-            p4_state.insert_exprs(P4Return())
+            p4_state.insert_exprs(P4Exit())
         else:
             self.counter += 1
             if isinstance(self.select, ParserSelect):

@@ -24,49 +24,49 @@ P4_DIR = FILE_DIR.joinpath("p4c/testdata/p4_16_samples/")
 # p4c binaries
 P4C_BIN = FILE_DIR.joinpath("p4c/build/p4c")
 
-# ***** working tests *****
-p416_tests = []
-# create a list of all the programs in the p4c test folder
-all_tests = list(P4_DIR.glob("*.p4"))
-for test in all_tests:
-    p416_tests.append(test.name)
 
-# ***** violation tests *****
-violation_tests = [
-    "basic_routing_stripped",
-    "branching_in_function",
-    "checksum2",
-    "const_entries",
-    "function_return",
-    "copy_out",
-    "drop-bmv2",
-    "nested_slice",
-    # "exit", exits are not allowed in functions so we do not have to worry... for now
-    "action_exit",
-    "equality-1",
-    "equality-2",
-    "equality_stripped",
-    "issue1544-bmv2-1",
-    "issue1544-bmv2-2",
-    "key-bmv2",
-    "key_inline",
-    "issue983",
-    "issue1642",
-    "issue1781",
-    "mux",
-    "struct_initializer",
-    "switch_statement",
-    "unused_return",
-    "out-params-1",
-    "out-params-2",
-    # "variable_shadowing", # disabled until I have found a good solution
+# ***** P4-16 Standard Tests *****
+
+# these tests show pathological behavior and can currently not be tested
+slow_tests = [
+    "header-stack-ops-bmv2.p4",
+    "issue-2123-2-bmv2.p4",  # z3 gets stuck for unclear reasons
+    "issue-2123-3-bmv2.p4",  # z3 gets stuck for unclear reasons
+    "issue561-bmv2.p4",      # causes a segmentation fault
 ]
+# create a list of all the programs in the p4c test folder
+p416_tests = set()
+for test in list(P4_DIR.glob("*.p4")):
+    name = test.name
+    if name in slow_tests:
+        continue
+    p416_tests.add(name)
 
-# ***** tests that should not trigger a violation bug *****
-false_friends = []
-all_tests = list(FALSE_FRIENDS_DIR.glob("*.p4"))
-for test in all_tests:
-    false_friends.append(test.name)
+# ***** tests that should trigger a violation bug *****
+
+# these programs show pathological behavior and can currently not be tested
+violation_filter = [
+    "variable_shadowing",  # disabled until I have found a good solution
+]
+violation_tests = set()
+for test in list(VIOLATION_DIR.glob("*")):
+    name = test.name
+    if name in violation_filter:
+        continue
+    violation_tests.add(name)
+
+# ***** tests that should *NOT* trigger a violation bug *****
+
+# these programs show pathological behavior and can currently not be tested
+false_friends_filter = [
+    "table_call_in_expression.p4",  # design flaw...
+]
+false_friends = set()
+for test in list(FALSE_FRIENDS_DIR.glob("*")):
+    name = test.name
+    if name in false_friends_filter:
+        continue
+    false_friends.add(name)
 
 
 # ***** broken tests, need fixing *****
@@ -101,15 +101,6 @@ xfails = [
     "psa-example-digest-bmv2.p4",
     "issue2303.p4",
     "issue982.p4",  # something wrong with duplicate states, I do not get it...
-]
-
-# these tests show pathological behavior and can currently not be tested
-slow_tests = [
-    "header-stack-ops-bmv2.p4",
-    "issue-2123-2-bmv2.p4",  # z3 gets stuck for unclear reasons
-    "issue-2123-3-bmv2.p4",  # z3 gets stuck for unclear reasons
-    "issue561-bmv2.p4",      # causes a segmentation fault
-    "table_call_in_expression.p4",  # design flaw...
 ]
 
 

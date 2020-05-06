@@ -351,6 +351,21 @@ class P4ComplexInstance():
         # the class is now dependent on its parent, update the constructor
         self.const = self.z3_type.constructor(0)(*members)
 
+    def bind_to_name(self, name):
+        for member_name, member_constructor in self.members.items():
+            target_name = f"{name}.{member_name}"
+            # retrieve the member we are accessing
+            member = self.resolve_reference(member_name)
+            member_type = member_constructor.range()
+            if isinstance(member, P4ComplexInstance):
+                # it is a complex type
+                # propagate the parent constant to all children
+                member.bind_to_name(target_name)
+            else:
+                # a simple z3 type, just update the constructor
+                self.p4_attrs[member_name] = z3.Const(
+                    target_name, member_type)
+
     def get_z3_obj(self):
         members = []
         for member_name, member_constructor in self.members.items():
