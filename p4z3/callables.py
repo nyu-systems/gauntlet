@@ -45,11 +45,6 @@ class P4Callable(P4Z3Class):
                     arg_expr.deactivate()
                 else:
                     arg_expr = z3.Const(f"undefined", arg_expr.sort())
-            # FIXME: Awful code...
-            if isinstance(arg_expr, list) and isinstance(arg.p4_type, P4ComplexType):
-                instance = arg.p4_type.instantiate(param_name)
-                instance.set_list(arg_expr)
-                arg_expr = instance
             # Sometimes expressions are passed, resolve those first
             log.debug("Copy-in: %s to %s", arg_expr, param_name)
             if isinstance(arg_expr, int) and isinstance(arg.p4_type, (z3.BitVecSortRef, z3.BitVecRef)):
@@ -297,6 +292,7 @@ class P4Method(P4Callable):
         # with a new free constant
         param_buffer = OrderedDict()
         for param_name, arg in merged_args.items():
+            # Sometimes expressions are passed, resolve those first
             arg_expr = p4_state.resolve_expr(arg.p4_val)
             # for now use the param name, not the arg_name constructed here
             # FIXME: there are some passes that rename causing issues
@@ -309,21 +305,14 @@ class P4Method(P4Callable):
                 # to propagate the variable through all its members
                 log.debug("Resetting %s to %s", arg_expr, param_name)
                 if isinstance(arg_expr, P4ComplexInstance):
-                    # important, get the validity before re-instantiating
-                    valid = arg_expr.valid
                     # assume that for inout header validity is not touched
-                    arg_expr = arg_expr.p4z3_type.instantiate(arg_name)
-                    arg_expr.bind(arg_expr.const)
                     if arg.is_ref == "inout":
-                        arg_expr.propagate_validity_bit(valid)
+                        arg_expr.bind_to_name(arg_name)
+                    else:
+                        arg_expr = arg_expr.p4z3_type.instantiate(arg_name)
+                        arg_expr.bind(arg_expr.const)
                 else:
                     arg_expr = z3.Const(f"{param_name}", arg_expr.sort())
-            # FIXME: Awful code...
-            if isinstance(arg_expr, list) and isinstance(arg.p4_type, P4ComplexType):
-                instance = arg.p4_type.instantiate(param_name)
-                instance.set_list(arg_expr)
-                arg_expr = instance
-            # Sometimes expressions are passed, resolve those first
             log.debug("Copy-in: %s to %s", arg_expr, param_name)
             if isinstance(arg_expr, int) and isinstance(arg.p4_type, (z3.BitVecSortRef, z3.BitVecRef)):
                 arg_expr = z3_cast(arg_expr, arg.p4_type)

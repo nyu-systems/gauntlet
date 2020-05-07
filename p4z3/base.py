@@ -321,15 +321,15 @@ class P4ComplexInstance():
         for type_index, z3_arg in enumerate(p4z3_type.z3_args):
             z3_arg_name = z3_arg[0]
             z3_arg_type = z3_arg[1]
+            var_name = f"{name}.{z3_arg_name}"
             member_accessor = self.z3_type.accessor(0, type_index)
             if isinstance(z3_arg_type, P4ComplexType):
                 # this is a complex datatype, create a P4ComplexType
-                member_cls = z3_arg_type.instantiate(f"{name}.{z3_arg_name}")
+                member_cls = z3_arg_type.instantiate(var_name)
                 self.p4_attrs[z3_arg_name] = member_cls
             else:
                 # use the default z3 constructor
-                self.p4_attrs[z3_arg_name] = z3.Const(
-                    f"{name}.{z3_arg_name}", z3_arg_type)
+                self.p4_attrs[z3_arg_name] = z3.Const(var_name, z3_arg_type)
             self.members[z3_arg_name] = member_accessor
         self.valid = z3.BoolVal(False)
 
@@ -346,25 +346,23 @@ class P4ComplexInstance():
                 member.bind(z3_member)
             else:
                 # a simple z3 type, just update the constructor
-                self.p4_attrs[member_name] = z3_member
+                self.set_or_add_var(member_name, z3_member)
             members.append(z3_member)
-        # the class is now dependent on its parent, update the constructor
-        self.const = self.z3_type.constructor(0)(*members)
 
     def bind_to_name(self, name):
         for member_name, member_constructor in self.members.items():
-            target_name = f"{name}.{member_name}"
+            var_name = f"{name}.{member_name}"
             # retrieve the member we are accessing
             member = self.resolve_reference(member_name)
             member_type = member_constructor.range()
             if isinstance(member, P4ComplexInstance):
                 # it is a complex type
                 # propagate the parent constant to all children
-                member.bind_to_name(target_name)
+                member.bind_to_name(var_name)
             else:
                 # a simple z3 type, just update the constructor
-                self.p4_attrs[member_name] = z3.Const(
-                    target_name, member_type)
+                self.set_or_add_var(
+                    member_name, z3.Const(var_name, member_type))
 
     def get_z3_obj(self):
         members = []
