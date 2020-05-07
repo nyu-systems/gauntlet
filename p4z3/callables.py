@@ -29,10 +29,18 @@ class P4Callable(P4Z3Class):
     def set_context(self, p4_state, merged_args, ref_criteria):
         param_buffer = OrderedDict()
         for param_name, arg in merged_args.items():
+            # Sometimes expressions are passed, resolve those first
             arg_expr = p4_state.resolve_expr(arg.p4_val)
             # for now use the param name, not the arg_name constructed here
             # FIXME: there are some passes that rename causing issues
             arg_name = f"{self.name}_{param_name}"
+            # it can happen that we receive a list
+            # infer the type, generate, and set
+            if isinstance(arg_expr, list):
+                arg_instance = gen_instance(arg_name, arg.p4_type)
+                arg_instance.set_list(arg_expr)
+                arg_expr = arg_instance
+
             if arg.is_ref in ref_criteria:
                 # outs are left-values so the arg must be a string
                 # infer the type value at runtime, param does not work yet
@@ -45,7 +53,6 @@ class P4Callable(P4Z3Class):
                     arg_expr.deactivate()
                 else:
                     arg_expr = z3.Const(f"undefined", arg_expr.sort())
-            # Sometimes expressions are passed, resolve those first
             log.debug("Copy-in: %s to %s", arg_expr, param_name)
             if isinstance(arg_expr, int) and isinstance(arg.p4_type, (z3.BitVecSortRef, z3.BitVecRef)):
                 arg_expr = z3_cast(arg_expr, arg.p4_type)
@@ -297,6 +304,12 @@ class P4Method(P4Callable):
             # for now use the param name, not the arg_name constructed here
             # FIXME: there are some passes that rename causing issues
             arg_name = f"{self.name}_{param_name}"
+            # it can happen that we receive a list
+            # infer the type, generate, and set
+            if isinstance(arg_expr, list):
+                arg_instance = gen_instance(arg_name, arg.p4_type)
+                arg_instance.set_list(arg_expr)
+                arg_expr = arg_instance
             if arg.is_ref in ref_criteria:
                 # outs are left-values so the arg must be a string
                 # infer the type value at runtime, param does not work yet
@@ -333,7 +346,8 @@ class P4Method(P4Callable):
             if init_method.return_type == t_param:
                 init_method.return_type = args[idx]
             for method_param in init_method.params:
-                method_param.p4_type = args[idx]
+                if method_param.p4_type == t_param:
+                    method_param.p4_type = args[idx]
         return init_method
 
     def eval_callable(self, p4_state, merged_args, var_buffer):
