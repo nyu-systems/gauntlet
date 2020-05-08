@@ -37,9 +37,11 @@ class P4Callable(P4Z3Class):
             # it can happen that we receive a list
             # infer the type, generate, and set
             if isinstance(arg_expr, list):
-                arg_instance = gen_instance(arg_name, arg.p4_type)
-                arg_instance.set_list(arg_expr)
-                arg_expr = arg_instance
+                # if the type is undefined, do nothing
+                if isinstance(arg.p4_type, P4ComplexType):
+                    arg_instance = gen_instance(arg_name, arg.p4_type)
+                    arg_instance.set_list(arg_expr)
+                    arg_expr = arg_instance
 
             if arg.is_ref in ref_criteria:
                 # outs are left-values so the arg must be a string
@@ -54,6 +56,7 @@ class P4Callable(P4Z3Class):
                 else:
                     arg_expr = z3.Const(f"undefined", arg_expr.sort())
             log.debug("Copy-in: %s to %s", arg_expr, param_name)
+            # it is possible to pass an int as value, we need to cast it
             if isinstance(arg_expr, int) and isinstance(arg.p4_type, (z3.BitVecSortRef, z3.BitVecRef)):
                 arg_expr = z3_cast(arg_expr, arg.p4_type)
             # buffer the value, do NOT set it yet
@@ -307,9 +310,11 @@ class P4Method(P4Callable):
             # it can happen that we receive a list
             # infer the type, generate, and set
             if isinstance(arg_expr, list):
-                arg_instance = gen_instance(arg_name, arg.p4_type)
-                arg_instance.set_list(arg_expr)
-                arg_expr = arg_instance
+                # if the type is undefined, do nothing
+                if isinstance(arg.p4_type, P4ComplexType):
+                    arg_instance = gen_instance(arg_name, arg.p4_type)
+                    arg_instance.set_list(arg_expr)
+                    arg_expr = arg_instance
             if arg.is_ref in ref_criteria:
                 # outs are left-values so the arg must be a string
                 # infer the type value at runtime, param does not work yet
@@ -327,6 +332,7 @@ class P4Method(P4Callable):
                 else:
                     arg_expr = z3.Const(f"{param_name}", arg_expr.sort())
             log.debug("Copy-in: %s to %s", arg_expr, param_name)
+            # it is possible to pass an int as value, we need to cast it
             if isinstance(arg_expr, int) and isinstance(arg.p4_type, (z3.BitVecSortRef, z3.BitVecRef)):
                 arg_expr = z3_cast(arg_expr, arg.p4_type)
             # buffer the value, do NOT set it yet
@@ -337,7 +343,10 @@ class P4Method(P4Callable):
 
     def initialize(self, *args, **kwargs):
         # TODO Figure out what to actually do here
-        init_method = copy.copy(self)
+        # deepcopy is important to ensure independent type inference
+        init_method = copy.deepcopy(self)
+        # the type params sometimes include the return type also
+        # it is typically the first value, but is bound somewhere else
         if len(args) < len(init_method.type_params):
             type_list = init_method.type_params[1:]
         else:
