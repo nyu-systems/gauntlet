@@ -328,7 +328,6 @@ class P4Method(P4Callable):
                         arg_expr.bind_to_name(arg_name)
                     else:
                         arg_expr = arg_expr.p4z3_type.instantiate(arg_name)
-                        arg_expr.bind(arg_expr.const)
                 else:
                     arg_expr = z3.Const(f"{param_name}", arg_expr.sort())
             log.debug("Copy-in: %s to %s", arg_expr, param_name)
@@ -341,10 +340,19 @@ class P4Method(P4Callable):
         for param_name, param_val in param_buffer.items():
             p4_state.set_or_add_var(param_name, param_val)
 
+    def __copy__(self):
+        cls = self.__class__
+        result = cls.__new__(cls)
+        result.__dict__.update(self.__dict__)
+        result.params = copy.deepcopy(result.params)
+        for idx, val in enumerate(result.params):
+            result.params[idx] = copy.copy(val)
+        return result
+
     def initialize(self, *args, **kwargs):
         # TODO Figure out what to actually do here
+        init_method = copy.copy(self)
         # deepcopy is important to ensure independent type inference
-        init_method = copy.deepcopy(self)
         # the type params sometimes include the return type also
         # it is typically the first value, but is bound somewhere else
         if len(args) < len(init_method.type_params):
