@@ -1,6 +1,6 @@
 from p4z3.base import OrderedDict, z3, log, copy
 from p4z3.base import merge_parameters, gen_instance, z3_cast, save_variables
-from p4z3.base import P4Z3Class, P4ComplexInstance, Z3If, P4Extern
+from p4z3.base import P4Z3Class, P4ComplexInstance, P4Extern
 from p4z3.base import DefaultExpression, P4ComplexType, P4Expression
 
 
@@ -560,10 +560,10 @@ class P4Table(P4Callable):
         default_expr = table_expr
         # generate a nested set of if expressions per available action
         for cond, action_expr in action_exprs:
-            table_expr = Z3If(cond, action_expr, table_expr)
+            table_expr = z3.If(cond, action_expr, table_expr)
         # if we hit return the table expr
         # otherwise just return the default expr
-        return Z3If(self.p4_attrs["hit"], table_expr, default_expr)
+        return z3.If(self.p4_attrs["hit"], table_expr, default_expr)
 
     def eval_callable(self, p4_state, merged_args, var_buffer):
         return self.eval_table(p4_state)

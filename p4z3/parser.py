@@ -1,4 +1,4 @@
-from p4z3.base import log, z3, Z3If
+from p4z3.base import log, z3
 from p4z3.base import P4Expression, P4ComplexInstance, DefaultExpression
 from p4z3.callables import P4Control
 from p4z3.statements import P4Statement, P4Return, P4Exit
@@ -129,5 +129,5 @@ class ParserSelect(P4Expression):
         default_parser_state = self.state_list[self.default]
         expr = default_parser_state.eval(p4_state)
         for cond, state_expr in switches:
-            expr = Z3If(cond, state_expr, expr)
+            expr = z3.If(cond, state_expr, expr)
         return expr

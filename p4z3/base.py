@@ -380,6 +380,25 @@ class P4ComplexInstance():
             members.append((member_val, member_type))
         return Z3Wrapper(members, self.sort(), self.valid)
 
+    def get_z3_repr(self) -> z3.DatatypeRef:
+        ''' This method returns the current representation of the object in z3
+        logic. Use the z3 constant variable of the object and propagate it
+        through all its children.'''
+        members = []
+
+        for member_name, member_constructor in self.members.items():
+            member_make = self.resolve_reference(member_name)
+            member_type = member_constructor.range()
+            if isinstance(member_make, P4ComplexInstance):
+                # we have a complex type
+                # retrieve the member and call the constructor
+                # call the constructor of the complex type
+                members.append(member_make.get_z3_repr())
+            else:
+                member_make = z3_cast(member_make, member_type)
+                members.append(member_make)
+        return self.z3_type.constructor(0)(*members)
+
     def resolve_reference(self, var):
         log.debug("Resolving reference %s", var)
         if isinstance(var, str):
@@ -1081,7 +1100,7 @@ class P4StateInstance(P4ComplexInstance):
             particular chain.'''
         @staticmethod
         def eval(p4_state):
-            return p4_state.get_z3_obj()
+            return p4_state.get_z3_repr()
 
     def pop_next_expr(self):
         if self.expr_chain:

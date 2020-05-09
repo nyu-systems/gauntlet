@@ -93,7 +93,7 @@ def evaluate_package(p4_package):
                 z3_asts[name] = val
         else:
             # output_type = generate_datatype(pipe_name, p4_pipe_ast)
-            p4_pipe_ast = produce_z3_tree(p4_pipe_ast)
+            # p4_pipe_ast = produce_z3_tree(p4_pipe_ast)
             z3_asts[pipe_name] = p4_pipe_ast
         # all other types are nonsense and we should not bother with them
         # else:

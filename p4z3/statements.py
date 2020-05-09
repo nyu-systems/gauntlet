@@ -2,7 +2,7 @@ from collections import OrderedDict
 import z3
 
 from p4z3.base import log, copy_attrs, DefaultExpression, copy, z3_cast
-from p4z3.base import P4ComplexInstance, P4Statement, P4Z3Class, Z3If
+from p4z3.base import P4ComplexInstance, P4Statement, P4Z3Class
 from p4z3.callables import P4Context
 
 
@@ -98,7 +98,7 @@ class IfStatement(P4Statement):
                 else_expr = z3_cast(else_expr, then_expr)
             return z3.If(cond, then_expr, else_expr)
         else:
-            return Z3If(cond, then_expr, else_expr)
+            return z3.If(cond, then_expr, else_expr)
 
 
 class SwitchHit(P4Z3Class):
@@ -116,7 +116,7 @@ class SwitchHit(P4Z3Class):
             case_exprs.append((case["match"], case_expr))
         expr = self.default_case.eval(p4_state)
         for cond, case_expr in case_exprs:
-            expr = Z3If(cond, case_expr, expr)
+            expr = z3.If(cond, case_expr, expr)
         return expr
 
     def set_table(self, table):

@@ -94,6 +94,7 @@ xfails = [
     "issue1638.p4",  # casting
     "shadow-after-use.p4",  # another issue with shadowing
     "generic1.p4",  # complicated type inference
+    "functors8.p4",  # complicated type inference
     # all of these do not work because of some quirk in inlining
     "inline-switch.p4",
     "issue1897-bmv2.p4",
