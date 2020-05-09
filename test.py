@@ -75,27 +75,24 @@ xfails = [
     "array_field1.p4",  # runtime index
     "complex2.p4",  # runtime index
     "issue1989-bmv2.p4",  # runtime index
-    "issue1334.p4",  # overloading, this test should normally not be skipped
-    "logging.p4",  # string literal
+    "index.p4",  # runtime index
+    "issue-2123.p4",  # runtime index
+    "issue314.p4",  # runtime index
     "parser-conditional.p4",  # runtime index
     "runtime-index-2-bmv2.p4",  # runtime index
     "runtime-index-bmv2.p4",  # runtime index
     "side_effects.p4",  # runtime index
+    "issue1334.p4",  # overloading, this test should normally not be skipped
+    "logging.p4",  # string literal
     "string.p4",  # string literal
     "table-entries-range-bmv2.p4",  # range
-    # parser failures
     "fold_match.p4",  # range
-    "index.p4",  # runtime index
-    "issue-2123.p4",  # runtime index
-    "issue774-4-bmv2.p4",  # defaultexpression sort
-    "issue774.p4",  # defaultexpression sort
     "pvs-struct-3-bmv2.p4",  # range
-    "issue314.p4",  # runtime index
-    "issue1638.p4",  # casting
-    "shadow-after-use.p4",  # another issue with shadowing
     "generic1.p4",  # complicated type inference
     "functors8.p4",  # complicated type inference
     "issue2303.p4",  # member precedence, fixed soon
+    "issue1638.p4",  # member precedence, fixed soon
+    "shadow-after-use.p4",  # another issue with shadowing
     # all of these do not work because of some quirk in inlining
     "issue1897-bmv2.p4",
 ]

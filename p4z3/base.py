@@ -80,6 +80,9 @@ def merge_parameters(params, *args, **kwargs):
     for idx, param in enumerate(params):
         if idx < args_len:
             arg_val = args[idx]
+            if isinstance(arg_val, DefaultExpression):
+                # Default expressions are pointless arguments, so skip them
+                continue
             arg = P4Argument(param.is_ref, param.p4_type, arg_val)
             merged_args[param.name] = arg
         elif param.p4_default is not None:
@@ -89,6 +92,9 @@ def merge_parameters(params, *args, **kwargs):
             merged_args[param.name] = arg
     for param_name, arg_val in kwargs.items():
         # this is expensive but at least works reliably
+        if isinstance(arg_val, DefaultExpression):
+            # Default expressions are pointless arguments, so skip them
+            continue
         for param in params:
             if param.name == param_name:
                 arg = P4Argument(param.is_ref, param.p4_type, arg_val)
