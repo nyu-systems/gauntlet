@@ -32,6 +32,7 @@ def gen_instance(var_name, p4z3_type):
             var_name = f"{type_name}"
         p4z3_type.ref_count += 1
         z3_cls = p4z3_type.instantiate(var_name)
+        z3_cls.deactivate()
         return z3_cls
     elif isinstance(p4z3_type, P4ComplexInstance):
         # static complex type, just return

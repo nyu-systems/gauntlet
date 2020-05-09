@@ -51,7 +51,7 @@ class P4Callable(P4Z3Class):
                 # to propagate the variable through all its members
                 log.debug("Resetting %s to %s", arg_expr, param_name)
                 if isinstance(arg_expr, P4ComplexInstance):
-                    # arg_expr = arg_expr.p4z3_type.instantiate(param_name)
+                    arg_expr = arg_expr.p4z3_type.instantiate(param_name)
                     arg_expr.deactivate()
                 else:
                     arg_expr = z3.Const(f"undefined", arg_expr.sort())
@@ -170,6 +170,9 @@ class P4Context(P4Z3Class):
     def __init__(self, var_buffer):
         self.var_buffer = var_buffer
 
+    def add_to_buffer(self, var_dict):
+        self.var_buffer = {**self.var_buffer, **var_dict}
+
     def restore_context(self, p4_state):
         # FIXME: This does not respect local context
         # local variables are overridden in functions and controls
@@ -275,11 +278,16 @@ class P4Control(P4Callable):
     def eval_callable(self, p4_state, merged_args, var_buffer):
         # initialize the local context of the function for execution
         p4_context = P4Context(var_buffer)
+
+        merged_vars = save_variables(p4_state, self.merged_consts)
+        p4_context.add_to_buffer(merged_vars)
+
+        self.set_context(p4_state, merged_args, ("out"))
+
         for const_param_name, const_arg in self.merged_consts.items():
             const_val = const_arg.p4_val
             const_val = p4_state.resolve_expr(const_val)
             p4_state.set_or_add_var(const_param_name, const_val)
-        self.set_context(p4_state, merged_args, ("out"))
         # execute the action expression with the new environment
         p4_state.insert_exprs(p4_context)
         p4_state.insert_exprs(self.statements)
