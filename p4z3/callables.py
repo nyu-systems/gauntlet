@@ -52,6 +52,7 @@ class P4Callable(P4Z3Class):
                 log.debug("Resetting %s to %s", arg_expr, param_name)
                 if isinstance(arg_expr, P4ComplexInstance):
                     arg_expr = arg_expr.p4z3_type.instantiate(param_name)
+                    # FIXME: This should not be needed
                     arg_expr.deactivate()
                 else:
                     arg_expr = z3.Const(f"undefined", arg_expr.sort())
@@ -137,7 +138,11 @@ class P4Package():
                 p4_state = self.z3_reg.init_p4_state(obj_name, params)
                 expr = pipe_val.eval(p4_state)
                 if isinstance(expr, P4Control):
-                    self.pipes[pipe_name] = expr.apply(p4_state)
+                    # initialize with its own params
+                    args = []
+                    for param in params:
+                        args.append(param.name)
+                    self.pipes[pipe_name] = expr.apply(p4_state, *args)
                 elif isinstance(expr, P4Extern):
                     self.pipes[pipe_name] = expr.const
                 elif isinstance(expr, P4Package):
@@ -336,6 +341,9 @@ class P4Method(P4Callable):
                         arg_expr.bind_to_name(arg_name)
                     else:
                         arg_expr = arg_expr.p4z3_type.instantiate(arg_name)
+                    # we do not know whether the expression is valid afterwards
+                    valid = z3.Bool(f"{arg_name}_valid")
+                    arg_expr.propagate_validity_bit(valid)
                 else:
                     arg_expr = z3.Const(f"{param_name}", arg_expr.sort())
             log.debug("Copy-in: %s to %s", arg_expr, param_name)
