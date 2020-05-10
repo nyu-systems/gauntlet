@@ -129,6 +129,7 @@ def copy_attrs(attrs):
 
 
 def z3_cast(val, to_type):
+
     # some checks to guarantee that the inputs are usable
     if isinstance(val, (z3.BoolSortRef, z3.BoolRef)):
         # Convert boolean variables to a bit vector representation
@@ -150,10 +151,10 @@ def z3_cast(val, to_type):
     if isinstance(val, int):
         # It can happen that we get an int, cast it to a bit vector.
         return z3.BitVecVal(val, to_type_size)
-    if z3.is_int(val):
-        # I hate z3 sometimes. They have their own IntNumRef value that can
-        # only be converted with Int2BV. Why? I do not know...
-        return z3.Int2BV(val, to_type_size)
+    # if z3.is_int(val):
+    #     # I hate z3 sometimes. They have their own IntNumRef value that can
+    #     # only be converted with Int2BV. Why? I do not know...
+    #     return z3.Int2BV(val, to_type_size)
 
     # preprocessing done, the actual casting starts here
     val_size = val.size()
@@ -218,10 +219,14 @@ class P4Declaration(P4Statement):
 
     def eval(self, p4_state):
         # this will only resolve expressions no other classes
+        # FIXME: Untagle this a bit
         if self.rval is not None:
             rval = p4_state.resolve_expr(self.rval)
-            if self.z3_type is not None and not isinstance(rval, int):
-                if self.z3_type != rval.sort():
+            if self.z3_type is not None:
+                if isinstance(rval, int):
+                    if isinstance(self.z3_type, (z3.BitVecSortRef)):
+                        rval = z3_cast(rval, self.z3_type)
+                elif self.z3_type != rval.sort():
                     msg = f"There was an problem setting {self.lval} to {rval}. " \
                         f"Type Mismatch! Target type {self.z3_type} " \
                         f"does not match with input type {rval.sort()}"
@@ -231,7 +236,6 @@ class P4Declaration(P4Statement):
         p4_state.set_or_add_var(self.lval, rval)
         p4z3_expr = p4_state.pop_next_expr()
         return p4z3_expr.eval(p4_state)
-
 
 class P4Member(P4Expression):
 
@@ -344,7 +348,7 @@ class P4ComplexInstance():
                 self.p4_attrs[z3_arg_name] = z3_member
 
             self.members[z3_arg_name] = member_constructor
-        self.valid = z3.BoolVal(False)
+        self.valid = z3.BoolVal(True)
 
     def bind(self, parent_const: z3.AstRef):
         members = []
@@ -394,16 +398,20 @@ class P4ComplexInstance():
         members = []
 
         for member_name, member_constructor in self.members.items():
-            member_make = self.resolve_reference(member_name)
-            member_type = member_constructor.range()
-            if isinstance(member_make, P4ComplexInstance):
+            member_val = self.resolve_reference(member_name)
+            if isinstance(member_val, P4ComplexInstance):
                 # we have a complex type
                 # retrieve the member and call the constructor
                 # call the constructor of the complex type
-                members.append(member_make.get_z3_repr())
+                members.append(member_val.get_z3_repr())
             else:
-                member_make = z3_cast(member_make, member_type)
-                members.append(member_make)
+                # if member_val.sort() != member_type:
+                #     members.append(z3_cast(member_val, member_type))
+                if self.valid == z3.BoolVal(False):
+                    member_type = member_constructor.range()
+                    member_val = z3.Const("invalid", member_type)
+                # else:
+                members.append(member_val)
         return self.z3_type.constructor(0)(*members)
 
     def resolve_reference(self, var):
@@ -537,29 +545,10 @@ class P4ComplexInstance():
         return z3.And(*eq_members)
 
     def activate(self, label="undefined"):
-        # structs can be contained in headers so they can also be activated...
-        for member_name in self.members:
-            member_val = self.resolve_reference(member_name)
-            if isinstance(member_val, P4ComplexInstance):
-                member_val.activate()
-            else:
-                # only if the header was invalid, reallocate all variables
-                if self.valid == z3.BoolVal(False):
-                    allocated_var = z3.Const(label, member_val.sort())
-                    self.set_or_add_var(member_name, allocated_var)
-        self.valid = z3.BoolVal(True)
+        pass
 
     def deactivate(self, label="undefined"):
-        # structs can be contained in headers so they can also be deactivated...
-        for member_name in self.members:
-            member_val = self.resolve_reference(member_name)
-            if isinstance(member_val, P4ComplexInstance):
-                member_val.deactivate(label)
-            else:
-                member_type = member_val.sort()
-                member_const = z3.Const(label, member_type)
-                self.set_or_add_var(member_name, member_const)
-        self.valid = z3.BoolVal(False)
+        pass
 
     def propagate_validity_bit(self, var):
         # structs can be contained in headers so they can also be deactivated...
@@ -583,6 +572,20 @@ class StructInstance(P4ComplexInstance):
         super(StructInstance, self).__init__(name, p4z3_type, parent_const)
         self.var_buffer = {}
 
+    def activate(self, label="undefined"):
+        # structs may have headers that can be deactivated
+        for member_name in self.members:
+            member_val = self.resolve_reference(member_name)
+            if isinstance(member_val, P4ComplexInstance):
+                member_val.activate()
+
+    def deactivate(self, label="undefined"):
+        # structs may have headers that can be deactivated
+        for member_name in self.members:
+            member_val = self.resolve_reference(member_name)
+            if isinstance(member_val, P4ComplexInstance):
+                member_val.deactivate(label)
+
 
 class HeaderType(StructType):
 
@@ -594,10 +597,34 @@ class HeaderInstance(StructInstance):
 
     def __init__(self, name, p4z3_type, parent_const=None):
         super(HeaderInstance, self).__init__(name, p4z3_type, parent_const)
+        self.valid = z3.BoolVal(True)
         self.p4_attrs["isValid"] = self.isValid
         self.p4_attrs["setValid"] = self.setValid
         self.p4_attrs["setInvalid"] = self.setInvalid
         self.union_parent = None
+
+    def activate(self, label="undefined"):
+        for member_name in self.members:
+            member_val = self.resolve_reference(member_name)
+            if isinstance(member_val, P4ComplexInstance):
+                member_val.activate()
+            else:
+                # only if the header was invalid, reallocate all variables
+                if self.valid == z3.BoolVal(False):
+                    allocated_var = z3.Const(label, member_val.sort())
+                    self.set_or_add_var(member_name, allocated_var)
+        self.valid = z3.BoolVal(True)
+
+    def deactivate(self, label="undefined"):
+        for member_name in self.members:
+            member_val = self.resolve_reference(member_name)
+            if isinstance(member_val, P4ComplexInstance):
+                member_val.deactivate(label)
+            else:
+                member_type = member_val.sort()
+                member_const = z3.Const(label, member_type)
+                self.set_or_add_var(member_name, member_const)
+        self.valid = z3.BoolVal(False)
 
     def isValid(self, p4_state=None):
         # This is a built-in

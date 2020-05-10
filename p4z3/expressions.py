@@ -399,6 +399,7 @@ class P4Concat(P4Expression):
         lval = p4_state.resolve_expr(self.lval)
         rval = p4_state.resolve_expr(self.rval)
         # all values must be bitvectors... so cast them
+        # this is necessary because int<*> values can be concatenated
         if isinstance(lval, int):
             lval = lval.as_bitvec
         if isinstance(rval, int):

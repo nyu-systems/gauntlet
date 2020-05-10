@@ -84,18 +84,18 @@ class IfStatement(P4Statement):
             # need to propagate side effects, thankfully functions do not
             # support exit statements, otherwise this would not work
             p4_state.merge_attrs(cond, then_vars)
-            # we hit a void function, just return the merged state...
+            # we hit a void function, just return...
             if not isinstance(then_expr, (z3.AstRef, int)):
-                return p4_state.get_z3_obj()
+                return p4_state.get_z3_repr()
             # some z3 shenaningens, nested expressions are arithrefs
             # but arithrefs are not accepted as proper type
             # z3 is really stupid sometimes...
-            then_is_arith_ref = isinstance(then_expr, (z3.ArithRef, int))
-            else_is_arith_ref = isinstance(else_expr, (z3.ArithRef, int))
-            if then_is_arith_ref and not else_is_arith_ref:
-                then_expr = z3_cast(then_expr, else_expr)
-            if else_is_arith_ref and not then_is_arith_ref:
-                else_expr = z3_cast(else_expr, then_expr)
+            # then_is_arith_ref = isinstance(then_expr, (z3.ArithRef, int))
+            # else_is_arith_ref = isinstance(else_expr, (z3.ArithRef, int))
+            # if then_is_arith_ref and not else_is_arith_ref:
+            #     then_expr = z3_cast(then_expr, else_expr)
+            # if else_is_arith_ref and not then_is_arith_ref:
+            #     else_expr = z3_cast(else_expr, then_expr)
             return z3.If(cond, then_expr, else_expr)
         else:
             return z3.If(cond, then_expr, else_expr)
@@ -178,8 +178,9 @@ class P4Noop(P4Statement):
 
 
 class P4Return(P4Statement):
-    def __init__(self, expr=None):
+    def __init__(self, expr=None, z3_type=None):
         self.expr = expr
+        self.z3_type = z3_type
 
     def eval(self, p4_state):
 
@@ -206,6 +207,10 @@ class P4Return(P4Statement):
             # Need to run down to the remaining execution path after the return.
             p4z3_expr = p4_state.pop_next_expr()
             expr = p4z3_expr.eval(p4_state)
+        # functions cast the returned value down to their actual return type
+        # FIXME: We can only cast bitvecs right now
+        if isinstance(self.z3_type, z3.BitVecSortRef):
+            return z3_cast(expr, self.z3_type)
         return expr
 
 

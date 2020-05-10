@@ -9,6 +9,7 @@ header OVERFLOW {
 header UNDERFLOW {
     bit<8> a;
     bit<8> b;
+    bit<8> c;
 }
 
 header MOD {
@@ -72,7 +73,9 @@ control pipe(inout Headers h, out bool pass) {
         h.overflow.b = 8w3 |+| 8w0;
         //underflow
         h.underflow.a = 8w1 |-| 8w2;
-        h.underflow.a = 8w3 |-| 8w0;
+        h.underflow.b = 8w3 |-| 8w0;
+        const bit<8> uflow_tmp = 1;
+        h.underflow.c = uflow_tmp |-| uflow_tmp;
         // unsigned mod
         h.mod.a = 4w1 % 4w8;
         h.mod.b = 4w15 % 4w2;
@@ -106,7 +109,7 @@ control pipe(inout Headers h, out bool pass) {
         // nested int operations
         bit<48> tmp2 = (1 | 2) |+| 48w0;
 
-        int int_def = 1;
+        const int int_def = 1;
 
     }
 }

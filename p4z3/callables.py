@@ -247,12 +247,7 @@ class P4Function(P4Action):
         p4z3_expr = p4_state.pop_next_expr()
         state_expr = p4z3_expr.eval(p4_state)
         p4_state.expr_chain = old_expr_chain
-        # functions cast the returned value down to their actual return type
-        # FIXME: We can only cast bitvecs right now
-        if isinstance(state_expr, (z3.BitVecSortRef, int)):
-            return z3_cast(state_expr, self.return_type)
-        else:
-            return state_expr
+        return state_expr
 
 
 class P4Control(P4Callable):
