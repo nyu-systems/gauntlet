@@ -88,7 +88,6 @@ xfails = [
     "table-entries-range-bmv2.p4",  # range
     "fold_match.p4",  # range
     "pvs-struct-3-bmv2.p4",  # range
-    "issue2220.p4",  # structure validity
     "generic1.p4",  # complicated type inference
     "functors8.p4",  # complicated type inference
     "issue2303.p4",  # member precedence, fixed soon

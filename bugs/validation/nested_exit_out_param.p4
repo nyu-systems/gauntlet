@@ -7,7 +7,6 @@ header ethernet_t {
     bit<16> eth_type;
 }
 
-
 struct Headers {
     ethernet_t eth_hdr;
 }
@@ -27,19 +26,21 @@ parser p(packet_in pkt, out Headers hdr, inout Meta m, inout standard_metadata_t
 }
 
 control ingress(inout Headers h, inout Meta m, inout standard_metadata_t sm) {
-    bool tmp = false;
-    action do_action(inout bool val1, inout bool val2) {
-    }
-    table simple_table {
-        key = {
-        }
-        actions = {
-            do_action(tmp, tmp);
-        }
-    }
-    apply {
-        simple_table.apply();
 
+    action exit_action() {
+        exit;
+    }
+    action assignment_action(out bit<16> val) {
+        val = 0xBEEF;
+    }
+    action simple_action(inout bit<16> val) {
+        val = 0xDEAD;
+        exit_action();
+        assignment_action(val);
+    }
+
+    apply {
+        simple_action(h.eth_hdr.eth_type);
     }
 }
 

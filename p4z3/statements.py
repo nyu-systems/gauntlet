@@ -4,6 +4,7 @@ import z3
 from p4z3.base import log, copy_attrs, DefaultExpression, copy, z3_cast
 from p4z3.base import P4ComplexInstance, P4Statement, P4Z3Class
 from p4z3.callables import P4Context
+from p4z3.expressions import P4Mux
 
 
 class AssignmentStatement(P4Statement):
@@ -84,18 +85,13 @@ class IfStatement(P4Statement):
             # need to propagate side effects, thankfully functions do not
             # support exit statements, otherwise this would not work
             p4_state.merge_attrs(cond, then_vars)
-            # we hit a void function, just return...
             if not isinstance(then_expr, (z3.AstRef, int)):
+                # sometimes we have more complex types, so we create a mux
+                mux = P4Mux(cond, then_expr, else_expr)
+                return mux.eval(p4_state)
+            elif isinstance(then_expr, z3.DatatypeRef):
+                # we hit a void function, just return...
                 return p4_state.get_z3_repr()
-            # some z3 shenaningens, nested expressions are arithrefs
-            # but arithrefs are not accepted as proper type
-            # z3 is really stupid sometimes...
-            # then_is_arith_ref = isinstance(then_expr, (z3.ArithRef, int))
-            # else_is_arith_ref = isinstance(else_expr, (z3.ArithRef, int))
-            # if then_is_arith_ref and not else_is_arith_ref:
-            #     then_expr = z3_cast(then_expr, else_expr)
-            # if else_is_arith_ref and not then_is_arith_ref:
-            #     else_expr = z3_cast(else_expr, then_expr)
             return z3.If(cond, then_expr, else_expr)
         else:
             return z3.If(cond, then_expr, else_expr)

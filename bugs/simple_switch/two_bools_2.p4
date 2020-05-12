@@ -15,6 +15,9 @@ struct Headers {
 struct Meta {
 }
 
+bit<32> do_function(inout bool val) {
+    return 1;
+}
 
 parser p(packet_in pkt, out Headers hdr, inout Meta m, inout standard_metadata_t sm) {
     state start {
@@ -28,17 +31,12 @@ parser p(packet_in pkt, out Headers hdr, inout Meta m, inout standard_metadata_t
 
 control ingress(inout Headers h, inout Meta m, inout standard_metadata_t sm) {
     bool tmp = false;
-    action do_action(inout bool val1, inout bool val2) {
+    action do_action(inout bool val) {
+        do_function(tmp);
     }
-    table simple_table {
-        key = {
-        }
-        actions = {
-            do_action(tmp, tmp);
-        }
-    }
+
     apply {
-        simple_table.apply();
+        do_action(tmp);
 
     }
 }

@@ -431,8 +431,14 @@ class P4ComplexInstance():
 
     def set_list(self, rvals):
         self.valid = z3.BoolVal(True)
-        for index, member_name in enumerate(self.members):
-            val = rvals[index]
+        for idx, member in enumerate(self.members.items()):
+            member_name = member[0]
+            member_const = member[1]
+            member_type = member_const.range()
+            val = rvals[idx]
+            # integers need to be cast to the respective type
+            if isinstance(val, int):
+                val = z3_cast(val, member_type)
             self.set_or_add_var(member_name, val)
 
     def _update_dict(self, lval, rval, target_dict):

@@ -36,6 +36,7 @@ KNOWN_BUGS = [
     "Conditional execution",
     "Unimplemented compiler support",
     "Cannot declare variables with type int",
+    "visitor returned non-Statement type",
     # "Null stat",
     # "Null cst",
     # bf
