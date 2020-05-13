@@ -18,7 +18,7 @@ log = logging.getLogger(__name__)
 # TODO: Fix these, likely by using simulation relations
 SKIPPED_PASSES = ["FlattenHeaders", "FlattenInterfaceStructs",
                   "InlineActions", "InlineFunctions",
-                  "NestedStructs", "UniqueNames", "UniqueParameters",
+                   "UniqueNames", "UniqueParameters",
                   "SpecializeAll", "ExpandLookahead"]
 
 
