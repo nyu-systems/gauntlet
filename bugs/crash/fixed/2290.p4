@@ -1,3 +1,35 @@
+/*Invoking preprocessor
+cpp -C -undef -nostdinc -x assembler-with-cpp  -Ip4_tv/p4c/build/p4include -D__TARGET_BMV2__ -Ip4_tv/p4c/build/p4include -Ip4_tv/p4c/build/p4include ./2290.p4i
+ParseAnnotationBodies_0_ParseAnnotations
+ParseAnnotationBodies_1_ClearTypeMap
+FrontEnd_0_ParseAnnotationBodies
+FrontEnd_1_PrettyPrint
+FrontEnd_2_ValidateParsedProgram
+FrontEnd_3_CreateBuiltins
+FrontEnd_4_ResolveReferences
+ConstantFolding_0_DoConstantFolding
+FrontEnd_5_ConstantFolding
+InstantiateDirectCalls_0_ResolveReferences
+InstantiateDirectCalls_1_DoInstantiateCalls
+FrontEnd_6_InstantiateDirectCalls
+FrontEnd_7_ResolveReferences
+Deprecated_0_ResolveReferences
+Deprecated_1_CheckDeprecated
+FrontEnd_8_Deprecated
+FrontEnd_9_CheckNamedArgs
+bugs/crash/fixed/2290.p4(16): [--Werror=type-error] error: Field s of header nested_header cannot have type header simple_header
+    simple_header s;
+                  ^
+bugs/crash/fixed/2290.p4(11)
+header simple_header {
+       ^^^^^^^^^^^^^
+In file: p4_tv/p4c/frontends/p4/typeChecking/typeChecker.cpp:564
+[31mCompiler Bug[0m: Unexpected type <Type_Name>(1138) nested_header
+
+running cc -E -C -undef -nostdinc -x assembler-with-cpp -I p4_tv/p4c/build/p4include -o ./2290.p4i bugs/crash/fixed/2290.p4
+running p4_tv/p4c/build/p4c-bm2-ss -I p4_tv/p4c/build/p4include --p4v=16 -vvv -o ./2290.json ./2290.p4i --arch v1model
+
+*/
 #include <core.p4>
 #include <v1model.p4>
 

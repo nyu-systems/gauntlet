@@ -1,17 +1,14 @@
-/*
-Copyright 2020 Cisco Systems, Inc.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
+/*Invoking preprocessor
+cpp -C -undef -nostdinc -x assembler-with-cpp  -Ip4_tv/p4c/build/p4include -D__TARGET_BMV2__ -Ip4_tv/p4c/build/p4include -Ip4_tv/p4c/build/p4include ./2126.p4i
+bugs/crash/fixed/2126.p4(58): error: Duplicate declaration of retval; previous at
+            bit<16> retval;
+                    ^^^^^^
+bugs/crash/fixed/2126.p4(42)
+            bit<16> retval;
+                    ^^^^^^
+error: 1 errors encountered, aborting compilation
+running cc -E -C -undef -nostdinc -x assembler-with-cpp -I p4_tv/p4c/build/p4include -o ./2126.p4i bugs/crash/fixed/2126.p4
+running p4_tv/p4c/build/p4c-bm2-ss -I p4_tv/p4c/build/p4include --p4v=16 -vvv -o ./2126.json ./2126.p4i --arch v1model
 */
 
 #include <core.p4>
