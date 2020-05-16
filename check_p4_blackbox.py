@@ -355,7 +355,7 @@ def get_dont_care_map(config, z3_input):
 
 def dissect_conds(config, conditions):
     controllable_conds = []
-    fixed_conds = []
+    avoid_conds = []
     undefined_conds = []
     undefined_vars = []
     for cond in conditions:
@@ -378,14 +378,14 @@ def dissect_conds(config, conditions):
         elif has_undefined_var and not (has_table_key or has_table_action or has_member):
             pass
         else:
-            fixed_conds.append(cond)
+            avoid_conds.append(cond)
     for var in undefined_vars:
         # FIXME: does not handle undefined data types
         if isinstance(var, z3.BitVecRef):
             undefined_conds.append(var == 0)
         elif isinstance(var, z3.BoolRef):
             undefined_conds.append(var == False)
-    return controllable_conds, fixed_conds, undefined_conds
+    return controllable_conds, avoid_conds, undefined_conds
 
 
 def perform_blackbox_test(config):
@@ -413,6 +413,7 @@ def perform_blackbox_test(config):
     permut_conds, avoid_conds, undefined_conds = cond_tuple
     log.info("Computing permutations...")
     # FIXME: This does not scale well...
+    # FIXME: This is a complete hack, use a more sophisticated method
     permuts = [[f(var) for var, f in zip(permut_conds, x)]
                for x in itertools.product([z3.Not, lambda x: x],
                                           repeat=len(permut_conds))]
@@ -426,10 +427,10 @@ def perform_blackbox_test(config):
     s.add(z3.And(*undefined_conds))
     for cond in undefined_conds:
         log.info(cond)
-    # log.info("Conditions to avoid:")
-    # s.add(z3.Or(*avoid_conds))
-    # for cond in avoid_conds:
-    #     log.info(cond)
+    log.info("Conditions to avoid:")
+    s.add(z3.Not(z3.Or(*avoid_conds)))
+    for cond in avoid_conds:
+        log.info(cond)
     log.info("Permissible permutations:")
     for cond in permuts:
         log.info(cond)

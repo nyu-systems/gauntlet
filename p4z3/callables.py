@@ -42,8 +42,10 @@ class P4Callable(P4Z3Class):
                     arg_instance = gen_instance(arg_name, arg.p4_type)
                     arg_instance.set_list(arg_expr)
                     arg_expr = arg_instance
-
-            if arg.is_ref in ref_criteria:
+            if arg.is_ref == "inout":
+                if isinstance(arg_expr, P4ComplexInstance):
+                    arg_expr = copy.copy(arg_expr)
+            if arg.is_ref == "out":
                 # outs are left-values so the arg must be a string
                 # infer the type value at runtime, param does not work yet
                 # outs reset the input
