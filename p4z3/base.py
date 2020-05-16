@@ -664,6 +664,8 @@ class HeaderInstance(StructInstance):
         self.deactivate()
 
     def bind_to_union(self, union_instance):
+        # FIXME: This ignores copying
+        # the reference in the parent will be stale
         self.union_parent = union_instance
 
     def __eq__(self, other):

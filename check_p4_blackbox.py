@@ -232,21 +232,24 @@ def run_tofino_test(out_dir, p4_input, stf_file_name):
     test_proc = None
     # start the target in the background
     log.info("Starting the tofino model...")
-    model_cmd = f"{TOFINO_DIR}/run_tofino_model.sh "
-    model_cmd += f"-p {prog_name} "
     os_env = os.environ.copy()
     os_env["SDE"] = f"{TOFINO_DIR}"
     os_env["SDE_INSTALL"] = f"{TOFINO_DIR}/install"
-    proc = util.start_process(model_cmd, preexec_fn=os.setsid, cwd=out_dir)
+
+    model_cmd = f"{TOFINO_DIR}/run_tofino_model.sh "
+    model_cmd += f"-p {prog_name} "
+    proc = util.start_process(
+        model_cmd, preexec_fn=os.setsid, env=os_env, cwd=out_dir)
     procs.append(proc)
     # start the binary for the target in the background
     log.info("Launching switchd...")
-    switch_cmd = f"{TOFINO_DIR}/run_switchd.sh "
-    switch_cmd += f"--arch tofino "
-    switch_cmd += f"-p {prog_name} "
     os_env = os.environ.copy()
     os_env["SDE"] = f"{TOFINO_DIR}"
     os_env["SDE_INSTALL"] = f"{TOFINO_DIR}/install"
+
+    switch_cmd = f"{TOFINO_DIR}/run_switchd.sh "
+    switch_cmd += f"--arch tofino "
+    switch_cmd += f"-p {prog_name} "
     proc = util.start_process(
         switch_cmd, preexec_fn=os.setsid, env=os_env, cwd=out_dir)
     procs.append(proc)
@@ -354,7 +357,7 @@ def dissect_conds(config, conditions):
     controllable_conds = []
     fixed_conds = []
     undefined_conds = []
-    undefined_vars = set()
+    undefined_vars = []
     for cond in conditions:
         has_member = False
         has_table_key = False
@@ -368,7 +371,7 @@ def dissect_conds(config, conditions):
             elif "action" in str(cond_var):
                 has_table_action = True
             else:
-                undefined_vars.add(cond_var)
+                undefined_vars.append(cond_var)
                 has_undefined_var = True
         if has_member and not (has_table_key or has_table_action or has_undefined_var):
             controllable_conds.append(cond)
@@ -380,6 +383,8 @@ def dissect_conds(config, conditions):
         # FIXME: does not handle undefined data types
         if isinstance(var, z3.BitVecRef):
             undefined_conds.append(var == 0)
+        elif isinstance(var, z3.BoolRef):
+            undefined_conds.append(var == False)
     return controllable_conds, fixed_conds, undefined_conds
 
 
@@ -416,15 +421,15 @@ def perform_blackbox_test(config):
     s.add(main_formula == output_const)
     # all keys must be false for now
     # FIXME: Some of them should be usable
-    s.add(z3.Not(z3.Or(*avoid_conds)))
-    s.add(z3.And(*undefined_conds))
     log.info(15 * "#")
     log.info("Undefined conditions:")
+    s.add(z3.And(*undefined_conds))
     for cond in undefined_conds:
         log.info(cond)
-    log.info("Conditions to avoid:")
-    for cond in avoid_conds:
-        log.info(cond)
+    # log.info("Conditions to avoid:")
+    # s.add(z3.Or(*avoid_conds))
+    # for cond in avoid_conds:
+    #     log.info(cond)
     log.info("Permissible permutations:")
     for cond in permuts:
         log.info(cond)
@@ -512,7 +517,7 @@ def main(args):
             out_dir = out_base_dir.joinpath(p4_file.stem)
             util.del_dir(out_dir)
             config["out_dir"] = out_dir
-            config["p4_input"] = p4_input
+            config["p4_input"] = p4_file
             result = perform_blackbox_test(config)
     sys.exit(result)
 

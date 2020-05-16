@@ -18,8 +18,10 @@ log = logging.getLogger(__name__)
 # TODO: Fix these, likely by using simulation relations
 SKIPPED_PASSES = ["FlattenHeaders", "FlattenInterfaceStructs",
                   "InlineActions", "InlineFunctions",
-                   "UniqueNames", "UniqueParameters",
-                  "SpecializeAll", "ExpandLookahead"]
+                  "UniqueNames", "UniqueParameters",
+                  "SpecializeAll", "ExpandLookahead",
+                  "RenameUserMetadata",
+                  ]
 
 
 def needs_skipping(post):
@@ -53,7 +55,7 @@ def debug_msg(p4_files):
 
 def handle_pyz3_error(fail_dir, p4_file):
     util.check_dir(fail_dir)
-    failed = [f"{p4_file}.py", f"{p4_file}.p4i"]
+    failed = [p4_file.with_suffix(".py"), p4_file.with_suffix(".p4i")]
     util.copy_file(failed, fail_dir)
 
 

@@ -6419,7 +6419,7 @@ control DeparserImpl(packet_out packet, in headers hdr) {
     }
 }
 
-control verifyChecksum(in headers hdr, inout metadata meta) {
+control verifyChecksum(inout headers hdr, inout metadata meta) {
     Checksum16() inner_ipv4_checksum;
     Checksum16() ipv4_checksum;
     apply {

@@ -449,7 +449,10 @@ class P4Mux(P4Expression):
             if isinstance(val, P4ComplexInstance):
                 val_list = list(val.members)
                 val = self.unravel_datatype(val, val_list)
-            unravelled_list.append(val)
+            elif isinstance(val, list):
+                unravelled_list.extend(val)
+            else:
+                unravelled_list.append(val)
         return unravelled_list
 
     def eval(self, p4_state):
@@ -470,9 +473,9 @@ class P4Mux(P4Expression):
         # we do this by splitting the if statement into a list
         # lists can easily be assigned to a target structure
         if isinstance(then_expr, P4ComplexInstance):
-            then_expr = list(then_expr.members)
+            then_expr = then_expr.flatten()
         if isinstance(else_expr, P4ComplexInstance):
-            else_expr = list(else_expr.members)
+            else_expr = else_expr.flatten()
         if isinstance(then_expr, list) and isinstance(else_expr, list):
             sub_cond = []
             # handle nested complex types

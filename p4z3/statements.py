@@ -207,6 +207,11 @@ class P4Return(P4Statement):
         # FIXME: We can only cast bitvecs right now
         if isinstance(self.z3_type, z3.BitVecSortRef):
             return z3_cast(expr, self.z3_type)
+        # we return a complex typed expression list, instantiate
+        if isinstance(expr, list):
+            instance = self.z3_type.instantiate("undefined")
+            instance.set_list(expr)
+            return instance
         return expr
 
 
