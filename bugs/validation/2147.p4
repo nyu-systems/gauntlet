@@ -26,7 +26,7 @@ header H {
     bit<8> a;
 }
 
-struct Parsed_packet {
+struct Headers {
     ethernet_t eth;
     H h;
 }
@@ -34,13 +34,13 @@ struct Parsed_packet {
 struct Metadata {
 }
 
-control deparser(packet_out packet, in Parsed_packet hdr) {
+control deparser(packet_out packet, in Headers hdr) {
     apply {
         packet.emit(hdr);
     }
 }
 
-parser p(packet_in pkt, out Parsed_packet hdr, inout Metadata meta, inout standard_metadata_t stdmeta) {
+parser p(packet_in pkt, out Headers hdr, inout Metadata meta, inout standard_metadata_t stdmeta) {
     state start {
         pkt.extract(hdr.eth);
         transition parse_h;
@@ -51,7 +51,7 @@ parser p(packet_in pkt, out Parsed_packet hdr, inout Metadata meta, inout standa
     }
 }
 
-control ingress(inout Parsed_packet hdr, inout Metadata meta, inout standard_metadata_t stdmeta) {
+control ingress(inout Headers hdr, inout Metadata meta, inout standard_metadata_t stdmeta) {
     action do_action(inout bit<7> in_bit) {
         hdr.h.a[0:0] = 0;
     }
@@ -60,15 +60,15 @@ control ingress(inout Parsed_packet hdr, inout Metadata meta, inout standard_met
     }
 }
 
-control egress(inout Parsed_packet hdr, inout Metadata meta, inout standard_metadata_t stdmeta) {
+control egress(inout Headers hdr, inout Metadata meta, inout standard_metadata_t stdmeta) {
     apply {}
 }
 
-control vrfy(inout Parsed_packet hdr, inout Metadata meta) {
+control vrfy(inout Headers hdr, inout Metadata meta) {
     apply {}
 }
 
-control update(inout Parsed_packet hdr, inout Metadata meta) {
+control update(inout Headers hdr, inout Metadata meta) {
     apply {}
 }
 

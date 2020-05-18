@@ -7,7 +7,6 @@ header ethernet_t {
     bit<16> eth_type;
 }
 
-
 struct Headers {
     ethernet_t eth_hdr;
 }
@@ -15,9 +14,8 @@ struct Headers {
 struct Meta {
 }
 
-
-ethernet_t do_function() {
-    return  {1, 1, 1};
+action do_action(inout ethernet_t val) {
+    val.eth_type = 0xDEAD;
 }
 
 parser p(packet_in pkt, out Headers hdr, inout Meta m, inout standard_metadata_t sm) {
@@ -33,7 +31,8 @@ parser p(packet_in pkt, out Headers hdr, inout Meta m, inout standard_metadata_t
 control ingress(inout Headers h, inout Meta m, inout standard_metadata_t sm) {
 
     apply {
-        h.eth_hdr = do_function();
+        exit;
+        do_action(h.eth_hdr);
     }
 }
 

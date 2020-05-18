@@ -16,12 +16,17 @@ log = logging.getLogger(__name__)
 
 # We maintain a list of passes that causes segmentation faults
 # TODO: Fix these, likely by using simulation relations
-SKIPPED_PASSES = ["FlattenHeaders", "FlattenInterfaceStructs",
-                  "InlineActions", "InlineFunctions",
-                  "UniqueNames", "UniqueParameters",
-                  "SpecializeAll", "ExpandLookahead",
-                  "RenameUserMetadata",
-                  ]
+SKIPPED_PASSES = [
+    "FlattenHeaders",
+    "FlattenInterfaceStructs",
+    # "InlineActions",
+    "InlineFunctions",
+    "UniqueNames",
+    "UniqueParameters",
+    "SpecializeAll",
+    "ExpandLookahead",
+    "RenameUserMetadata",
+]
 
 
 def needs_skipping(post):
@@ -129,9 +134,9 @@ def check_equivalence(prog_before, prog_after):
     # be the same
     ''' SOLVER '''
     s = z3.Solver()
-    # the equivalence equation
     try:
-        tv_equiv = prog_before != prog_after
+        # the equivalence equation
+        tv_equiv = z3.simplify(prog_before != prog_after)
     except z3.Z3Exception as e:
         prog_before_simpl = z3.simplify(prog_before)
         prog_after_simpl = z3.simplify(prog_after)

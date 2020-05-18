@@ -78,14 +78,14 @@ def fill_values(z3_input):
 
 
 def get_branch_conditions(z3_formula):
-    conditions = []
+    conditions = set()
     if z3.is_app_of(z3_formula, z3.Z3_OP_ITE):
         # the first child is usually the condition
         cond = z3_formula.children()[0]
-        conditions.append(cond)
+        conditions.add(cond)
     for child in z3_formula.children():
         sub_conds = get_branch_conditions(child)
-        conditions.extend(sub_conds)
+        conditions |= sub_conds
     return conditions
 
 
@@ -375,7 +375,7 @@ def dissect_conds(config, conditions):
                 has_undefined_var = True
         if has_member and not (has_table_key or has_table_action or has_undefined_var):
             controllable_conds.append(cond)
-        elif has_undefined_var and not (has_table_key or has_table_action or has_member):
+        elif has_undefined_var and not (has_table_key or has_table_action):
             pass
         else:
             avoid_conds.append(cond)

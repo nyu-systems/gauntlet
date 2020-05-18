@@ -35,16 +35,11 @@ NUM_PROCESSES = 4
 KNOWN_BUGS = [
     "Conditional execution",
     "Unimplemented compiler support",
-    "Cannot declare variables with type int",
-    "visitor returned non-Statement type",
-    # "Null stat",
-    # "Null cst",
     # bf
     "Unsupported on target",
     "PHV allocation was not successful",
     "Unsupported action spanning multiple stages",
     "shift count must be",
-    "no definitions",
     "condition too complex",
     "condition expression too complex",
     "source of modify_field invalid",
