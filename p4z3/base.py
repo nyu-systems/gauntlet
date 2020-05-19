@@ -9,22 +9,6 @@ from z3int import Z3Int
 log = logging.getLogger(__name__)
 
 
-@dataclass
-class Z3Wrapper:
-    __slots__ = ["state", "z3_type", "is_valid"]
-    state: dict
-    z3_type: z3.SortRef
-    is_valid: z3.BoolRef
-
-
-@dataclass
-class Z3If:
-    __slots__ = ["cond", "left", "right"]
-    cond: z3.AstRef
-    left: object
-    right: object
-
-
 def gen_instance(var_name, p4z3_type):
     if isinstance(p4z3_type, P4ComplexType):
         type_name = p4z3_type.name
@@ -46,30 +30,6 @@ def gen_instance(var_name, p4z3_type):
             instantiated_list.append(const)
         return instantiated_list
     raise RuntimeError(f"{p4z3_type} instantiation not supported!")
-
-
-def get_z3_repr(object_wrapper) -> z3.DatatypeRef:
-    ''' This method returns the current representation of the object in z3
-    logic. Use the z3 constant variable of the object and propagate it
-    through all its children.'''
-    z3_structure = []
-    state = object_wrapper.state
-    z3_type = object_wrapper.z3_type
-    is_valid = object_wrapper.is_valid
-    for member_val, member_type in state:
-        if isinstance(member_val, Z3Wrapper):
-            # we have a complex type
-            # retrieve the member and call the constructor
-            # call the constructor of the complex type
-            z3_structure.append(get_z3_repr(member_val))
-        else:
-            if member_val.sort() != member_type:
-                member_val = z3_cast(member_val, member_type)
-            if is_valid == z3.BoolVal(False):
-                z3_structure.append(z3.Const("invalid", member_type))
-            else:
-                z3_structure.append(member_val)
-    return z3_type.constructor(0)(*z3_structure)
 
 
 def merge_parameters(params, *args, **kwargs):
@@ -139,6 +99,7 @@ def z3_cast(val, to_type):
     if isinstance(to_type, (z3.BoolSortRef, z3.BoolRef)):
         # casting to a bool is simple, just check if the value is equal to 1
         # this works for bitvectors and integers, we convert any bools before
+        # if val is not a single bit vector, this will (intentionally) fail
         return val == z3.BitVecVal(1, 1)
 
     # from here on we assume we are working with integer or bitvector types
@@ -151,10 +112,6 @@ def z3_cast(val, to_type):
     if isinstance(val, int):
         # It can happen that we get an int, cast it to a bit vector.
         return z3.BitVecVal(val, to_type_size)
-    # if z3.is_int(val):
-    #     # I hate z3 sometimes. They have their own IntNumRef value that can
-    #     # only be converted with Int2BV. Why? I do not know...
-    #     return z3.Int2BV(val, to_type_size)
 
     # preprocessing done, the actual casting starts here
     val_size = val.size()
@@ -380,16 +337,6 @@ class P4ComplexInstance():
                 # a simple z3 type, just update the constructor
                 self.set_or_add_var(
                     member_name, z3.Const(var_name, member_type))
-
-    def get_z3_obj(self):
-        members = []
-        for member_name, member_constructor in self.members.items():
-            member_type = member_constructor.range()
-            member_val = self.resolve_reference(member_name)
-            if isinstance(member_val, P4ComplexInstance):
-                member_val = member_val.get_z3_obj()
-            members.append((member_val, member_type))
-        return Z3Wrapper(members, self.sort(), self.valid)
 
     def get_z3_repr(self) -> z3.DatatypeRef:
         ''' This method returns the current representation of the object in z3

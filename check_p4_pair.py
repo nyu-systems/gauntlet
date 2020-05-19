@@ -4,8 +4,7 @@ import os
 import sys
 import importlib
 import logging
-from p4z3 import Z3Reg, P4Package, z3, Z3If, Z3Wrapper, get_z3_repr
-from p4z3 import P4Extern
+from p4z3 import Z3Reg, P4Package, z3
 import p4z3.util as util
 sys.setrecursionlimit(15000)
 
@@ -20,7 +19,7 @@ SKIPPED_PASSES = [
     "FlattenHeaders",
     "FlattenInterfaceStructs",
     # "InlineActions",
-    "InlineFunctions",
+    # "InlineFunctions",
     "UniqueNames",
     "UniqueParameters",
     "SpecializeAll",
@@ -64,25 +63,6 @@ def handle_pyz3_error(fail_dir, p4_file):
     util.copy_file(failed, fail_dir)
 
 
-def produce_z3_tree(input_prog):
-    if isinstance(input_prog, Z3If):
-        cond = input_prog.cond
-        left = produce_z3_tree(input_prog.left)
-        right = produce_z3_tree(input_prog.right)
-        return z3.If(cond, left, right)
-    if isinstance(input_prog, Z3Wrapper):
-        return get_z3_repr(input_prog)
-    elif isinstance(input_prog, z3.AstRef):
-        return input_prog
-    # FIX THE DAMN EXTERNS JFC
-    elif isinstance(input_prog, P4Extern):
-        return input_prog.const
-    else:
-        log.error("Error generating the z3 tree:\n"
-                  "Type %s not supported.\n", input_prog)
-        sys.exit(1)
-
-
 def evaluate_package(p4_package):
     z3_asts = {}
     # only P4Package instances are valid inputs
@@ -99,8 +79,6 @@ def evaluate_package(p4_package):
                 name = f"{p4_pipe_ast.name}_{key}"
                 z3_asts[name] = val
         else:
-            # output_type = generate_datatype(pipe_name, p4_pipe_ast)
-            # p4_pipe_ast = produce_z3_tree(p4_pipe_ast)
             z3_asts[pipe_name] = p4_pipe_ast
         # all other types are nonsense and we should not bother with them
         # else:
@@ -133,9 +111,10 @@ def check_equivalence(prog_before, prog_after):
     # For all input packets and possible table matches the programs should
     # be the same
     ''' SOLVER '''
-    s = z3.Solver()
+    # s = z3.Solver()
     try:
         # the equivalence equation
+        log.debug("Simplifying equation...")
         tv_equiv = z3.simplify(prog_before != prog_after)
     except z3.Z3Exception as e:
         prog_before_simpl = z3.simplify(prog_before)
@@ -144,10 +123,19 @@ def check_equivalence(prog_before, prog_after):
         log.error("PROGRAM BEFORE\n%s", prog_before_simpl)
         log.error("PROGRAM AFTER\n%s", prog_after_simpl)
         return util.EXIT_VIOLATION
-    # tv_equiv = z3.Not(z3.eq(prog_before_simpl, prog_after_simpl))
-    s.add(tv_equiv)
+    log.debug("Checking...")
+    g = z3.Goal()
+    log.debug(z3.tactics())
+    g.add(tv_equiv)
+    t = z3.Then(
+        z3.Tactic("qflia"),
+        z3.Tactic("propagate-values"),
+        z3.Tactic("ctx-solver-simplify"),
+        z3.Tactic("elim-and")
+    )
+    s = t.solver()
     log.debug(s.sexpr())
-    ret = s.check()
+    ret = s.check(tv_equiv)
     log.debug(tv_equiv)
     log.debug(ret)
     if ret == z3.sat:
