@@ -137,7 +137,7 @@ class P4Package():
                 p4_method_obj = self.z3_reg._globals[p4_method_name]
                 params = p4_method_obj.params
                 obj_name = p4_method_obj.name
-                p4_state = self.z3_reg.init_p4_state(obj_name, params)
+                p4_state = self.z3_reg.init_p4_state(pipe_name, params)
                 expr = pipe_val.eval(p4_state)
                 if isinstance(expr, P4Control):
                     # initialize with its own params
@@ -179,6 +179,9 @@ class P4Context(P4Z3Class):
 
     def add_to_buffer(self, var_dict):
         self.var_buffer = {**self.var_buffer, **var_dict}
+
+    def prepend_to_buffer(self, var_dict):
+        self.var_buffer = {**var_dict, **self.var_buffer}
 
     def restore_context(self, p4_state):
         # FIXME: This does not respect local context
@@ -281,7 +284,7 @@ class P4Control(P4Callable):
         p4_context = P4Context(var_buffer)
 
         merged_vars = save_variables(p4_state, self.merged_consts)
-        p4_context.add_to_buffer(merged_vars)
+        p4_context.prepend_to_buffer(merged_vars)
 
         self.set_context(p4_state, merged_args, ("out"))
 

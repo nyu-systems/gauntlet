@@ -20,9 +20,9 @@ SKIPPED_PASSES = [
     "FlattenInterfaceStructs",
     # "InlineActions",
     # "InlineFunctions",
-    "UniqueNames",
-    "UniqueParameters",
-    "SpecializeAll",
+    # "UniqueNames",
+    # "UniqueParameters",
+    # "SpecializeAll",
     "ExpandLookahead",
     "RenameUserMetadata",
 ]
