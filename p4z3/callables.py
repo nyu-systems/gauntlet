@@ -341,8 +341,7 @@ class P4Method(P4Callable):
                     else:
                         arg_expr = arg_expr.p4z3_type.instantiate(arg_name)
                     # we do not know whether the expression is valid afterwards
-                    valid = z3.Bool(f"{arg_name}_valid")
-                    arg_expr.propagate_validity_bit(valid)
+                    arg_expr.propagate_validity_bit()
                 else:
                     arg_expr = z3.Const(f"{param_name}", arg_expr.sort())
             log.debug("Copy-in: %s to %s", arg_expr, param_name)
@@ -406,6 +405,8 @@ class P4Method(P4Callable):
             # and assume that externs are stateless
             return_instance = gen_instance(
                 f"{self.name}_{var_name}", self.return_type)
+            if isinstance(return_instance, P4ComplexInstance):
+                return_instance.propagate_validity_bit()
             return return_instance
         p4z3_expr = p4_state.pop_next_expr()
         return p4z3_expr.eval(p4_state)

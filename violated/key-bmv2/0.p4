@@ -49,7 +49,7 @@ control ingress(inout Headers h, inout Meta m, inout standard_metadata_t sm) {
     }
     @name("ingress.c.t") table c_t {
         key = {
-            h.h.a + h.h.a: exact @name("e") ;
+            h.h.b + h.h.a: exact @name("e") ;
         }
         actions = {
             c_a_0();
@@ -59,7 +59,7 @@ control ingress(inout Headers h, inout Meta m, inout standard_metadata_t sm) {
     }
     apply {
         c_t.apply();
-        // sm.egress_spec = 9w0;
+        sm.egress_spec = 9w0;
     }
 }
 

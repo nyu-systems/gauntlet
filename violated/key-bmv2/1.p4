@@ -45,11 +45,11 @@ control ingress(inout Headers h, inout Meta m, inout standard_metadata_t sm) {
     @name(".NoAction") action NoAction_0() {
     }
     @name("ingress.c.a") action c_a_0() {
-        h.h.b = h.h.a;
+        h.h.b = h.h.b;
     }
     @name("ingress.c.t") table c_t {
         key = {
-            h.h.b + h.h.a: exact @name("e") ;
+            h.h.a + h.h.a: exact @name("e") ;
         }
         actions = {
             c_a_0();

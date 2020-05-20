@@ -77,12 +77,19 @@ def fill_values(z3_input):
     return input_values
 
 
+# https://stackoverflow.com/questions/14141977/check-if-a-formula-is-a-term-in-z3py
+CONNECTIVE_OPS = [z3.Z3_OP_NOT, z3.Z3_OP_AND, z3.Z3_OP_OR, z3.Z3_OP_XOR,
+                  z3.Z3_OP_IMPLIES, z3.Z3_OP_IFF, z3.Z3_OP_ITE]
+REL_OPS = [z3.Z3_OP_EQ, z3.Z3_OP_LE, z3.Z3_OP_LT, z3.Z3_OP_GE, z3.Z3_OP_GT]
+ALL_OPS = CONNECTIVE_OPS + REL_OPS
+
+
 def get_branch_conditions(z3_formula):
     conditions = set()
-    if z3.is_app_of(z3_formula, z3.Z3_OP_ITE):
-        # the first child is usually the condition
-        cond = z3_formula.children()[0]
-        conditions.add(cond)
+    if z3_formula.decl().kind() in REL_OPS:
+        # FIXME: This does not unroll if statements
+        # This could lead to conflicting formulas
+        conditions.add(z3_formula)
     for child in z3_formula.children():
         sub_conds = get_branch_conditions(child)
         conditions |= sub_conds
@@ -359,6 +366,7 @@ def dissect_conds(config, conditions):
     undefined_conds = []
     undefined_vars = []
     for cond in conditions:
+        cond = z3.simplify(cond)
         has_member = False
         has_table_key = False
         has_table_action = False
@@ -409,6 +417,7 @@ def perform_blackbox_test(config):
     # this util might come in handy later.
     # z3.z3util.get_vars(main_formula)
     conditions = get_branch_conditions(main_formula)
+    log.info(conditions)
     cond_tuple = dissect_conds(config, conditions)
     permut_conds, avoid_conds, undefined_conds = cond_tuple
     log.info("Computing permutations...")
@@ -467,6 +476,7 @@ def perform_blackbox_test(config):
             if result != util.EXIT_SUCCESS:
                 return result
         else:
+            # FIXME: This should be an error
             log.warning("No valid input could be found!")
         s.pop()
     return result
@@ -494,7 +504,7 @@ def main(args):
         config["ingress_var"] = "ingress"
     else:
         config["pipe_name"] = "ig"
-        config["ingress_var"] = "ingress"
+        config["ingress_var"] = "ig"
 
     if args.p4_input:
         p4_input = Path(args.p4_input)

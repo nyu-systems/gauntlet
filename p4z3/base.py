@@ -503,14 +503,13 @@ class P4ComplexInstance():
     def deactivate(self, label="undefined"):
         pass
 
-    def propagate_validity_bit(self, var):
+    def propagate_validity_bit(self):
         # structs can be contained in headers so they can also be deactivated...
         for member_name in self.members:
             member_val = self.resolve_reference(member_name)
             if isinstance(member_val, P4ComplexInstance):
-                sub_var = z3.Bool(f"{member_val.name}_valid")
-                member_val.propagate_validity_bit(sub_var)
-        self.valid = var
+                member_val.propagate_validity_bit()
+        self.valid = z3.Bool(f"{self.name}_valid")
 
 
 class StructType(P4ComplexType):
@@ -860,8 +859,10 @@ class SerEnum(Enum):
 class P4Extern(P4ComplexInstance):
     def __init__(self, name, type_params=[], methods=[]):
         # Externs are this weird bastard child of callables and a complex type
+        # FIXME: Unify types
         z3_type = z3.Datatype(name)
         z3_type.declare(f"mk_{name}")
+        self.members = OrderedDict()
         self.z3_type = z3_type.create()
         self.const = z3.Const(name, self.z3_type)
         self.p4_attrs = {}
@@ -1161,7 +1162,7 @@ class Z3Reg():
         instance_name = f"{name}"
         p4_state = P4State(name, stripped_args).instantiate(
             instance_name, self._globals, instances)
-        p4_state.propagate_validity_bit(z3.Bool(f"{instance_name}_valid"))
+        p4_state.propagate_validity_bit()
         return p4_state
 
     def type(self, type_name):

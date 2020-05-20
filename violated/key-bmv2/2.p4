@@ -45,7 +45,7 @@ control ingress(inout Headers h, inout Meta m, inout standard_metadata_t sm) {
     @name(".NoAction") action NoAction_0() {
     }
     @name("ingress.c.a") action c_a_0() {
-        h.h.b = h.h.b;
+        h.h.b = h.h.a;
     }
     @name("ingress.c.t") table c_t {
         key = {
@@ -59,7 +59,7 @@ control ingress(inout Headers h, inout Meta m, inout standard_metadata_t sm) {
     }
     apply {
         c_t.apply();
-        sm.egress_spec = 9w0;
+        // sm.egress_spec = 9w0;
     }
 }
 

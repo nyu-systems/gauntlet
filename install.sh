@@ -43,7 +43,6 @@ git clone https://github.com/p4gauntlet/bludgeon p4c/extensions/bludgeon
 
 # build the p4 compiler
 cd p4c
-git submodule update --init --recursive
 mkdir -p build
 cd build
 cmake .. -DCMAKE_BUILD_TYPE=RelWithDebInfo
