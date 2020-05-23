@@ -59,7 +59,7 @@ struct Headers {
     MOD mod;
     COMPARE comp;
     DIV div;
-    BOOL bool;
+    BOOL b;
 }
 
 parser prs(packet_in p, out Headers headers) {
@@ -114,7 +114,7 @@ control pipe(inout Headers h, out bool pass) {
         const int int_def = 1;
 
         // bool evaluation
-        h.bool.a = 1 == 1;
+        h.b.a = 1 == 1;
     }
 }
 
