@@ -39,7 +39,7 @@ class P4Callable(P4Z3Class):
             if isinstance(arg_expr, list):
                 # if the type is undefined, do nothing
                 if isinstance(arg.p4_type, P4ComplexType):
-                    arg_instance = gen_instance(arg_name, arg.p4_type)
+                    arg_instance = gen_instance("arg_name", arg.p4_type)
                     arg_instance.set_list(arg_expr)
                     arg_expr = arg_instance
             if arg.is_ref == "inout":
@@ -53,7 +53,7 @@ class P4Callable(P4Z3Class):
                 # to propagate the variable through all its members
                 log.debug("Resetting %s to %s", arg_expr, param_name)
                 if isinstance(arg_expr, P4ComplexInstance):
-                    arg_expr = arg_expr.p4z3_type.instantiate(param_name)
+                    arg_expr = arg_expr.p4z3_type.instantiate("undefined")
                     # FIXME: This should not be needed
                     arg_expr.deactivate()
                 else:

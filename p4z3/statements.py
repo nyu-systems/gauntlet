@@ -196,6 +196,8 @@ class P4Return(P4Statement):
             if isinstance(p4z3_expr, P4Context):
                 p4z3_expr.restore_context(p4_state)
                 break
+
+
         # since we popped the P4Context object that would take care of this
         # return the z3 expressions of the state AFTER restoring it
         if expr is None:
@@ -203,6 +205,10 @@ class P4Return(P4Statement):
             # Need to run down to the remaining execution path after the return.
             p4z3_expr = p4_state.pop_next_expr()
             expr = p4z3_expr.eval(p4_state)
+        elif not p4_state.expr_chain:
+            # if this is the last element
+            # need to ensure that validity is set properly
+            p4_state.check_validity()
         # functions cast the returned value down to their actual return type
         # FIXME: We can only cast bitvecs right now
         if isinstance(self.z3_type, z3.BitVecSortRef):

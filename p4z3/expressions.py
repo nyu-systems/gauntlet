@@ -222,6 +222,7 @@ class P4land(P4BinaryOp):
         # so we save the result of the right-hand expression and merge
         lval_expr = p4_state.resolve_expr(self.lval)
         var_store, chain_copy = p4_state.checkpoint()
+        p4_state.clear_expr_chain()
         rval_expr = p4_state.resolve_expr(self.rval)
         else_vars = copy_attrs(p4_state.locals)
         p4_state.restore(var_store, chain_copy)
@@ -239,6 +240,7 @@ class P4lor(P4BinaryOp):
         # so we save the result of the right-hand expression and merge
         lval_expr = p4_state.resolve_expr(self.lval)
         var_store, chain_copy = p4_state.checkpoint()
+        p4_state.clear_expr_chain()
         rval_expr = p4_state.resolve_expr(self.rval)
         else_vars = copy_attrs(p4_state.locals)
         p4_state.restore(var_store, chain_copy)
@@ -320,7 +322,9 @@ class P4rshift(P4BinaryOp):
 
 class P4eq(P4BinaryOp):
     def __init__(self, lval, rval):
-        operator = op.eq
+        def operator(x, y):
+            # this trick ensures that we always return a z3 value
+            return op.eq(x, y) == z3.BoolVal(True)
         P4BinaryOp.__init__(self, lval, rval, operator)
 
 

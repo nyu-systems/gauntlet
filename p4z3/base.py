@@ -354,9 +354,6 @@ class P4ComplexInstance():
             else:
                 # if member_val.sort() != member_type:
                 #     members.append(z3_cast(member_val, member_type))
-                if self.valid == z3.BoolVal(False):
-                    member_type = member_constructor.range()
-                    member_val = z3.Const("invalid", member_type)
                 # else:
                 members.append(member_val)
         return self.z3_type.constructor(0)(*members)
@@ -441,7 +438,7 @@ class P4ComplexInstance():
                     members.append(member)
         return members
 
-    def merge_attrs(self, cond, other_attrs):
+    def merge_attrs(self, cond, other_attrs, is_invalid=False):
         for attr_name, then_val in other_attrs.items():
             try:
                 attr_val = self.resolve_reference(attr_name)
@@ -450,7 +447,7 @@ class P4ComplexInstance():
                 # this is because of scoping
                 # FIXME: Make sure this is actually the case...
                 continue
-            if isinstance(attr_val, P4ComplexInstance):
+            if isinstance(then_val, P4ComplexInstance):
                 attr_val.merge_attrs(cond, then_val.p4_attrs)
             elif isinstance(attr_val, z3.ExprRef):
                 if then_val.sort() != attr_val.sort():
@@ -510,6 +507,20 @@ class P4ComplexInstance():
             if isinstance(member_val, P4ComplexInstance):
                 member_val.propagate_validity_bit()
         self.valid = z3.Bool(f"{self.name}_valid")
+
+    def check_validity(self):
+        for member_name, member_constructor in self.members.items():
+            # retrieve the member we are accessing
+            member = self.resolve_reference(member_name)
+            member_type = member_constructor.range()
+            if isinstance(member, P4ComplexInstance):
+                # it is a complex type
+                # propagate the validity to all children
+                member.check_validity()
+            elif self.valid == z3.BoolVal(False):
+                # a simple z3 type, just update the constructor
+                self.set_or_add_var(
+                    member_name, z3.Const("invalid", member_type))
 
 
 class StructType(P4ComplexType):
@@ -1090,6 +1101,7 @@ class P4StateInstance(P4ComplexInstance):
             particular chain.'''
         @staticmethod
         def eval(p4_state):
+            p4_state.check_validity()
             return p4_state.get_z3_repr()
 
     def pop_next_expr(self):

@@ -86,10 +86,12 @@ ALL_OPS = CONNECTIVE_OPS + REL_OPS
 
 def get_branch_conditions(z3_formula):
     conditions = set()
-    if z3_formula.decl().kind() in REL_OPS:
+    if isinstance(z3_formula, z3.BoolRef):
+        # if z3_formula.decl().kind() in REL_OPS + CONNECTIVE_OPS:
         # FIXME: This does not unroll if statements
         # This could lead to conflicting formulas
-        conditions.add(z3_formula)
+        if z3_formula.decl().kind() not in CONNECTIVE_OPS:
+            conditions.add(z3_formula)
     for child in z3_formula.children():
         sub_conds = get_branch_conditions(child)
         conditions |= sub_conds
@@ -417,7 +419,6 @@ def perform_blackbox_test(config):
     # this util might come in handy later.
     # z3.z3util.get_vars(main_formula)
     conditions = get_branch_conditions(main_formula)
-    log.info(conditions)
     cond_tuple = dissect_conds(config, conditions)
     permut_conds, avoid_conds, undefined_conds = cond_tuple
     log.info("Computing permutations...")

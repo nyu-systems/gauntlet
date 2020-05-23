@@ -47,7 +47,9 @@ header DIV {
     bit<8> b;
     bit<8> c;
 }
-
+header BOOL {
+    bool a;
+}
 
 struct Headers {
     OVERFLOW overflow;
@@ -57,6 +59,7 @@ struct Headers {
     MOD mod;
     COMPARE comp;
     DIV div;
+    BOOL bool;
 }
 
 parser prs(packet_in p, out Headers headers) {
@@ -108,9 +111,10 @@ control pipe(inout Headers h, out bool pass) {
         h.div.c = (8w2 / 2 - 3 );
         // nested int operations
         bit<48> tmp2 = (1 | 2) |+| 48w0;
-
         const int int_def = 1;
 
+        // bool evaluation
+        h.bool.a = 1 == 1;
     }
 }
 
