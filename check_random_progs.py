@@ -18,7 +18,7 @@ log = logging.getLogger(__name__)
 
 FILE_DIR = Path(__file__).parent.resolve()
 # whitebox should be p4test, but this is quite slow right now...
-WHITEBOX_BIN = FILE_DIR.joinpath("p4c/build/p4c")
+WHITEBOX_BIN = FILE_DIR.joinpath("p4c/build/p4test")
 BLACKBOX_BIN = FILE_DIR.joinpath("p4c/build/p4c")
 TOFINO_BIN = FILE_DIR.joinpath("tofino/bf_src/install/bin/bf-p4c")
 P4Z3_BIN = FILE_DIR.joinpath("p4c/build/p4toz3")
@@ -94,8 +94,10 @@ def generate_p4_dump(p4c_bin, p4_file, config):
     p4_cmd += f"{p4_file} "
     if config["use_tofino"]:
         p4_cmd += f"1 "
-    else:
+    elif config["use_blackbox"]:
         p4_cmd += f"0 "
+    else:
+        p4_cmd += f"2 "
     log.debug("Generating random p4 code with command %s ", p4_cmd)
     return util.exec_process(p4_cmd), p4_file
 
@@ -104,7 +106,8 @@ def compile_p4_prog(p4c_bin, p4_file, p4_dump_dir):
     p4_cmd = f"{p4c_bin} "
     # p4_cmd += f"-vvvv "
     p4_cmd += f"{p4_file} "
-    p4_cmd += f"-o  {p4_dump_dir}"
+    if p4c_bin != WHITEBOX_BIN:
+        p4_cmd += f"-o  {p4_dump_dir}"
     log.debug("Checking compilation with command %s ", p4_cmd)
     return util.exec_process(p4_cmd)
 
@@ -304,8 +307,6 @@ if __name__ == '__main__':
     # Parse options and process argv
     args = parser.parse_args()
     main(args)
-
-
 
 
 # class TestLauncher(multiprocessing.Process):

@@ -22,7 +22,7 @@ VIOLATION_DIR = FILE_DIR.joinpath("violated")
 FALSE_FRIENDS_DIR = FILE_DIR.joinpath("false_friends")
 P4_DIR = FILE_DIR.joinpath("p4c/testdata/p4_16_samples/")
 # p4c binaries
-P4C_BIN = FILE_DIR.joinpath("p4c/build/p4c")
+P4C_BIN = FILE_DIR.joinpath("p4c/build/p4c-bm2-ss")
 
 
 # ***** P4-16 Standard Tests *****
@@ -61,7 +61,7 @@ for test in list(VIOLATION_DIR.glob("*")):
 false_friends_filter = [
     "table_call_in_expression.p4",  # design flaw...
     "indirect_header_assign.p4",  # current bug
-    "header_function_cast.p4",  # current bug
+    "invalid_hdr_assign.p4",  # current bug
 ]
 false_friends = set()
 for test in list(FALSE_FRIENDS_DIR.glob("*")):

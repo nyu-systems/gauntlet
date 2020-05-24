@@ -12,7 +12,7 @@ import check_p4_pair as z3check
 log = logging.getLogger(__name__)
 
 FILE_DIR = os.path.dirname(os.path.abspath(__file__))
-P4C_BIN = FILE_DIR + "/p4c/build/p4c"
+P4C_BIN = FILE_DIR + "/p4c/build/p4test"
 P4Z3_BIN = FILE_DIR + "/p4c/build/p4toz3"
 PASS_DIR = FILE_DIR + "/validated"
 
@@ -25,7 +25,7 @@ PASSES += "FrontEnd,MidEnd "
 def generate_p4_dump(p4c_bin, p4_file, p4_dmp_dir):
     p4_cmd = f"{p4c_bin} "
     p4_cmd += f"{PASSES} "
-    p4_cmd += f"-o {p4_dmp_dir} "
+    # p4_cmd += f"-o {p4_dmp_dir} "
     p4_cmd += f"--dump {p4_dmp_dir} {p4_file} "
     log.debug("Running dumps with command %s ", p4_cmd)
     return util.exec_process(p4_cmd)
@@ -80,7 +80,7 @@ def run_p4_to_py(p4_file, py_file):
 
 def list_passes(p4c_bin, p4_file, p4_dmp_dir):
     p4_pass_cmd = f"{p4c_bin} -v "
-    p4_pass_cmd += f"-o {p4_dmp_dir} "
+    # p4_pass_cmd += f"-o {p4_dmp_dir} "
     p4_pass_cmd += f"{p4_file} 2>&1 "
     p4_pass_cmd += "| sed -e '/FrontEnd\\|MidEnd/!d' | "
     # p4_pass_cmd += "| sed -e '/FrontEnd\\|MidEnd\\|PassManager/!d' | "
@@ -101,7 +101,7 @@ def gen_p4_passes(p4c_bin, p4_dmp_dir, p4_file):
     p4_passes = list_passes(p4c_bin, p4_file, p4_dmp_dir)
     full_p4_passes = []
     for p4_pass in p4_passes:
-        p4_name = f"{p4_file.stem}-{p4_pass}.p4i"
+        p4_name = f"{p4_file.stem}-{p4_pass}.p4"
         full_p4_pass = p4_dmp_dir.joinpath(p4_name)
         full_p4_passes.append(full_p4_pass)
     return full_p4_passes
@@ -190,7 +190,7 @@ def generate_analysis():
         pass_dir = "passes"
         util.check_dir(pass_dir)
         open(f"{pass_dir}/no_passes.txt", 'w+')
-        for p4_file in glob.glob(f"{p4_input}/*.p4i"):
+        for p4_file in glob.glob(f"{p4_input}/*.p4"):
             analyse_p4_file(p4_file, pass_dir)
 
 
