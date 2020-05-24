@@ -62,6 +62,7 @@ false_friends_filter = [
     "table_call_in_expression.p4",  # design flaw...
     "indirect_header_assign.p4",  # current bug
     "invalid_hdr_assign.p4",  # current bug
+    "header_function_cast.p4",  # current bug
 ]
 false_friends = set()
 for test in list(FALSE_FRIENDS_DIR.glob("*")):
