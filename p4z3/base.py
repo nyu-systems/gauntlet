@@ -207,7 +207,7 @@ class P4Member(P4Expression):
             lval = lval.eval(p4_state)
         while isinstance(member, P4Member):
             member = member.eval(p4_state)
-        if isinstance(lval, P4Z3Class):
+        if isinstance(lval, (P4Z3Class, P4ComplexInstance)):
             lval = p4_state.resolve_expr(lval)
             return lval.p4_attrs[member]
         return f"{lval}.{member}"
