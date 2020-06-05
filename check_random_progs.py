@@ -33,8 +33,6 @@ ITERATIONS = 100
 NUM_PROCESSES = 4
 
 KNOWN_BUGS = [
-    "Conditional execution",
-    "Unimplemented compiler support",
     # bf
     "Unsupported on target",
     "PHV allocation was not successful",
@@ -91,13 +89,13 @@ def generate_id():
 
 def generate_p4_dump(p4c_bin, p4_file, config):
     p4_cmd = f"{p4c_bin} "
-    p4_cmd += f"{p4_file} "
+    p4_cmd += f"--output {p4_file} "
     if config["use_tofino"]:
-        p4_cmd += f"1 "
+        p4_cmd += "--arch tna "
     elif config["use_blackbox"]:
-        p4_cmd += f"0 "
+        p4_cmd += "--arch v1model "
     else:
-        p4_cmd += f"2 "
+        p4_cmd += "--arch top "
     log.debug("Generating random p4 code with command %s ", p4_cmd)
     return util.exec_process(p4_cmd), p4_file
 
@@ -154,9 +152,9 @@ def validate_p4_blackbox(p4_file, target_dir, log_file, config):
     p4z3_cmd += f"-o {target_dir} "
     p4z3_cmd += f"-l {log_file} "
     if config["use_tofino"]:
-        p4z3_cmd += f"-t "
+        p4z3_cmd += "-t "
     if config["randomize_input"]:
-        p4z3_cmd += f"-r "
+        p4z3_cmd += "-r "
     result = util.exec_process(p4z3_cmd)
     time.sleep(3)
     return result.returncode
@@ -307,36 +305,3 @@ if __name__ == '__main__':
     # Parse options and process argv
     args = parser.parse_args()
     main(args)
-
-
-# class TestLauncher(multiprocessing.Process):
-
-#     def __init__(self, config, idx_range):
-#         multiprocessing.Process.__init__(self)
-#         self.name = "TestLauncher"
-#         self._config = config
-#         self.kill = multiprocessing.Event()
-#         self.idx_range = idx_range
-
-#     def run(self):
-#         for idx in self.idx_range:
-#             check(idx, self._config)
-
-#     def terminate(self):
-#         log.info("%s: Received termination signal! Exiting..", self.name)
-#         self.kill.set()
-
-#     def baskets_from(items, bucket_size):
-#         baskets = [[] for _ in range(bucket_size)]
-#         for i, item in enumerate(items):
-#             baskets[i % bucket_size].append(item)
-#         return filter(None, baskets)
-#     distributions = baskets_from(range(args.iterations), NUM_PROCESSES)
-#     procs = []
-#     for dis in distributions:
-#         proc = TestLauncher(config, dis)
-#         procs.append(proc)
-#         proc.start()
-
-#     for p in procs:
-#         p.join()
