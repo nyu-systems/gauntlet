@@ -393,6 +393,9 @@ class P4Method(P4Callable):
             var_name = ""
             for arg in merged_args.values():
                 arg = p4_state.resolve_expr(arg.p4_val)
+                # fold runtime-known values
+                if isinstance(arg, z3.AstRef):
+                    arg = z3.simplify(arg)
                 # Because we do not know what the extern is doing
                 # we initiate a new z3 const and
                 # just overwrite all reference types
@@ -513,11 +516,10 @@ class P4Table(P4Callable):
         p4_action_args_len = len(p4_action_args) - 1
         for idx, param in enumerate(p4_action.params):
             if idx > p4_action_args_len:
-                if isinstance(param.p4_type, z3.SortRef):
-                    action_args.append(
-                        z3.Const(f"{self.name}{param.name}", param.p4_type))
-                else:
-                    action_args.append(param.p4_type)
+                # this is a ctrl argument, generate an input
+                ctrl_arg = gen_instance(
+                    f"{self.name}{param.name}", param.p4_type)
+                action_args.append(ctrl_arg)
             else:
                 action_args.append(p4_action_args[idx])
         return p4_action(p4_state, *action_args)
