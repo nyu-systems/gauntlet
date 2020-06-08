@@ -76,10 +76,8 @@ class P4BinaryOp(P4Op):
         lval_is_bitvec = isinstance(lval_expr, (z3.BitVecRef, z3.BitVecNumRef))
         rval_is_bitvec = isinstance(rval_expr, (z3.BitVecRef, z3.BitVecNumRef))
         if lval_is_bitvec and rval_is_bitvec:
-            if lval_expr.size() < rval_expr.size():
+            if lval_expr.size() != rval_expr.size():
                 rval_expr = z3_cast(rval_expr, lval_expr.size())
-            if lval_expr.size() > rval_expr.size():
-                lval_expr = z3_cast(lval_expr, rval_expr.size())
         return self.operator(lval_expr, rval_expr)
 
 
@@ -260,8 +258,6 @@ class P4div(P4BinaryOp):
         def operator(x, y):
             # z3 requires at least one value to be a bitvector for UDiv
             if isinstance(y, int) and isinstance(x, int):
-                x = x.as_bitvec
-                y = y.as_bitvec
                 return op.truediv(x, y)
             return z3.UDiv(x, y)
         P4BinaryOp.__init__(self, lval, rval, operator)
