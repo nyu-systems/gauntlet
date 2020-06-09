@@ -11,10 +11,10 @@ import check_p4_pair as z3check
 
 log = logging.getLogger(__name__)
 
-FILE_DIR = os.path.dirname(os.path.abspath(__file__))
-P4C_BIN = FILE_DIR + "/p4c/build/p4test"
-P4Z3_BIN = FILE_DIR + "/p4c/build/p4toz3"
-PASS_DIR = FILE_DIR + "/validated"
+FILE_DIR = Path(__file__).parent.resolve()
+P4C_BIN = FILE_DIR.joinpath("p4c/build/p4test")
+P4Z3_BIN = FILE_DIR.joinpath("p4c/build/p4toz3")
+PASS_DIR = FILE_DIR.joinpath("validated")
 
 PASSES = "--top4 "
 PASSES += "FrontEnd,MidEnd "
@@ -38,7 +38,7 @@ def prune_files(p4_prune_dir, p4_passes):
         sed_cmd += "\':a; s%(.*)/\\*.*\\*/%\\1%; ta; /\\/\\*/ !b; N; ba\' "
         sed_cmd += f"{p4_file} "
         sed_cmd += " | sed -r \'/^\\s*$/d\' "
-        sed_cmd += f"> {p4_prune_dir}/{os.path.basename(p4_file)}"
+        sed_cmd += f"> {p4_prune_dir}/{p4_file.name}"
         log.debug("Removing comments and whitespace")
         log.debug("Command: %s", sed_cmd)
         util.exec_process(sed_cmd)
@@ -47,7 +47,7 @@ def prune_files(p4_prune_dir, p4_passes):
 
 def diff_files(passes, pass_dir, p4_file):
 
-    p4_name = Path(os.path.basename(p4_file)).stem
+    p4_name = p4_file.name.stem
     for index, p4_pass in enumerate(passes[1:]):
         pass_before = passes[index - 1]
         pass_after = passes[index]
@@ -72,7 +72,7 @@ def diff_files(passes, pass_dir, p4_file):
 
 
 def run_p4_to_py(p4_file, py_file):
-    cmd = P4Z3_BIN + " "
+    cmd = f"{P4Z3_BIN} "
     cmd += f"{p4_file} "
     cmd += f"--output {py_file} "
     return util.exec_process(cmd)
@@ -158,40 +158,6 @@ def validate_translation(p4_file, target_dir, p4c_bin):
     # perform the actual comparison
     result = z3check.z3_check(p4_py_files, fail_dir)
     return result
-
-
-def analyse_p4_file(p4_file, pass_dir):
-    p4_dmp_dir = f"dumps"
-    p4_prune_dir = f"{p4_dmp_dir}/pruned"
-
-    p4_passes = gen_p4_passes(P4C_BIN, p4_dmp_dir, p4_file)
-    prune_files(p4_prune_dir, p4_passes)
-    err = diff_files(p4_passes, pass_dir, p4_file)
-    util.del_dir(p4_dmp_dir)
-    return err
-
-
-def generate_analysis():
-
-    parser = argparse.ArgumentParser()
-    parser.add_argument("-i", "--p4_input", dest="p4_input",
-                        default="p4c/testdata/p4_16_samples",
-                        help="A P4 file or path to a "
-                        "directory which contains P4 files.")
-    # Parse options and process argv
-    args = parser.parse_args()
-    p4_input = args.p4_input
-    if os.path.isfile(p4_input):
-        pass_dir = "single_passes"
-        util.check_dir(pass_dir)
-        open(f"{pass_dir}/no_passes.txt", 'w+')
-        analyse_p4_file(p4_input, pass_dir)
-    else:
-        pass_dir = "passes"
-        util.check_dir(pass_dir)
-        open(f"{pass_dir}/no_passes.txt", 'w+')
-        for p4_file in glob.glob(f"{p4_input}/*.p4"):
-            analyse_p4_file(p4_file, pass_dir)
 
 
 def main(args):

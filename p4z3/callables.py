@@ -125,25 +125,35 @@ class P4Package():
                 params = p4_method_obj.params
                 obj_name = p4_method_obj.name
                 p4_state = self.z3_reg.init_p4_state(pipe_name, params)
-                expr = pipe_val.eval(p4_state)
-                if isinstance(expr, P4Control):
+                pipe = pipe_val.eval(p4_state)
+
+                if isinstance(pipe, P4Control):
                     # initialize with its own params
                     args = []
                     for param in params:
                         args.append(param.name)
-                    self.pipes[pipe_name] = expr.apply(p4_state, *args)
-                elif isinstance(expr, P4Extern):
-                    self.pipes[pipe_name] = expr.const
-                elif isinstance(expr, P4Package):
-                    self.pipes[pipe_name] = expr
+                    self.pipes[pipe_name] = pipe.apply(p4_state, *args)
+                elif isinstance(pipe, P4Extern):
+                    self.pipes[pipe_name] = pipe.const
+                elif isinstance(pipe, P4Package):
+                    # execute the package by calling it
+                    pipe.initialize()
+                    # resolve all the sub_pipes
+                    for sub_pipe_name, sub_pipe_val in pipe.pipes.items():
+                        sub_pipe_name = f"{pipe_name}_{sub_pipe_name}"
+                        self.pipes[sub_pipe_name] = sub_pipe_val
                 else:
                     raise RuntimeError(
-                        f"Unsupported value {expr}, type {type(expr)}."
+                        f"Unsupported value {pipe}, type {type(pipe)}."
                         " It does not make sense as a P4 pipeline.")
-
             elif isinstance(pipe_val, str):
                 pipe = self.z3_reg._globals[pipe_val]
-                self.pipes[pipe_name] = pipe
+                # execute the package by calling it
+                pipe.initialize()
+                # resolve all the sub_pipes
+                for sub_pipe_name, sub_pipe_val in pipe.pipes.items():
+                    sub_pipe_name = f"{pipe_name}_{sub_pipe_name}"
+                    self.pipes[sub_pipe_name] = sub_pipe_val
             elif isinstance(pipe_val, z3.ExprRef):
                 # for some reason simple expressions are also possible.
                 self.pipes[pipe_name] = pipe_val
@@ -155,7 +165,10 @@ class P4Package():
 
     def __call__(self, *args, **kwargs):
         # TODO Figure out what to actually do here
-        return self.initialize(*args, **kwargs)
+        return self
+
+    def get_pipes(self):
+        return self.pipes
 
 
 class P4Context(P4Z3Class):

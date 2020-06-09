@@ -12,7 +12,7 @@ from dataclasses import dataclass
 
 import z3
 import p4z3.util as util
-import check_p4_pair as z3check
+from get_semantics import get_z3_formulization
 
 
 log = logging.getLogger(__name__)
@@ -159,7 +159,7 @@ def get_semantics(config):
             err_file.write(result.stderr.decode("utf-8"))
         util.copy_file([p4_input, py_file], fail_dir)
         return None, result.returncode
-    z3_prog, result = z3check.get_z3_formulization(py_file, fail_dir)
+    z3_prog, result = get_z3_formulization(py_file, fail_dir)
     if result != util.EXIT_SUCCESS:
         return None, result
     return z3_prog, util.EXIT_SUCCESS

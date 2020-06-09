@@ -2,9 +2,9 @@ import argparse
 from pathlib import Path
 import os
 import sys
-import importlib
 import logging
-from p4z3 import Z3Reg, P4Package, z3
+import z3
+from get_semantics import get_z3_formulization
 import p4z3.util as util
 sys.setrecursionlimit(15000)
 
@@ -36,17 +36,6 @@ def needs_skipping(post):
     return False
 
 
-def import_prog(ctrl_dir, ctrl_name, prog_name):
-    """ Try to import a module and class directly instead of the typical
-        Python method. Allows for dynamic imports. """
-    finder = importlib.machinery.PathFinder()
-    # unfortunately this does not support Posix paths and silently fails
-    # this is a standard lib function...
-    module_specs = finder.find_spec(str(ctrl_name), [str(ctrl_dir)])
-    module = module_specs.loader.load_module()
-    return getattr(module, prog_name)
-
-
 def debug_msg(p4_files):
     debug_string = "You can debug this failure by running:\n"
     debug_string += f"python3 {FILE_DIR}/{Path(__file__).stem}.py --progs "
@@ -61,49 +50,6 @@ def handle_pyz3_error(fail_dir, p4_file):
     util.check_dir(fail_dir)
     failed = [p4_file.with_suffix(".py"), p4_file.with_suffix(".p4")]
     util.copy_file(failed, fail_dir)
-
-
-def evaluate_package(p4_package):
-    z3_asts = {}
-    # only P4Package instances are valid inputs
-    if not isinstance(p4_package, P4Package):
-        return z3_asts
-
-    for pipe_name, p4_pipe_ast in p4_package.pipes.items():
-        # if pipe_name != "ig":
-        #     continue
-        if isinstance(p4_pipe_ast, P4Package):
-            # it is apparently possible to have nested packages...
-            z3_tmp_asts = evaluate_package(p4_pipe_ast)
-            for key, val in z3_tmp_asts.items():
-                name = f"{p4_pipe_ast.name}_{key}"
-                z3_asts[name] = val
-        else:
-            z3_asts[pipe_name] = p4_pipe_ast
-        # all other types are nonsense and we should not bother with them
-        # else:
-            # raise RuntimeError(
-            # f"Unexpected Input Pipe {p4_pipe_ast} Type: {type(p4_pipe_ast)} !")
-    return z3_asts
-
-
-def get_z3_asts(p4_module, p4_path, fail_dir):
-
-    log.info("Loading %s ASTs...", p4_path.name)
-    z3_asts = {}
-    try:
-        package = p4_module(Z3Reg())
-        if not package:
-            log.warning("No main module, nothing to evaluate!")
-            return z3_asts, util.EXIT_SKIPPED
-        z3_asts = evaluate_package(package)
-    except Exception:
-        log.exception("Failed to compile Python to Z3:\n")
-        if fail_dir:
-            handle_pyz3_error(fail_dir, p4_path)
-            debug_msg([p4_path, p4_path])
-        return z3_asts, util.EXIT_FAILURE
-    return z3_asts, util.EXIT_SUCCESS
 
 
 def check_equivalence(prog_before, prog_after):
@@ -151,30 +97,6 @@ def check_equivalence(prog_before, prog_after):
         return util.EXIT_SUCCESS
 
 
-def get_py_module(prog_path):
-    ctrl_dir = prog_path.parent
-    ctrl_name = prog_path.stem
-    ctrl_function = "p4_program"
-    try:
-        ctrl_module = import_prog(ctrl_dir, ctrl_name, ctrl_function)
-    except (ImportError, SyntaxError) as e:
-        log.error(("Could not import the "
-                   "requested module: %s", e))
-        return None
-    return ctrl_module
-
-
-def get_z3_formulization(p4_pre_path, fail_dir):
-    p4_pre = get_py_module(p4_pre_path)
-    if p4_pre is None:
-        return None, util.EXIT_FAILURE
-    pipes_pre, result = get_z3_asts(p4_pre, p4_pre_path, fail_dir)
-    if result != util.EXIT_SUCCESS:
-        return None, result
-
-    return pipes_pre, result
-
-
 def z3_check(prog_paths, fail_dir=None):
     if len(prog_paths) < 2:
         log.error("Equivalence checks require at least two input programs!")
@@ -182,8 +104,11 @@ def z3_check(prog_paths, fail_dir=None):
     z3_progs = []
     for p4_prog in prog_paths:
         p4_path = Path(p4_prog)
-        pipes, result = get_z3_formulization(p4_path, fail_dir)
+        pipes, result = get_z3_formulization(p4_path)
         if result != util.EXIT_SUCCESS:
+            if fail_dir and result != util.EXIT_SKIPPED:
+                handle_pyz3_error(fail_dir, p4_path)
+                debug_msg([p4_path, p4_path])
             return result
         z3_progs.append((p4_path, pipes))
     for idx in range(1, len(z3_progs)):

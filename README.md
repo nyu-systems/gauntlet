@@ -6,8 +6,7 @@
 Gauntlet is a set of tools design to find bugs in programmable data-plane compilers. More precisely, Gauntlet targets the
 [P4 language](https://p4.org/) ecosystem and  the P4-16 reference compiler ([p4c](https://github.com/p4lang/p4c/)).
 
-The goal is to ensure that a P4 compiler correctly translates a given input P4 program
-to its target-specific binary. The compiler must not crash and preserve the semantics of the program as originally written. The suite has three major components:
+The goal is to ensure that a P4 compiler correctly translates a given input P4 program to its target-specific binary. The compiler must not crash and preserve the semantics of the program as originally written. The suite has three major components:
 
 1. **Bludgeon**, a fuzz tester that generates random P4 programs using libraries repurposed from `p4c`.
 
@@ -25,15 +24,15 @@ To check whether everything has been installed correctly you can run `python3 -m
 
 ## Instructions
 ### Generating a random program
-After successful installation, you can generate a random P4 program via the `p4c/build/p4bludgeon out.p4 0`  command. To generate Tofino code, the flag needs to be set to  `p4c/build/p4bludgeon out.p4 1`.
+After successful installation, you can generate a random P4 program via the `p4c/build/p4bludgeon out.p4 --arch top`  command. To generate Tofino code, the flag needs to be set to  `p4c/build/p4bludgeon --output out.p4 --arch tna`.
 A typical crash checking workflow might be:
 
-    p4c/build/p4bludgeon out.p4 0 && p4c/build/p4test out.p4
+    p4c/build/p4bludgeon --output out.p4 --arch top && p4c/build/p4c-bm2-ss out.p4
 
 ### Validating a P4C program
 To validate that a program is compiled correctly by `p4c`, you can run
 
-     p4c/build/p4bludgeon out.p4 0 && python3 check_p4_whitebox.py -i out.p4
+     p4c/build/p4bludgeon --output out.p4 --arch top && python3 check_p4_whitebox.py -i out.p4
 `check_p4_compilation.py` checks if a sequence of P4 programs are all equivalent to each other using the `check_p4_pair.py` program as a sub routine. This sequence is produced by running p4c on an input P4 program. When p4c is run on an input P4 program, it produces a sequence of P4 programs, where each P4 program corresponds to the version of the input P4 program after a p4c optimization pass. This allows us to validate whether compilation/translation
 is working correctly and to pinpoint the faulty optimization pass if it isn't
 working correctly.
@@ -43,11 +42,11 @@ working correctly.
 Semantics-guided fuzzing requires the behavioral model or the Tofino compiler to be installed. The correct binaries and include files need to be instrumented in the `check_p4_blackbox.py` file. Exact instructions will follow.
 An example command is
 
-     p4c/build/p4bludgeon out.p4 0 && python3 check_p4_blackbox.py -i out.p4 -r
+     p4c/build/p4bludgeon --output out.p4 --arch v1model && python3 check_p4_blackbox.py -i out.p4 -r
 This sequence of commands will first generate a random program, infer expected input and output values, convert them to a test file (in this case, they are stf files) and finally run a full test. If the observed output differs from the expected output, the tool will throw  an error. The `-r` flag denotes randomization of the input, it is optional.
 To run semantics-guided fuzzing for the Tofino backend, `sudo` will have to be used.
 
-     p4c/build/p4bludgeon out.p4 1 && sudo -E python3 check_p4_blackbox.py -i out.p4 -r -t
+     p4c/build/p4bludgeon --output out.p4 --arch tna && sudo -E python3 check_p4_blackbox.py -i out.p4 -r -t
 
 ### Fuzz-testing at Scale
 We also include facilities to fuzz test the compilers at scale.

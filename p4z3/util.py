@@ -3,6 +3,7 @@ import subprocess
 import shutil
 import logging as log
 import re
+from pathlib import Path
 
 EXIT_SUCCESS = 0
 EXIT_FAILURE = -1
@@ -14,7 +15,7 @@ def is_valid_file(parser, arg):
     if not os.path.exists(arg):
         return parser.error("File %s does not exist!" % arg)
     else:
-        return arg
+        return Path(arg)
 
 
 def check_dir(directory):
