@@ -372,12 +372,6 @@ class P4gt(P4BinaryOp):
             # we need to use the normal operator in this case
             if isinstance(x, int) and isinstance(y, int):
                 return op.gt(x, y)
-            # FIXME: Find a better way to model negative comparions
-            # right now we have this hack
-            if isinstance(x, int) and x < 0:
-                return z3.BoolVal(False)
-            if isinstance(y, int) and y < 0:
-                return z3.BoolVal(True)
             return z3.UGT(x, y)
         P4BinaryOp.__init__(self, lval, rval, operator)
 

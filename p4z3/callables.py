@@ -97,22 +97,11 @@ class ConstCallExpr(P4Expression):
 
     def eval(self, p4_state):
         p4_method = self.p4_method
-        # if we get a reference just try to find the method in the state
-        p4_method_name = sanitize_string(self.p4_method)
-        p4_method = p4_state.resolve_reference(p4_method_name)
         if isinstance(p4_method, (P4Control, P4Package)):
             expr = p4_method(*self.args, **self.kwargs)
         else:
             expr = p4_method(p4_state, *self.args, **self.kwargs)
         return expr
-
-
-def sanitize_string(input_string):
-    # stupid hack to deal with weird naming schemes in p4c...
-    # FIXME: Figure out what this is even supposed to mean
-    if input_string.endswith("<...>"):
-        input_string = input_string[:-5]
-    return input_string
 
 
 class P4Package():
@@ -132,9 +121,7 @@ class P4Package():
             log.info("Loading %s pipe...", pipe_name)
             pipe_val = pipe_arg.p4_val
             if isinstance(pipe_val, ConstCallExpr):
-                p4_method_name = sanitize_string(pipe_val.p4_method)
-                # if we get a reference just try to find the method in the state
-                p4_method_obj = self.z3_reg._globals[p4_method_name]
+                p4_method_obj = pipe_val.p4_method
                 params = p4_method_obj.params
                 obj_name = p4_method_obj.name
                 p4_state = self.z3_reg.init_p4_state(pipe_name, params)
@@ -155,7 +142,6 @@ class P4Package():
                         " It does not make sense as a P4 pipeline.")
 
             elif isinstance(pipe_val, str):
-                pipe_val = sanitize_string(pipe_val)
                 pipe = self.z3_reg._globals[pipe_val]
                 self.pipes[pipe_name] = pipe
             elif isinstance(pipe_val, z3.ExprRef):
