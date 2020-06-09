@@ -11,7 +11,7 @@ class P4Callable(P4Z3Class):
         self.statements = body
         self.params = params
         self.call_counter = 0
-        self.p4_attrs = {}
+        self.locals = {}
 
     def eval_callable(self, p4_state, merged_args, var_buffer):
         raise NotImplementedError("Method eval_callable not implemented!")
@@ -258,10 +258,10 @@ class P4Control(P4Callable):
 
     def __init__(self, name, z3_reg, params, const_params, body, local_decls):
         super(P4Control, self).__init__(name, z3_reg, params, body)
-        self.locals = local_decls
+        self.local_decls = local_decls
         self.const_params = const_params
         self.merged_consts = OrderedDict()
-        self.p4_attrs["apply"] = self.apply
+        self.locals["apply"] = self.apply
 
     def init_type_params(self, *args, **kwargs):
         for idx, c_param in enumerate(self.const_params):
@@ -295,7 +295,7 @@ class P4Control(P4Callable):
         # execute the action expression with the new environment
         p4_state.insert_exprs(p4_context)
         p4_state.insert_exprs(self.statements)
-        p4_state.insert_exprs(self.locals)
+        p4_state.insert_exprs(self.local_decls)
         p4z3_expr = p4_state.pop_next_expr()
         return p4z3_expr.eval(p4_state)
 
@@ -438,10 +438,10 @@ class P4Table(P4Callable):
         self.actions = OrderedDict()
         self.default_action = None
         self.tbl_action = z3.Int(f"{self.name}_action")
-        self.p4_attrs["hit"] = z3.BoolVal(False)
-        self.p4_attrs["miss"] = z3.BoolVal(True)
-        self.p4_attrs["action_run"] = self
-        self.p4_attrs["apply"] = self.apply
+        self.locals["hit"] = z3.BoolVal(False)
+        self.locals["miss"] = z3.BoolVal(True)
+        self.locals["action_run"] = self
+        self.locals["apply"] = self.apply
 
         self.add_keys(properties)
         self.add_default(properties)
@@ -486,8 +486,8 @@ class P4Table(P4Callable):
         # tables are a little bit special since they also have attributes
         # so what we do here is first initialize the key
         hit = self.eval_keys(p4_state)
-        self.p4_attrs["hit"] = hit
-        self.p4_attrs["miss"] = z3.Not(hit)
+        self.locals["hit"] = hit
+        self.locals["miss"] = z3.Not(hit)
         # then execute the table as the next expression in the chain
         # FIXME: I do not think this will work with assignment statements
         # the table is probably applied after the value has been assigned
@@ -581,7 +581,7 @@ class P4Table(P4Callable):
             table_expr = z3.If(cond, action_expr, table_expr)
         # if we hit return the table expr
         # otherwise just return the default expr
-        return z3.If(self.p4_attrs["hit"], table_expr, default_expr)
+        return z3.If(self.locals["hit"], table_expr, default_expr)
 
     def eval_callable(self, p4_state, merged_args, var_buffer):
         return self.eval_table(p4_state)

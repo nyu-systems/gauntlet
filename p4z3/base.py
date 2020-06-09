@@ -209,7 +209,7 @@ class P4Member(P4Expression):
             member = member.eval(p4_state)
         if isinstance(lval, (P4Z3Class, P4ComplexInstance)):
             lval = p4_state.resolve_expr(lval)
-            return lval.p4_attrs[member]
+            return lval.locals[member]
         return f"{lval}.{member}"
 
 
@@ -279,7 +279,7 @@ class P4ComplexType():
 
 class P4ComplexInstance():
     def __init__(self, name, p4z3_type, parent_const=None):
-        self.p4_attrs = {}
+        self.locals = {}
         self.name = name
         self.z3_type = p4z3_type.z3_type
         self.p4z3_type = p4z3_type
@@ -299,10 +299,10 @@ class P4ComplexInstance():
             if isinstance(z3_arg_type, P4ComplexType):
                 # this is a complex datatype, create a P4ComplexType
                 member_cls = z3_arg_type.instantiate(var_name, z3_member)
-                self.p4_attrs[z3_arg_name] = member_cls
+                self.locals[z3_arg_name] = member_cls
             else:
                 # use the default z3 constructor
-                self.p4_attrs[z3_arg_name] = z3_member
+                self.locals[z3_arg_name] = z3_member
 
             self.members[z3_arg_name] = member_constructor
         self.valid = z3.BoolVal(True)
@@ -368,9 +368,9 @@ class P4ComplexInstance():
                 prefix, suffix = var.rsplit(".", 1)
                 # prefix may be a pointer to an actual complex type, resolve it
                 sub_class = self.resolve_reference(prefix)
-                var = sub_class.p4_attrs[suffix]
+                var = sub_class.locals[suffix]
             else:
-                var = self.p4_attrs[var]
+                var = self.locals[var]
         return var
 
     def set_list(self, rvals):
@@ -415,7 +415,12 @@ class P4ComplexInstance():
         target_dict[lval] = rval
 
     def set_or_add_var(self, lval, rval):
-        self._update_dict(lval, rval, self.p4_attrs)
+        # only write values if the type is valid
+        # this does not apply to P4StateInstances
+        # FIXME: P4C does not agree with this
+        # if self.valid == z3.BoolVal(False):
+        #     return
+        self._update_dict(lval, rval, self.locals)
 
     def sort(self):
         return self.z3_type
@@ -448,21 +453,21 @@ class P4ComplexInstance():
                 # FIXME: Make sure this is actually the case...
                 continue
             if isinstance(then_val, P4ComplexInstance):
-                attr_val.merge_attrs(cond, then_val.p4_attrs)
+                attr_val.merge_attrs(cond, then_val.locals)
             elif isinstance(attr_val, z3.ExprRef):
                 if then_val.sort() != attr_val.sort():
                     attr_val = z3_cast(attr_val, then_val.sort())
                 if_expr = z3.simplify(z3.If(cond, then_val, attr_val))
-                self.p4_attrs[attr_name] = if_expr
+                self.locals[attr_name] = if_expr
 
     def __copy__(self):
         cls = self.__class__
         result = cls.__new__(cls)
         result.__dict__.update(self.__dict__)
-        result.p4_attrs = copy.copy(self.p4_attrs)
-        for name, val in self.p4_attrs.items():
+        result.locals = copy.copy(self.locals)
+        for name, val in self.locals.items():
             if isinstance(val, P4ComplexInstance):
-                result.p4_attrs[name] = copy.copy(val)
+                result.locals[name] = copy.copy(val)
         return result
 
     def __repr__(self):
@@ -561,9 +566,9 @@ class HeaderInstance(StructInstance):
     def __init__(self, name, p4z3_type, parent_const=None):
         super(HeaderInstance, self).__init__(name, p4z3_type, parent_const)
         self.valid = z3.BoolVal(True)
-        self.p4_attrs["isValid"] = self.isValid
-        self.p4_attrs["setValid"] = self.setValid
-        self.p4_attrs["setInvalid"] = self.setInvalid
+        self.locals["isValid"] = self.isValid
+        self.locals["setValid"] = self.setValid
+        self.locals["setInvalid"] = self.setInvalid
         self.union_parent = None
 
     def activate(self, label="undefined"):
@@ -647,9 +652,9 @@ class HeaderInstance(StructInstance):
         result = super(HeaderInstance, self).__copy__()
         # we need to update the reference of the function to the new object
         # quite nasty...
-        result.p4_attrs["isValid"] = result.isValid
-        result.p4_attrs["setValid"] = result.setValid
-        result.p4_attrs["setInvalid"] = result.setInvalid
+        result.locals["isValid"] = result.isValid
+        result.locals["setValid"] = result.setValid
+        result.locals["setInvalid"] = result.setInvalid
         return result
 
 
@@ -721,19 +726,19 @@ class HeaderStackDict(dict):
             # This is a built-in
             # TODO: Check if this implementation makes sense
             try:
-                hdr = self.parent_hdr.p4_attrs[f"{self.parent_hdr.nextIndex}"]
+                hdr = self.parent_hdr.locals[f"{self.parent_hdr.nextIndex}"]
             except KeyError:
                 # if the header does not exist use it to break out of the loop?
-                size = self.parent_hdr.p4_attrs["size"]
-                hdr = self.parent_hdr.p4_attrs[f"{size -1}"]
+                size = self.parent_hdr.locals["size"]
+                hdr = self.parent_hdr.locals[f"{size -1}"]
             self.parent_hdr.nextIndex += 1
-            self.parent_hdr.p4_attrs["lastIndex"] += 1
+            self.parent_hdr.locals["lastIndex"] += 1
             return hdr
         if key == "last":
             # This is a built-in
             # TODO: Check if this implementation makes sense
-            last = 0 if self.parent_hdr.p4_attrs["size"] < 1 else self.parent_hdr.p4_attrs["size"] - 1
-            hdr = self.parent_hdr.p4_attrs[f"{last}"]
+            last = 0 if self.parent_hdr.locals["size"] < 1 else self.parent_hdr.locals["size"] - 1
+            hdr = self.parent_hdr.locals[f"{last}"]
             return hdr
 
         val = dict.__getitem__(self, key)
@@ -752,12 +757,12 @@ class HeaderStackInstance(StructInstance):
         # this is completely nuts but it works for now
         # no idea how to deal with properties
         # this intercepts dictionary lookups and modifies the header in place
-        self.p4_attrs = HeaderStackDict(self.p4_attrs, self)
+        self.locals = HeaderStackDict(self.locals, self)
         self.nextIndex = 0
-        self.p4_attrs["push_front"] = self.push_front
-        self.p4_attrs["pop_front"] = self.pop_front
-        self.p4_attrs["size"] = len(self.members)
-        self.p4_attrs["lastIndex"] = z3.BitVecVal(self.nextIndex, 32) - 1
+        self.locals["push_front"] = self.push_front
+        self.locals["pop_front"] = self.pop_front
+        self.locals["size"] = len(self.members)
+        self.locals["lastIndex"] = z3.BitVecVal(self.nextIndex, 32) - 1
 
     def push_front(self, p4_state, num):
         # This is a built-in
@@ -786,21 +791,21 @@ class HeaderStackInstance(StructInstance):
         # This is a built-in
         # TODO: Check if this implementation makes sense
         try:
-            hdr = self.p4_attrs[f"{self.nextIndex}"]
+            hdr = self.locals[f"{self.nextIndex}"]
         except KeyError:
             # if the header does not exist use it to break out of the loop?
-            size = self.p4_attrs["size"]
-            hdr = self.p4_attrs[f"{size -1}"]
+            size = self.locals["size"]
+            hdr = self.locals[f"{size -1}"]
         self.nextIndex += 1
-        self.p4_attrs["lastIndex"] += 1
+        self.locals["lastIndex"] += 1
         return hdr
 
     @property
     def last(self):
         # This is a built-in
         # TODO: Check if this implementation makes sense
-        last = 0 if self.p4_attrs["size"] < 1 else self.p4_attrs["size"] - 1
-        hdr = self.p4_attrs[f"{last}"]
+        last = 0 if self.locals["size"] < 1 else self.locals["size"] - 1
+        hdr = self.locals[f"{last}"]
         return hdr
 
     def __setattr__(self, name, val):
@@ -814,19 +819,19 @@ class HeaderStackInstance(StructInstance):
     def __copy__(self):
         result = super(HeaderStackInstance, self).__copy__()
         # update references to the method calls
-        result.p4_attrs["push_front"] = result.push_front
-        result.p4_attrs["pop_front"] = result.pop_front
+        result.locals["push_front"] = result.push_front
+        result.locals["pop_front"] = result.pop_front
         return result
 
 
 class Enum(P4ComplexInstance):
 
     def __init__(self, name, z3_args, parent_const=None):
-        self.p4_attrs = {}
+        self.locals = {}
         self.name = name
         self.z3_type = z3.BitVecSort(32)
         for idx, enum_name in enumerate(z3_args):
-            self.p4_attrs[enum_name] = z3.BitVecVal(idx, 32)
+            self.locals[enum_name] = z3.BitVecVal(idx, 32)
         self.z3_args = z3_args
 
     def instantiate(self, name, parent_const=None):
@@ -856,12 +861,12 @@ class SerEnum(Enum):
         self.arg_vals = []
         self.name = name
         self.z3_type = z3_type
-        self.p4_attrs = {}
+        self.locals = {}
         self.members = OrderedDict()
         for z3_arg in z3_args:
             z3_arg_name = z3_arg[0]
             z3_arg_val = z3_arg[1]
-            self.p4_attrs[z3_arg_name] = z3_arg_val
+            self.locals[z3_arg_name] = z3_arg_val
 
     def instantiate(self, name, parent_const=None):
         return self
@@ -876,20 +881,20 @@ class P4Extern(P4ComplexInstance):
         self.members = OrderedDict()
         self.z3_type = z3_type.create()
         self.const = z3.Const(name, self.z3_type)
-        self.p4_attrs = {}
+        self.locals = {}
         # simple fix for now until I know how to initialize params for externs
         self.params = {}
         self.name = name
         self.type_params = type_params
         # these are method declarations, not methods
         for method in methods:
-            self.p4_attrs[method.lval] = method.rval
+            self.locals[method.lval] = method.rval
 
     def init_type_params(self, *args, **kwargs):
         # the extern is instantiated, we need to copy it
         init_extern = self.initialize()
         for idx, t_param in enumerate(init_extern.type_params):
-            for method in init_extern.p4_attrs.values():
+            for method in init_extern.locals.values():
                 # bind the method return type
                 if method.return_type == t_param:
                     method.return_type = args[idx]
@@ -942,9 +947,8 @@ class P4StateInstance(P4ComplexInstance):
         super(P4StateInstance, self).__init__(name, p4z3_type)
         self.expr_chain = deque()
         self.globals = global_values
-        self.locals = self.p4_attrs
         for instance_name, instance_val in instances.items():
-            self.set_or_add_var(instance_name, instance_val)
+            self.locals[instance_name] = instance_val
 
     def del_var(self, var_string):
         # simple wrapper for delattr
@@ -1048,7 +1052,7 @@ class P4StateInstance(P4ComplexInstance):
                 prefix, suffix = var.rsplit(".", 1)
                 # prefix may be a pointer to an actual complex type, resolve it
                 sub_class = self.resolve_reference(prefix)
-                var = sub_class.p4_attrs[suffix]
+                var = sub_class.locals[suffix]
             else:
                 try:
                     var = self.locals[var]
@@ -1108,23 +1112,6 @@ class P4StateInstance(P4ComplexInstance):
         if self.expr_chain:
             return self.expr_chain.popleft()
         return self.P4End()
-
-    def merge_attrs(self, cond, other_attrs):
-        for attr_name, attr_val in self.locals.items():
-            try:
-                then_val = other_attrs[attr_name]
-            except KeyError:
-                # if the attribute does not exist it is not relevant
-                # this is because of scoping
-                # FIXME: Make sure this is actually the case...
-                continue
-            if isinstance(attr_val, P4ComplexInstance):
-                attr_val.merge_attrs(cond, then_val.p4_attrs)
-            elif isinstance(attr_val, z3.ExprRef):
-                if then_val.sort() != attr_val.sort():
-                    attr_val = z3_cast(attr_val, then_val.sort())
-                if_expr = z3.simplify(z3.If(cond, then_val, attr_val))
-                self.locals[attr_name] = if_expr
 
 
 class Z3Reg():
