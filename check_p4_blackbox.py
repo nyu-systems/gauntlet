@@ -159,9 +159,12 @@ def get_semantics(config):
             err_file.write(result.stderr.decode("utf-8"))
         util.copy_file([p4_input, py_file], fail_dir)
         return None, result.returncode
-    z3_prog, result = get_z3_formulization(py_file, fail_dir)
+    z3_prog, result = get_z3_formulization(py_file)
     if result != util.EXIT_SUCCESS:
-        return None, result
+        if fail_dir and result != util.EXIT_SKIPPED:
+            util.check_dir(fail_dir)
+            util.copy_file([p4_input, py_file], fail_dir)
+        return z3_prog, result
     return z3_prog, util.EXIT_SUCCESS
 
 

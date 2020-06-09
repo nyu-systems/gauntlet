@@ -2,7 +2,6 @@ import os
 import subprocess
 import shutil
 import logging as log
-import re
 from pathlib import Path
 
 EXIT_SUCCESS = 0
@@ -55,20 +54,6 @@ def move_file(src, dst):
         shutil.move(src, dst)
 
 
-def convert(text):
-    return int(text) if text.isdigit() else text.lower()
-
-
-def alphanum_key(key):
-    key = str(key)
-    return [convert(c)
-            for c in re.split('([0-9]+)', key)]
-
-
-def natural_sort(l):
-    return sorted(l, key=alphanum_key)
-
-
 def start_process(cmd, *args, out_file=subprocess.PIPE, **kwargs):
     log.debug("Executing %s ", cmd)
     if out_file is subprocess.STDOUT:
@@ -92,8 +77,8 @@ def exec_process(cmd, *args, **kwargs):
     if result.stdout:
         log.debug("Process output: %s", result.stdout.decode("utf-8"))
     if result.returncode != 0:
-        log.error("BEGIN " + 40 * "#")
+        log.error("BEGIN %s", 40 * "#")
         log.error("Failed while executing:\n%s\n", cmd)
         log.error("Output:\n%s", result.stderr.decode("utf-8"))
-        log.error("END " + 40 * "#")
+        log.error("END %s", 40 * "#")
     return result
