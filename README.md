@@ -29,6 +29,13 @@ A typical crash checking workflow might be:
 
     p4c/build/p4bludgeon --output out.p4 --arch top && p4c/build/p4c-bm2-ss out.p4
 
+### Retrieving Gauntlet semantics for a P4 program
+For debugging purposes, you can run
+
+    python3 get_semantics.py -i out.p4
+
+to retrieve the semantic representation of a particular P4 program. This will print the z3 formula of each pipe in the package. These semantics can be used for equality comparison or test-case inference.
+
 ### Validating a P4C program
 To validate that a program is compiled correctly by `p4c`, you can run
 

@@ -1,4 +1,5 @@
 #include <core.p4>
+#define V1MODEL_VERSION 20180101
 #include <v1model.p4>
 
 header ethernet_t {
@@ -14,10 +15,6 @@ struct Headers {
 struct Meta {
 }
 
-action do_action(inout ethernet_t val) {
-    val.eth_type = 0xDEAD;
-}
-
 parser p(packet_in pkt, out Headers hdr, inout Meta m, inout standard_metadata_t sm) {
     state start {
         transition parse_hdrs;
@@ -29,10 +26,12 @@ parser p(packet_in pkt, out Headers hdr, inout Meta m, inout standard_metadata_t
 }
 
 control ingress(inout Headers h, inout Meta m, inout standard_metadata_t sm) {
-
     apply {
-        exit;
-        do_action(h.eth_hdr);
+        if (8w255 == -1) {
+            h.eth_hdr.eth_type = 1;
+        } else {
+            h.eth_hdr.eth_type = 2;
+        }
     }
 }
 

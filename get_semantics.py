@@ -10,6 +10,7 @@ sys.setrecursionlimit(15000)
 
 FILE_DIR = Path(__file__).parent.resolve()
 P4Z3_BIN = FILE_DIR.joinpath("p4c/build/p4toz3")
+OUT_DIR = FILE_DIR.joinpath("validated")
 log = logging.getLogger(__name__)
 
 
@@ -60,10 +61,11 @@ def run_p4_to_py(p4_file, py_file):
     return util.exec_process(cmd)
 
 
-def get_z3_formulization(p4_file):
+def get_z3_formulization(p4_file, out_dir=OUT_DIR):
 
     if p4_file.suffix == ".p4":
-        py_file = FILE_DIR.joinpath(p4_file.with_suffix(".py").name)
+        util.check_dir(out_dir)
+        py_file = out_dir.joinpath(p4_file.with_suffix(".py").name)
         result = run_p4_to_py(p4_file, py_file)
         p4_file = py_file
         if result.returncode != util.EXIT_SUCCESS:
@@ -86,8 +88,11 @@ def main(args=None):
                         type=lambda x: util.is_valid_file(parser, x),
                         help="The main input p4 file. This can either be a P4"
                         " program or the Python ToZ3 IR.")
+    parser.add_argument("-o", "--out_dir", dest="out_dir",
+                        default=OUT_DIR,
+                        help="Where intermediate output is stored.")
     args = parser.parse_args(args)
-    p4_prog, result = get_z3_formulization(args.p4_input)
+    p4_prog, result = get_z3_formulization(args.p4_input, Path(args.out_dir))
     if result != util.EXIT_FAILURE:
         for pipe_name, pipe_val in p4_prog.items():
             log.info("-" * 20)

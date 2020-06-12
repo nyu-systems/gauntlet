@@ -176,7 +176,7 @@ class P4Declaration(P4Statement):
 
     def eval(self, p4_state):
         # this will only resolve expressions no other classes
-        # FIXME: Untagle this a bit
+        # FIXME: Untangle this a bit
         if self.rval is not None:
             rval = p4_state.resolve_expr(self.rval)
             if self.z3_type is not None:
@@ -352,9 +352,6 @@ class P4ComplexInstance():
                 # call the constructor of the complex type
                 members.append(member_val.get_z3_repr())
             else:
-                # if member_val.sort() != member_type:
-                #     members.append(z3_cast(member_val, member_type))
-                # else:
                 members.append(member_val)
         return self.z3_type.constructor(0)(*members)
 
@@ -443,7 +440,7 @@ class P4ComplexInstance():
                     members.append(member)
         return members
 
-    def merge_attrs(self, cond, other_attrs, is_invalid=False):
+    def merge_attrs(self, cond, other_attrs):
         for attr_name, then_val in other_attrs.items():
             try:
                 attr_val = self.resolve_reference(attr_name)
