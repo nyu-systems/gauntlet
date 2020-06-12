@@ -21,7 +21,8 @@ parser p(packet_in pkt, out Headers hdr) {
 }
 
 control ingress(inout Headers h) {
-    action do_action(out bit<48> val) {
+    action do_action(inout bit<48> val) {
+        val = 2;
         exit;
     }
     table simple_table {

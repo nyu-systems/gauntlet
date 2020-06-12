@@ -1,4 +1,4 @@
-from p4z3.base import OrderedDict, z3, log, copy
+from p4z3.base import OrderedDict, z3, log, copy, copy_attrs, deque
 from p4z3.base import merge_parameters, gen_instance, z3_cast, save_variables
 from p4z3.base import P4Z3Class, P4ComplexInstance, P4Extern
 from p4z3.base import DefaultExpression, P4ComplexType, P4Expression
@@ -20,7 +20,19 @@ class P4Callable(P4Z3Class):
         merged_args = merge_parameters(self.params, *args, **kwargs)
         var_buffer = save_variables(p4_state, merged_args)
         expr = self.eval_callable(p4_state, merged_args, var_buffer)
+        if p4_state.has_exited:
+            while p4_state.contexts:
+                context = p4_state.contexts.pop()
+                context.restore_context(p4_state)
+            return
         self.call_counter += 1
+        context = p4_state.contexts[-1]
+        while context.return_states:
+            cond, return_attrs = context.return_states.pop()
+            p4_state.merge_attrs(cond, return_attrs)
+        p4_state.has_returned = False
+        context = p4_state.contexts.pop()
+        context.restore_context(p4_state)
         return expr
 
     def __call__(self, p4_state, *args, **kwargs):
@@ -85,8 +97,8 @@ class MethodCallExpr(P4Expression):
         # TODO: Figure out how these type bindings work
         if isinstance(p4_method, P4Method) and self.type_args:
             p4_method = p4_method.initialize(*self.type_args)
-        return p4_method(p4_state, *self.args, **self.kwargs)
-
+        expr = p4_method(p4_state, *self.args, **self.kwargs)
+        return expr
 
 class ConstCallExpr(P4Expression):
 
@@ -132,7 +144,11 @@ class P4Package():
                     args = []
                     for param in params:
                         args.append(param.name)
-                    self.pipes[pipe_name] = pipe.apply(p4_state, *args)
+                    pipe.apply(p4_state, *args)
+                    state = p4_state.get_z3_repr()
+                    for exit_cond, exit_state in p4_state.exit_states:
+                        state = z3.If(exit_cond, exit_state, state)
+                    self.pipes[pipe_name] = state
                 elif isinstance(pipe, P4Extern):
                     self.pipes[pipe_name] = pipe.const
                 elif isinstance(pipe, P4Package):
@@ -175,6 +191,11 @@ class P4Context(P4Z3Class):
 
     def __init__(self, var_buffer):
         self.var_buffer = var_buffer
+        self.return_states = deque()
+        self.has_returned = False
+        self.then_has_returned = False
+        self.else_has_returned = False
+        self.return_expr = None
 
     def add_to_buffer(self, var_dict):
         self.var_buffer = {**self.var_buffer, **var_dict}
@@ -209,8 +230,6 @@ class P4Context(P4Z3Class):
 
     def eval(self, p4_state):
         self.restore_context(p4_state)
-        p4z3_expr = p4_state.pop_next_expr()
-        return p4z3_expr.eval(p4_state)
 
 
 class P4Action(P4Callable):
@@ -223,11 +242,8 @@ class P4Action(P4Callable):
         self.set_context(p4_state, merged_args, ("out"))
 
         # execute the action expression with the new environment
-        p4_state.insert_exprs(p4_context)
-        p4_state.insert_exprs(self.statements)
-        # reset to the previous execution chain
-        p4z3_expr = p4_state.pop_next_expr()
-        return p4z3_expr.eval(p4_state)
+        p4_state.contexts.append(p4_context)
+        self.statements.eval(p4_state)
 
 
 class P4Function(P4Action):
@@ -243,13 +259,11 @@ class P4Function(P4Action):
         p4_context = P4Context(var_buffer)
         self.set_context(p4_state, merged_args, ("out"))
 
-        old_expr_chain = p4_state.copy_expr_chain()
-        p4_state.clear_expr_chain()
-        p4_state.insert_exprs(p4_context)
-        p4_state.insert_exprs(self.statements)
-        p4z3_expr = p4_state.pop_next_expr()
-        state_expr = p4z3_expr.eval(p4_state)
-        p4_state.expr_chain = old_expr_chain
+        # execute the action expression with the new environment
+        p4_state.contexts.append(p4_context)
+        self.statements.eval(p4_state)
+
+        state_expr = p4_context.return_expr
         return state_expr
 
 
@@ -292,11 +306,12 @@ class P4Control(P4Callable):
             const_val = p4_state.resolve_expr(const_val)
             p4_state.set_or_add_var(const_param_name, const_val)
         # execute the action expression with the new environment
-        p4_state.insert_exprs(p4_context)
-        p4_state.insert_exprs(self.statements)
-        p4_state.insert_exprs(self.local_decls)
-        p4z3_expr = p4_state.pop_next_expr()
-        return p4z3_expr.eval(p4_state)
+        p4_state.contexts.append(p4_context)
+        for expr in self.local_decls:
+            expr.eval(p4_state)
+            if p4_state.has_exited or p4_state.contexts[-1].has_returned:
+                break
+        self.statements.eval(p4_state)
 
 
 class P4Method(P4Callable):
@@ -384,7 +399,7 @@ class P4Method(P4Callable):
         # initialize the local context of the function for execution
         p4_context = P4Context(var_buffer)
         self.set_context(p4_state, merged_args, ("inout", "out"))
-        p4_context.restore_context(p4_state)
+        p4_state.contexts.append(p4_context)
 
         if self.return_type is not None:
             # methods can return values, we need to generate a new constant
@@ -410,8 +425,6 @@ class P4Method(P4Callable):
             if isinstance(return_instance, P4ComplexInstance):
                 return_instance.propagate_validity_bit()
             return return_instance
-        p4z3_expr = p4_state.pop_next_expr()
-        return p4z3_expr.eval(p4_state)
 
 
 def resolve_action(action_expr):
@@ -490,7 +503,7 @@ class P4Table(P4Callable):
         # then execute the table as the next expression in the chain
         # FIXME: I do not think this will work with assignment statements
         # the table is probably applied after the value has been assigned
-        p4_state.insert_exprs(self)
+        self.eval(p4_state)
         return self
 
     def eval_keys(self, p4_state):
@@ -553,10 +566,17 @@ class P4Table(P4Callable):
             action_tuple = (action_name, p4_action_args)
             log.debug("Evaluating constant action %s...", action_name)
             # state forks here
-            var_store, chain_copy = p4_state.checkpoint()
-            action_expr = self.eval_action(p4_state, action_tuple)
-            p4_state.restore(var_store, chain_copy)
-            action_exprs.append((action_match, action_expr))
+            var_store, contexts = p4_state.checkpoint()
+            self.eval_action(p4_state, action_tuple)
+            then_vars = copy_attrs(p4_state.locals)
+            if p4_state.has_exited:
+                cond = z3.And(self.locals["hit"], action_match)
+                p4_state.check_validity()
+                p4_state.exit_states.append((cond, p4_state.get_z3_repr()))
+                p4_state.has_exited = False
+            else:
+                action_exprs.append((action_match, then_vars))
+            p4_state.restore(var_store, contexts)
 
         # then append dynamic table entries to the constant entries
         for action in reversed(actions.values()):
@@ -567,20 +587,25 @@ class P4Table(P4Callable):
             action_tuple = (action_name, p4_action_args)
             log.debug("Evaluating action %s...", action_name)
             # state forks here
-            var_store, chain_copy = p4_state.checkpoint()
-            action_expr = self.eval_action(p4_state, action_tuple)
-            p4_state.restore(var_store, chain_copy)
-            action_exprs.append((action_match, action_expr))
-
+            var_store, contexts = p4_state.checkpoint()
+            self.eval_action(p4_state, action_tuple)
+            then_vars = copy_attrs(p4_state.locals)
+            if p4_state.has_exited:
+                cond = z3.And(self.locals["hit"], action_match)
+                p4_state.check_validity()
+                p4_state.exit_states.append((cond, p4_state.get_z3_repr()))
+                p4_state.has_exited = False
+            else:
+                action_exprs.append((action_match, then_vars))
+            p4_state.restore(var_store, contexts)
         # finally evaluate the default entry
-        table_expr = self.eval_default(p4_state)
-        default_expr = table_expr
+        self.eval_default(p4_state)
         # generate a nested set of if expressions per available action
-        for cond, action_expr in action_exprs:
-            table_expr = z3.If(cond, action_expr, table_expr)
-        # if we hit return the table expr
-        # otherwise just return the default expr
-        return z3.If(self.locals["hit"], table_expr, default_expr)
+        for cond, then_vars in action_exprs:
+            hit_cond = z3.And(self.locals["hit"], cond)
+            p4_state.merge_attrs(hit_cond, then_vars)
 
     def eval_callable(self, p4_state, merged_args, var_buffer):
-        return self.eval_table(p4_state)
+        p4_context = P4Context(var_buffer)
+        p4_state.contexts.append(p4_context)
+        self.eval_table(p4_state)

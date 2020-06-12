@@ -191,8 +191,6 @@ class P4Declaration(P4Statement):
         else:
             rval = gen_instance("undefined", self.z3_type)
         p4_state.set_or_add_var(self.lval, rval)
-        p4z3_expr = p4_state.pop_next_expr()
-        return p4z3_expr.eval(p4_state)
 
 class P4Member(P4Expression):
 
@@ -944,6 +942,9 @@ class P4StateInstance(P4ComplexInstance):
         super(P4StateInstance, self).__init__(name, p4z3_type)
         self.expr_chain = deque()
         self.globals = global_values
+        self.has_exited = False
+        self.exit_states = deque()
+        self.contexts = deque()
         for instance_name, instance_val in instances.items():
             self.locals[instance_name] = instance_val
 
@@ -1068,14 +1069,14 @@ class P4StateInstance(P4ComplexInstance):
             # states in the parser FIXME
             elif isinstance(attr_val, P4Expression):
                 var_store[attr_name] = copy.copy(attr_val)
-        chain = self.copy_expr_chain()
-        return var_store, chain
+        contexts = self.contexts.copy()
+        return var_store, contexts
 
-    def restore(self, var_store, chain=None):
+    def restore(self, var_store, contexts=None):
         for attr_name, attr_val in var_store.items():
             self.locals[attr_name] = attr_val
-        if chain:
-            self.expr_chain = chain
+        if contexts:
+            self.contexts = contexts
 
     def clear_expr_chain(self):
         self.expr_chain.clear()

@@ -71,9 +71,6 @@ class ParserState(P4Expression):
                 select = self.select
             p4_state.insert_exprs(select)
             p4_state.insert_exprs(self.components)
-        p4z3_expr = p4_state.pop_next_expr()
-        expr = p4z3_expr.eval(p4_state)
-        return expr
 
 
 class ParserSelect(P4Expression):
