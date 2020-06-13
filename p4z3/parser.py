@@ -14,11 +14,17 @@ class P4Parser(P4Control):
 class RejectState(P4Statement):
 
     def eval(self, p4_state):
-        p4_state.deactivate("invalid")
-        p4_state.has_exited = True
         while p4_state.contexts:
             context = p4_state.contexts.pop()
             context.restore_context(p4_state)
+        p4_state.deactivate("invalid")
+        p4_state.has_exited = True
+        p4_state.check_validity()
+
+class AcceptState(P4Statement):
+
+    def eval(self, p4_state):
+        p4_state.check_validity()
 
 class ParserTree(P4Expression):
 
@@ -28,7 +34,7 @@ class ParserTree(P4Expression):
         for state in states:
             state_name = state.name
             self.states[state_name] = state
-        self.states["accept"] = P4Return()
+        self.states["accept"] = AcceptState()
         self.states["reject"] = RejectState()
         for state in states:
             state.set_state_list(self.states)
@@ -119,24 +125,23 @@ class ParserSelect(P4Expression):
                     select_cond.append(cond)
             if not select_cond:
                 select_cond = [z3.BoolVal(False)]
-            select_conds.append(z3.And(*select_cond))
+            select_cond = z3.And(*select_cond)
+            select_conds.append(select_cond)
             var_store, contexts = p4_state.checkpoint()
             parser_state = self.state_list[case_name]
             return_expr_copy = context.return_expr
             has_returned_copy = context.has_returned
+            forward_cond_copy = context.forward_cond
             parser_state.eval(p4_state)
             then_vars = copy_attrs(p4_state.locals)
             if p4_state.has_exited:
                 p4_state.exit_states.append((
-                    z3.And(*select_cond), p4_state.get_z3_repr()))
+                    select_cond, p4_state.get_z3_repr()))
                 p4_state.has_exited = False
-            elif context.has_returned:
-                context.return_states.append((
-                    z3.And(*select_cond), then_vars))
-                context.has_returned = False
             else:
-                switches.append(((z3.And(*select_cond)), then_vars))
+                switches.append((select_cond, then_vars))
             p4_state.restore(var_store, contexts)
+            context.forward_cond = forward_cond_copy
             context.return_expr = return_expr_copy
             context.has_returned = has_returned_copy
         default_parser_state = self.state_list[self.default]
@@ -147,6 +152,5 @@ class ParserSelect(P4Expression):
             p4_state.exit_states.append((cond, p4_state.get_z3_repr()))
             p4_state.has_exited = False
             p4_state.restore(var_store, contexts)
-
         for cond, then_vars in switches:
             p4_state.merge_attrs(cond, then_vars)

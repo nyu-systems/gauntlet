@@ -499,7 +499,7 @@ class P4ComplexInstance():
     def activate(self, label="undefined"):
         pass
 
-    def deactivate(self, label="undefined"):
+    def deactivate(self, label="invalid"):
         pass
 
     def propagate_validity_bit(self):
@@ -544,7 +544,7 @@ class StructInstance(P4ComplexInstance):
             if isinstance(member_val, P4ComplexInstance):
                 member_val.activate()
 
-    def deactivate(self, label="undefined"):
+    def deactivate(self, label="invalid"):
         # structs may have headers that can be deactivated
         for member_name in self.members:
             member_val = self.resolve_reference(member_name)

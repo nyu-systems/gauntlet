@@ -190,6 +190,7 @@ class P4Context(P4Z3Class):
         self.return_states = deque()
         self.has_returned = False
         self.then_has_returned = False
+        self.forward_cond = None
         self.else_has_returned = False
         self.return_expr = None
 
