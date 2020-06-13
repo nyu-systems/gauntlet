@@ -448,6 +448,8 @@ class P4ComplexInstance():
                 # FIXME: Make sure this is actually the case...
                 continue
             if isinstance(attr_val, P4ComplexInstance):
+                attr_val.check_validity()
+                then_val.check_validity()
                 attr_val.valid = z3.simplify(
                     z3.If(cond, then_val.valid, attr_val.valid))
                 attr_val.merge_attrs(cond, then_val.locals)
@@ -456,7 +458,6 @@ class P4ComplexInstance():
                     attr_val = z3_cast(attr_val, then_val.sort())
                 if_expr = z3.simplify(z3.If(cond, then_val, attr_val))
                 self.locals[then_name] = if_expr
-
 
     def __copy__(self):
         cls = self.__class__

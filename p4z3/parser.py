@@ -128,6 +128,10 @@ class ParserSelect(P4Expression):
                 p4_state.exit_states.append((
                     z3.And(*select_cond), p4_state.get_z3_repr()))
                 p4_state.has_exited = False
+            elif context.has_returned:
+                context.return_states.append((
+                    z3.And(*select_cond), then_vars))
+                context.has_returned = False
             else:
                 switches.append(((z3.And(*select_cond)), then_vars))
             p4_state.restore(var_store, contexts)

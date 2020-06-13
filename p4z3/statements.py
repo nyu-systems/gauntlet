@@ -71,12 +71,10 @@ class IfStatement(P4Statement):
         self.then_block.eval(p4_state)
         context.then_has_returned = context.has_returned
         then_expr = context.return_expr
+        p4_state.check_validity()
+        then_vars = copy_attrs(p4_state.locals)
         if context.has_returned:
-            p4_state.check_validity()
-            then_vars = copy_attrs(p4_state.locals)
             context.return_states.append((cond, then_vars))
-        else:
-            then_vars = copy_attrs(p4_state.locals)
 
         context.return_expr = return_expr_copy
         context.has_returned = has_returned_copy
