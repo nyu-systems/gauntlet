@@ -1,7 +1,7 @@
-from p4z3.base import log, z3
+from p4z3.base import log, z3, copy_attrs
 from p4z3.base import P4Expression, P4ComplexInstance, DefaultExpression
 from p4z3.callables import P4Control
-from p4z3.statements import P4Statement, P4Return, P4Exit
+from p4z3.statements import P4Statement, P4Return, P4Exit, BlockStatement
 
 
 MAX_LOOP = 2
@@ -14,10 +14,8 @@ class P4Parser(P4Control):
 class RejectState(P4Statement):
 
     def eval(self, p4_state):
-        p4_state.clear_expr_chain()
         p4_state.deactivate("rejected")
-        p4z3_expr = p4_state.pop_next_expr()
-        return p4z3_expr.eval(p4_state)
+        p4_state.has_exited = True
 
 
 class ParserTree(P4Expression):
@@ -34,11 +32,10 @@ class ParserTree(P4Expression):
             state.set_state_list(self.states)
 
     def eval(self, p4_state):
-        expr = self.states["start"].eval(p4_state)
+        self.states["start"].eval(p4_state)
         for state in self.states.values():
             if isinstance(state, ParserState):
                 state.reset_counter()
-        return expr
 
 
 class ParserState(P4Expression):
@@ -59,7 +56,6 @@ class ParserState(P4Expression):
     def eval(self, p4_state):
         if self.counter > MAX_LOOP:
             log.warning("Parser exceeded current loop limit, aborting...")
-            p4_state.insert_exprs(P4Exit())
         else:
             self.counter += 1
             if isinstance(self.select, ParserSelect):
@@ -69,8 +65,9 @@ class ParserState(P4Expression):
                 select = self.state_list[self.select]
             else:
                 select = self.select
-            p4_state.insert_exprs(select)
-            p4_state.insert_exprs(self.components)
+            for component in self.components:
+                component.eval(p4_state)
+            select.eval(p4_state)
 
 
 class ParserSelect(P4Expression):
@@ -91,7 +88,9 @@ class ParserSelect(P4Expression):
 
     def eval(self, p4_state):
         switches = []
+        select_conds = []
         for case_val, case_name in reversed(self.cases):
+            context = p4_state.contexts[-1]
             case_expr = p4_state.resolve_expr(case_val)
             select_cond = []
             if isinstance(case_expr, P4ComplexInstance):
@@ -117,14 +116,32 @@ class ParserSelect(P4Expression):
                     select_cond.append(cond)
             if not select_cond:
                 select_cond = [z3.BoolVal(False)]
-            var_store, chain_copy = p4_state.checkpoint()
+            select_conds.append(z3.And(*select_cond))
+            var_store, contexts = p4_state.checkpoint()
             parser_state = self.state_list[case_name]
-            state_expr = parser_state.eval(p4_state)
-            p4_state.restore(var_store, chain_copy)
-            switches.append((z3.And(*select_cond), state_expr))
-
+            return_expr_copy = context.return_expr
+            has_returned_copy = context.has_returned
+            parser_state.eval(p4_state)
+            then_vars = copy_attrs(p4_state.locals)
+            if p4_state.has_exited:
+                p4_state.check_validity()
+                p4_state.exit_states.append((
+                    z3.And(*select_cond), p4_state.get_z3_repr()))
+                p4_state.has_exited = False
+            else:
+                switches.append(((z3.And(*select_cond)), then_vars))
+            p4_state.restore(var_store, contexts)
+            context.return_expr = return_expr_copy
+            context.has_returned = has_returned_copy
         default_parser_state = self.state_list[self.default]
-        expr = default_parser_state.eval(p4_state)
-        for cond, state_expr in switches:
-            expr = z3.If(cond, state_expr, expr)
-        return expr
+        var_store, contexts = p4_state.checkpoint()
+        default_parser_state.eval(p4_state)
+        if p4_state.has_exited:
+            cond = z3.Not(z3.Or(*select_conds))
+            p4_state.check_validity()
+            p4_state.exit_states.append((cond, p4_state.get_z3_repr()))
+            p4_state.has_exited = False
+            p4_state.restore(var_store, contexts)
+
+        for cond, then_vars in switches:
+            p4_state.merge_attrs(cond, then_vars)

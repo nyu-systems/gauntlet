@@ -30,7 +30,6 @@ class P4Callable(P4Z3Class):
         while context.return_states:
             cond, return_attrs = context.return_states.pop()
             p4_state.merge_attrs(cond, return_attrs)
-        p4_state.has_returned = False
         context = p4_state.contexts.pop()
         context.restore_context(p4_state)
         return expr
@@ -227,6 +226,7 @@ class P4Context(P4Z3Class):
                 # the var buffer is an ordered dict that maintains this order
                 log.debug("Copy-out: %s to %s", val, param_val)
                 p4_state.set_or_add_var(param_ref, val)
+        p4_state.check_validity()
 
     def eval(self, p4_state):
         self.restore_context(p4_state)
@@ -546,6 +546,7 @@ class P4Table(P4Callable):
         actions = self.actions
         const_entries = self.const_entries
         action_exprs = []
+        action_matches = []
         # first evaluate all the constant entries
         for const_keys, action in reversed(const_entries):
             action_name = action[0]
@@ -576,6 +577,7 @@ class P4Table(P4Callable):
                 p4_state.has_exited = False
             else:
                 action_exprs.append((action_match, then_vars))
+            action_matches.append(action_match)
             p4_state.restore(var_store, contexts)
 
         # then append dynamic table entries to the constant entries
@@ -597,9 +599,18 @@ class P4Table(P4Callable):
                 p4_state.has_exited = False
             else:
                 action_exprs.append((action_match, then_vars))
+            action_matches.append(action_match)
             p4_state.restore(var_store, contexts)
         # finally evaluate the default entry
+        var_store, contexts = p4_state.checkpoint()
         self.eval_default(p4_state)
+        if p4_state.has_exited:
+            cond = z3.And(self.locals["hit"], z3.Not(z3.Or(*action_matches)))
+            p4_state.check_validity()
+            p4_state.exit_states.append((cond, p4_state.get_z3_repr()))
+            p4_state.has_exited = False
+            p4_state.restore(var_store, contexts)
+
         # generate a nested set of if expressions per available action
         for cond, then_vars in action_exprs:
             hit_cond = z3.And(self.locals["hit"], cond)

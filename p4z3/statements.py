@@ -71,9 +71,13 @@ class IfStatement(P4Statement):
         self.then_block.eval(p4_state)
         context.then_has_returned = context.has_returned
         then_expr = context.return_expr
-        then_vars = copy_attrs(p4_state.locals)
         if context.has_returned:
+            p4_state.check_validity()
+            then_vars = copy_attrs(p4_state.locals)
             context.return_states.append((cond, then_vars))
+        else:
+            then_vars = copy_attrs(p4_state.locals)
+
         context.return_expr = return_expr_copy
         context.has_returned = has_returned_copy
         p4_state.restore(var_store, chain_copy)
@@ -82,6 +86,7 @@ class IfStatement(P4Statement):
         context.else_has_returned = context.has_returned
         else_expr = context.return_expr
         if context.else_has_returned:
+            p4_state.check_validity()
             context.return_states.append((
                 z3.Not(cond), copy_attrs(p4_state.locals)))
             p4_state.restore(var_store, chain_copy)
@@ -106,9 +111,11 @@ class IfStatement(P4Statement):
                     return
                 context.return_expr = z3.If(cond, then_expr, else_expr)
             elif context.then_has_returned:
-                context.return_expr = (cond, then_expr)
+                if then_expr is not None:
+                    context.return_expr = (cond, then_expr)
             elif context.else_has_returned:
-                context.return_expr = (cond, else_expr)
+                if else_expr is not None:
+                    context.return_expr = (cond, else_expr)
 
 
 class SwitchHit(P4Z3Class):
@@ -215,11 +222,21 @@ class P4Return(P4Statement):
             instance.set_list(expr)
             expr = instance
         if context.then_has_returned and context.return_expr is not None:
-            cond, if_expr = context.return_expr
-            context.return_expr = z3.If(cond, if_expr, expr)
+            cond, then_expr = context.return_expr
+            if not isinstance(then_expr, (z3.AstRef, int)):
+                # sometimes we have more complex types, so we create a mux
+                mux = P4Mux(cond, then_expr, expr)
+                context.return_expr = mux.eval(p4_state)
+                return
+            context.return_expr = z3.If(cond, then_expr, expr)
             context.then_has_returned = False
         elif context.else_has_returned and context.return_expr is not None:
             cond, else_expr = context.return_expr
+            if not isinstance(else_expr, (z3.AstRef, int)):
+                # sometimes we have more complex types, so we create a mux
+                mux = P4Mux(cond, expr, else_expr)
+                context.return_expr = mux.eval(p4_state)
+                return
             context.return_expr = z3.If(cond, expr, else_expr)
             context.else_has_returned = False
         else:

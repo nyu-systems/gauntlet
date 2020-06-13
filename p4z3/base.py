@@ -438,22 +438,25 @@ class P4ComplexInstance():
                     members.append(member)
         return members
 
-    def merge_attrs(self, cond, other_attrs):
-        for attr_name, then_val in other_attrs.items():
+    def merge_attrs(self, cond, then_attrs):
+        for then_name, then_val in then_attrs.items():
             try:
-                attr_val = self.resolve_reference(attr_name)
+                attr_val = self.locals[then_name]
             except KeyError:
                 # if the attribute does not exist it is not relevant
                 # this is because of scoping
                 # FIXME: Make sure this is actually the case...
                 continue
-            if isinstance(then_val, P4ComplexInstance):
+            if isinstance(attr_val, P4ComplexInstance):
+                attr_val.valid = z3.simplify(
+                    z3.If(cond, then_val.valid, attr_val.valid))
                 attr_val.merge_attrs(cond, then_val.locals)
             elif isinstance(attr_val, z3.ExprRef):
                 if then_val.sort() != attr_val.sort():
                     attr_val = z3_cast(attr_val, then_val.sort())
                 if_expr = z3.simplify(z3.If(cond, then_val, attr_val))
-                self.locals[attr_name] = if_expr
+                self.locals[then_name] = if_expr
+
 
     def __copy__(self):
         cls = self.__class__
@@ -884,6 +887,8 @@ class P4Extern(P4ComplexInstance):
         # these are method declarations, not methods
         for method in methods:
             self.locals[method.lval] = method.rval
+        # dummy
+        self.valid = False
 
     def init_type_params(self, *args, **kwargs):
         # the extern is instantiated, we need to copy it
