@@ -14,9 +14,11 @@ class P4Parser(P4Control):
 class RejectState(P4Statement):
 
     def eval(self, p4_state):
-        p4_state.deactivate("rejected")
+        p4_state.deactivate("invalid")
         p4_state.has_exited = True
-
+        while p4_state.contexts:
+            context = p4_state.contexts.pop()
+            context.restore_context(p4_state)
 
 class ParserTree(P4Expression):
 
@@ -67,7 +69,8 @@ class ParserState(P4Expression):
                 select = self.select
             for component in self.components:
                 component.eval(p4_state)
-            select.eval(p4_state)
+            if not p4_state.has_exited:
+                select.eval(p4_state)
 
 
 class ParserSelect(P4Expression):
@@ -89,8 +92,8 @@ class ParserSelect(P4Expression):
     def eval(self, p4_state):
         switches = []
         select_conds = []
+        context = p4_state.contexts[-1]
         for case_val, case_name in reversed(self.cases):
-            context = p4_state.contexts[-1]
             case_expr = p4_state.resolve_expr(case_val)
             select_cond = []
             if isinstance(case_expr, P4ComplexInstance):
@@ -124,7 +127,6 @@ class ParserSelect(P4Expression):
             parser_state.eval(p4_state)
             then_vars = copy_attrs(p4_state.locals)
             if p4_state.has_exited:
-                p4_state.check_validity()
                 p4_state.exit_states.append((
                     z3.And(*select_cond), p4_state.get_z3_repr()))
                 p4_state.has_exited = False
@@ -142,7 +144,6 @@ class ParserSelect(P4Expression):
         default_parser_state.eval(p4_state)
         if p4_state.has_exited:
             cond = z3.Not(z3.Or(*select_conds))
-            p4_state.check_validity()
             p4_state.exit_states.append((cond, p4_state.get_z3_repr()))
             p4_state.has_exited = False
             p4_state.restore(var_store, contexts)

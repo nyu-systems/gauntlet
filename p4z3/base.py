@@ -448,8 +448,6 @@ class P4ComplexInstance():
                 # FIXME: Make sure this is actually the case...
                 continue
             if isinstance(attr_val, P4ComplexInstance):
-                attr_val.check_validity()
-                then_val.check_validity()
                 attr_val.valid = z3.simplify(
                     z3.If(cond, then_val.valid, attr_val.valid))
                 attr_val.merge_attrs(cond, then_val.locals)
@@ -564,7 +562,7 @@ class HeaderInstance(StructInstance):
 
     def __init__(self, name, p4z3_type, parent_const=None):
         super(HeaderInstance, self).__init__(name, p4z3_type, parent_const)
-        self.valid = z3.BoolVal(True)
+        self.valid = z3.BoolVal(False)
         self.locals["isValid"] = self.isValid
         self.locals["setValid"] = self.setValid
         self.locals["setInvalid"] = self.setInvalid
@@ -582,7 +580,7 @@ class HeaderInstance(StructInstance):
                     self.set_or_add_var(member_name, allocated_var)
         self.valid = z3.BoolVal(True)
 
-    def deactivate(self, label="undefined"):
+    def deactivate(self, label="invalid"):
         for member_name in self.members:
             member_val = self.resolve_reference(member_name)
             if isinstance(member_val, P4ComplexInstance):

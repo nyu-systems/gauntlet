@@ -3,7 +3,6 @@ import z3
 
 from p4z3.base import log, copy_attrs, DefaultExpression, copy, z3_cast
 from p4z3.base import P4ComplexInstance, P4Statement, P4Z3Class
-from p4z3.callables import P4Context
 from p4z3.expressions import P4Mux
 
 
@@ -67,28 +66,26 @@ class IfStatement(P4Statement):
         cond = p4_state.resolve_expr(self.cond)
         var_store, chain_copy = p4_state.checkpoint()
         return_expr_copy = context.return_expr
-        has_returned_copy = context.has_returned
         self.then_block.eval(p4_state)
         context.then_has_returned = context.has_returned
         then_expr = context.return_expr
-        p4_state.check_validity()
         then_vars = copy_attrs(p4_state.locals)
         if context.has_returned:
             context.return_states.append((cond, then_vars))
 
         context.return_expr = return_expr_copy
-        context.has_returned = has_returned_copy
+        context.has_returned = False
         p4_state.restore(var_store, chain_copy)
         if self.else_block:
             else_expr = self.else_block.eval(p4_state)
         context.else_has_returned = context.has_returned
         else_expr = context.return_expr
-        if context.else_has_returned:
-            p4_state.check_validity()
+        if context.has_returned:
             context.return_states.append((
                 z3.Not(cond), copy_attrs(p4_state.locals)))
             p4_state.restore(var_store, chain_copy)
-        elif not context.then_has_returned:
+
+        if not context.then_has_returned:
             p4_state.merge_attrs(cond, then_vars)
 
         context.return_expr = return_expr_copy
@@ -245,3 +242,6 @@ class P4Exit(P4Statement):
 
     def eval(self, p4_state):
         p4_state.has_exited = True
+        while p4_state.contexts:
+            context = p4_state.contexts.pop()
+            context.restore_context(p4_state)

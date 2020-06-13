@@ -20,12 +20,10 @@ class P4Callable(P4Z3Class):
         merged_args = merge_parameters(self.params, *args, **kwargs)
         var_buffer = save_variables(p4_state, merged_args)
         expr = self.eval_callable(p4_state, merged_args, var_buffer)
-        if p4_state.has_exited:
-            while p4_state.contexts:
-                context = p4_state.contexts.pop()
-                context.restore_context(p4_state)
-            return
         self.call_counter += 1
+        if p4_state.has_exited:
+            return expr
+
         context = p4_state.contexts[-1]
         while context.return_states:
             cond, return_attrs = context.return_states.pop()
@@ -78,7 +76,6 @@ class P4Callable(P4Z3Class):
         # now we can set the arguments without influencing subsequent variables
         for param_name, param_val in param_buffer.items():
             p4_state.set_or_add_var(param_name, param_val)
-
 
 class MethodCallExpr(P4Expression):
 
@@ -572,7 +569,6 @@ class P4Table(P4Callable):
             then_vars = copy_attrs(p4_state.locals)
             if p4_state.has_exited:
                 cond = z3.And(self.locals["hit"], action_match)
-                p4_state.check_validity()
                 p4_state.exit_states.append((cond, p4_state.get_z3_repr()))
                 p4_state.has_exited = False
             else:
@@ -594,7 +590,6 @@ class P4Table(P4Callable):
             then_vars = copy_attrs(p4_state.locals)
             if p4_state.has_exited:
                 cond = z3.And(self.locals["hit"], action_match)
-                p4_state.check_validity()
                 p4_state.exit_states.append((cond, p4_state.get_z3_repr()))
                 p4_state.has_exited = False
             else:
@@ -606,7 +601,6 @@ class P4Table(P4Callable):
         self.eval_default(p4_state)
         if p4_state.has_exited:
             cond = z3.And(self.locals["hit"], z3.Not(z3.Or(*action_matches)))
-            p4_state.check_validity()
             p4_state.exit_states.append((cond, p4_state.get_z3_repr()))
             p4_state.has_exited = False
             p4_state.restore(var_store, contexts)
