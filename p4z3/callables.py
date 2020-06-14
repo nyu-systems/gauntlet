@@ -2,6 +2,7 @@ from p4z3.base import OrderedDict, z3, log, copy, copy_attrs, deque
 from p4z3.base import merge_parameters, gen_instance, z3_cast, save_variables
 from p4z3.base import P4Z3Class, P4ComplexInstance, P4Extern
 from p4z3.base import DefaultExpression, P4ComplexType, P4Expression
+from p4z3.expressions import P4Mux
 
 
 class P4Callable(P4Z3Class):
@@ -140,7 +141,7 @@ class P4Package():
                         args.append(param.name)
                     pipe.apply(p4_state, *args)
                     state = p4_state.get_z3_repr()
-                    for exit_cond, exit_state in p4_state.exit_states:
+                    for exit_cond, exit_state in reversed(p4_state.exit_states):
                         state = z3.If(exit_cond, exit_state, state)
                     self.pipes[pipe_name] = state
                 elif isinstance(pipe, P4Extern):
@@ -189,7 +190,7 @@ class P4Context(P4Z3Class):
         self.has_returned = False
         self.then_has_returned = False
         self.else_has_returned = False
-        self.return_expr = None
+        self.return_exprs = deque()
         self.forward_cond = z3.BoolVal(True)
 
     def add_to_buffer(self, var_dict):
@@ -258,9 +259,21 @@ class P4Function(P4Action):
         # execute the action expression with the new environment
         p4_state.contexts.append(context)
         self.statements.eval(p4_state)
-
-        state_expr = context.return_expr
-        return state_expr
+        return_expr = None
+        if len(context.return_exprs) == 1:
+            _, return_expr = context.return_exprs.pop()
+        elif len(context.return_exprs) > 1:
+            return_cond, return_expr = context.return_exprs.pop()
+            if isinstance(return_expr, P4ComplexInstance):
+                while context.return_exprs:
+                    then_cond, then_expr = context.return_exprs.pop()
+                    return_expr = P4Mux(then_cond, then_expr, return_expr)
+                return_expr = return_expr.eval(p4_state)
+            else:
+                while context.return_exprs:
+                    then_cond, then_expr = context.return_exprs.pop()
+                    return_expr = z3.If(then_cond, then_expr, return_expr)
+        return return_expr
 
 
 class P4Control(P4Callable):

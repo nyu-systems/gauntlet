@@ -128,7 +128,6 @@ class ParserSelect(P4Expression):
             select_conds.append(select_cond)
             var_store, contexts = p4_state.checkpoint()
             parser_state = self.state_list[case_name]
-            return_expr_copy = context.return_expr
             has_returned_copy = context.has_returned
             forward_cond_copy = context.forward_cond
             parser_state.eval(p4_state)
@@ -141,7 +140,6 @@ class ParserSelect(P4Expression):
                 switches.append((select_cond, then_vars))
             p4_state.restore(var_store, contexts)
             context.forward_cond = forward_cond_copy
-            context.return_expr = return_expr_copy
             context.has_returned = has_returned_copy
         default_parser_state = self.state_list[self.default]
         var_store, contexts = p4_state.checkpoint()
