@@ -58,33 +58,45 @@ class IfStatement(P4Statement):
     def __init__(self, cond, in_function, then_block, else_block=None):
         self.cond = cond
         self.then_block = then_block
-        self.else_block = else_block
+        if not else_block:
+            self.else_block = P4Noop()
+        else:
+            self.else_block = else_block
         self.in_function = in_function
 
     def eval(self, p4_state):
         context = p4_state.contexts[-1]
         exit_conds = []
         cond = p4_state.resolve_expr(self.cond)
-        var_store, contexts = p4_state.checkpoint()
         return_expr_copy = context.return_expr
-        forward_cond_copy = p4_state.forward_cond
-        p4_state.forward_cond = z3.And(p4_state.forward_cond, cond)
-        self.then_block.eval(p4_state)
-        context.then_has_returned = context.has_returned
-        then_has_exited = p4_state.has_exited
-        if context.then_has_returned or p4_state.has_exited:
-            exit_conds.append(cond)
-        then_expr = context.return_expr
-        then_vars = copy_attrs(p4_state.locals)
-        context.return_expr = return_expr_copy
-        p4_state.has_exited = False
-        context.has_returned = False
-        p4_state.forward_cond = forward_cond_copy
-        p4_state.restore(var_store, contexts)
+        context = p4_state.contexts[-1]
+        forward_cond_copy = context.forward_cond
 
-        if self.else_block and not z3.simplify(cond) == z3.BoolVal(True):
+        if not z3.simplify(cond) == z3.BoolVal(False):
             var_store, contexts = p4_state.checkpoint()
-            p4_state.forward_cond = z3.And(p4_state.forward_cond, z3.Not(cond))
+            context.forward_cond = z3.And(context.forward_cond, cond)
+            self.then_block.eval(p4_state)
+            context.then_has_returned = context.has_returned
+            then_has_exited = p4_state.has_exited
+            if context.then_has_returned or p4_state.has_exited:
+                exit_conds.append(cond)
+            then_expr = context.return_expr
+            then_vars = copy_attrs(p4_state.locals)
+            context.return_expr = return_expr_copy
+            p4_state.has_exited = False
+            context.has_returned = False
+            context.forward_cond = forward_cond_copy
+            p4_state.restore(var_store, contexts)
+        else:
+            then_vars = {}
+            then_has_exited = z3.simplify(cond) == z3.BoolVal(False)
+            context.then_has_returned = z3.simplify(cond) == z3.BoolVal(False)
+            then_expr = None
+
+        if not z3.simplify(cond) == z3.BoolVal(True):
+            var_store, contexts = p4_state.checkpoint()
+            context.forward_cond = z3.And(
+                context.forward_cond, z3.Not(cond))
             self.else_block.eval(p4_state)
             context.else_has_returned = context.has_returned
             else_expr = context.return_expr
@@ -96,8 +108,11 @@ class IfStatement(P4Statement):
             p4_state.has_exited = False
             context.has_returned = False
         else:
-            else_has_exited = then_has_exited
-        p4_state.forward_cond = z3.And(
+            else_has_exited = z3.simplify(cond) == z3.BoolVal(True)
+            context.else_has_returned = z3.simplify(cond) == z3.BoolVal(True)
+            else_expr = None
+
+        context.forward_cond = z3.And(
             forward_cond_copy, z3.Not(z3.Or(*exit_conds)))
 
         if not (then_has_exited or context.then_has_returned):
@@ -109,7 +124,7 @@ class IfStatement(P4Statement):
         if self.in_function:
             # need to propagate side effects, thankfully functions do not
             # support exit statements, otherwise this would not work
-            if context.has_returned:
+            if context.has_returned and then_expr is not None and else_expr is not None:
                 if not isinstance(then_expr, (z3.AstRef, int)):
                     # sometimes we have more complex types, so we create a mux
                     mux = P4Mux(cond, then_expr, else_expr)
@@ -139,12 +154,12 @@ class SwitchHit(P4Z3Class):
         case_matches = []
         context = p4_state.contexts[-1]
         exit_conds = []
-        forward_cond_copy = p4_state.forward_cond
+        forward_cond_copy = context.forward_cond
         for case in reversed(cases.values()):
             var_store, contexts = p4_state.checkpoint()
             return_expr_copy = context.return_expr
-            p4_state.forward_cond = z3.And(
-                p4_state.forward_cond, case["match"])
+            context.forward_cond = z3.And(
+                context.forward_cond, case["match"])
             case["case_block"].eval(p4_state)
             then_vars = copy_attrs(p4_state.locals)
             if not (context.has_returned or p4_state.has_exited):
@@ -154,19 +169,19 @@ class SwitchHit(P4Z3Class):
             context.return_expr = return_expr_copy
             context.has_returned = False
             p4_state.has_exited = False
-            p4_state.forward_cond = forward_cond_copy
+            context.forward_cond = forward_cond_copy
             p4_state.restore(var_store, contexts)
             case_matches.append(case["match"])
         var_store, contexts = p4_state.checkpoint()
         cond = z3.Not(z3.Or(*case_matches))
-        p4_state.forward_cond = z3.And(p4_state.forward_cond, cond)
+        context.forward_cond = z3.And(context.forward_cond, cond)
         self.default_case.eval(p4_state)
         if context.has_returned or p4_state.has_exited:
             p4_state.restore(var_store, contexts)
             exit_conds.append(cond)
         context.has_returned = False
         p4_state.has_exited = False
-        p4_state.forward_cond = z3.And(
+        context.forward_cond = z3.And(
             forward_cond_copy, z3.Not(z3.Or(*exit_conds)))
         for cond, then_vars in case_exprs:
             p4_state.merge_attrs(cond, then_vars)
@@ -240,7 +255,7 @@ class P4Return(P4Statement):
             expr = p4_state.resolve_expr(self.expr)
 
         return_vars = copy_attrs(p4_state.locals)
-        context.return_states.append((p4_state.forward_cond, return_vars))
+        context.return_states.append((context.forward_cond, return_vars))
 
         if isinstance(self.z3_type, z3.BitVecSortRef):
             expr = z3_cast(expr, self.z3_type)
@@ -275,9 +290,11 @@ class P4Exit(P4Statement):
 
     def eval(self, p4_state):
         var_store, contexts = p4_state.checkpoint()
+        forward_conds = []
         for context in reversed(p4_state.contexts):
             context.restore_context(p4_state)
+            forward_conds.append(context.forward_cond)
         p4_state.exit_states.append(
-            (p4_state.forward_cond, p4_state.get_z3_repr()))
+            (z3.And(*forward_conds), p4_state.get_z3_repr()))
         p4_state.restore(var_store, contexts)
         p4_state.has_exited = True

@@ -338,7 +338,7 @@ class P4lt(P4BinaryOp):
             # if x and y are ints we might deal with a signed value
             # we need to use the normal operator in this case
             if isinstance(x, int) and isinstance(y, int):
-                return op.lt(x, y)
+                return z3.BoolVal(op.lt(x, y))
             return z3.ULT(x, y)
         P4BinaryOp.__init__(self, lval, rval, operator)
 
@@ -349,7 +349,7 @@ class P4le(P4BinaryOp):
             # if x and y are ints we might deal with a signed value
             # we need to use the normal operator in this case
             if isinstance(x, int) and isinstance(y, int):
-                return op.le(x, y)
+                return z3.BoolVal(op.le(x, y))
             return z3.ULE(x, y)
         P4BinaryOp.__init__(self, lval, rval, operator)
 
@@ -360,7 +360,7 @@ class P4ge(P4BinaryOp):
             # if x and y are ints we might deal with a signed value
             # we need to use the normal operator in this case
             if isinstance(x, int) and isinstance(y, int):
-                return op.ge(x, y)
+                return z3.BoolVal(op.ge(x, y))
             return z3.UGE(x, y)
         P4BinaryOp.__init__(self, lval, rval, operator)
 
@@ -371,7 +371,7 @@ class P4gt(P4BinaryOp):
             # if x and y are ints we might deal with a signed value
             # we need to use the normal operator in this case
             if isinstance(x, int) and isinstance(y, int):
-                return op.gt(x, y)
+                return z3.BoolVal(op.gt(x, y))
             return z3.UGT(x, y)
         P4BinaryOp.__init__(self, lval, rval, operator)
 

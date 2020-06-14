@@ -8,6 +8,7 @@ header ethernet_t {
 
 struct Headers {
     ethernet_t eth_hdr;
+
 }
 
 parser p(packet_in pkt, out Headers hdr) {
@@ -16,21 +17,37 @@ parser p(packet_in pkt, out Headers hdr) {
     }
     state parse_hdrs {
         pkt.extract(hdr.eth_hdr);
+
         transition accept;
     }
 }
 
 control ingress(inout Headers h) {
 
+    action simple_action() {
+        h.eth_hdr.src_addr = 1;
 
+    }
+    table simple_table {
+        key = {
+            48w1: exact @name("Vmhbwk") ;
+        }
+        actions = {
+            simple_action();
+        }
+    }
     apply {
-
-        if (true) {
-            exit;
-        } else {
-            h.eth_hdr.eth_type = 16w1;
+        switch (simple_table.apply().action_run) {
+            simple_action: {
+                if (true) {
+                    return;
+                } else {
+                    h.eth_hdr.eth_type = 16w1;
+                }
+            }
         }
         h.eth_hdr.eth_type = 16w2;
+        exit;
 
     }
 }

@@ -947,7 +947,6 @@ class P4StateInstance(P4ComplexInstance):
         self.expr_chain = deque()
         self.globals = global_values
         self.has_exited = False
-        self.forward_cond = z3.BoolVal(True)
         self.exit_states = deque()
         self.contexts = deque()
         for instance_name, instance_val in instances.items():

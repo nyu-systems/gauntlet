@@ -10,6 +10,7 @@ struct Headers {
     ethernet_t eth_hdr;
 }
 
+
 parser p(packet_in pkt, out Headers hdr) {
     state start {
         transition parse_hdrs;
@@ -22,15 +23,30 @@ parser p(packet_in pkt, out Headers hdr) {
 
 control ingress(inout Headers h) {
 
-
-    apply {
-
-        if (true) {
-            exit;
+    action simple_action() {
+        if (false) {
+            return;
         } else {
-            h.eth_hdr.eth_type = 16w1;
+            exit;
         }
-        h.eth_hdr.eth_type = 16w2;
+    }
+    table simple_table {
+        key = {
+            64w1: exact @name("key") ;
+        }
+        actions = {
+            simple_action();
+        }
+    }
+    apply {
+        switch (simple_table.apply().action_run) {
+            simple_action: {
+                h.eth_hdr.eth_type = 16w1;
+
+            }
+        }
+
+        exit;
 
     }
 }
