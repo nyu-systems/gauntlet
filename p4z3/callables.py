@@ -21,8 +21,6 @@ class P4Callable(P4Z3Class):
         var_buffer = save_variables(p4_state, merged_args)
         expr = self.eval_callable(p4_state, merged_args, var_buffer)
         self.call_counter += 1
-        if p4_state.has_exited:
-            return expr
 
         context = p4_state.contexts[-1]
         while context.return_states:
@@ -190,7 +188,6 @@ class P4Context(P4Z3Class):
         self.return_states = deque()
         self.has_returned = False
         self.then_has_returned = False
-        self.forward_cond = None
         self.else_has_returned = False
         self.return_expr = None
 
@@ -545,6 +542,8 @@ class P4Table(P4Callable):
         const_entries = self.const_entries
         action_exprs = []
         action_matches = []
+        forward_cond_copy = p4_state.forward_cond
+        exit_conds = []
         # first evaluate all the constant entries
         for const_keys, action in reversed(const_entries):
             action_name = action[0]
@@ -566,14 +565,16 @@ class P4Table(P4Callable):
             log.debug("Evaluating constant action %s...", action_name)
             # state forks here
             var_store, contexts = p4_state.checkpoint()
+            cond = z3.And(self.locals["hit"], action_match)
+            p4_state.forward_cond = z3.And(p4_state.forward_cond, cond)
             self.eval_action(p4_state, action_tuple)
             then_vars = copy_attrs(p4_state.locals)
-            if p4_state.has_exited:
-                cond = z3.And(self.locals["hit"], action_match)
-                p4_state.exit_states.append((cond, p4_state.get_z3_repr()))
-                p4_state.has_exited = False
-            else:
+            if not p4_state.has_exited:
                 action_exprs.append((action_match, then_vars))
+            else:
+                exit_conds.append(cond)
+            p4_state.has_exited = False
+            p4_state.forward_cond = forward_cond_copy
             action_matches.append(action_match)
             p4_state.restore(var_store, contexts)
 
@@ -587,25 +588,30 @@ class P4Table(P4Callable):
             log.debug("Evaluating action %s...", action_name)
             # state forks here
             var_store, contexts = p4_state.checkpoint()
+            cond = z3.And(self.locals["hit"], action_match)
+            # p4_state.forward_cond = z3.And(p4_state.forward_cond, cond)
             self.eval_action(p4_state, action_tuple)
             then_vars = copy_attrs(p4_state.locals)
-            if p4_state.has_exited:
-                cond = z3.And(self.locals["hit"], action_match)
-                p4_state.exit_states.append((cond, p4_state.get_z3_repr()))
-                p4_state.has_exited = False
-            else:
+            if not p4_state.has_exited:
                 action_exprs.append((action_match, then_vars))
+            else:
+                exit_conds.append(cond)
+            p4_state.has_exited = False
+            p4_state.forward_cond = forward_cond_copy
             action_matches.append(action_match)
             p4_state.restore(var_store, contexts)
+
         # finally evaluate the default entry
         var_store, contexts = p4_state.checkpoint()
+        cond = z3.And(self.locals["hit"], z3.Not(z3.Or(*action_matches)))
+        # p4_state.forward_cond = z3.And(p4_state.forward_cond, cond)
         self.eval_default(p4_state)
         if p4_state.has_exited:
-            cond = z3.And(self.locals["hit"], z3.Not(z3.Or(*action_matches)))
-            p4_state.exit_states.append((cond, p4_state.get_z3_repr()))
-            p4_state.has_exited = False
+            exit_conds.append(cond)
             p4_state.restore(var_store, contexts)
-
+        p4_state.has_exited = False
+        p4_state.forward_cond = z3.And(
+            forward_cond_copy, z3.Not(z3.Or(*exit_conds)))
         # generate a nested set of if expressions per available action
         for cond, then_vars in action_exprs:
             hit_cond = z3.And(self.locals["hit"], cond)
