@@ -14,8 +14,8 @@ struct Headers {
 struct Meta {
 }
 
-bit<128> do_function(inout bit<128> isVT) {
-    return ((bit<128>)isVT);
+bit<128> do_function(inout bit<128> val) {
+    return ((bit<128>)val);
 }
 
 parser p(packet_in pkt, out Headers hdr, inout Meta m, inout standard_metadata_t sm) {
@@ -29,7 +29,7 @@ parser p(packet_in pkt, out Headers hdr, inout Meta m, inout standard_metadata_t
 }
 
 control ingress(inout Headers h, inout Meta m, inout standard_metadata_t sm) {
-    int int_val = 123;
+    const int int_val = 123;
     apply {
         return;
         bit<128> cast_int = ((bit<128>)int_val);
