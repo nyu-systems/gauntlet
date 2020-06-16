@@ -191,8 +191,6 @@ class P4Declaration(P4Statement):
         else:
             rval = gen_instance("undefined", self.z3_type)
         p4_state.set_or_add_var(self.lval, rval)
-        p4z3_expr = p4_state.pop_next_expr()
-        return p4z3_expr.eval(p4_state)
 
 class P4Member(P4Expression):
 
@@ -440,22 +438,24 @@ class P4ComplexInstance():
                     members.append(member)
         return members
 
-    def merge_attrs(self, cond, other_attrs):
-        for attr_name, then_val in other_attrs.items():
+    def merge_attrs(self, cond, then_attrs):
+        for then_name, then_val in then_attrs.items():
             try:
-                attr_val = self.resolve_reference(attr_name)
+                attr_val = self.locals[then_name]
             except KeyError:
                 # if the attribute does not exist it is not relevant
                 # this is because of scoping
                 # FIXME: Make sure this is actually the case...
                 continue
-            if isinstance(then_val, P4ComplexInstance):
+            if isinstance(attr_val, P4ComplexInstance):
+                attr_val.valid = z3.simplify(
+                    z3.If(cond, then_val.valid, attr_val.valid))
                 attr_val.merge_attrs(cond, then_val.locals)
             elif isinstance(attr_val, z3.ExprRef):
                 if then_val.sort() != attr_val.sort():
                     attr_val = z3_cast(attr_val, then_val.sort())
                 if_expr = z3.simplify(z3.If(cond, then_val, attr_val))
-                self.locals[attr_name] = if_expr
+                self.locals[then_name] = if_expr
 
     def __copy__(self):
         cls = self.__class__
@@ -499,7 +499,7 @@ class P4ComplexInstance():
     def activate(self, label="undefined"):
         pass
 
-    def deactivate(self, label="undefined"):
+    def deactivate(self, label="invalid"):
         pass
 
     def propagate_validity_bit(self):
@@ -544,7 +544,7 @@ class StructInstance(P4ComplexInstance):
             if isinstance(member_val, P4ComplexInstance):
                 member_val.activate()
 
-    def deactivate(self, label="undefined"):
+    def deactivate(self, label="invalid"):
         # structs may have headers that can be deactivated
         for member_name in self.members:
             member_val = self.resolve_reference(member_name)
@@ -562,7 +562,7 @@ class HeaderInstance(StructInstance):
 
     def __init__(self, name, p4z3_type, parent_const=None):
         super(HeaderInstance, self).__init__(name, p4z3_type, parent_const)
-        self.valid = z3.BoolVal(True)
+        self.valid = z3.BoolVal(False)
         self.locals["isValid"] = self.isValid
         self.locals["setValid"] = self.setValid
         self.locals["setInvalid"] = self.setInvalid
@@ -580,7 +580,7 @@ class HeaderInstance(StructInstance):
                     self.set_or_add_var(member_name, allocated_var)
         self.valid = z3.BoolVal(True)
 
-    def deactivate(self, label="undefined"):
+    def deactivate(self, label="invalid"):
         for member_name in self.members:
             member_val = self.resolve_reference(member_name)
             if isinstance(member_val, P4ComplexInstance):
@@ -886,6 +886,8 @@ class P4Extern(P4ComplexInstance):
         # these are method declarations, not methods
         for method in methods:
             self.locals[method.lval] = method.rval
+        # dummy
+        self.valid = False
 
     def init_type_params(self, *args, **kwargs):
         # the extern is instantiated, we need to copy it
@@ -944,6 +946,9 @@ class P4StateInstance(P4ComplexInstance):
         super(P4StateInstance, self).__init__(name, p4z3_type)
         self.expr_chain = deque()
         self.globals = global_values
+        self.has_exited = False
+        self.exit_states = deque()
+        self.contexts = deque()
         for instance_name, instance_val in instances.items():
             self.locals[instance_name] = instance_val
 
@@ -1068,14 +1073,14 @@ class P4StateInstance(P4ComplexInstance):
             # states in the parser FIXME
             elif isinstance(attr_val, P4Expression):
                 var_store[attr_name] = copy.copy(attr_val)
-        chain = self.copy_expr_chain()
-        return var_store, chain
+        contexts = self.contexts.copy()
+        return var_store, contexts
 
-    def restore(self, var_store, chain=None):
+    def restore(self, var_store, contexts=None):
         for attr_name, attr_val in var_store.items():
             self.locals[attr_name] = attr_val
-        if chain:
-            self.expr_chain = chain
+        if contexts:
+            self.contexts = contexts
 
     def clear_expr_chain(self):
         self.expr_chain.clear()

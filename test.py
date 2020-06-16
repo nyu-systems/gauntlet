@@ -28,12 +28,7 @@ P4C_BIN = FILE_DIR.joinpath("p4c/build/p4c-bm2-ss")
 # ***** P4-16 Standard Tests *****
 
 # these tests show pathological behavior and can currently not be tested
-slow_tests = [
-    "header-stack-ops-bmv2.p4",
-    "issue-2123-2-bmv2.p4",  # z3 gets stuck for unclear reasons
-    "issue-2123-3-bmv2.p4",  # z3 gets stuck for unclear reasons
-    "issue561-bmv2.p4",      # causes a segmentation fault
-]
+slow_tests = []
 # create a list of all the programs in the p4c test folder
 p416_tests = set()
 for test in list(P4_DIR.glob("*.p4")):
@@ -59,11 +54,10 @@ for test in list(VIOLATION_DIR.glob("*")):
 
 # these programs show pathological behavior and can currently not be tested
 false_friends_filter = [
-    "table_call_in_expression.p4",  # design flaw...
-    "indirect_header_assign.p4",  # current bug
-    "invalid_hdr_assign.p4",  # current bug
-    "header_function_cast.p4",  # current bug
+    "extern_arguments_2.p4",  # exit return value name
+    "extern_arguments_3.p4",  # exit return value name
 ]
+
 false_friends = set()
 for test in list(FALSE_FRIENDS_DIR.glob("*")):
     name = test.name
@@ -87,6 +81,8 @@ xfails = [
     "issue1334.p4",  # overloading, this test should normally not be skipped
     "logging.p4",  # string literal
     "string.p4",  # string literal
+    "issue-2123-2-bmv2.p4",  # range
+    "issue-2123-3-bmv2.p4",  # range
     "table-entries-range-bmv2.p4",  # range
     "fold_match.p4",  # range
     "pvs-struct-3-bmv2.p4",  # range
@@ -160,6 +156,3 @@ def test_xfails(request, test_name):
     p4_file, target_dir = prep_test(test_name)
     request.node.custom_err = run_z3p4_test(p4_file, target_dir)
     assert request.node.custom_err == util.EXIT_SUCCESS
-
-# cat analysis.log |
-# grep -Po '(?<=(Node )).*(?=not implemented)' | sort | uniq -c

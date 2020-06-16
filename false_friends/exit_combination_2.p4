@@ -5,7 +5,6 @@ header ethernet_t {
     bit<16> eth_type;
 }
 
-
 struct Headers {
     ethernet_t eth_hdr;
 }
@@ -21,25 +20,25 @@ parser p(packet_in pkt, out Headers hdr) {
 }
 
 control ingress(inout Headers h) {
-    action do_action(out bit<48> val) {
-        exit;
+    action dummy() {
     }
     table simple_table {
         key = {
-            h.eth_hdr.eth_type: exact @name("key") ;
+            48w100: exact @name("key") ;
         }
         actions = {
-            do_action(h.eth_hdr.src_addr);
+            dummy();
         }
     }
     apply {
         switch (simple_table.apply().action_run) {
-            do_action: {
-                return;
+            dummy: {
+                h.eth_hdr.src_addr = 1;
+                exit;
             }
         }
 
-        do_action(h.eth_hdr.dst_addr);
+        h.eth_hdr.dst_addr = 5;
 
     }
 }
