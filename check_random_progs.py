@@ -33,8 +33,9 @@ ITERATIONS = 100
 NUM_PROCESSES = 4
 
 KNOWN_BUGS = [
+    "functionsInlining.cpp:41: Null stat",
+    ": declaration not found",
     # bf
-    "Unsupported on target",
     "PHV allocation was not successful",
     "Unsupported action spanning multiple stages",
     "shift count must be",

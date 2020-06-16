@@ -53,7 +53,11 @@ for test in list(VIOLATION_DIR.glob("*")):
 # ***** tests that should *NOT* trigger a violation bug *****
 
 # these programs show pathological behavior and can currently not be tested
-false_friends_filter = []
+false_friends_filter = [
+    "extern_arguments_2.p4",  # exit return value name
+    "extern_arguments_3.p4",  # exit return value name
+]
+
 false_friends = set()
 for test in list(FALSE_FRIENDS_DIR.glob("*")):
     name = test.name
