@@ -17,9 +17,8 @@ import p4z3.util as util
 log = logging.getLogger(__name__)
 
 FILE_DIR = Path(__file__).parent.resolve()
-# whitebox should be p4test, but this is quite slow right now...
 WHITEBOX_BIN = FILE_DIR.joinpath("p4c/build/p4test")
-BLACKBOX_BIN = FILE_DIR.joinpath("p4c/build/p4c")
+BLACKBOX_BIN = FILE_DIR.joinpath("p4c/build/p4c-bm2-ss")
 TOFINO_BIN = FILE_DIR.joinpath("tofino/bf_src/install/bin/bf-p4c")
 P4Z3_BIN = FILE_DIR.joinpath("p4c/build/p4toz3")
 P4RANDOM_BIN = FILE_DIR.joinpath("p4c/build/p4bludgeon")

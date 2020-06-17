@@ -1,5 +1,4 @@
 #include <core.p4>
-#include <ebpf_model.p4>
 
 header OVERFLOW {
     bit<8> a;
@@ -62,15 +61,14 @@ struct Headers {
     BOOL b;
 }
 
-parser prs(packet_in p, out Headers headers) {
+parser p(packet_in p, out Headers headers) {
     state start {
         transition accept;
     }
 }
 
-control pipe(inout Headers h, out bool pass) {
+control ig(inout Headers h) {
     apply {
-        pass = true;
         //overflow
         h.overflow.a = 8w255 |+| 8w2;
         h.overflow.b = 8w3 |+| 8w0;
@@ -118,4 +116,8 @@ control pipe(inout Headers h, out bool pass) {
     }
 }
 
-ebpfFilter(prs(), pipe()) main;
+parser Parser(packet_in b, out Headers hdr);
+control Ingress(inout Headers hdr);
+package top(Parser p, Ingress ig);
+top(p(), ingress()) main;
+
