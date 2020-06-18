@@ -140,6 +140,7 @@ class P4Package():
                     for param in params:
                         args.append(param.name)
                     pipe.apply(p4_state, *args)
+                    p4_state.check_validity()
                     state = p4_state.get_z3_repr()
                     for exit_cond, exit_state in reversed(p4_state.exit_states):
                         state = z3.If(exit_cond, exit_state, state)
@@ -224,7 +225,6 @@ class P4Context(P4Z3Class):
                 # the var buffer is an ordered dict that maintains this order
                 log.debug("Copy-out: %s to %s", val, param_val)
                 p4_state.set_or_add_var(param_ref, val)
-        p4_state.check_validity()
 
     def eval(self, p4_state):
         self.restore_context(p4_state)

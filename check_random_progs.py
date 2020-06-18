@@ -18,7 +18,7 @@ log = logging.getLogger(__name__)
 
 FILE_DIR = Path(__file__).parent.resolve()
 WHITEBOX_BIN = FILE_DIR.joinpath("p4c/build/p4test")
-BLACKBOX_BIN = FILE_DIR.joinpath("p4c/build/p4c-bm2-ss")
+BLACKBOX_BIN = FILE_DIR.joinpath("p4c/build/p4c")
 TOFINO_BIN = FILE_DIR.joinpath("tofino/bf_src/install/bin/bf-p4c")
 P4Z3_BIN = FILE_DIR.joinpath("p4c/build/p4toz3")
 P4RANDOM_BIN = FILE_DIR.joinpath("p4c/build/p4bludgeon")
@@ -200,7 +200,7 @@ def check(idx, config):
     util.check_dir(dump_dir)
     log_file = dump_dir.joinpath(f"{test_name}.log")
     p4_file = dump_dir.joinpath(f"{test_name}.p4")
-    log.info("Testing p4 program %s", p4_file)
+    log.info("Testing P4 program %s", p4_file)
     # generate a random program
     result, p4_file = generate_p4_dump(P4RANDOM_BIN, p4_file, config)
     if result.returncode != util.EXIT_SUCCESS:

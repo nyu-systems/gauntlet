@@ -303,7 +303,7 @@ class P4ComplexInstance():
                 self.locals[z3_arg_name] = z3_member
 
             self.members[z3_arg_name] = member_constructor
-        self.valid = z3.BoolVal(True)
+        self.valid = z3.BoolVal(False)
 
     def bind(self, parent_const: z3.AstRef):
         members = []
@@ -499,7 +499,7 @@ class P4ComplexInstance():
     def activate(self, label="undefined"):
         pass
 
-    def deactivate(self, label="invalid"):
+    def deactivate(self, label="undefined"):
         pass
 
     def propagate_validity_bit(self):
@@ -514,15 +514,10 @@ class P4ComplexInstance():
         for member_name, member_constructor in self.members.items():
             # retrieve the member we are accessing
             member = self.resolve_reference(member_name)
-            member_type = member_constructor.range()
             if isinstance(member, P4ComplexInstance):
                 # it is a complex type
                 # propagate the validity to all children
                 member.check_validity()
-            elif self.valid == z3.BoolVal(False):
-                # a simple z3 type, just update the constructor
-                self.set_or_add_var(
-                    member_name, z3.Const("invalid", member_type))
 
 
 class StructType(P4ComplexType):
@@ -544,7 +539,7 @@ class StructInstance(P4ComplexInstance):
             if isinstance(member_val, P4ComplexInstance):
                 member_val.activate()
 
-    def deactivate(self, label="invalid"):
+    def deactivate(self, label="undefined"):
         # structs may have headers that can be deactivated
         for member_name in self.members:
             member_val = self.resolve_reference(member_name)
@@ -580,7 +575,7 @@ class HeaderInstance(StructInstance):
                     self.set_or_add_var(member_name, allocated_var)
         self.valid = z3.BoolVal(True)
 
-    def deactivate(self, label="invalid"):
+    def deactivate(self, label="undefined"):
         for member_name in self.members:
             member_val = self.resolve_reference(member_name)
             if isinstance(member_val, P4ComplexInstance):
@@ -626,6 +621,21 @@ class HeaderInstance(StructInstance):
         # FIXME: This ignores copying
         # the reference in the parent will be stale
         self.union_parent = union_instance
+
+    def check_validity(self):
+        for member_name, member_constructor in self.members.items():
+            # retrieve the member we are accessing
+            member = self.resolve_reference(member_name)
+            member_type = member_constructor.range()
+            if isinstance(member, P4ComplexInstance):
+                # it is a complex type
+                # propagate the validity to all children
+                member.check_validity()
+            else:
+                # if the header is invalid set the variable to "undefined"
+                cond = z3.simplify(z3.If(self.valid, member,
+                                         z3.Const("invalid", member_type)))
+                self.set_or_add_var(member_name, cond)
 
     def __eq__(self, other):
         if isinstance(other, HeaderInstance):

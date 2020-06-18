@@ -377,6 +377,8 @@ def dissect_conds(config, conditions):
         has_table_action = False
         has_undefined_var = False
         for cond_var in z3.z3util.get_vars(cond):
+            if "valid" in str(cond_var):
+                has_undefined_var = True
             if config["ingress_var"] in str(cond_var):
                 has_member = True
             elif "table_key" in str(cond_var):

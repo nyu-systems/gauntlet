@@ -18,12 +18,11 @@ class RejectState(P4Statement):
             context.restore_context(p4_state)
         p4_state.deactivate("invalid")
         p4_state.has_exited = True
-        p4_state.check_validity()
 
 class AcceptState(P4Statement):
 
     def eval(self, p4_state):
-        p4_state.check_validity()
+        pass
 
 class ParserTree(P4Expression):
 
