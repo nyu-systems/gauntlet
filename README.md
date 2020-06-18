@@ -12,7 +12,9 @@ The goal is to ensure that a P4 compiler correctly translates a given input P4 p
 
 2.  **Translation Validation**, which analyzes the intermediate representation of a program after each compiler pass and identifies potential discrepancies. We support translation validation for the open-source p4c compiler front- and mid-end libraries.
 
-3. **Semantics-Guided Fuzzing**, which infers input and and corresponding output for a particular P4 program and generates end-to-end test packets. We have currently implemented semantics-guided fuzzing for the [bmv2 simple-switch](https://github.com/p4lang/behavioral-model) and the Tofino hardware switch.
+3. **Symbolic Execution**, which infers input and and corresponding output for a particular P4 program and generates end-to-end test packets. We have currently implemented symbolic execution for the [bmv2 simple-switch](https://github.com/p4lang/behavioral-model) and the Tofino hardware switch.
+
+For more details and a broad overview of the concepts in Gauntlet, refer to our [preprint](https://arxiv.org/abs/2006.01074). 
 
 ##  Requirements
 This repository works best with a recent version of Ubuntu (18.04+). The minimum required Python version is 3.6 (f-strings).
@@ -44,14 +46,14 @@ To validate that a program is compiled correctly by `p4c`, you can run
 is working correctly and to pinpoint the faulty optimization pass if it isn't
 working correctly.
 
-### Semantics-Guided Fuzzing
+### Symbolic Execution
 
-Semantics-guided fuzzing requires the behavioral model or the Tofino compiler to be installed. The correct binaries and include files need to be instrumented in the `check_p4_blackbox.py` file. Exact instructions will follow.
+Symbolic execution requires the behavioral model or the Tofino compiler to be installed. The correct binaries and include files need to be instrumented in the `check_p4_blackbox.py` file. Exact instructions will follow.
 An example command is
 
      p4c/build/p4bludgeon --output out.p4 --arch v1model && python3 check_p4_blackbox.py -i out.p4 -r
 This sequence of commands will first generate a random program, infer expected input and output values, convert them to a test file (in this case, they are stf files) and finally run a full test. If the observed output differs from the expected output, the tool will throw  an error. The `-r` flag denotes randomization of the input, it is optional.
-To run semantics-guided fuzzing for the Tofino backend, `sudo` will have to be used.
+To run symbolic execution for the Tofino backend, `sudo` will have to be used.
 
      p4c/build/p4bludgeon --output out.p4 --arch tna && sudo -E python3 check_p4_blackbox.py -i out.p4 -r -t
 
