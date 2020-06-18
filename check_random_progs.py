@@ -8,6 +8,7 @@ import errno
 import os
 import signal
 import time
+import random
 
 from pathlib import Path
 import p4z3.util as util
@@ -87,9 +88,10 @@ def generate_id():
     return sw_id
 
 
-def generate_p4_dump(p4c_bin, p4_file, config):
+def generate_p4_prog(p4c_bin, p4_file, config, seed):
     p4_cmd = f"{p4c_bin} "
     p4_cmd += f"--output {p4_file} "
+    p4_cmd += f"--seed {seed} "
     if config["use_tofino"]:
         p4_cmd += "--arch tna "
     elif config["use_blackbox"]:
@@ -200,9 +202,10 @@ def check(idx, config):
     util.check_dir(dump_dir)
     log_file = dump_dir.joinpath(f"{test_name}.log")
     p4_file = dump_dir.joinpath(f"{test_name}.p4")
-    log.info("Testing P4 program %s", p4_file)
+    seed = random.getrandbits(64)
+    log.info("Testing P4 program: %s - Seed: %s", p4_file.name, seed)
     # generate a random program
-    result, p4_file = generate_p4_dump(P4RANDOM_BIN, p4_file, config)
+    result, p4_file = generate_p4_prog(P4RANDOM_BIN, p4_file, config, seed)
     if result.returncode != util.EXIT_SUCCESS:
         log.error("Failed generate P4 code!")
         dump_result(result, GENERATOR_BUG_DIR, p4_file)
