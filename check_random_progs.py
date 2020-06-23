@@ -8,7 +8,6 @@ import errno
 import os
 import signal
 import time
-import random
 
 from pathlib import Path
 import p4z3.util as util
@@ -138,7 +137,7 @@ def is_known_bug(result):
 
 @timeout(seconds=600)
 def validate_p4(p4_file, target_dir, p4c_bin, log_file):
-    p4z3_cmd = "python3 check_p4_whitebox.py "
+    p4z3_cmd = "python3 validate_p4_translation.py "
     p4z3_cmd += f"-i {p4_file} "
     p4z3_cmd += f"-o {target_dir} "
     p4z3_cmd += f"-p {p4c_bin} "
@@ -149,7 +148,7 @@ def validate_p4(p4_file, target_dir, p4c_bin, log_file):
 
 @timeout(seconds=600)
 def validate_p4_blackbox(p4_file, target_dir, log_file, config):
-    p4z3_cmd = "python3 check_p4_blackbox.py "
+    p4z3_cmd = "python3 generate_p4_test.py "
     p4z3_cmd += f"-i {p4_file} "
     p4z3_cmd += f"-o {target_dir} "
     p4z3_cmd += f"-l {log_file} "
@@ -185,11 +184,11 @@ def validate(dump_dir, p4_file, log_file, config):
             err_log = dump_dir.joinpath(Path(p4_file.stem + "_ptf_err.log"))
             dump_file(VALIDATION_BUG_DIR, err_log)
         if config["use_blackbox"]:
-            log.error("python3 check_p4_blackbox.py -i %s", out_file)
+            log.error("python3 generate_p4_test.py -i %s", out_file)
             stf_name = dump_dir.joinpath(Path(p4_file.stem + ".stf"))
             dump_file(VALIDATION_BUG_DIR, stf_name)
         else:
-            log.error("python3 check_p4_whitebox.py -i %s", out_file)
+            log.error("python3 validate_p4_translation.py -i %s", out_file)
         dump_file(VALIDATION_BUG_DIR, log_file)
         dump_file(VALIDATION_BUG_DIR, p4_file)
     return result
@@ -202,7 +201,7 @@ def check(idx, config):
     util.check_dir(dump_dir)
     log_file = dump_dir.joinpath(f"{test_name}.log")
     p4_file = dump_dir.joinpath(f"{test_name}.p4")
-    seed = random.getrandbits(64)
+    seed = int.from_bytes(os.getrandom(8), "big")
     log.info("Testing P4 program: %s - Seed: %s", p4_file.name, seed)
     # generate a random program
     result, p4_file = generate_p4_prog(P4RANDOM_BIN, p4_file, config, seed)

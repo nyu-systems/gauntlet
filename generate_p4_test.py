@@ -506,7 +506,7 @@ def main(args):
     config = {}
     config["use_tofino"] = args.use_tofino
     if args.use_tofino:
-        config["pipe_name"] = "Pipeline_ingress"
+        config["pipe_name"] = "pipe0_ingress"
         config["ingress_var"] = "ingress"
     else:
         config["pipe_name"] = "ig"

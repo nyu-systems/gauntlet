@@ -9,9 +9,8 @@ sudo apt-get update
 
 
 # Install pip and python
-sudo apt install -y python
 sudo apt install -y python3
-sudo apt install -y python-pip
+sudo apt install -y python
 sudo apt install -y python3-pip
 
 # Install the p4 compiler dependencies

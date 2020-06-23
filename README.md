@@ -14,7 +14,7 @@ The goal is to ensure that a P4 compiler correctly translates a given input P4 p
 
 3. **Symbolic Execution**, which infers input and and corresponding output for a particular P4 program and generates end-to-end test packets. We have currently implemented symbolic execution for the [bmv2 simple-switch](https://github.com/p4lang/behavioral-model) and the Tofino hardware switch.
 
-For more details and a broad overview of the concepts in Gauntlet, refer to our [preprint](https://arxiv.org/abs/2006.01074). 
+For more details and a broad overview of the concepts in Gauntlet, refer to our [preprint](https://arxiv.org/abs/2006.01074).
 
 ##  Requirements
 This repository works best with a recent version of Ubuntu (18.04+). The minimum required Python version is 3.6 (f-strings).
@@ -41,21 +41,21 @@ to retrieve the semantic representation of a particular P4 program. This will pr
 ### Validating a P4C program
 To validate that a program is compiled correctly by `p4c`, you can run
 
-     p4c/build/p4bludgeon --output out.p4 --arch top && python3 check_p4_whitebox.py -i out.p4
+     p4c/build/p4bludgeon --output out.p4 --arch top && python3 validate_p4_translation.py -i out.p4
 `check_p4_compilation.py` checks if a sequence of P4 programs are all equivalent to each other using the `check_p4_pair.py` program as a sub routine. This sequence is produced by running p4c on an input P4 program. When p4c is run on an input P4 program, it produces a sequence of P4 programs, where each P4 program corresponds to the version of the input P4 program after a p4c optimization pass. This allows us to validate whether compilation/translation
 is working correctly and to pinpoint the faulty optimization pass if it isn't
 working correctly.
 
 ### Symbolic Execution
 
-Symbolic execution requires the behavioral model or the Tofino compiler to be installed. The correct binaries and include files need to be instrumented in the `check_p4_blackbox.py` file. Exact instructions will follow.
+Symbolic execution requires the behavioral model or the Tofino compiler to be installed. The correct binaries and include files need to be instrumented in the `generate_p4_test.py` file. Exact instructions will follow.
 An example command is
 
-     p4c/build/p4bludgeon --output out.p4 --arch v1model && python3 check_p4_blackbox.py -i out.p4 -r
+     p4c/build/p4bludgeon --output out.p4 --arch v1model && python3 generate_p4_test.py -i out.p4 -r
 This sequence of commands will first generate a random program, infer expected input and output values, convert them to a test file (in this case, they are stf files) and finally run a full test. If the observed output differs from the expected output, the tool will throw  an error. The `-r` flag denotes randomization of the input, it is optional.
 To run symbolic execution for the Tofino backend, `sudo` will have to be used.
 
-     p4c/build/p4bludgeon --output out.p4 --arch tna && sudo -E python3 check_p4_blackbox.py -i out.p4 -r -t
+     p4c/build/p4bludgeon --output out.p4 --arch tna && sudo -E python3 generate_p4_test.py -i out.p4 -r -t
 
 ### Fuzz-testing at Scale
 We also include facilities to fuzz test the compilers at scale.

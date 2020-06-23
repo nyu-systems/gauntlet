@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 import p4z3.util as util
-import check_p4_whitebox as p4c_check
+import validate_p4_translation as p4c_check
 import check_p4_pair as z3_check
 
 # configure logging
