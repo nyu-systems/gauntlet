@@ -10,11 +10,6 @@ struct Headers {
 }
 
 
-bit<48> simple_val_fun() {
-    ethernet_t tmp = { 1, 1, 1 };
-    tmp.src_addr = 2;
-    return tmp.src_addr;
-}
 
 
 parser p(packet_in pkt, out Headers hdr) {
@@ -33,7 +28,8 @@ control ingress(inout Headers h) {
         if(h.eth_hdr.eth_type == 1) {
             h.eth_hdr.src_addr = 1;
         } else {
-            h.eth_hdr.src_addr = simple_val_fun();
+            ethernet_t tmp = { h.eth_hdr.src_addr, h.eth_hdr.src_addr, h.eth_hdr.eth_type };
+            h.eth_hdr.src_addr =  tmp.src_addr;
         }
     }
 

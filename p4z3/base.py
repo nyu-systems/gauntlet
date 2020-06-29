@@ -165,11 +165,20 @@ class DefaultExpression(P4Z3Class):
 
 
 class P4Declaration(P4Statement):
-    # the difference between a P4Declaration and a P4Assignment is that
-    # we resolve the variable in the P4Assignment
+    # the difference between a P4Declaration and a ValueDeclaration is that
+    # we resolve the variable in the ValueDeclaration
     # in the declaration we assign variables as is.
     # they are resolved at runtime by other classes
-    def __init__(self, lval, rval, z3_type=None):
+    def __init__(self, lval, rval):
+        self.name = lval
+        self.rval = rval
+
+    def eval(self, p4_state):
+        p4_state.set_or_add_var(self.name, self.rval)
+
+
+class ValueDeclaration(P4Statement):
+    def __init__(self, lval, rval, z3_type):
         self.lval = lval
         self.rval = rval
         self.z3_type = z3_type
@@ -179,15 +188,18 @@ class P4Declaration(P4Statement):
         # FIXME: Untangle this a bit
         if self.rval is not None:
             rval = p4_state.resolve_expr(self.rval)
-            if self.z3_type is not None:
-                if isinstance(rval, int):
-                    if isinstance(self.z3_type, (z3.BitVecSortRef)):
-                        rval = z3_cast(rval, self.z3_type)
-                elif self.z3_type != rval.sort():
-                    msg = f"There was an problem setting {self.lval} to {rval}. " \
-                        f"Type Mismatch! Target type {self.z3_type} " \
-                        f"does not match with input type {rval.sort()}"
-                    raise RuntimeError(msg)
+            if isinstance(rval, int):
+                if isinstance(self.z3_type, (z3.BitVecSortRef)):
+                    rval = z3_cast(rval, self.z3_type)
+            elif isinstance(rval, list):
+                instance = gen_instance("undefined", self.z3_type)
+                instance.set_list(rval)
+                rval = instance
+            elif self.z3_type != rval.sort():
+                msg = f"There was an problem setting {self.lval} to {rval}. " \
+                    f"Type Mismatch! Target type {self.z3_type} " \
+                    f"does not match with input type {rval.sort()}"
+                raise RuntimeError(msg)
         else:
             rval = gen_instance("undefined", self.z3_type)
         p4_state.set_or_add_var(self.lval, rval)
@@ -895,7 +907,7 @@ class P4Extern(P4ComplexInstance):
         self.type_params = type_params
         # these are method declarations, not methods
         for method in methods:
-            self.locals[method.lval] = method.rval
+            self.locals[method.name] = method.rval
         # dummy
         self.valid = False
 
@@ -1063,7 +1075,10 @@ class P4StateInstance(P4ComplexInstance):
                 # get the parent class and update its value
                 prefix, suffix = var.rsplit(".", 1)
                 # prefix may be a pointer to an actual complex type, resolve it
-                sub_class = self.resolve_reference(prefix)
+                if prefix:
+                    sub_class = self.resolve_reference(prefix)
+                else:
+                    sub_class = self
                 var = sub_class.locals[suffix]
             else:
                 try:
@@ -1129,7 +1144,8 @@ class P4StateInstance(P4ComplexInstance):
 class Z3Reg():
     def __init__(self):
         self._types = {}
-        self._globals = {}
+        self.p4_state = P4State("global_state", {}).instantiate(
+            "global_state", {}, {})
 
     def declare_global(self, p4_class=None):
         if not p4_class:
@@ -1142,19 +1158,26 @@ class Z3Reg():
             name = p4_class.name
             self._types[name] = p4_class
             # I hate externs so much...
-            self._globals[name] = p4_class.initialize()
+            self.p4_state.globals[name] = p4_class.initialize()
         elif isinstance(p4_class, (Enum)):
             # enums are special static types
             # we need to add them to the list of accessible variables
             # and their type is actually the z3 type, not the class type
             name = p4_class.name
-            self._globals[name] = p4_class
+            self.p4_state.globals[name] = p4_class
             self._types[name] = p4_class.z3_type
         elif isinstance(p4_class, P4Declaration):
             # FIXME: Typedefs should not be added here
-            name = p4_class.lval
-            self._globals[name] = p4_class.rval
+            name = p4_class.name
+            self.p4_state.globals[name] = p4_class.rval
             self._types[name] = p4_class.rval
+        elif isinstance(p4_class, ValueDeclaration):
+            # FIXME: Typedefs should not be added here
+            p4_class.eval(self.p4_state)
+            name = p4_class.lval
+            rval = self.p4_state.resolve_reference(name)
+            self.p4_state.globals[name] = rval
+            self._types[name] = rval
         else:
             raise RuntimeError(
                 "Unsupported global declaration %s" % type(p4_class))
@@ -1172,7 +1195,7 @@ class Z3Reg():
                 instances[param.name] = instance
         instance_name = f"{name}"
         p4_state = P4State(name, stripped_args).instantiate(
-            instance_name, self._globals, instances)
+            instance_name, self.p4_state.globals, instances)
         p4_state.propagate_validity_bit()
         return p4_state
 
@@ -1195,3 +1218,17 @@ class Z3Reg():
         p4_stack = HeaderStack(name, [z3_type] * num)
         self.declare_global(p4_stack)
         return self.type(name)
+
+    def get_value(self, expr):
+        val = None
+        if isinstance(expr, P4Expression):
+            val = expr.get_value()
+        elif isinstance(expr, str):
+            val = self.p4_state.globals[expr]
+        else:
+            raise RuntimeError(
+                "Unsupported value expression %s" % type(expr))
+        if isinstance(val, z3.BitVecNumRef):
+            # unfortunately, we need to get the real int value here
+            val = Z3Int(val.as_long(), val.size())
+        return val

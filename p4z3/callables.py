@@ -159,7 +159,7 @@ class P4Package():
                         f"Unsupported value {pipe}, type {type(pipe)}."
                         " It does not make sense as a P4 pipeline.")
             elif isinstance(pipe_val, str):
-                pipe = self.z3_reg._globals[pipe_val]
+                pipe = self.z3_reg.p4_state.globals[pipe_val]
                 # execute the package by calling it
                 pipe.initialize()
                 # resolve all the sub_pipes

@@ -56,7 +56,6 @@ for test in list(VIOLATION_DIR.glob("*")):
 false_friends_filter = [
     "extern_arguments_2.p4",  # exit return value name
     "extern_arguments_3.p4",  # exit return value name
-    "typedef_cast.p4",       # incorrect use of P4Declaration
 ]
 
 false_friends = set()
