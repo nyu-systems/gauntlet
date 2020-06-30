@@ -22,18 +22,25 @@ VIOLATION_DIR = FILE_DIR.joinpath("violated")
 FALSE_FRIENDS_DIR = FILE_DIR.joinpath("false_friends")
 P4_DIR = FILE_DIR.joinpath("p4c/testdata/p4_16_samples/")
 # p4c binaries
-P4C_BIN = FILE_DIR.joinpath("p4c/build/p4c-bm2-ss")
+P4C_BIN = FILE_DIR.joinpath("p4c/build/p4test")
 
 
 # ***** P4-16 Standard Tests *****
 
 # these tests show pathological behavior and can currently not be tested
-slow_tests = []
+bad_tests = [
+]
 # create a list of all the programs in the p4c test folder
 p416_tests = set()
+
+# this test is in a custom directory, we need to add it manually
+# right now it leads to a segmentation fault in z3, so comment
+# p416_tests.add("fabric_20190420/fabric.p4")
+
+# we only go one level deep
 for test in list(P4_DIR.glob("*.p4")):
     name = test.name
-    if name in slow_tests:
+    if name in bad_tests:
         continue
     p416_tests.add(name)
 
@@ -104,7 +111,7 @@ def prep_test(p4_name, p4_dir=P4_DIR):
 
 
 def run_z3p4_test(p4_file, target_dir):
-    if p4_file.name in slow_tests:
+    if p4_file.name in bad_tests:
         pytest.skip(f"Skipping slow test {p4_file}.")
         return util.EXIT_SKIPPED
     result = p4c_check.validate_translation(p4_file, target_dir, P4C_BIN)
