@@ -616,8 +616,10 @@ class P4Table(P4Callable):
 
         # finally evaluate the default entry
         var_store, contexts = p4_state.checkpoint()
-        cond = z3.And(self.locals["hit"], z3.Not(z3.Or(*action_matches)))
-        context.tmp_forward_cond = z3.And(context.tmp_forward_cond, cond)
+        # this hits when the table is either missed, or no action matches
+        cond = z3.Or(self.locals["miss"], z3.Not(z3.Or(*action_matches)))
+        context.tmp_forward_cond = z3.And(forward_cond_copy, cond)
+        log.info(context.tmp_forward_cond)
         self.eval_default(p4_state)
         if p4_state.has_exited:
             p4_state.restore(var_store, contexts)
