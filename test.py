@@ -56,6 +56,7 @@ for test in list(VIOLATION_DIR.glob("*")):
 false_friends_filter = [
     "extern_arguments_2.p4",  # exit return value name
     "extern_arguments_3.p4",  # exit return value name
+    "exit_after_valid.p4",  # z3 crashes, not sure why
 ]
 
 false_friends = set()
@@ -128,7 +129,7 @@ def run_violation_test(test_folder):
 
 @pytest.mark.run_default
 @pytest.mark.parametrize("test_name", p416_tests)
-def test_bmv2(request, test_name):
+def test_p4c(request, test_name):
     p4_file, target_dir = prep_test(test_name)
     request.node.custom_err = run_z3p4_test(p4_file, target_dir)
     if p4_file.name in xfails and request.node.custom_err != util.EXIT_SUCCESS:
