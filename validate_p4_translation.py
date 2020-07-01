@@ -19,6 +19,9 @@ PASSES = "--top4 "
 PASSES += "FrontEnd,MidEnd "
 # PASSES += "FrontEnd,MidEnd,PassManager "
 # PASSES += "-vvvv "
+# passes with "::" in them are a little bit funky.. ignore those
+# this emits all passes, but that is too much right now...
+# PASSES += "\"^(?!.*::.*).*\" "
 
 
 def generate_p4_dump(p4c_bin, p4_file, p4_dmp_dir):
@@ -84,6 +87,8 @@ def list_passes(p4c_bin, p4_file, p4_dmp_dir):
     p4_pass_cmd += "| sed -e '/FrontEnd\\|MidEnd/!d' | "
     # p4_pass_cmd += "| sed -e '/FrontEnd\\|MidEnd\\|PassManager/!d' | "
     p4_pass_cmd += "sed -e '/Writing program to/d' "
+    # p4_pass_cmd += "| grep 'Writing program to' "
+    # p4_pass_cmd += "| sed -e 's/Writing program to //g' "
     log.debug("Grabbing passes with command %s", p4_pass_cmd)
     output = subprocess.check_output(p4_pass_cmd, shell=True)
     passes = output.decode('ascii').strip().split('\n')

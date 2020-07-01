@@ -156,7 +156,7 @@ class P4Package():
                         self.pipes[sub_pipe_name] = sub_pipe_val
                 else:
                     raise RuntimeError(
-                        f"Unsupported value {pipe}, type {type(pipe)}."
+                        f"Unsupported ConstCall value {pipe}, type {type(pipe)}."
                         " It does not make sense as a P4 pipeline.")
             elif isinstance(pipe_val, str):
                 pipe = self.z3_reg.p4_state.globals[pipe_val]
@@ -619,7 +619,6 @@ class P4Table(P4Callable):
         # this hits when the table is either missed, or no action matches
         cond = z3.Or(self.locals["miss"], z3.Not(z3.Or(*action_matches)))
         context.tmp_forward_cond = z3.And(forward_cond_copy, cond)
-        log.info(context.tmp_forward_cond)
         self.eval_default(p4_state)
         if p4_state.has_exited:
             p4_state.restore(var_store, contexts)
