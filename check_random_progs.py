@@ -17,9 +17,10 @@ import p4z3.util as util
 log = logging.getLogger(__name__)
 
 FILE_DIR = Path(__file__).parent.resolve()
-WHITEBOX_BIN = FILE_DIR.joinpath("p4c/build/p4test")
-BLACKBOX_BIN = FILE_DIR.joinpath("p4c/build/p4c")
-TOFINO_BIN = FILE_DIR.joinpath("tofino/bf_src/install/bin/bf-p4c")
+P4TEST_BIN = FILE_DIR.joinpath("p4c/build/p4test")
+SS_BIN = FILE_DIR.joinpath("p4c/build/p4c-bm2-ss")
+PSA_BIN = FILE_DIR.joinpath("p4c/build/p4c-bm2-psa")
+TNA_BIN = FILE_DIR.joinpath("tofino/bf_src/install/bin/bf-p4c")
 P4Z3_BIN = FILE_DIR.joinpath("p4c/build/p4toz3")
 P4RANDOM_BIN = FILE_DIR.joinpath("p4c/build/p4bludgeon")
 
@@ -57,6 +58,19 @@ KNOWN_BUGS = [
     "Fields involved in the same MAU operations have conflicting PARDE",
 ]
 
+SUPPORT_MATRIX = {
+    "psa": {"random": True, "validation": True,
+            "blackbox": False, "compiler": PSA_BIN},
+    # Tofino does not allow insights into the individual passes
+    # So we are forced to use the blackbox technique
+    "tna": {"random": True, "validation": False,
+            "blackbox": True, "compiler": TNA_BIN},
+    "top": {"random": True, "validation": True,
+            "blackbox": False, "compiler": P4TEST_BIN},
+    "v1model": {"random": True, "validation": True,
+                "blackbox": True, "compiler": SS_BIN},
+}
+
 
 def timeout(seconds=10, error_message=os.strerror(errno.ETIME)):
     def decorator(func):
@@ -88,15 +102,11 @@ def generate_id():
 
 
 def generate_p4_prog(p4c_bin, p4_file, config, seed):
+    arch = config["arch"]
     p4_cmd = f"{p4c_bin} "
     p4_cmd += f"--output {p4_file} "
     p4_cmd += f"--seed {seed} "
-    if config["use_tofino"]:
-        p4_cmd += "--arch tna "
-    elif config["use_blackbox"]:
-        p4_cmd += "--arch v1model "
-    else:
-        p4_cmd += "--arch top "
+    p4_cmd += f"--arch {arch} "
     log.debug("Generating random p4 code with command %s ", p4_cmd)
     return util.exec_process(p4_cmd), p4_file
 
@@ -105,8 +115,10 @@ def compile_p4_prog(p4c_bin, p4_file, p4_dump_dir):
     p4_cmd = f"{p4c_bin} "
     # p4_cmd += f"-vvvv "
     p4_cmd += f"{p4_file} "
-    if p4c_bin != WHITEBOX_BIN:
-        p4_cmd += f"-o  {p4_dump_dir}"
+    # p4test does not have the -o flag
+    if p4c_bin != P4TEST_BIN:
+        out_file = p4_file.with_suffix(".out").name
+        p4_cmd += f"-o  {p4_dump_dir}/{out_file}"
     log.debug("Checking compilation with command %s ", p4_cmd)
     return util.exec_process(p4_cmd)
 
@@ -152,7 +164,8 @@ def validate_p4_blackbox(p4_file, target_dir, log_file, config):
     p4z3_cmd += f"-i {p4_file} "
     p4z3_cmd += f"-o {target_dir} "
     p4z3_cmd += f"-l {log_file} "
-    if config["use_tofino"]:
+    # FIXME: This should be an arch argument
+    if config["arch"] == "tna":
         p4z3_cmd += "-t "
     if config["randomize_input"]:
         p4z3_cmd += "-r "
@@ -163,13 +176,8 @@ def validate_p4_blackbox(p4_file, target_dir, log_file, config):
 
 def validate(dump_dir, p4_file, log_file, config):
     try:
-        # Tofino does not allow insights into the individual passes
-        # So we are forced to use the blackbox technique
-        if config["use_blackbox"]:
-            result = validate_p4_blackbox(
-                p4_file, dump_dir, log_file, config)
-        else:
-            result = validate_p4(p4_file, dump_dir, WHITEBOX_BIN, log_file)
+        result = validate_p4(
+            p4_file, dump_dir, config["compiler_bin"], log_file)
     except TimeoutError:
         log.error("Validation timed out.")
         dump_file(TIMEOUT_DIR, p4_file)
@@ -180,15 +188,31 @@ def validate(dump_dir, p4_file, log_file, config):
         log.error("Failed to validate the P4 code!")
         log.error("Rerun the example with:")
         out_file = VALIDATION_BUG_DIR.joinpath(p4_file.name)
-        if config["use_tofino"]:
+        log.error("python3 validate_p4_translation.py -i %s", out_file)
+        dump_file(VALIDATION_BUG_DIR, log_file)
+        dump_file(VALIDATION_BUG_DIR, p4_file)
+    return result
+
+
+def run_p4_test(dump_dir, p4_file, log_file, config):
+    try:
+        result = validate_p4_blackbox(p4_file, dump_dir, log_file, config)
+    except TimeoutError:
+        log.error("Validation timed out.")
+        dump_file(TIMEOUT_DIR, p4_file)
+        dump_file(TIMEOUT_DIR, log_file)
+        # reset the dump directory
+        return util.EXIT_FAILURE
+    if result != util.EXIT_SUCCESS:
+        log.error("Failed to validate the P4 code!")
+        log.error("Rerun the example with:")
+        out_file = VALIDATION_BUG_DIR.joinpath(p4_file.name)
+        if config["arch"] == "tna":
             err_log = dump_dir.joinpath(Path(p4_file.stem + "_ptf_err.log"))
             dump_file(VALIDATION_BUG_DIR, err_log)
-        if config["use_blackbox"]:
-            log.error("python3 generate_p4_test.py -i %s", out_file)
-            stf_name = dump_dir.joinpath(Path(p4_file.stem + ".stf"))
-            dump_file(VALIDATION_BUG_DIR, stf_name)
-        else:
-            log.error("python3 validate_p4_translation.py -i %s", out_file)
+        log.error("python3 generate_p4_test.py -i %s", out_file)
+        stf_name = dump_dir.joinpath(Path(p4_file.stem + ".stf"))
+        dump_file(VALIDATION_BUG_DIR, stf_name)
         dump_file(VALIDATION_BUG_DIR, log_file)
         dump_file(VALIDATION_BUG_DIR, p4_file)
     return result
@@ -212,12 +236,7 @@ def check(idx, config):
         util.del_dir(dump_dir)
         return result.returncode
     # check compilation
-    if config["use_tofino"]:
-        result = compile_p4_prog(TOFINO_BIN, p4_file, dump_dir)
-    elif config["use_blackbox"]:
-        result = compile_p4_prog(BLACKBOX_BIN, p4_file, dump_dir)
-    else:
-        result = compile_p4_prog(WHITEBOX_BIN, p4_file, dump_dir)
+    result = compile_p4_prog(config["compiler_bin"], p4_file, dump_dir)
     if result.returncode != util.EXIT_SUCCESS:
         if not is_known_bug(result):
             log.error("Failed to compile the P4 code!")
@@ -230,6 +249,9 @@ def check(idx, config):
     # check validation
     if config["do_validate"]:
         result = validate(dump_dir, p4_file, log_file, config)
+    elif config["use_blackbox"]:
+        result = run_p4_test(dump_dir, p4_file, log_file, config)
+
     # reset the dump directory
     util.del_dir(dump_dir)
     return result
@@ -243,13 +265,40 @@ class TestLauncher():
         return check(idx, self._config)
 
 
-def main(args):
-
+def validate_choice(args):
     config = {}
+
+    if args.arch not in SUPPORT_MATRIX:
+        log.error("Architecture %s not supported!", args.arch)
+        log.error("Supported types are %s", SUPPORT_MATRIX.keys())
+        return util.EXIT_FAILURE, config
+    arch_config = SUPPORT_MATRIX[args.arch]
+    if args.do_validate and args.use_blackbox:
+        log.error("Conflicting choice of semantic testing!")
+        log.error("Please specify either blackbox or validation testing.")
+        return util.EXIT_FAILURE, config
+
+    if not arch_config["random"]:
+        log.error("Random code generation not supported for this target.")
+        return util.EXIT_FAILURE, config
+
+    if not arch_config["validation"] and args.do_validate:
+        log.error("Validation not supported for this target.")
+        return util.EXIT_FAILURE, config
+
+    if not arch_config["blackbox"] and args.use_blackbox:
+        log.error("Symbolic blackbox testing not supported for this target.")
+        return util.EXIT_FAILURE, config
+
+    config["arch"] = args.arch
     config["do_validate"] = args.do_validate
-    config["use_tofino"] = args.use_tofino
     config["use_blackbox"] = args.use_blackbox
     config["randomize_input"] = args.randomize_input
+    config["compiler_bin"] = SUPPORT_MATRIX[config["arch"]]["compiler"]
+
+    return util.EXIT_SUCCESS, config
+
+def main(args):
 
     # configure logging
     logging.basicConfig(filename=args.log_file,
@@ -260,14 +309,17 @@ def main(args):
     stderr_log.setFormatter(logging.Formatter("%(levelname)s:%(message)s"))
     log.addHandler(stderr_log)
 
+    result, config = validate_choice(args)
+    if result != util.EXIT_SUCCESS:
+        return result
+
     util.check_dir(OUTPUT_DIR)
 
     # initialize with some pre-configured state
     launch = TestLauncher(config)
 
-    if config["use_tofino"] and config["do_validate"]:
-        config["use_blackbox"] = True
-        # tofino only supports single threaded mode for now
+    if config["arch"] == "tna":
+        # the tofino tests only support single threaded mode for now
         for idx in range(args.iterations):
             launch(idx)
         return
@@ -279,19 +331,18 @@ def main(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument("--use-blackbox", "-b", dest="use_blackbox",
+    parser.add_argument("-a", "--arch", dest="arch", default="top",
+                        type=str, help="Specify the back end to test.")
+    parser.add_argument("-b", "--use-blackbox", dest="use_blackbox",
                         action='store_true',
                         help="Use the blackbox technique instead of"
                         "translation validation.")
-    parser.add_argument("--use-tofino", "-t", dest="use_tofino",
-                        action='store_true',
-                        help="Use the Tofino backend instead of BMV2.")
-    parser.add_argument("-l", "--log_file", dest="log_file",
-                        default="random.log",
-                        help="Specifies name of the log file.")
     parser.add_argument("-v", "--validate", dest="do_validate",
                         action='store_true',
                         help="Also perform validation on programs.")
+    parser.add_argument("-l", "--log_file", dest="log_file",
+                        default="random.log",
+                        help="Specifies name of the log file.")
     parser.add_argument("-i", "--iterations", dest="iterations",
                         default=ITERATIONS, type=int,
                         help="How many iterations to run.")

@@ -40,9 +40,9 @@ def generate_random_prog(p4c_bin, p4_file, config):
     p4_cmd = f"{p4c_bin} "
     p4_cmd += f"{p4_file} "
     if config["use_tofino"]:
-        p4_cmd += f"1 "
+        p4_cmd += "1 "
     else:
-        p4_cmd += f"0 "
+        p4_cmd += "0 "
     log.info("Generating random p4 code with command %s ", p4_cmd)
     return util.exec_process(p4_cmd)
 
@@ -115,6 +115,23 @@ def convert_to_stf(input_values, input_name, append_values=False):
     return stf_lst
 
 
+def cleanup(procs):
+    for proc in procs:
+        os.killpg(os.getpgid(proc.pid), signal.SIGTERM)
+
+
+def save_error(err_path, stdout, stderr):
+    log.error("*" * 60)
+    log.error(stdout.decode("utf-8"))
+    log.error("*" * 60)
+    log.error(stderr.decode("utf-8"))
+    log.error("*" * 60)
+    util.check_dir(err_path.parent)
+    with open(f"{err_path}", 'w+') as err_file:
+        err_file.write(stdout.decode("utf-8"))
+        err_file.write(stderr.decode("utf-8"))
+
+
 def insert_spaces(text, dist):
     return " ".join(text[i:i + dist] for i in range(0, len(text), dist))
 
@@ -177,32 +194,14 @@ def run_bmv2_test(out_dir, p4_input):
     test_proc = util.start_process(cmd, cwd=out_dir)
 
     def signal_handler(sig, frame):
-        log.warning("run_tofino_test: Caught Interrupt, exiting...")
+        log.warning("run_bmv2_test: Caught Interrupt, exiting...")
         os.kill(test_proc.pid, signal.SIGINT)
         sys.exit(1)
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)
 
     stdout, stderr = test_proc.communicate()
-
     return test_proc, stdout, stderr
-
-
-def cleanup(procs):
-    for proc in procs:
-        os.killpg(os.getpgid(proc.pid), signal.SIGTERM)
-
-
-def save_error(err_path, stdout, stderr):
-    log.error("*" * 60)
-    log.error(stdout.decode("utf-8"))
-    log.error("*" * 60)
-    log.error(stderr.decode("utf-8"))
-    log.error("*" * 60)
-    util.check_dir(err_path.parent)
-    with open(f"{err_path}", 'w+') as err_file:
-        err_file.write(stdout.decode("utf-8"))
-        err_file.write(stderr.decode("utf-8"))
 
 
 def run_tofino_test(out_dir, p4_input, stf_file_name):
@@ -505,6 +504,7 @@ def main(args):
 
     config = {}
     config["use_tofino"] = args.use_tofino
+    # FIXME: I do not like having to differentiate like this
     if args.use_tofino:
         config["pipe_name"] = "pipe0_ingress"
         config["ingress_var"] = "ingress"
