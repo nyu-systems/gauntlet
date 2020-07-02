@@ -54,14 +54,13 @@ class BlockStatement(P4Statement):
 
 class IfStatement(P4Statement):
 
-    def __init__(self, cond, in_function, then_block, else_block=None):
+    def __init__(self, cond, then_block, else_block=None):
         self.cond = cond
         self.then_block = then_block
         if not else_block:
             self.else_block = P4Noop()
         else:
             self.else_block = else_block
-        self.in_function = in_function
 
     def eval(self, p4_state):
         context = p4_state.contexts[-1]
@@ -171,9 +170,8 @@ class SwitchStatement(P4Statement):
             self.cases[action_str]["case_block"] = case_stmt
 
     def eval(self, p4_state):
-        switch_hit = SwitchHit(self.cases, self.default_case)
-        p4_state.insert_exprs(switch_hit)
         table = self.table_str.eval(p4_state)
+        switch_hit = SwitchHit(self.cases, self.default_case)
         switch_hit.set_table(table)
         switch_hit.eval(p4_state)
 
@@ -185,31 +183,31 @@ class P4Noop(P4Statement):
 
 
 class P4Return(P4Statement):
-    def __init__(self, expr=None, z3_type=None):
+    def __init__(self, expr=None):
         self.expr = expr
-        self.z3_type = z3_type
 
     def eval(self, p4_state):
         context = p4_state.contexts[-1]
         context.has_returned = True
-        # resolve the expr before restoring the state
-        if self.expr is None:
-            expr = None
-        else:
-            expr = p4_state.resolve_expr(self.expr)
 
         return_vars = copy_attrs(p4_state.locals)
         cond = z3.And(z3.Not(z3.Or(*context.forward_conds)),
                       context.tmp_forward_cond)
         context.return_states.append((cond, return_vars))
 
-        if isinstance(self.z3_type, z3.BitVecSortRef):
-            expr = z3_cast(expr, self.z3_type)
-        # we return a complex typed expression list, instantiate
-        if isinstance(expr, list):
-            instance = self.z3_type.instantiate("undefined")
-            instance.set_list(expr)
-            expr = instance
+        # resolve the expr before restoring the state
+        if self.expr is None:
+            expr = None
+        else:
+            expr = p4_state.resolve_expr(self.expr)
+            if isinstance(context.return_type, z3.BitVecSortRef):
+                expr = z3_cast(expr, context.return_type)
+            # we return a complex typed expression list, instantiate
+            if isinstance(expr, list):
+                instance = context.return_type.instantiate("undefined")
+                instance.set_list(expr)
+                expr = instance
+
         if expr is not None:
             context.return_exprs.append((cond, expr))
         context.forward_conds.append(context.tmp_forward_cond)

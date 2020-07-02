@@ -61,20 +61,29 @@ To run symbolic execution for the Tofino backend, `sudo` will have to be used.
 We also include facilities to fuzz test the compilers at scale.
 
     python3 check_random_progs.py -i 1000
- To generate and compile a thousand programs using `p4c`.
+ To generate and compile a thousand programs using P4C's `p4test`.
 
-    sudo -E python3 check_random_progs.py -i 1000 -t
+    sudo -E python3 check_random_progs.py -i 1000 --arch tna
 
  To generate and compile a thousand programs using the Tofino compiler.
 
      python3 check_random_progs.py -i 1000 -v
 
- To compile and validate a thousand programs using `p4c`.
+ To compile and validate a thousand programs using P4C's `p4test`.
 
-     python3 check_random_progs.py -i 1000 -b -v
+     python3 check_random_progs.py -i 1000 --arch v1model -b
 
  To generate and fuzz test a thousand programs on the simple switch.
 
-     python3 check_random_progs.py -i 1000 -t -v
+     python3 check_random_progs.py -i 1000 --arch tna -b
 
  To generate and fuzz test a thousand programs on the Tofino compiler.
+
+#### Fuzz-testing Support Matrix
+
+| Architecture | Compiler | Bludgeon Support | Validation Testing | Symbolic Execution |
+| ------------- | ------------- | ------------- | ------------- | ------------- |
+| psa | `p4c-bm2-psa` | :heavy_check_mark: | :heavy_check_mark: | :x: |
+| tna | `p4c-bf` | :heavy_check_mark: | :x: | :heavy_check_mark: |
+| top | `p4test` | :heavy_check_mark: | :heavy_check_mark: | :x: |
+| v1model | `p4c-bm2-ss` | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |

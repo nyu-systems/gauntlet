@@ -62,23 +62,6 @@ def merge_parameters(params, *args, **kwargs):
     return merged_args
 
 
-def save_variables(p4_state, merged_args):
-    var_buffer = OrderedDict()
-    # save all the variables that may be overridden
-    for param_name, arg in merged_args.items():
-        is_ref = arg.is_ref
-        param_ref = arg.p4_val
-        # if the variable does not exist, set the value to None
-        try:
-            param_val = p4_state.resolve_reference(param_name)
-            if not isinstance(param_val, z3.AstRef):
-                param_val = copy.copy(param_val)
-            var_buffer[param_name] = (is_ref, param_ref, param_val)
-        except KeyError:
-            var_buffer[param_name] = (is_ref, param_ref, None)
-    return var_buffer
-
-
 def copy_attrs(attrs):
     attr_copy = {}
     for attr_name, attr_val in attrs.items():
@@ -966,7 +949,6 @@ class P4StateInstance(P4ComplexInstance):
         # deques allow for much more efficient pop and append operations
         # this is all we do so this works well
         super(P4StateInstance, self).__init__(name, p4z3_type)
-        self.expr_chain = deque()
         self.globals = global_values
         self.has_exited = False
         self.exit_states = deque()
@@ -1106,39 +1088,6 @@ class P4StateInstance(P4ComplexInstance):
             self.locals[attr_name] = attr_val
         if contexts:
             self.contexts = contexts
-
-    def clear_expr_chain(self):
-        self.expr_chain.clear()
-
-    def clear_locals(self):
-        self.locals.clear()
-
-    def copy_expr_chain(self):
-        return self.expr_chain.copy()
-
-    def set_expr_chain(self, expr_chain):
-        self.expr_chain = deque(expr_chain)
-
-    def insert_exprs(self, exprs):
-        if isinstance(exprs, list):
-            self.expr_chain.extendleft(reversed(exprs))
-        else:
-            self.expr_chain.appendleft(exprs)
-
-    class P4End(P4Z3Class):
-        ''' This function is a little trick to ensure that chains are executed
-            appropriately. When we reach the end of an execution chain, this
-            expression returns the state of the program at the end of this
-            particular chain.'''
-        @staticmethod
-        def eval(p4_state):
-            p4_state.check_validity()
-            return p4_state.get_z3_repr()
-
-    def pop_next_expr(self):
-        if self.expr_chain:
-            return self.expr_chain.popleft()
-        return self.P4End()
 
 
 class Z3Reg():

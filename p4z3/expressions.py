@@ -220,7 +220,6 @@ class P4land(P4BinaryOp):
         # so we save the result of the right-hand expression and merge
         lval_expr = p4_state.resolve_expr(self.lval)
         var_store, chain_copy = p4_state.checkpoint()
-        p4_state.clear_expr_chain()
         rval_expr = p4_state.resolve_expr(self.rval)
         else_vars = copy_attrs(p4_state.locals)
         p4_state.restore(var_store, chain_copy)
@@ -238,7 +237,6 @@ class P4lor(P4BinaryOp):
         # so we save the result of the right-hand expression and merge
         lval_expr = p4_state.resolve_expr(self.lval)
         var_store, chain_copy = p4_state.checkpoint()
-        p4_state.clear_expr_chain()
         rval_expr = p4_state.resolve_expr(self.rval)
         else_vars = copy_attrs(p4_state.locals)
         p4_state.restore(var_store, chain_copy)
@@ -483,6 +481,7 @@ class P4Mux(P4Expression):
         else_is_const = isinstance(else_expr, (z3.BitVecRef, int))
         if then_is_const and else_is_const:
             # align the bitvectors to allow operations, we cast ints downwards
+            # FIXME: Check if this casting style is correct
             if else_expr.size() > then_expr.size():
                 else_expr = z3_cast(else_expr, then_expr.size())
             if else_expr.size() < then_expr.size():
