@@ -402,11 +402,11 @@ class P4ComplexInstance():
                         raise TypeError(
                             f"set_list {type(tmp_lval)} not supported!")
                     return
-        target_dict[lval] = rval
+            target_dict[lval] = rval
 
     def set_or_add_var(self, lval, rval):
         # only write values if the type is valid
-        # this does not apply to P4StateInstances
+        # this does not apply to P4States
         # FIXME: P4C does not agree with this
         # if self.valid == z3.BoolVal(False):
         #     return
@@ -931,13 +931,53 @@ class P4ParserType(P4Extern):
     pass
 
 
-class P4State(P4ComplexType):
-    # TODO: Implement this class correctly...
-    def instantiate(self, name, global_values, instances):
-        return P4StateInstance(name, self, global_values, instances)
+class P4Context(P4Z3Class):
+
+    def __init__(self, var_buffer):
+        self.var_buffer = var_buffer
+        self.return_states = deque()
+        self.has_returned = False
+        self.return_exprs = deque()
+        self.return_type = None
+        self.forward_conds = deque()
+        self.tmp_forward_cond = z3.BoolVal(True)
+
+    def add_to_buffer(self, var_dict):
+        self.var_buffer = {**self.var_buffer, **var_dict}
+
+    def prepend_to_buffer(self, var_dict):
+        self.var_buffer = {**var_dict, **self.var_buffer}
+
+    def restore_context(self, p4_state):
+        # FIXME: This does not respect local context
+        # local variables are overridden in functions and controls
+        # restore any variables that may have been overridden
+        for param_name, param in self.var_buffer.items():
+            is_ref = param[0]
+            param_ref = param[1]
+            param_val = param[2]
+            if is_ref in ("inout", "out"):
+                val = p4_state.resolve_reference(param_name)
+            if param_val is None:
+                # value has not existed previously, marked for deletion
+                log.debug("Deleting %s", param_name)
+                p4_state.del_var(param_name)
+            else:
+                log.debug("Resetting %s to %s", param_name, type(param_val))
+                p4_state.set_or_add_var(param_name, param_val)
+
+            if is_ref in ("inout", "out"):
+                # with copy-out we copy from left to right
+                # values on the right override values on the left
+                # the var buffer is an ordered dict that maintains this order
+                log.debug("Copy-out: %s to %s", val, param_val)
+                p4_state.set_or_add_var(param_ref, val)
+
+    def eval(self, p4_state):
+        self.restore_context(p4_state)
 
 
-class P4StateInstance(P4ComplexInstance):
+class P4State(P4ComplexInstance):
     """
     A P4State Object is a special, dynamic type of P4ComplexType. It represents
     the execution environment and its z3 representation is ultimately used to
@@ -945,14 +985,47 @@ class P4StateInstance(P4ComplexInstance):
     values. It also manages the execution chain of the program.
     """
 
-    def __init__(self, name, p4z3_type, global_values, instances):
+    def __init__(self, name, z3_args, global_values, instances):
+        self.name = name
         # deques allow for much more efficient pop and append operations
         # this is all we do so this works well
-        super(P4StateInstance, self).__init__(name, p4z3_type)
         self.globals = global_values
+        self.locals = {}
         self.has_exited = False
         self.exit_states = deque()
         self.contexts = deque()
+
+        z3_type = z3.Datatype(name)
+        stripped_args = []
+        for z3_arg in z3_args:
+            z3_arg_name = z3_arg[0]
+            z3_arg_type = z3_arg[1]
+            if isinstance(z3_arg_type, P4ComplexType):
+                stripped_args.append((z3_arg_name, z3_arg_type.z3_type))
+            else:
+                stripped_args.append(z3_arg)
+        z3_type.declare(f"mk_{name}", *stripped_args)
+        self.z3_type = z3_type.create()
+
+        self.const = z3.Const(f"{name}", self.z3_type)
+        self.valid = z3.BoolVal(False)
+        self.members = OrderedDict()
+        # set the members of this class
+        for type_index, z3_arg in enumerate(z3_args):
+            z3_arg_name = z3_arg[0]
+            z3_arg_type = z3_arg[1]
+            var_name = f"{name}.{z3_arg_name}"
+            member_constructor = self.z3_type.accessor(0, type_index)
+            z3_member = member_constructor(self.const)
+            if isinstance(z3_arg_type, P4ComplexType):
+                # this is a complex datatype, create a P4ComplexType
+                member_cls = z3_arg_type.instantiate(var_name, z3_member)
+                self.locals[z3_arg_name] = member_cls
+            else:
+                # use the default z3 constructor
+                self.locals[z3_arg_name] = z3_member
+
+            self.members[z3_arg_name] = member_constructor
         for instance_name, instance_val in instances.items():
             self.locals[instance_name] = instance_val
 
@@ -1093,8 +1166,7 @@ class P4StateInstance(P4ComplexInstance):
 class Z3Reg():
     def __init__(self):
         self._types = {}
-        self.p4_state = P4State("global_state", {}).instantiate(
-            "global_state", {}, {})
+        self.p4_state = P4State("global_state", {}, {}, {})
 
     def declare_global(self, p4_class=None):
         if not p4_class:
@@ -1142,9 +1214,8 @@ class Z3Reg():
                 # for inputs we can instantiate something
                 instance = gen_instance(param.name, param.p4_type)
                 instances[param.name] = instance
-        instance_name = f"{name}"
-        p4_state = P4State(name, stripped_args).instantiate(
-            instance_name, self.p4_state.globals, instances)
+        p4_state = P4State(name, stripped_args,
+                           self.p4_state.globals, instances)
         p4_state.propagate_validity_bit()
         return p4_state
 
