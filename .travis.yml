@@ -1,13 +1,10 @@
 # Travis CI integration for p4_tv using Docker.
 
 sudo: required
-dist: xenial
-
-services:
-  - docker
+dist: bionic
 
 install:
-  - sudo docker build -t p4tv .
+  - ./install.sh
 
 script:
-  - sudo docker run --privileged -w /home/p4_tv p4tv python3 -m pytest test.py -vrf
+  - python3 -m pytest test.py -vrf
