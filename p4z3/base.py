@@ -146,6 +146,9 @@ class DefaultExpression(P4Z3Class):
     def __init__(self):
         pass
 
+    def eval(self, p4_state):
+        pass
+
 
 class P4Declaration(P4Statement):
     # the difference between a P4Declaration and a ValueDeclaration is that
@@ -310,8 +313,6 @@ class P4ComplexInstance():
             bind_var = member_constructor(self.const)
             self.set_or_add_var(z3_arg_name, bind_var)
 
-
-
     def bind_to_name(self, name):
         for member_name, member_type in self.members.items():
             var_name = f"{name}.{member_name}"
@@ -325,23 +326,6 @@ class P4ComplexInstance():
                 # a simple z3 type, just update the constructor
                 self.set_or_add_var(
                     member_name, z3.Const(var_name, member_type))
-
-    def get_z3_repr(self) -> z3.DatatypeRef:
-        ''' This method returns the current representation of the object in z3
-        logic. Use the z3 constant variable of the object and propagate it
-        through all its children.'''
-        members = []
-
-        for member_name, member_type in self.members.items():
-            member_val = self.resolve_reference(member_name)
-            if isinstance(member_val, P4ComplexInstance):
-                # we have a complex type
-                # retrieve the member and call the constructor
-                # call the constructor of the complex type
-                members.append(member_val.get_z3_repr())
-            else:
-                members.append(member_val)
-        return self.z3_type.constructor(0)(*members)
 
     def resolve_reference(self, var):
         log.debug("Resolving reference %s", var)
@@ -986,33 +970,29 @@ class P4State():
         self.has_exited = False
         self.exit_states = deque()
         self.contexts = deque()
+        self.members = OrderedDict()
 
-        z3_type = z3.Datatype(name)
         flat_args = []
         for z3_arg in z3_args:
             z3_arg_name = z3_arg[0]
             z3_arg_type = z3_arg[1]
+            var_name = f"{name}.{z3_arg_name}"
             if isinstance(z3_arg_type, P4ComplexType):
                 prefix = f"{z3_arg_name}"
                 flat_args.extend(z3_arg_type.flat_types(prefix))
+                # this is a complex datatype, create a P4ComplexType
+                member_cls = z3_arg_type.instantiate(var_name)
+                self.locals[z3_arg_name] = member_cls
             else:
                 flat_args.append(z3_arg)
+            self.members[z3_arg_name] = z3_arg_type
+
+        z3_type = z3.Datatype(name)
         z3_type.declare(f"mk_{name}", *flat_args)
         self.z3_type = z3_type.create()
 
         self.const = z3.Const(f"{name}", self.z3_type)
         self.valid = z3.BoolVal(False)
-        self.members = OrderedDict()
-        # set the members of this class
-        for type_index, z3_arg in enumerate(z3_args):
-            z3_arg_name = z3_arg[0]
-            z3_arg_type = z3_arg[1]
-            var_name = f"{name}.{z3_arg_name}"
-            if isinstance(z3_arg_type, P4ComplexType):
-                # this is a complex datatype, create a P4ComplexType
-                member_cls = z3_arg_type.instantiate(var_name)
-                self.locals[z3_arg_name] = member_cls
-            self.members[z3_arg_name] = z3_arg_type
 
         for type_idx, (arg_name, arg_type) in enumerate(flat_args):
             member_constructor = self.z3_type.accessor(0, type_idx)
@@ -1178,8 +1158,7 @@ class P4State():
 
     def get_z3_repr(self) -> z3.DatatypeRef:
         ''' This method returns the current representation of the object in z3
-        logic. Use the z3 constant variable of the object and propagate it
-        through all its children.'''
+        logic.'''
         members = []
 
         for member_name, member_type in self.members.items():
