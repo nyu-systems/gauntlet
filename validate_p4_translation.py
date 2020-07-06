@@ -16,7 +16,7 @@ P4Z3_BIN = FILE_DIR.joinpath("p4c/build/p4toz3")
 PASS_DIR = FILE_DIR.joinpath("validated")
 
 PASSES = "--top4 "
-PASSES += "FrontEnd,MidEnd "
+PASSES += "FrontEnd,MidEnd,PassManager "
 # PASSES += "FrontEnd,MidEnd,PassManager "
 # PASSES += "-vvvv "
 # passes with "::" in them are a little bit funky.. ignore those
@@ -84,8 +84,8 @@ def list_passes(p4c_bin, p4_file, p4_dmp_dir):
     p4_pass_cmd = f"{p4c_bin} -v "
     # p4_pass_cmd += f"-o {p4_dmp_dir} "
     p4_pass_cmd += f"{p4_file} 2>&1 "
-    p4_pass_cmd += "| sed -e '/FrontEnd\\|MidEnd/!d' | "
-    # p4_pass_cmd += "| sed -e '/FrontEnd\\|MidEnd\\|PassManager/!d' | "
+    # p4_pass_cmd += "| sed -e '/FrontEnd\\|MidEnd/!d' | "
+    p4_pass_cmd += "| sed -e '/FrontEnd\\|MidEnd\\|PassManager/!d' | "
     p4_pass_cmd += "sed -e '/Writing program to/d' "
     # p4_pass_cmd += "| grep 'Writing program to' "
     # p4_pass_cmd += "| sed -e 's/Writing program to //g' "

@@ -369,6 +369,7 @@ def dissect_conds(config, conditions):
     avoid_conds = []
     undefined_conds = []
     undefined_vars = []
+    validity_vars = []
     for cond in conditions:
         cond = z3.simplify(cond)
         has_member = False
@@ -376,7 +377,8 @@ def dissect_conds(config, conditions):
         has_table_action = False
         has_undefined_var = False
         for cond_var in z3.z3util.get_vars(cond):
-            if "valid" in str(cond_var):
+            if "_valid" in str(cond_var):
+                validity_vars.append(cond_var)
                 has_undefined_var = True
             if config["ingress_var"] in str(cond_var):
                 has_member = True
@@ -399,6 +401,8 @@ def dissect_conds(config, conditions):
             undefined_conds.append(var == 0)
         elif isinstance(var, z3.BoolRef):
             undefined_conds.append(var == False)
+    for var in validity_vars:
+        undefined_conds.append(var == True)
     return controllable_conds, avoid_conds, undefined_conds
 
 
@@ -498,7 +502,9 @@ def main(args):
     logging.getLogger().addHandler(stderr_log)
 
     if args.randomize_input:
+        seed = int.from_bytes(os.getrandom(8), "big")
         z3.set_param("smt.phase_selection", 5,
+                     "smt.random_seed", seed,
                      "smt.arith.random_initial_value", True,
                      "sat.phase", "random",)
 
