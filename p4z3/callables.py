@@ -118,8 +118,6 @@ class P4Callable(P4Z3Class):
                 log.debug("Resetting %s to %s", arg_expr, param_name)
                 if isinstance(arg_expr, P4ComplexInstance):
                     arg_expr = arg_expr.p4z3_type.instantiate("undefined")
-                    # FIXME: This should not be needed
-                    arg_expr.deactivate()
                 else:
                     arg_expr = z3.Const(f"undefined", arg_expr.sort())
             log.debug("Copy-in: %s to %s", arg_expr, param_name)
@@ -370,7 +368,6 @@ class P4Method(P4Callable):
 
     def eval_callable(self, p4_state, merged_args, var_buffer):
         # initialize the local context of the function for execution
-
         if self.return_type is not None:
             # methods can return values, we need to generate a new constant
             # we generate the name based on the input arguments

@@ -439,7 +439,7 @@ class P4Mux(P4Expression):
             if isinstance(complex_type, P4ComplexInstance):
                 val = complex_type.resolve_reference(val)
             if isinstance(val, P4ComplexInstance):
-                val_list = list(val.members)
+                val_list = val.flatten()
                 val = self.unravel_datatype(val, val_list)
             elif isinstance(val, list):
                 unravelled_list.extend(val)
