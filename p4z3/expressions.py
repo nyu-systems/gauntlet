@@ -433,33 +433,28 @@ class P4Mux(P4Expression):
         self.then_val = then_val
         self.else_val = else_val
 
-    def unravel_datatype(self, complex_type, datatype_list):
+    def unravel_datatype(self, datatype_list):
         unravelled_list = []
         for val in datatype_list:
-            if isinstance(complex_type, P4ComplexInstance):
-                val = complex_type.resolve_reference(val)
             if isinstance(val, P4ComplexInstance):
-                val_list = val.flatten()
-                val = self.unravel_datatype(val, val_list)
+                unravelled_list.extend(val.flatten())
             elif isinstance(val, list):
-                unravelled_list.extend(val)
+                unravelled_list.extend(self.unravel_datatype(val))
             else:
                 unravelled_list.append(val)
         return unravelled_list
 
     def eval(self, p4_state):
         cond = p4_state.resolve_expr(self.cond)
+
         # handle side effects for function calls
         var_store, chain_copy = p4_state.checkpoint()
-        then_val = p4_state.resolve_expr(self.then_val)
+        then_expr = p4_state.resolve_expr(self.then_val)
         then_vars = copy_attrs(p4_state.locals)
         p4_state.restore(var_store, chain_copy)
-        else_val = p4_state.resolve_expr(self.else_val)
+        else_expr = p4_state.resolve_expr(self.else_val)
         p4_state.merge_attrs(cond, then_vars)
 
-        then_expr = then_val
-        else_expr = else_val
-        # this is a really nasty hack, do not try this at home kids
         # because we have to be able to access the sub values again
         # we have to resolve the if condition in the case of complex types
         # we do this by splitting the if statement into a list
@@ -468,22 +463,23 @@ class P4Mux(P4Expression):
             then_expr = then_expr.flatten()
         if isinstance(else_expr, P4ComplexInstance):
             else_expr = else_expr.flatten()
+
         if isinstance(then_expr, list) and isinstance(else_expr, list):
             sub_cond = []
             # handle nested complex types
-            then_expr = self.unravel_datatype(then_val, then_expr)
-            else_expr = self.unravel_datatype(else_val, else_expr)
+            then_expr = self.unravel_datatype(then_expr)
+            else_expr = self.unravel_datatype(else_expr)
             for idx, member in enumerate(then_expr):
                 if_expr = z3.If(cond, member, else_expr[idx])
                 sub_cond.append(if_expr)
             return sub_cond
-        then_is_const = isinstance(then_expr, (z3.BitVecRef, int))
-        else_is_const = isinstance(else_expr, (z3.BitVecRef, int))
-        if then_is_const and else_is_const:
-            # align the bitvectors to allow operations, we cast ints downwards
-            # FIXME: Check if this casting style is correct
-            if else_expr.size() > then_expr.size():
-                else_expr = z3_cast(else_expr, then_expr.size())
-            if else_expr.size() < then_expr.size():
-                then_expr = z3_cast(then_expr, else_expr.size())
+        # then_is_const = isinstance(then_expr, (z3.BitVecRef, int))
+        # else_is_const = isinstance(else_expr, (z3.BitVecRef, int))
+        # if then_is_const and else_is_const:
+        #     # align the bitvectors to allow operations, we cast ints downwards
+        #     # FIXME: Check if this casting style is correct
+        #     if else_expr.size() > then_expr.size():
+        #         else_expr = z3_cast(else_expr, then_expr.size())
+        #     if else_expr.size() < then_expr.size():
+        #         then_expr = z3_cast(then_expr, else_expr.size())
         return z3.If(cond, then_expr, else_expr)

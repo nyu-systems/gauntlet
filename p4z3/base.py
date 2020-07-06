@@ -295,9 +295,8 @@ class P4ComplexInstance():
             var_name = f"{name}.{idx}"
             if isinstance(z3_arg_type, P4ComplexType):
                 # this is a complex datatype, create a P4ComplexType
-                member = z3_arg_type.instantiate(var_name)
+                self.locals[z3_arg_name] = z3_arg_type.instantiate(var_name)
                 idx += len(z3_arg_type.flat_names)
-                self.locals[z3_arg_name] = member
             else:
                 idx += 1
 
@@ -385,22 +384,15 @@ class P4ComplexInstance():
     def sort(self):
         return self.z3_type
 
-    def flatten(self, return_strings=False):
+    def flatten(self):
         members = []
         for member_name, member_type in self.members:
             member = self.resolve_reference(member_name)
             if isinstance(member, P4ComplexInstance):
-                sub_members = member.flatten(return_strings)
-                if return_strings:
-                    for idx, sub_member in enumerate(sub_members):
-                        merged_member = f"{member_name}.{sub_member}"
-                        sub_members[idx] = merged_member
+                sub_members = member.flatten()
                 members.extend(sub_members)
             else:
-                if return_strings:
-                    members.append(member_name)
-                else:
-                    members.append(member)
+                members.append(member)
         return members
 
     def merge_attrs(self, cond, then_attrs):
@@ -1115,7 +1107,12 @@ class P4State():
                 if_expr = z3.simplify(z3.If(cond, then_val, attr_val))
                 self.locals[then_name] = if_expr
 
-    def _update_dict(self, lval, rval, target_dict):
+    def set_or_add_var(self, lval, rval):
+        if isinstance(lval, P4Member):
+            lval = lval.eval(self)
+        if isinstance(lval, P4Slice):
+            self.set_slice(lval, rval)
+            return
         # now that all the preprocessing is done we can assign the value
         log.debug("Setting %s(%s) to %s(%s) ",
                   lval, type(lval), rval, type(rval))
@@ -1128,7 +1125,7 @@ class P4State():
             target_class = self.resolve_reference(prefix)
             target_class.set_or_add_var(suffix, rval)
         else:
-            if lval in target_dict:
+            if lval in self.locals:
                 # the target variable exists
                 # do not override an existing variable with a string reference!
                 # resolve any possible rvalue reference
@@ -1142,41 +1139,17 @@ class P4State():
                         raise TypeError(
                             f"set_list {type(tmp_lval)} not supported!")
                     return
-            target_dict[lval] = rval
-
-    def set_or_add_var(self, lval, rval):
-        if isinstance(lval, P4Member):
-            lval = lval.eval(self)
-        if isinstance(lval, P4Slice):
-            self.set_slice(lval, rval)
-            return
-        self._update_dict(lval, rval, self.locals)
-
-    def propagate_validity_bit(self):
-        # structs can be contained in headers so they can also be deactivated...
-        for member_name, member_type in self.members:
-            member_val = self.resolve_reference(member_name)
-            if isinstance(member_val, P4ComplexInstance):
-                member_val.propagate_validity_bit()
-        self.valid = z3.Bool(f"{self.name}_valid")
-
-    def check_validity(self):
-        for member_name, member_type in self.members:
-            # retrieve the member we are accessing
-            member = self.resolve_reference(member_name)
-            if isinstance(member, P4ComplexInstance):
-                # it is a complex type
-                # propagate the validity to all children
-                member.check_validity()
+            self.locals[lval] = rval
 
     def get_z3_repr(self) -> z3.DatatypeRef:
         ''' This method returns the current representation of the object in z3
         logic.'''
         members = []
-
         for member_name, member_type in self.members:
             member_val = self.resolve_reference(member_name)
             if isinstance(member_val, P4ComplexInstance):
+                # first we need to make sure that validity is correct
+                member_val.check_validity()
                 members.extend(member_val.flatten())
             else:
                 members.append(member_val)
@@ -1223,18 +1196,6 @@ class P4State():
             self.locals[attr_name] = attr_val
         if contexts:
             self.contexts = contexts
-
-    def activate(self, label="undefined"):
-        for member_name, member_type in self.members:
-            member_val = self.resolve_reference(member_name)
-            if isinstance(member_val, P4ComplexInstance):
-                member_val.activate()
-
-    def deactivate(self, label="undefined"):
-        for member_name, member_type in self.members:
-            member_val = self.resolve_reference(member_name)
-            if isinstance(member_val, P4ComplexInstance):
-                member_val.deactivate(label)
 
 
 class Z3Reg():
@@ -1290,7 +1251,10 @@ class Z3Reg():
                 instances[param.name] = instance
         p4_state = P4State(name, stripped_args,
                            self.p4_state.globals, instances)
-        p4_state.propagate_validity_bit()
+        for member_name, member_type in p4_state.members:
+            member_val = p4_state.resolve_reference(member_name)
+            if isinstance(member_val, P4ComplexInstance):
+                member_val.propagate_validity_bit()
         return p4_state
 
     def type(self, type_name):

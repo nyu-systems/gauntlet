@@ -162,7 +162,6 @@ class P4Package(P4Callable):
                     for param in params:
                         args.append(param.name)
                     pipe.apply(p4_state, *args)
-                    p4_state.check_validity()
                     state = p4_state.get_z3_repr()
                     for exit_cond, exit_state in reversed(p4_state.exit_states):
                         state = z3.If(exit_cond, exit_state, state)

@@ -16,7 +16,10 @@ class RejectState(P4Statement):
     def eval(self, p4_state):
         for context in reversed(p4_state.contexts):
             context.restore_context(p4_state)
-        p4_state.deactivate("invalid")
+        for member_name, member_type in p4_state.members:
+            member_val = p4_state.resolve_reference(member_name)
+            if isinstance(member_val, P4ComplexInstance):
+                member_val.deactivate("invalid")
         p4_state.has_exited = True
 
 class AcceptState(P4Statement):
