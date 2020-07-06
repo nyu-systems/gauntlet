@@ -260,8 +260,8 @@ class P4ComplexType():
         self.z3_args = z3_args
         self.flat_names = flat_names
 
-    def instantiate(self, name, parent_const=None):
-        return P4ComplexInstance(name, self, parent_const)
+    def instantiate(self, name):
+        return P4ComplexInstance(name, self)
 
     def __str__(self):
         return self.name
@@ -280,7 +280,7 @@ class P4ComplexType():
 
 
 class P4ComplexInstance():
-    def __init__(self, name, p4z3_type, parent_const=None):
+    def __init__(self, name, p4z3_type):
         self.locals = {}
         self.name = name
         self.z3_type = p4z3_type.z3_type
@@ -295,16 +295,18 @@ class P4ComplexInstance():
             var_name = f"{name}.{idx}"
             if isinstance(z3_arg_type, P4ComplexType):
                 # this is a complex datatype, create a P4ComplexType
-                self.locals[z3_arg_name] = z3_arg_type.instantiate(var_name)
-                idx += len(z3_arg_type.flat_names)
+                instance = z3_arg_type.instantiate(var_name)
+                self.locals[z3_arg_name] = instance
+                for member_name, member_type in z3_arg_type.flat_names:
+                    member_constructor = self.z3_type.accessor(0, idx)
+                    bind_var = member_constructor(self.const)
+                    instance.set_or_add_var(member_name, bind_var)
+                    idx += 1
             else:
+                member_constructor = self.z3_type.accessor(0, idx)
+                bind_var = member_constructor(self.const)
+                self.locals[z3_arg_name] = bind_var
                 idx += 1
-
-        for type_idx, z3_arg in enumerate(p4z3_type.flat_names):
-            z3_arg_name = z3_arg[0]
-            member_constructor = self.z3_type.accessor(0, type_idx)
-            bind_var = member_constructor(self.const)
-            self.set_or_add_var(z3_arg_name, bind_var)
 
     def bind_to_name(self, name):
         for member_name, member_type in self.members:
@@ -487,14 +489,14 @@ class P4ComplexInstance():
 
 class StructType(P4ComplexType):
 
-    def instantiate(self, name, parent_const=None):
-        return StructInstance(name, self, parent_const)
+    def instantiate(self, name):
+        return StructInstance(name, self)
 
 
 class StructInstance(P4ComplexInstance):
 
-    def __init__(self, name, p4z3_type, parent_const=None):
-        super(StructInstance, self).__init__(name, p4z3_type, parent_const)
+    def __init__(self, name, p4z3_type):
+        super(StructInstance, self).__init__(name, p4z3_type)
         self.var_buffer = {}
 
     def activate(self, label="undefined"):
@@ -514,14 +516,14 @@ class StructInstance(P4ComplexInstance):
 
 class HeaderType(StructType):
 
-    def instantiate(self, name, parent_const=None):
-        return HeaderInstance(name, self, parent_const)
+    def instantiate(self, name):
+        return HeaderInstance(name, self)
 
 
 class HeaderInstance(StructInstance):
 
-    def __init__(self, name, p4z3_type, parent_const=None):
-        super(HeaderInstance, self).__init__(name, p4z3_type, parent_const)
+    def __init__(self, name, p4z3_type):
+        super(HeaderInstance, self).__init__(name, p4z3_type)
         self.valid = z3.BoolVal(False)
         self.locals["isValid"] = self.isValid
         self.locals["setValid"] = self.setValid
@@ -643,16 +645,16 @@ class HeaderInstance(StructInstance):
 
 
 class HeaderUnionType(HeaderType):
-    def instantiate(self, name, parent_const=None):
-        return HeaderUnionInstance(name, self, parent_const)
+    def instantiate(self, name):
+        return HeaderUnionInstance(name, self)
 
 
 class HeaderUnionInstance(HeaderInstance):
 
-    def __init__(self, name, p4z3_type, parent_const=None):
+    def __init__(self, name, p4z3_type):
         # TODO: Check if this class is implemented correctly...
         super(HeaderUnionInstance, self).__init__(
-            name, p4z3_type, parent_const)
+            name, p4z3_type)
         for member_name, member_type in self.members:
             member_hdr = self.resolve_reference(member_name)
             member_hdr.bind_to_union(self)
@@ -675,15 +677,12 @@ class ListType(P4ComplexType):
         super(ListType, self).__init__(name, z3_args)
 
     # TODO: Implement this class correctly...
-    def instantiate(self, name, parent_const=None):
-        return ListInstance(name, self, parent_const)
+    def instantiate(self, name):
+        return ListInstance(name, self)
 
 
 class ListInstance(P4ComplexInstance):
-
-    def bind(self, parent_const: z3.AstRef):
-        # Lists are static so they do not have variable types.
-        pass
+    pass
 
 
 class HeaderStack(StructType):
@@ -694,8 +693,8 @@ class HeaderStack(StructType):
         super(HeaderStack, self).__init__(name, z3_args)
 
     # TODO: Implement this class correctly...
-    def instantiate(self, name, parent_const=None):
-        return HeaderStackInstance(name, self, parent_const)
+    def instantiate(self, name):
+        return HeaderStackInstance(name, self)
 
 
 class HeaderStackDict(dict):
@@ -734,9 +733,9 @@ class HeaderStackDict(dict):
 
 class HeaderStackInstance(StructInstance):
 
-    def __init__(self, name, p4z3_type, parent_const=None):
+    def __init__(self, name, p4z3_type):
         super(HeaderStackInstance, self).__init__(
-            name, p4z3_type, parent_const)
+            name, p4z3_type)
 
         # this is completely nuts but it works for now
         # no idea how to deal with properties
@@ -810,7 +809,7 @@ class HeaderStackInstance(StructInstance):
 
 class Enum(P4ComplexInstance):
 
-    def __init__(self, name, z3_args, parent_const=None):
+    def __init__(self, name, z3_args):
         self.locals = {}
         self.name = name
         self.z3_type = z3.BitVecSort(32)
@@ -818,12 +817,8 @@ class Enum(P4ComplexInstance):
             self.locals[enum_name] = z3.BitVecVal(idx, 32)
         self.z3_args = z3_args
 
-    def instantiate(self, name, parent_const=None):
+    def instantiate(self, name):
         return self
-
-    def bind(self, parent_const: z3.AstRef):
-        # Enums are static so they do not have variable types.
-        pass
 
     def __eq__(self, other):
         if isinstance(other, z3.ExprRef):
@@ -850,7 +845,7 @@ class SerEnum(Enum):
         for z3_arg_name, z3_arg_val in z3_args:
             self.locals[z3_arg_name] = z3_arg_val
 
-    def instantiate(self, name, parent_const=None):
+    def instantiate(self, name):
         return self
 
 

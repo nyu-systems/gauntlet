@@ -1,7 +1,6 @@
 from p4z3.base import log, z3, copy_attrs
 from p4z3.base import P4Expression, P4ComplexInstance, DefaultExpression
 from p4z3.callables import P4Control
-from p4z3.statements import P4Statement, P4Return, P4Exit, BlockStatement
 
 
 MAX_LOOP = 2
@@ -11,7 +10,7 @@ class P4Parser(P4Control):
     pass
 
 
-class RejectState(P4Statement):
+class RejectState(P4Expression):
 
     def eval(self, p4_state):
         for context in reversed(p4_state.contexts):
@@ -22,7 +21,7 @@ class RejectState(P4Statement):
                 member_val.deactivate("invalid")
         p4_state.has_exited = True
 
-class AcceptState(P4Statement):
+class AcceptState(P4Expression):
 
     def eval(self, p4_state):
         pass
