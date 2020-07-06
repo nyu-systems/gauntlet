@@ -16,15 +16,12 @@ log = logging.getLogger(__name__)
 # We maintain a list of passes that causes segmentation faults
 # TODO: Fix these, likely by using simulation relations
 SKIPPED_PASSES = [
-    "FlattenHeaders",
-    "FlattenInterfaceStructs",
     # "InlineActions",
     # "InlineFunctions",
     # "UniqueNames",
     # "UniqueParameters",
     # "SpecializeAll",
     "ExpandLookahead",
-    "RenameUserMetadata",
 ]
 
 

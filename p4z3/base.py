@@ -243,18 +243,27 @@ class P4ComplexType():
         self.ref_count = 0
         z3_type = z3.Datatype(name)
         flat_args = []
+        flat_names = []
+        idx = 0
         for z3_arg in z3_args:
             z3_arg_name = z3_arg[0]
             z3_arg_type = z3_arg[1]
             if isinstance(z3_arg_type, P4ComplexType):
                 prefix = f"{z3_arg_name}"
-                flat_args.extend(z3_arg_type.flat_types(prefix))
+                sub_args = z3_arg_type.flat_types(prefix)
+                for sub_arg_name, sub_arg_type in sub_args:
+                    flat_args.append((f"{idx}", sub_arg_type))
+                    flat_names.append(sub_arg_name)
+                    idx += 1
             else:
-                flat_args.append(z3_arg)
+                flat_args.append((f"{idx}", z3_arg_type))
+                flat_names.append(z3_arg_name)
+                idx += 1
         z3_type.declare(f"mk_{name}", *flat_args)
         self.z3_type = z3_type.create()
         self.z3_args = z3_args
         self.flat_args = flat_args
+        self.flat_names = flat_names
 
     def instantiate(self, name, parent_const=None):
         return P4ComplexInstance(name, self, parent_const)
@@ -302,13 +311,11 @@ class P4ComplexInstance():
             var_name = f"{name}.{z3_arg_name}"
             if isinstance(z3_arg_type, P4ComplexType):
                 # this is a complex datatype, create a P4ComplexType
-                member = z3_arg_type.instantiate(var_name)
+                member = z3_arg_type.instantiate("")
                 self.locals[z3_arg_name] = member
             self.members[z3_arg_name] = z3_arg_type
 
-        for type_idx, z3_arg in enumerate(p4z3_type.flat_args):
-            z3_arg_name = z3_arg[0]
-            z3_arg_type = z3_arg[1]
+        for type_idx, z3_arg_name in enumerate(p4z3_type.flat_names):
             member_constructor = self.z3_type.accessor(0, type_idx)
             bind_var = member_constructor(self.const)
             self.set_or_add_var(z3_arg_name, bind_var)
@@ -475,22 +482,30 @@ class P4ComplexInstance():
     def deactivate(self, label="undefined"):
         pass
 
-    def propagate_validity_bit(self):
+    def propagate_validity_bit(self, parent_valid=None):
+        if parent_valid is not None:
+            self.valid = parent_valid
         # structs can be contained in headers so they can also be deactivated...
         for member_name in self.members:
             member_val = self.resolve_reference(member_name)
             if isinstance(member_val, P4ComplexInstance):
-                member_val.propagate_validity_bit()
-        self.valid = z3.Bool(f"{self.name}_valid")
+                member_val.propagate_validity_bit(parent_valid)
 
-    def check_validity(self):
+    def check_validity(self, parent_validity=None):
         for member_name, member_type in self.members.items():
             # retrieve the member we are accessing
             member = self.resolve_reference(member_name)
             if isinstance(member, P4ComplexInstance):
                 # it is a complex type
                 # propagate the validity to all children
-                member.check_validity()
+                member.check_validity(parent_validity)
+            else:
+                if parent_validity is None:
+                    continue
+                # if the header is invalid set the variable to "undefined"
+                cond = z3.simplify(z3.If(parent_validity, member,
+                                         z3.Const("invalid", member_type)))
+                self.set_or_add_var(member_name, cond)
 
 
 class StructType(P4ComplexType):
@@ -594,17 +609,31 @@ class HeaderInstance(StructInstance):
         # the reference in the parent will be stale
         self.union_parent = union_instance
 
-    def check_validity(self):
+    def propagate_validity_bit(self, parent_valid=None):
+        if parent_valid is None:
+            self.valid = z3.Bool(f"{self.name}_valid")
+        parent_valid = self.valid
+        # structs can be contained in headers so they can also be deactivated...
+        for member_name in self.members:
+            member_val = self.resolve_reference(member_name)
+            if isinstance(member_val, P4ComplexInstance):
+                member_val.propagate_validity_bit(parent_valid)
+
+    def check_validity(self, parent_validity=None):
+        if parent_validity is None:
+            parent_validity = self.valid
         for member_name, member_type in self.members.items():
             # retrieve the member we are accessing
             member = self.resolve_reference(member_name)
             if isinstance(member, P4ComplexInstance):
                 # it is a complex type
                 # propagate the validity to all children
-                member.check_validity()
+                member.check_validity(parent_validity)
             else:
+                if parent_validity is None:
+                    continue
                 # if the header is invalid set the variable to "undefined"
-                cond = z3.simplify(z3.If(self.valid, member,
+                cond = z3.simplify(z3.If(parent_validity, member,
                                          z3.Const("invalid", member_type)))
                 self.set_or_add_var(member_name, cond)
 
@@ -973,20 +1002,27 @@ class P4State():
         self.members = OrderedDict()
 
         flat_args = []
+        flat_names = []
+        idx = 0
         for z3_arg in z3_args:
             z3_arg_name = z3_arg[0]
             z3_arg_type = z3_arg[1]
             var_name = f"{name}.{z3_arg_name}"
             if isinstance(z3_arg_type, P4ComplexType):
                 prefix = f"{z3_arg_name}"
-                flat_args.extend(z3_arg_type.flat_types(prefix))
+                sub_args = z3_arg_type.flat_types(prefix)
+                for sub_arg_name, sub_arg_type in sub_args:
+                    flat_args.append((f"{idx}", sub_arg_type))
+                    flat_names.append(sub_arg_name)
+                    idx += 1
                 # this is a complex datatype, create a P4ComplexType
                 member_cls = z3_arg_type.instantiate(var_name)
                 self.locals[z3_arg_name] = member_cls
             else:
                 flat_args.append(z3_arg)
+                flat_names.append(z3_arg_name)
+                idx += 1
             self.members[z3_arg_name] = z3_arg_type
-
         z3_type = z3.Datatype(name)
         z3_type.declare(f"mk_{name}", *flat_args)
         self.z3_type = z3_type.create()
@@ -994,7 +1030,7 @@ class P4State():
         self.const = z3.Const(f"{name}", self.z3_type)
         self.valid = z3.BoolVal(False)
 
-        for type_idx, (arg_name, arg_type) in enumerate(flat_args):
+        for type_idx, arg_name in enumerate(flat_names):
             member_constructor = self.z3_type.accessor(0, type_idx)
             self.set_or_add_var(arg_name, member_constructor(self.const))
 
