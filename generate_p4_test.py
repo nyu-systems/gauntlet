@@ -7,7 +7,6 @@ import sys
 import itertools
 import signal
 from pathlib import Path
-from dataclasses import dataclass
 
 
 import z3
@@ -28,12 +27,6 @@ TOFINO_DIR = FILE_DIR.joinpath("tofino/bf_src")
 INVALID_VAR = "invalid"
 # the main input header key word
 HEADER_VAR = "h"
-
-
-@dataclass
-class P4Struct:
-    name: str
-    values: list
 
 
 def generate_random_prog(p4c_bin, p4_file, config):
@@ -72,40 +65,14 @@ def fill_values(flat_input):
     return input_values
 
 
-
-
-def convert_to_stf(input_values, input_name, append_values=True):
+def convert_to_stf(input_values):
     stf_lst = []
     for val in input_values:
-        if isinstance(val, P4Struct):
-            stf_lst.extend(convert_to_stf(val.values, input_name, True))
-        elif isinstance(val, str):
-            if append_values:
-                stf_lst.extend(list(val))
+        if isinstance(val, str):
+            stf_lst.extend(list(val))
         else:
             raise RuntimeError(f"Type {type(val)} not supported!")
     return stf_lst
-
-
-# https://stackoverflow.com/questions/14141977/check-if-a-formula-is-a-term-in-z3py
-CONNECTIVE_OPS = [z3.Z3_OP_NOT, z3.Z3_OP_AND, z3.Z3_OP_OR, z3.Z3_OP_XOR,
-                  z3.Z3_OP_IMPLIES, z3.Z3_OP_IFF, z3.Z3_OP_ITE]
-REL_OPS = [z3.Z3_OP_EQ, z3.Z3_OP_LE, z3.Z3_OP_LT, z3.Z3_OP_GE, z3.Z3_OP_GT]
-ALL_OPS = CONNECTIVE_OPS + REL_OPS
-
-
-def get_branch_conditions(z3_formula):
-    conditions = set()
-    if isinstance(z3_formula, z3.BoolRef):
-        # if z3_formula.decl().kind() in REL_OPS + CONNECTIVE_OPS:
-        # FIXME: This does not unroll if statements
-        # This could lead to conflicting formulas
-        if z3_formula.decl().kind() not in CONNECTIVE_OPS:
-            conditions.add(z3_formula)
-    for child in z3_formula.children():
-        sub_conds = get_branch_conditions(child)
-        conditions |= sub_conds
-    return conditions
 
 
 def cleanup(procs):
@@ -129,18 +96,12 @@ def insert_spaces(text, dist):
     return " ".join(text[i:i + dist] for i in range(0, len(text), dist))
 
 
-def get_stf_str(config, z3_model, z3_const, dont_care_map, main_member_range):
-    z3_input_header = z3_model[z3.Const(
-        config["ingress_var"], z3_const.sort())]
-    log.debug("Input header: %s", z3_input_header)
-    flat_input = z3_input_header.children()[main_member_range]
-    input_values = fill_values(flat_input)
-    input_pkt_str = "".join(convert_to_stf(input_values, HEADER_VAR))
-    z3_output_header = z3_model[z3_const]
-    log.debug("Output header: %s", z3_output_header)
-    flat_output = z3_output_header.children()[main_member_range]
+def overlay_dont_care_map(flat_output, dont_care_map):
     output_values = fill_values(flat_output)
-    out_pkt_list = convert_to_stf(output_values, HEADER_VAR)
+    out_pkt_list = []
+    for val in output_values:
+        if isinstance(val, str):
+            out_pkt_list.extend(list(val))
     for idx, marker in enumerate(dont_care_map):
         # this is an uninterpreted value, it can be anything
         if marker == "*":
@@ -149,7 +110,17 @@ def get_stf_str(config, z3_model, z3_const, dont_care_map, main_member_range):
         # since the header is marked as invalid
         elif marker == "x":
             out_pkt_list[idx] = ""
-    output_pkt_str = "".join(out_pkt_list)
+    return out_pkt_list
+
+
+def get_stf_str(flat_input, flat_output, dont_care_map):
+    # both the input and the output variable are then used to generate
+    # a stf file with an input and expected output packet on port 0
+    log.info("Generating stf string...")
+    input_pkt_str = "".join(fill_values(flat_input))
+    flat_output = overlay_dont_care_map(flat_output, dont_care_map)
+    output_pkt_str = "".join(flat_output)
+
     stf_str = "packet 0 "
     stf_str += insert_spaces(input_pkt_str, 2)
     stf_str += "\nexpect 0 "
@@ -309,15 +280,6 @@ def run_stf_test(config, stf_str):
     return result.returncode
 
 
-def check_with_stf(config, model, output_const, dont_care_map, main_member_range):
-    # both the input and the output variable are then used to generate
-    # a stf file with an input and expected output packet on port 0
-    log.info("Generating stf file...")
-    stf_str = get_stf_str(config, model, output_const,
-                          dont_care_map, main_member_range)
-    return run_stf_test(config, stf_str)
-
-
 def assemble_dont_care_map(flat_list, dont_care_vals):
     dont_care_map = []
     for var in flat_list:
@@ -339,7 +301,7 @@ def assemble_dont_care_map(flat_list, dont_care_vals):
     return dont_care_map
 
 
-def get_dont_care_map(config, z3_input, main_member_range):
+def get_dont_care_map(config, z3_input, pkt_range):
     dont_care_vals = set()
     for val in z3.z3util.get_vars(z3_input):
         str_val = str(val)
@@ -348,8 +310,39 @@ def get_dont_care_map(config, z3_input, main_member_range):
         # invalid means that there is no byte output
         if str(val) not in (config["ingress_var"], INVALID_VAR):
             dont_care_vals.add(str_val)
-    flat_input = z3_input.children()[main_member_range]
+    flat_input = z3_input.children()[pkt_range]
     return assemble_dont_care_map(flat_input, dont_care_vals)
+
+
+# https://stackoverflow.com/questions/14141977/check-if-a-formula-is-a-term-in-z3py
+CONNECTIVE_OPS = [z3.Z3_OP_NOT, z3.Z3_OP_AND, z3.Z3_OP_OR, z3.Z3_OP_XOR,
+                  z3.Z3_OP_IMPLIES, z3.Z3_OP_IFF, z3.Z3_OP_ITE]
+REL_OPS = [z3.Z3_OP_EQ, z3.Z3_OP_LE, z3.Z3_OP_LT, z3.Z3_OP_GE, z3.Z3_OP_GT]
+ALL_OPS = CONNECTIVE_OPS + REL_OPS
+
+
+def get_branch_conditions(z3_formula):
+    conditions = set()
+    if isinstance(z3_formula, z3.BoolRef):
+        # if z3_formula.decl().kind() in REL_OPS + CONNECTIVE_OPS:
+        # FIXME: This does not unroll if statements
+        # This could lead to conflicting formulas
+        if z3_formula.decl().kind() not in CONNECTIVE_OPS:
+            conditions.add(z3_formula)
+    for child in z3_formula.children():
+        sub_conds = get_branch_conditions(child)
+        conditions |= sub_conds
+    return conditions
+
+
+def compute_permutations(permut_conds):
+    log.info("Computing permutations...")
+    # FIXME: This does not scale well...
+    # FIXME: This is a complete hack, use a more sophisticated method
+    permuts = [[f(var) for var, f in zip(permut_conds, x)]
+               for x in itertools.product([z3.Not, lambda x: x],
+                                          repeat=len(permut_conds))]
+    return permuts
 
 
 def dissect_conds(config, conditions):
@@ -371,8 +364,12 @@ def dissect_conds(config, conditions):
                 has_table_action = True
             else:
                 if "_valid" in str(cond_var):
+                    # let's assume that every input header is valid
+                    # we have no choice right now
                     undefined_conds.append(cond_var == True)
                 else:
+                    # all keys must be false for now
+                    # FIXME: Some of them should be usable
                     if isinstance(cond_var, z3.BitVecRef):
                         undefined_conds.append(cond_var == 0)
                     elif isinstance(cond_var, z3.BoolRef):
@@ -384,7 +381,106 @@ def dissect_conds(config, conditions):
             pass
         else:
             avoid_conds.append(cond)
-    return controllable_conds, avoid_conds, undefined_conds
+
+    permut_conds = compute_permutations(controllable_conds)
+
+    log.info(15 * "#")
+    log.info("Undefined conditions:")
+    for cond in undefined_conds:
+        log.info(cond)
+    log.info("Conditions to avoid:")
+    for cond in avoid_conds:
+        log.info(cond)
+    log.info("Permissible permutations:")
+    for cond in controllable_conds:
+        log.info(cond)
+    log.info(15 * "#")
+
+    return permut_conds, avoid_conds, undefined_conds
+
+
+def get_main_formula(config):
+    # get the semantic representation of the original program
+    z3_main_prog, result = get_semantics(config)
+    if result != util.EXIT_SUCCESS:
+        return result
+    # we currently ignore all other pipelines and focus on the ingress pipeline
+    main_formula, main_map = z3_main_prog[config["pipe_name"]]
+    pkt_range = None
+    idx = 0
+    # FIXME: Make this more robust, assume HEADER_VAR is always first
+    for member_name, member_type in main_map:
+        if member_name == HEADER_VAR:
+            pkt_range = slice(idx, idx + len(member_type.flat_names))
+    if not pkt_range:
+        log.error("No valid input formula found!"
+                  " Check if your variable names are correct.")
+        log.error("This program checks for \"%s\".", HEADER_VAR)
+        return util.EXIT_FAILURE
+    main_formula = z3.simplify(main_formula)
+    return main_formula, pkt_range
+
+
+def build_test(config, main_formula, cond_tuple, pkt_range):
+    permut_conds, avoid_conds, undefined_conds = cond_tuple
+
+    # now we actually verify that we can find an input
+    s = z3.Solver()
+    # bind the output constant to the output of the main program
+    output_const = z3.Const("output", main_formula.sort())
+    s.add(main_formula == output_const)
+
+    undefined_matches = z3.And(*undefined_conds)
+    s.add(undefined_matches)
+
+    avoid_matches = z3.Not(z3.Or(*avoid_conds))
+    s.add(avoid_matches)
+    # we need this tactic to find out which values will be undefined at the end
+    # or which headers we expect to be invalid
+    # the tactic effectively simplifies the formula to a single expression
+    # under the constraints we have defined
+    t = z3.Then(
+        z3.Tactic("propagate-values"),
+        z3.Tactic("ctx-solver-simplify"),
+        z3.Tactic("elim-and")
+    )
+    # this is the test string we assemble
+    stf_str = ""
+    for permut in permut_conds:
+        s.push()
+        s.add(permut)
+        log.info("Checking for solution...")
+        ret = s.check()
+        if ret == z3.sat:
+            log.info("Found a solution!")
+            # get the model
+            m = s.model()
+            # this does not work well yet... desperate hack
+            # FIXME: Figure out a way to solve this, might not be solvable
+            g = z3.Goal()
+            g.add(main_formula == output_const,
+                  avoid_matches, undefined_matches, z3.And(*permut))
+            log.debug(z3.tactics())
+            log.info("Inferring simplified input and output")
+            constrained_output = t.apply(g)
+            log.info("Inferring dont-care map...")
+            # FIXME: horrible
+            output_var = constrained_output[0][0].children()[0]
+            dont_care_map = get_dont_care_map(config, output_var, pkt_range)
+            input_hdr = m[z3.Const(config["ingress_var"], output_const.sort())]
+            output_hdr = m[output_const]
+            log.debug("Output header: %s", output_hdr)
+            log.debug("Input header: %s", input_hdr)
+            flat_input = input_hdr.children()[pkt_range]
+            flat_output = output_hdr.children()[pkt_range]
+            stf_str += get_stf_str(flat_input, flat_output, dont_care_map)
+            stf_str += "\n"
+        else:
+            # FIXME: This should be an error
+            log.warning("No valid input could be found!")
+        s.pop()
+    # the final stf string lists all the interesting packets to test
+    return stf_str
 
 
 def perform_blackbox_test(config):
@@ -397,87 +493,14 @@ def perform_blackbox_test(config):
     config["out_dir"] = out_dir
     config["p4_input"] = p4_input
 
-    # get the semantic representation of the original program
-    z3_main_prog, result = get_semantics(config)
-    if result != util.EXIT_SUCCESS:
-        return result
-    # now we actually verify that we can find an input
-    s = z3.Solver()
-    # we currently ignore all other pipelines and focus on the ingress pipeline
-    main_formula, main_map = z3_main_prog[config["pipe_name"]]
-    main_member_range = None
-    idx = 0
-    for member_name, member_type in main_map:
-        if member_name == HEADER_VAR:
-            main_member_range = slice(idx, idx + len(member_type.flat_names))
-    main_formula = z3.simplify(main_formula)
+    main_formula, pkt_range = get_main_formula(config)
+
     conditions = get_branch_conditions(main_formula)
     cond_tuple = dissect_conds(config, conditions)
-    permut_conds, avoid_conds, undefined_conds = cond_tuple
-    log.info("Computing permutations...")
-    # FIXME: This does not scale well...
-    # FIXME: This is a complete hack, use a more sophisticated method
-    permuts = [[f(var) for var, f in zip(permut_conds, x)]
-               for x in itertools.product([z3.Not, lambda x: x],
-                                          repeat=len(permut_conds))]
-    output_const = z3.Const("output", main_formula.sort())
-    # bind the output constant to the output of the main program
-    s.add(main_formula == output_const)
-    # all keys must be false for now
-    # FIXME: Some of them should be usable
-    log.info(15 * "#")
-    log.info("Undefined conditions:")
-    s.add(z3.And(*undefined_conds))
-    for cond in undefined_conds:
-        log.info(cond)
-    log.info("Conditions to avoid:")
-    s.add(z3.Not(z3.Or(*avoid_conds)))
-    for cond in avoid_conds:
-        log.info(cond)
-    log.info("Permissible permutations:")
-    for cond in permuts:
-        log.info(cond)
-    log.info(15 * "#")
-    for permut in permuts:
-        s.push()
-        s.add(permut)
-        log.info("Checking for solution...")
-        ret = s.check()
-        if ret == z3.sat:
-            log.info("Found a solution!")
-            # get the model
-            m = s.model()
-            # this does not work well yet... desperate hack
-            # FIXME: Figure out a way to solve this, might not be solvable
-            avoid_matches = z3.Not(z3.Or(*avoid_conds))
-            undefined_matches = z3.And(*undefined_conds)
-            permut_match = z3.And(*permut)
-            g = z3.Goal()
-            g.add(main_formula == output_const,
-                  avoid_matches, undefined_matches, permut_match)
-            log.debug(z3.tactics())
-            t = z3.Then(
-                z3.Tactic("propagate-values"),
-                z3.Tactic("ctx-solver-simplify"),
-                z3.Tactic("elim-and")
-            )
-            log.info("Inferring simplified input and output")
-            constrained_output = t.apply(g)
-            log.info(constrained_output)
-            log.info("Inferring dont-care map...")
-            # FIXME: horrible
-            output_var = constrained_output[0][0].children()[0]
-            dont_care_map = get_dont_care_map(
-                config, output_var, main_member_range)
-            result = check_with_stf(
-                config, m, output_const, dont_care_map, main_member_range)
-            if result != util.EXIT_SUCCESS:
-                return result
-        else:
-            # FIXME: This should be an error
-            log.warning("No valid input could be found!")
-        s.pop()
-    return result
+    stf_str = build_test(config, main_formula, cond_tuple, pkt_range)
+    # finally, run the test with the stf string we have assembled
+    # and return the result of course
+    return run_stf_test(config, stf_str)
 
 
 def main(args):
