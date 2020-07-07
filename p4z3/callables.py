@@ -165,9 +165,9 @@ class P4Package(P4Callable):
                     state = p4_state.get_z3_repr()
                     for exit_cond, exit_state in reversed(p4_state.exit_states):
                         state = z3.If(exit_cond, exit_state, state)
-                    self.pipes[pipe_name] = state
+                    self.pipes[pipe_name] = (state, p4_state.members)
                 elif isinstance(pipe, P4Extern):
-                    self.pipes[pipe_name] = pipe.const
+                    self.pipes[pipe_name] = (pipe.const, [])
                 elif isinstance(pipe, P4Package):
                     # execute the package by calling it
                     pipe.initialize()
@@ -189,7 +189,7 @@ class P4Package(P4Callable):
                     self.pipes[sub_pipe_name] = sub_pipe_val
             elif isinstance(pipe_val, z3.ExprRef):
                 # for some reason simple expressions are also possible.
-                self.pipes[pipe_name] = pipe_val
+                self.pipes[pipe_name] = (pipe_val, [])
             else:
                 raise RuntimeError(
                     f"Unsupported value {pipe_val}, type {type(pipe_val)}."

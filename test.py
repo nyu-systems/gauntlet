@@ -99,8 +99,6 @@ xfails = [
     "shadow-after-use.p4",  # another issue with shadowing
     "crc32-bmv2.p4",  # lookahead expansion
     "calc-ebpf.p4",  # lookahead expansion
-    # all of these do not work because of some quirk in inlining
-    "issue1897-bmv2.p4",
 ]
 
 

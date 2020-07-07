@@ -53,8 +53,6 @@ def check_equivalence(prog_before, prog_after):
     # The equivalence check of the solver
     # For all input packets and possible table matches the programs should
     # be the same
-    ''' SOLVER '''
-    # s = z3.Solver()
     try:
         # the equivalence equation
         log.debug("Simplifying equation...")
@@ -123,8 +121,8 @@ def z3_check(prog_paths, fail_dir=None):
             log.warning("Pre and post model differ in size!")
             return util.EXIT_SKIPPED
         for pipe_name in pipes_pre:
-            pipe_pre = pipes_pre[pipe_name]
-            pipe_post = pipes_post[pipe_name]
+            pipe_pre = pipes_pre[pipe_name][0]
+            pipe_post = pipes_post[pipe_name][0]
             log.info("Checking z3 equivalence for pipe %s...", pipe_name)
             ret = check_equivalence(pipe_pre, pipe_post)
             if ret != util.EXIT_SUCCESS:

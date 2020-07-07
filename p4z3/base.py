@@ -971,20 +971,20 @@ class P4State():
             self.locals[instance_name] = instance_val
 
         flat_args = []
-        flat_names = []
+        self.flat_names = []
         idx = 0
         for z3_arg_name, z3_arg_type in z3_args:
             if isinstance(z3_arg_type, P4ComplexType):
                 member_cls = z3_arg_type.instantiate(f"{name}.{idx}")
                 for sub_arg_name, sub_arg_type in z3_arg_type.flat_names:
                     flat_args.append((f"{idx}", sub_arg_type))
-                    flat_names.append(f"{z3_arg_name}.{sub_arg_name}")
+                    self.flat_names.append(f"{z3_arg_name}.{sub_arg_name}")
                     idx += 1
                 # this is a complex datatype, create a P4ComplexType
                 self.locals[z3_arg_name] = member_cls
             else:
                 flat_args.append((f"{idx}", z3_arg_type))
-                flat_names.append(z3_arg_name)
+                self.flat_names.append(z3_arg_name)
                 idx += 1
         z3_type = z3.Datatype(name)
         z3_type.declare(f"mk_{name}", *flat_args)
@@ -992,7 +992,7 @@ class P4State():
 
         self.const = z3.Const(f"{name}", self.z3_type)
 
-        for type_idx, arg_name in enumerate(flat_names):
+        for type_idx, arg_name in enumerate(self.flat_names):
             member_constructor = self.z3_type.accessor(0, type_idx)
             self.set_or_add_var(arg_name, member_constructor(self.const))
 
