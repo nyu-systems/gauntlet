@@ -14,7 +14,6 @@ def gen_instance(var_name, p4z3_type):
         type_name = p4z3_type.name
         if var_name is None:
             var_name = f"{type_name}"
-        p4z3_type.ref_count += 1
         z3_cls = p4z3_type.instantiate(var_name)
         return z3_cls
     elif isinstance(p4z3_type, P4ComplexInstance):
@@ -239,7 +238,6 @@ class P4ComplexType():
 
     def __init__(self, name, z3_args):
         self.name = name
-        self.ref_count = 0
         z3_type = z3.Datatype(name)
         flat_args = []
         flat_names = []
@@ -260,8 +258,8 @@ class P4ComplexType():
         self.z3_args = z3_args
         self.flat_names = flat_names
 
-    def instantiate(self, name):
-        return P4ComplexInstance(name, self)
+    def instantiate(self, name, member_id=0):
+        return P4ComplexInstance(name, self, member_id)
 
     def __str__(self):
         return self.name
@@ -280,7 +278,7 @@ class P4ComplexType():
 
 
 class P4ComplexInstance():
-    def __init__(self, name, p4z3_type):
+    def __init__(self, name, p4z3_type, member_id):
         self.locals = {}
         self.name = name
         self.z3_type = p4z3_type.z3_type
@@ -292,10 +290,10 @@ class P4ComplexInstance():
         # set the members of this class
         idx = 0
         for z3_arg_name, z3_arg_type in p4z3_type.z3_args:
-            var_name = f"{name}.{idx}"
+            var_name = f"{member_id+idx}"
             if isinstance(z3_arg_type, P4ComplexType):
                 # this is a complex datatype, create a P4ComplexType
-                instance = z3_arg_type.instantiate(var_name)
+                instance = z3_arg_type.instantiate(var_name, member_id + idx)
                 self.locals[z3_arg_name] = instance
                 for member_name, member_type in z3_arg_type.flat_names:
                     member_constructor = self.z3_type.accessor(0, idx)
@@ -427,8 +425,7 @@ class P4ComplexInstance():
         return result
 
     def __repr__(self):
-        ref_count = self.p4z3_type.ref_count
-        return f"{self.__class__.__name__}_{ref_count}"
+        return f"{self.__class__.__name__}"
 
     def __eq__(self, other):
         # It can happen that we compare to a list
@@ -489,14 +486,14 @@ class P4ComplexInstance():
 
 class StructType(P4ComplexType):
 
-    def instantiate(self, name):
-        return StructInstance(name, self)
+    def instantiate(self, name, member_id=0):
+        return StructInstance(name, self, member_id)
 
 
 class StructInstance(P4ComplexInstance):
 
-    def __init__(self, name, p4z3_type):
-        super(StructInstance, self).__init__(name, p4z3_type)
+    def __init__(self, name, p4z3_type, member_id):
+        super(StructInstance, self).__init__(name, p4z3_type, member_id)
         self.var_buffer = {}
 
     def activate(self, label="undefined"):
@@ -516,14 +513,14 @@ class StructInstance(P4ComplexInstance):
 
 class HeaderType(StructType):
 
-    def instantiate(self, name):
-        return HeaderInstance(name, self)
+    def instantiate(self, name, member_id=0):
+        return HeaderInstance(name, self, member_id)
 
 
 class HeaderInstance(StructInstance):
 
-    def __init__(self, name, p4z3_type):
-        super(HeaderInstance, self).__init__(name, p4z3_type)
+    def __init__(self, name, p4z3_type, member_id):
+        super(HeaderInstance, self).__init__(name, p4z3_type, member_id)
         self.valid = z3.BoolVal(False)
         self.locals["isValid"] = self.isValid
         self.locals["setValid"] = self.setValid
@@ -645,16 +642,15 @@ class HeaderInstance(StructInstance):
 
 
 class HeaderUnionType(HeaderType):
-    def instantiate(self, name):
-        return HeaderUnionInstance(name, self)
+    def instantiate(self, name, member_id=0):
+        return HeaderUnionInstance(name, self, member_id)
 
 
 class HeaderUnionInstance(HeaderInstance):
 
-    def __init__(self, name, p4z3_type):
+    def __init__(self, name, p4z3_type, member_id):
         # TODO: Check if this class is implemented correctly...
-        super(HeaderUnionInstance, self).__init__(
-            name, p4z3_type)
+        super(HeaderUnionInstance, self).__init__(name, p4z3_type, member_id)
         for member_name, member_type in self.members:
             member_hdr = self.resolve_reference(member_name)
             member_hdr.bind_to_union(self)
@@ -677,8 +673,8 @@ class ListType(P4ComplexType):
         super(ListType, self).__init__(name, z3_args)
 
     # TODO: Implement this class correctly...
-    def instantiate(self, name):
-        return ListInstance(name, self)
+    def instantiate(self, name, member_id=0):
+        return ListInstance(name, self, member_id)
 
 
 class ListInstance(P4ComplexInstance):
@@ -693,8 +689,8 @@ class HeaderStack(StructType):
         super(HeaderStack, self).__init__(name, z3_args)
 
     # TODO: Implement this class correctly...
-    def instantiate(self, name):
-        return HeaderStackInstance(name, self)
+    def instantiate(self, name, member_id=0):
+        return HeaderStackInstance(name, self, member_id)
 
 
 class HeaderStackDict(dict):
@@ -733,9 +729,8 @@ class HeaderStackDict(dict):
 
 class HeaderStackInstance(StructInstance):
 
-    def __init__(self, name, p4z3_type):
-        super(HeaderStackInstance, self).__init__(
-            name, p4z3_type)
+    def __init__(self, name, p4z3_type, member_id):
+        super(HeaderStackInstance, self).__init__(name, p4z3_type, member_id)
 
         # this is completely nuts but it works for now
         # no idea how to deal with properties
@@ -817,7 +812,7 @@ class Enum(P4ComplexInstance):
             self.locals[enum_name] = z3.BitVecVal(idx, 32)
         self.z3_args = z3_args
 
-    def instantiate(self, name):
+    def instantiate(self, name, member_id=0):
         return self
 
     def __eq__(self, other):
@@ -845,7 +840,7 @@ class SerEnum(Enum):
         for z3_arg_name, z3_arg_val in z3_args:
             self.locals[z3_arg_name] = z3_arg_val
 
-    def instantiate(self, name):
+    def instantiate(self, name, member_id=0):
         return self
 
 
