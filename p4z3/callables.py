@@ -1,7 +1,7 @@
 from p4z3.base import OrderedDict, z3, log, copy, copy_attrs
-from p4z3.base import merge_parameters, gen_instance, z3_cast
-from p4z3.base import P4Z3Class, P4ComplexInstance, P4Extern, P4Context
-from p4z3.base import DefaultExpression, P4ComplexType, P4Expression
+from p4z3.base import gen_instance, z3_cast
+from p4z3.base import P4Z3Class, P4ComplexInstance, P4ComplexType, P4Context
+from p4z3.base import DefaultExpression, P4Extern, P4Expression, P4Argument
 from p4z3.expressions import P4Mux
 
 
@@ -20,6 +20,36 @@ def save_variables(p4_state, merged_args):
         except KeyError:
             var_buffer[param_name] = (is_ref, param_ref, None)
     return var_buffer
+
+
+def merge_parameters(params, *args, **kwargs):
+    # FIXME: This function could be a lot more efficient...
+    # FIXME: Overloading does not work correctly here
+    merged_args = {}
+    args_len = len(args)
+    for idx, param in enumerate(params):
+        if idx < args_len:
+            arg_val = args[idx]
+            if isinstance(arg_val, DefaultExpression):
+                # Default expressions are pointless arguments, so skip them
+                continue
+            arg = P4Argument(param.is_ref, param.p4_type, arg_val)
+            merged_args[param.name] = arg
+        elif param.p4_default is not None:
+            # there is no argument but we have a default value, so use that
+            arg_val = param.p4_default
+            arg = P4Argument(param.is_ref, param.p4_type, arg_val)
+            merged_args[param.name] = arg
+    for param_name, arg_val in kwargs.items():
+        # this is expensive but at least works reliably
+        if isinstance(arg_val, DefaultExpression):
+            # Default expressions are pointless arguments, so skip them
+            continue
+        for param in params:
+            if param.name == param_name:
+                arg = P4Argument(param.is_ref, param.p4_type, arg_val)
+                merged_args[param_name] = arg
+    return merged_args
 
 
 class MethodCallExpr(P4Expression):
@@ -118,13 +148,11 @@ class P4Callable(P4Z3Class):
                 log.debug("Resetting %s to %s", arg_expr, param_name)
                 if isinstance(arg_expr, P4ComplexInstance):
                     arg_expr = arg_expr.p4z3_type.instantiate("undefined")
-                    # FIXME: This should not be needed
-                    arg_expr.deactivate()
                 else:
                     arg_expr = z3.Const(f"undefined", arg_expr.sort())
             log.debug("Copy-in: %s to %s", arg_expr, param_name)
             # it is possible to pass an int as value, we need to cast it
-            if isinstance(arg_expr, int) and isinstance(arg.p4_type, (z3.BitVecSortRef, z3.BitVecRef)):
+            if isinstance(arg_expr, int):
                 arg_expr = z3_cast(arg_expr, arg.p4_type)
             # buffer the value, do NOT set it yet
             param_buffer[param_name] = arg_expr
@@ -164,13 +192,12 @@ class P4Package(P4Callable):
                     for param in params:
                         args.append(param.name)
                     pipe.apply(p4_state, *args)
-                    p4_state.check_validity()
                     state = p4_state.get_z3_repr()
                     for exit_cond, exit_state in reversed(p4_state.exit_states):
                         state = z3.If(exit_cond, exit_state, state)
-                    self.pipes[pipe_name] = state
+                    self.pipes[pipe_name] = (state, p4_state.members)
                 elif isinstance(pipe, P4Extern):
-                    self.pipes[pipe_name] = pipe.const
+                    self.pipes[pipe_name] = (pipe.const, [])
                 elif isinstance(pipe, P4Package):
                     # execute the package by calling it
                     pipe.initialize()
@@ -192,7 +219,7 @@ class P4Package(P4Callable):
                     self.pipes[sub_pipe_name] = sub_pipe_val
             elif isinstance(pipe_val, z3.ExprRef):
                 # for some reason simple expressions are also possible.
-                self.pipes[pipe_name] = pipe_val
+                self.pipes[pipe_name] = (pipe_val, [])
             else:
                 raise RuntimeError(
                     f"Unsupported value {pipe_val}, type {type(pipe_val)}."
@@ -333,7 +360,7 @@ class P4Method(P4Callable):
                     arg_expr = z3.Const(f"{param_name}", arg_expr.sort())
             log.debug("Copy-in: %s to %s", arg_expr, param_name)
             # it is possible to pass an int as value, we need to cast it
-            if isinstance(arg_expr, int) and isinstance(arg.p4_type, (z3.BitVecSortRef, z3.BitVecRef)):
+            if isinstance(arg_expr, int):
                 arg_expr = z3_cast(arg_expr, arg.p4_type)
             # buffer the value, do NOT set it yet
             param_buffer[param_name] = arg_expr
@@ -370,7 +397,6 @@ class P4Method(P4Callable):
 
     def eval_callable(self, p4_state, merged_args, var_buffer):
         # initialize the local context of the function for execution
-
         if self.return_type is not None:
             # methods can return values, we need to generate a new constant
             # we generate the name based on the input arguments

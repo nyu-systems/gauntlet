@@ -63,7 +63,7 @@ for test in list(VIOLATION_DIR.glob("*")):
 false_friends_filter = [
     "extern_arguments_2.p4",  # exit return value name
     "extern_arguments_3.p4",  # exit return value name
-    "exit_after_valid.p4",  # z3 crashes, not sure why
+    "lookahead_expansion.p4",  # lookahead_expansion
 ]
 
 false_friends = set()
@@ -97,8 +97,8 @@ xfails = [
     "generic1.p4",  # complicated type inference
     "functors8.p4",  # complicated type inference
     "shadow-after-use.p4",  # another issue with shadowing
-    # all of these do not work because of some quirk in inlining
-    "issue1897-bmv2.p4",
+    "crc32-bmv2.p4",  # lookahead expansion
+    "calc-ebpf.p4",  # lookahead expansion
 ]
 
 
