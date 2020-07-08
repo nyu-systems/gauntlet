@@ -216,15 +216,19 @@ class P4ComplexType():
         for z3_arg_name, z3_arg_type in z3_args:
             if isinstance(z3_arg_type, P4ComplexType):
                 for sub_arg_name, sub_arg_type in z3_arg_type.flat_names:
-
                     flat_args.append((f"{idx}", sub_arg_type))
                     flat_names.append(
                         (f"{z3_arg_name}.{sub_arg_name}", sub_arg_type))
                     idx += 1
+                self.width += z3_arg_type.width
             else:
                 flat_args.append((f"{idx}", z3_arg_type))
                 flat_names.append((z3_arg_name, z3_arg_type))
                 idx += 1
+                if isinstance(z3_arg_type, z3.BoolSortRef):
+                    self.width += 1
+                elif isinstance(z3_arg_type, z3.BitVecSortRef):
+                    self.width += z3_arg_type.size()
         z3_type.declare(f"mk_{name}", *flat_args)
         self.z3_type = z3_type.create()
         self.z3_args = z3_args
@@ -257,6 +261,44 @@ class P4ComplexInstance():
         self.p4z3_type = p4z3_type
         self.members = p4z3_type.z3_args
         self.valid = z3.BoolVal(False)
+
+        # set the members of this class
+        idx = 0
+        bit_width = 0
+        if p4z3_type.width == 0:
+            self.const = z3.Const(f"{name}", p4z3_type.z3_type)
+        else:
+            self.const = z3.Const(f"{name}", z3.BitVecSort(p4z3_type.width))
+        for z3_arg_name, z3_arg_type in reversed(p4z3_type.z3_args):
+            var_name = f"{member_id+idx}"
+            if isinstance(z3_arg_type, P4ComplexType):
+                # this is a complex datatype, create a P4ComplexType
+                instance = z3_arg_type.instantiate(var_name, member_id + idx)
+                self.locals[z3_arg_name] = instance
+                for member_name, member_type in reversed(z3_arg_type.flat_names):
+                    if isinstance(member_type, z3.BoolSortRef):
+                        member_width = 1
+                        bind_var = z3_cast(z3.Extract(
+                            member_width + bit_width - 1, bit_width, self.const), member_type)
+                    else:
+                        member_width = member_type.size()
+                        bind_var = z3.Extract(
+                            member_width + bit_width - 1, bit_width, self.const)
+                    instance.set_or_add_var(member_name, bind_var)
+                    idx += 1
+                    bit_width += member_width
+            else:
+                if isinstance(z3_arg_type, z3.BoolSortRef):
+                    member_width = 1
+                    bind_var = z3_cast(z3.Extract(
+                        member_width + bit_width - 1, bit_width, self.const), z3_arg_type)
+                else:
+                    member_width = z3_arg_type.size()
+                    bind_var = z3.Extract(
+                        member_width + bit_width - 1, bit_width, self.const)
+                self.locals[z3_arg_name] = bind_var
+                idx += 1
+                bit_width += member_width
 
     def bind_to_name(self, name):
         for member_name, member_type in self.members:
@@ -434,35 +476,6 @@ class P4ComplexInstance():
 
 class StructType(P4ComplexType):
 
-    def __init__(self, name, z3_args):
-        self.name = name
-        z3_type = z3.Datatype(name)
-        flat_args = []
-        flat_names = []
-        idx = 0
-        self.width = 0
-        for z3_arg_name, z3_arg_type in z3_args:
-            if isinstance(z3_arg_type, P4ComplexType):
-                for sub_arg_name, sub_arg_type in z3_arg_type.flat_names:
-
-                    flat_args.append((f"{idx}", sub_arg_type))
-                    flat_names.append(
-                        (f"{z3_arg_name}.{sub_arg_name}", sub_arg_type))
-                    idx += 1
-                self.width += z3_arg_type.width
-            else:
-                flat_args.append((f"{idx}", z3_arg_type))
-                flat_names.append((z3_arg_name, z3_arg_type))
-                idx += 1
-                if isinstance(z3_arg_type, z3.BoolSortRef):
-                    self.width += 1
-                else:
-                    self.width += z3_arg_type.size()
-        z3_type.declare(f"mk_{name}", *flat_args)
-        self.z3_type = z3_type.create()
-        self.z3_args = z3_args
-        self.flat_names = flat_names
-
     def instantiate(self, name, member_id=0):
         return StructInstance(name, self, member_id)
 
@@ -471,43 +484,7 @@ class StructInstance(P4ComplexInstance):
 
     def __init__(self, name, p4z3_type, member_id):
         super(StructInstance, self).__init__(name, p4z3_type, member_id)
-        # set the members of this class
-        idx = 0
-        bit_width = 0
-        if p4z3_type.width == 0:
-            self.const = z3.Const(f"{name}", p4z3_type.z3_type)
-        else:
-            self.const = z3.Const(f"{name}", z3.BitVecSort(p4z3_type.width))
-        for z3_arg_name, z3_arg_type in reversed(p4z3_type.z3_args):
-            var_name = f"{member_id+idx}"
-            if isinstance(z3_arg_type, P4ComplexType):
-                # this is a complex datatype, create a P4ComplexType
-                instance = z3_arg_type.instantiate(var_name, member_id + idx)
-                self.locals[z3_arg_name] = instance
-                for member_name, member_type in reversed(z3_arg_type.flat_names):
-                    if isinstance(member_type, z3.BoolSortRef):
-                        member_width = 1
-                        bind_var = z3_cast(z3.Extract(
-                            member_width + bit_width - 1, bit_width, self.const), member_type)
-                    else:
-                        member_width = member_type.size()
-                        bind_var = z3.Extract(
-                            member_width + bit_width - 1, bit_width, self.const)
-                    instance.set_or_add_var(member_name, bind_var)
-                    idx += 1
-                    bit_width += member_width
-            else:
-                if isinstance(z3_arg_type, z3.BoolSortRef):
-                    member_width = 1
-                    bind_var = z3_cast(z3.Extract(
-                        member_width + bit_width - 1, bit_width, self.const), z3_arg_type)
-                else:
-                    member_width = z3_arg_type.size()
-                    bind_var = z3.Extract(
-                        member_width + bit_width - 1, bit_width, self.const)
-                self.locals[z3_arg_name] = bind_var
-                idx += 1
-                bit_width += member_width
+        self.var_buffer = {}
 
     def activate(self, label="undefined"):
         # structs may have headers that can be deactivated
