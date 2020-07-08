@@ -21,7 +21,7 @@ SKIPPED_PASSES = [
     # "UniqueNames",
     # "UniqueParameters",
     # "SpecializeAll",
-    "ExpandLookahead",
+    # "ExpandLookahead",
 ]
 
 
