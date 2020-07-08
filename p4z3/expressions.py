@@ -220,6 +220,9 @@ class P4land(P4BinaryOp):
         # so we save the result of the right-hand expression and merge
         lval_expr = p4_state.resolve_expr(self.lval)
         var_store, chain_copy = p4_state.checkpoint()
+        context = p4_state.contexts[-1]
+        forward_cond_copy = context.tmp_forward_cond
+        context.tmp_forward_cond = z3.And(forward_cond_copy, lval_expr)
         rval_expr = p4_state.resolve_expr(self.rval)
         else_vars = copy_attrs(p4_state.locals)
         p4_state.restore(var_store, chain_copy)
@@ -237,9 +240,13 @@ class P4lor(P4BinaryOp):
         # so we save the result of the right-hand expression and merge
         lval_expr = p4_state.resolve_expr(self.lval)
         var_store, chain_copy = p4_state.checkpoint()
+        context = p4_state.contexts[-1]
+        forward_cond_copy = context.tmp_forward_cond
+        context.tmp_forward_cond = z3.And(forward_cond_copy, z3.Not(lval_expr))
         rval_expr = p4_state.resolve_expr(self.rval)
         else_vars = copy_attrs(p4_state.locals)
         p4_state.restore(var_store, chain_copy)
+        context.tmp_forward_cond = forward_cond_copy
         p4_state.merge_attrs(z3.Not(lval_expr), else_vars)
 
         return self.operator(lval_expr, rval_expr)
