@@ -76,8 +76,12 @@ class P4BinaryOp(P4Op):
         lval_is_bitvec = isinstance(lval_expr, (z3.BitVecRef, z3.BitVecNumRef))
         rval_is_bitvec = isinstance(rval_expr, (z3.BitVecRef, z3.BitVecNumRef))
         if lval_is_bitvec and rval_is_bitvec:
-            if lval_expr.size() != rval_expr.size():
-                rval_expr = z3_cast(rval_expr, lval_expr.size())
+            rval_expr = z3_cast(rval_expr, lval_expr.size())
+        elif lval_is_bitvec and isinstance(rval_expr, int):
+            rval_expr = z3_cast(rval_expr, lval_expr.size())
+        elif rval_is_bitvec and isinstance(lval_expr, int):
+            lval_expr = z3_cast(lval_expr, rval_expr.size())
+
         return self.operator(lval_expr, rval_expr)
 
 
@@ -144,6 +148,8 @@ class P4sub(P4BinaryOp):
 class P4addsat(P4BinaryOp):
     def __init__(self, lval, rval):
         def operator(x, y):
+            log.info("%s %s", x, y)
+            log.info(type(x))
             no_overflow = z3.BVAddNoOverflow(x, y, False)
             no_underflow = z3.BVAddNoUnderflow(x, y)
             max_return = 2**x.size() - 1
@@ -263,7 +269,7 @@ class P4div(P4BinaryOp):
         def operator(x, y):
             # z3 requires at least one value to be a bitvector for UDiv
             if isinstance(y, int) and isinstance(x, int):
-                return op.truediv(x, y)
+                return op.floordiv(x, y)
             return z3.UDiv(x, y)
         P4BinaryOp.__init__(self, lval, rval, operator)
 

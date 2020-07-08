@@ -20,13 +20,8 @@ class AssignmentStatement(P4Statement):
         # in assignments all complex types values are copied
         if isinstance(rval_expr, P4ComplexInstance):
             rval_expr = copy.copy(rval_expr)
-        # make sure the assignment is aligned appropriately
-        # this can happen because we also evaluate before the
-        # BindTypeVariables pass
-        # we can only align if tmp_val is a bitvector
-        # example test: instance_overwrite.p4
-        lval = p4_state.resolve_expr(self.lval)
-        if isinstance(rval_expr, int) and isinstance(lval, (z3.BitVecSortRef, z3.BitVecRef)):
+        if isinstance(rval_expr, int):
+            lval = p4_state.resolve_expr(self.lval)
             rval_expr = z3_cast(rval_expr, lval.sort())
         p4_state.set_or_add_var(self.lval, rval_expr)
 

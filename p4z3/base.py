@@ -30,36 +30,6 @@ def gen_instance(var_name, p4z3_type):
     raise RuntimeError(f"{p4z3_type} instantiation not supported!")
 
 
-def merge_parameters(params, *args, **kwargs):
-    # FIXME: This function could be a lot more efficient...
-    # FIXME: Overloading does not work correctly here
-    merged_args = {}
-    args_len = len(args)
-    for idx, param in enumerate(params):
-        if idx < args_len:
-            arg_val = args[idx]
-            if isinstance(arg_val, DefaultExpression):
-                # Default expressions are pointless arguments, so skip them
-                continue
-            arg = P4Argument(param.is_ref, param.p4_type, arg_val)
-            merged_args[param.name] = arg
-        elif param.p4_default is not None:
-            # there is no argument but we have a default value, so use that
-            arg_val = param.p4_default
-            arg = P4Argument(param.is_ref, param.p4_type, arg_val)
-            merged_args[param.name] = arg
-    for param_name, arg_val in kwargs.items():
-        # this is expensive but at least works reliably
-        if isinstance(arg_val, DefaultExpression):
-            # Default expressions are pointless arguments, so skip them
-            continue
-        for param in params:
-            if param.name == param_name:
-                arg = P4Argument(param.is_ref, param.p4_type, arg_val)
-                merged_args[param_name] = arg
-    return merged_args
-
-
 def copy_attrs(attrs):
     attr_copy = {}
     for attr_name, attr_val in attrs.items():
@@ -374,11 +344,6 @@ class P4ComplexInstance():
             target_dict[lval] = rval
 
     def set_or_add_var(self, lval, rval):
-        # only write values if the type is valid
-        # this does not apply to P4States
-        # FIXME: P4C does not agree with this
-        # if self.valid == z3.BoolVal(False):
-        #     return
         self._update_dict(lval, rval, self.locals)
 
     def sort(self):

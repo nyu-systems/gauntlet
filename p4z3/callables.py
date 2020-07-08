@@ -1,7 +1,7 @@
 from p4z3.base import OrderedDict, z3, log, copy, copy_attrs
-from p4z3.base import merge_parameters, gen_instance, z3_cast
-from p4z3.base import P4Z3Class, P4ComplexInstance, P4Extern, P4Context
-from p4z3.base import DefaultExpression, P4ComplexType, P4Expression
+from p4z3.base import gen_instance, z3_cast
+from p4z3.base import P4Z3Class, P4ComplexInstance, P4ComplexType, P4Context
+from p4z3.base import DefaultExpression, P4Extern, P4Expression, P4Argument
 from p4z3.expressions import P4Mux
 
 
@@ -20,6 +20,36 @@ def save_variables(p4_state, merged_args):
         except KeyError:
             var_buffer[param_name] = (is_ref, param_ref, None)
     return var_buffer
+
+
+def merge_parameters(params, *args, **kwargs):
+    # FIXME: This function could be a lot more efficient...
+    # FIXME: Overloading does not work correctly here
+    merged_args = {}
+    args_len = len(args)
+    for idx, param in enumerate(params):
+        if idx < args_len:
+            arg_val = args[idx]
+            if isinstance(arg_val, DefaultExpression):
+                # Default expressions are pointless arguments, so skip them
+                continue
+            arg = P4Argument(param.is_ref, param.p4_type, arg_val)
+            merged_args[param.name] = arg
+        elif param.p4_default is not None:
+            # there is no argument but we have a default value, so use that
+            arg_val = param.p4_default
+            arg = P4Argument(param.is_ref, param.p4_type, arg_val)
+            merged_args[param.name] = arg
+    for param_name, arg_val in kwargs.items():
+        # this is expensive but at least works reliably
+        if isinstance(arg_val, DefaultExpression):
+            # Default expressions are pointless arguments, so skip them
+            continue
+        for param in params:
+            if param.name == param_name:
+                arg = P4Argument(param.is_ref, param.p4_type, arg_val)
+                merged_args[param_name] = arg
+    return merged_args
 
 
 class MethodCallExpr(P4Expression):
@@ -122,7 +152,7 @@ class P4Callable(P4Z3Class):
                     arg_expr = z3.Const(f"undefined", arg_expr.sort())
             log.debug("Copy-in: %s to %s", arg_expr, param_name)
             # it is possible to pass an int as value, we need to cast it
-            if isinstance(arg_expr, int) and isinstance(arg.p4_type, (z3.BitVecSortRef, z3.BitVecRef)):
+            if isinstance(arg_expr, int):
                 arg_expr = z3_cast(arg_expr, arg.p4_type)
             # buffer the value, do NOT set it yet
             param_buffer[param_name] = arg_expr
@@ -330,7 +360,7 @@ class P4Method(P4Callable):
                     arg_expr = z3.Const(f"{param_name}", arg_expr.sort())
             log.debug("Copy-in: %s to %s", arg_expr, param_name)
             # it is possible to pass an int as value, we need to cast it
-            if isinstance(arg_expr, int) and isinstance(arg.p4_type, (z3.BitVecSortRef, z3.BitVecRef)):
+            if isinstance(arg_expr, int):
                 arg_expr = z3_cast(arg_expr, arg.p4_type)
             # buffer the value, do NOT set it yet
             param_buffer[param_name] = arg_expr

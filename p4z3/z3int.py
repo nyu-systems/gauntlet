@@ -2,7 +2,8 @@ import z3
 
 
 class Z3Int(int):
-
+    """Z3Ints represent the P4 int<> types. This is necessary because z3
+        does not track signedness of bitvectors."""
     def __new__(cls, val, bit_size=64):
         cls.val = val
         cls.bit_size = bit_size
@@ -176,39 +177,3 @@ class Z3Int(int):
         if res == NotImplemented:
             return other.__rxor__(self)
         return Z3Int(res, self.bit_size)
-
-    # def __lt__(self, other):
-    #     res = int.__lt__(self, other)
-    #     if res == NotImplemented:
-    #         return other.__lt__(self)
-    #     return res
-
-    # def __le__(self, other):
-    #     res = int.__le__(self, other)
-    #     if res == NotImplemented:
-    #         return other.__le__(self)
-    #     return res
-
-    # def __eq__(self, other):
-    #     res = int.__eq__(self, other)
-    #     if res == NotImplemented:
-    #         return other.__eq__(self)
-    #     return res
-
-    # def __ne__(self, other):
-    #     res = int.__ne__(self, other)
-    #     if res == NotImplemented:
-    #         return other.__ne__(self)
-    #     return res
-
-    # def __ge__(self, other):
-    #     res = int.__ge__(self, other)
-    #     if res == NotImplemented:
-    #         return other.__ge__(self)
-    #     return res
-
-    # def __gt__(self, other):
-    #     res = int.__gt__(self, other)
-    #     if res == NotImplemented:
-    #         return other.__gt__(self)
-    #     return res
