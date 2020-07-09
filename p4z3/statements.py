@@ -1,9 +1,9 @@
 from collections import OrderedDict
 import z3
 
-from p4z3.base import log, copy_attrs, DefaultExpression, copy, z3_cast
-from p4z3.base import P4ComplexInstance, P4Statement, P4Z3Class
-
+from p4z3.base import log, DefaultExpression, copy, z3_cast
+from p4z3.base import P4ComplexInstance, P4Statement, P4Z3Class, gen_instance
+from p4z3.base import copy_attrs, merge_attrs
 
 class AssignmentStatement(P4Statement):
     # AssignmentStatements are essentially just a wrapper class for the
@@ -86,7 +86,7 @@ class IfStatement(P4Statement):
         context.tmp_forward_cond = forward_cond_copy
 
         if not then_has_terminated:
-            p4_state.merge_attrs(cond, then_vars)
+            merge_attrs(cond, then_vars, p4_state.locals)
 
 
 class SwitchHit(P4Z3Class):
@@ -122,7 +122,7 @@ class SwitchHit(P4Z3Class):
         p4_state.has_exited = False
         context.tmp_forward_cond = forward_cond_copy
         for cond, then_vars in case_exprs:
-            p4_state.merge_attrs(cond, then_vars)
+            merge_attrs(cond, then_vars, p4_state.locals)
 
     def set_table(self, table):
         self.table = table
@@ -199,7 +199,7 @@ class P4Return(P4Statement):
                 expr = z3_cast(expr, context.return_type)
             # we return a complex typed expression list, instantiate
             if isinstance(expr, list):
-                instance = context.return_type.instantiate("undefined")
+                instance = gen_instance("undefined", context.return_type)
                 instance.set_list(expr)
                 expr = instance
 

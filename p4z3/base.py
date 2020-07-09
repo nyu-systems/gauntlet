@@ -11,20 +11,19 @@ log = logging.getLogger(__name__)
 
 def gen_instance(var_name, p4z3_type):
     if isinstance(p4z3_type, P4ComplexType):
-        type_name = p4z3_type.name
-        if var_name is None:
-            var_name = f"{type_name}"
         z3_cls = p4z3_type.instantiate(var_name)
+        # this instance is fresh, so bind to itself
+        z3_cls.bind(z3_cls.const)
         return z3_cls
     elif isinstance(p4z3_type, P4ComplexInstance):
         # static complex type, just return
         return p4z3_type
     elif isinstance(p4z3_type, z3.SortRef):
-        return z3.Const(f"{var_name}", p4z3_type)
+        return z3.Const(var_name, p4z3_type)
     elif isinstance(p4z3_type, list):
         instantiated_list = []
         for idx, z3_type in enumerate(p4z3_type):
-            const = z3.Const(f"{var_name}{idx}", z3_type)
+            const = z3.Const(f"{var_name}_{idx}", z3_type)
             instantiated_list.append(const)
         return instantiated_list
     raise RuntimeError(f"{p4z3_type} instantiation not supported!")
@@ -37,6 +36,26 @@ def copy_attrs(attrs):
             attr_val = copy.copy(attr_val)
         attr_copy[attr_name] = attr_val
     return attr_copy
+
+
+def merge_attrs(cond, then_attrs, target_attrs):
+    for then_name, then_val in then_attrs.items():
+        try:
+            attr_val = target_attrs[then_name]
+        except KeyError:
+            # if the attribute does not exist it is not relevant
+            # this is because of scoping
+            # FIXME: Make sure this is actually the case...
+            continue
+        if isinstance(attr_val, P4ComplexInstance):
+            attr_val.valid = z3.simplify(
+                z3.If(cond, then_val.valid, attr_val.valid))
+            merge_attrs(cond, then_val.locals, attr_val.locals)
+        elif isinstance(attr_val, z3.ExprRef):
+            if then_val.sort() != attr_val.sort():
+                attr_val = z3_cast(attr_val, then_val.sort())
+            if_expr = z3.simplify(z3.If(cond, then_val, attr_val))
+            target_attrs[then_name] = if_expr
 
 
 def z3_cast(val, to_type):
@@ -92,6 +111,14 @@ class P4Argument:
     is_ref: str
     p4_type: object
     p4_val: object
+
+
+@dataclass
+class Member:
+    __slots__ = ["name", "p4_type", "width"]
+    name: str
+    p4_type: object
+    width: int
 
 
 class P4Z3Class():
@@ -208,31 +235,7 @@ class P4ComplexType():
 
     def __init__(self, name, z3_args):
         self.name = name
-        z3_type = z3.Datatype(name)
-        flat_args = []
-        flat_names = []
-        idx = 0
-        self.width = 0
-        for z3_arg_name, z3_arg_type in z3_args:
-            if isinstance(z3_arg_type, P4ComplexType):
-                for sub_arg_name, sub_arg_type in z3_arg_type.flat_names:
-                    flat_args.append((f"{idx}", sub_arg_type))
-                    flat_names.append(
-                        (f"{z3_arg_name}.{sub_arg_name}", sub_arg_type))
-                    idx += 1
-                self.width += z3_arg_type.width
-            else:
-                flat_args.append((f"{idx}", z3_arg_type))
-                flat_names.append((z3_arg_name, z3_arg_type))
-                idx += 1
-                if isinstance(z3_arg_type, z3.BoolSortRef):
-                    self.width += 1
-                elif isinstance(z3_arg_type, z3.BitVecSortRef):
-                    self.width += z3_arg_type.size()
-        z3_type.declare(f"mk_{name}", *flat_args)
-        self.z3_type = z3_type.create()
-        self.z3_args = z3_args
-        self.flat_names = flat_names
+        self.z3_type = None
 
     def instantiate(self, name, member_id=0):
         return P4ComplexInstance(name, self, member_id)
@@ -258,61 +261,11 @@ class P4ComplexInstance():
         self.locals = {}
         self.name = name
         self.z3_type = p4z3_type.z3_type
+        self.width = p4z3_type.width
         self.p4z3_type = p4z3_type
+        self.member_id = member_id
         self.members = p4z3_type.z3_args
         self.valid = z3.BoolVal(False)
-
-        # set the members of this class
-        idx = 0
-        bit_width = 0
-        if p4z3_type.width == 0:
-            self.const = z3.Const(f"{name}", p4z3_type.z3_type)
-        else:
-            self.const = z3.Const(f"{name}", z3.BitVecSort(p4z3_type.width))
-        for z3_arg_name, z3_arg_type in reversed(p4z3_type.z3_args):
-            var_name = f"{member_id+idx}"
-            if isinstance(z3_arg_type, P4ComplexType):
-                # this is a complex datatype, create a P4ComplexType
-                instance = z3_arg_type.instantiate(var_name, member_id + idx)
-                self.locals[z3_arg_name] = instance
-                for member_name, member_type in reversed(z3_arg_type.flat_names):
-                    if isinstance(member_type, z3.BoolSortRef):
-                        member_width = 1
-                        bind_var = z3_cast(z3.Extract(
-                            member_width + bit_width - 1, bit_width, self.const), member_type)
-                    else:
-                        member_width = member_type.size()
-                        bind_var = z3.Extract(
-                            member_width + bit_width - 1, bit_width, self.const)
-                    instance.set_or_add_var(member_name, bind_var)
-                    idx += 1
-                    bit_width += member_width
-            else:
-                if isinstance(z3_arg_type, z3.BoolSortRef):
-                    member_width = 1
-                    bind_var = z3_cast(z3.Extract(
-                        member_width + bit_width - 1, bit_width, self.const), z3_arg_type)
-                else:
-                    member_width = z3_arg_type.size()
-                    bind_var = z3.Extract(
-                        member_width + bit_width - 1, bit_width, self.const)
-                self.locals[z3_arg_name] = bind_var
-                idx += 1
-                bit_width += member_width
-
-    def bind_to_name(self, name):
-        for member_name, member_type in self.members:
-            var_name = f"{name}.{member_name}"
-            # retrieve the member we are accessing
-            member = self.resolve_reference(member_name)
-            if isinstance(member, P4ComplexInstance):
-                # it is a complex type
-                # propagate the parent constant to all children
-                member.bind_to_name(var_name)
-            else:
-                # a simple z3 type, just update the constructor
-                self.set_or_add_var(
-                    member_name, z3.Const(var_name, member_type))
 
     def resolve_reference(self, var):
         log.debug("Resolving reference %s", var)
@@ -375,7 +328,7 @@ class P4ComplexInstance():
 
     def flatten(self):
         members = []
-        for member_name, member_type in self.members:
+        for member_name, _ in self.members:
             member = self.resolve_reference(member_name)
             if isinstance(member, P4ComplexInstance):
                 sub_members = member.flatten()
@@ -383,25 +336,6 @@ class P4ComplexInstance():
             else:
                 members.append(member)
         return members
-
-    def merge_attrs(self, cond, then_attrs):
-        for then_name, then_val in then_attrs.items():
-            try:
-                attr_val = self.locals[then_name]
-            except KeyError:
-                # if the attribute does not exist it is not relevant
-                # this is because of scoping
-                # FIXME: Make sure this is actually the case...
-                continue
-            if isinstance(attr_val, P4ComplexInstance):
-                attr_val.valid = z3.simplify(
-                    z3.If(cond, then_val.valid, attr_val.valid))
-                attr_val.merge_attrs(cond, then_val.locals)
-            elif isinstance(attr_val, z3.ExprRef):
-                if then_val.sort() != attr_val.sort():
-                    attr_val = z3_cast(attr_val, then_val.sort())
-                if_expr = z3.simplify(z3.If(cond, then_val, attr_val))
-                self.locals[then_name] = if_expr
 
     def __copy__(self):
         cls = self.__class__
@@ -433,7 +367,7 @@ class P4ComplexInstance():
             return z3.BoolVal(False)
 
         eq_members = []
-        for index, (self_member_name, self_member_type) in enumerate(self.members):
+        for index, (self_member_name, _) in enumerate(self.members):
             self_member = self.resolve_reference(self_member_name)
             other_member = other_list[index]
             # we compare the members of each complex type
@@ -451,7 +385,7 @@ class P4ComplexInstance():
         if parent_valid is not None:
             self.valid = parent_valid
         # structs can be contained in headers so they can also be deactivated...
-        for member_name, member_type in self.members:
+        for member_name, _ in self.members:
             member_val = self.resolve_reference(member_name)
             if isinstance(member_val, P4ComplexInstance):
                 member_val.propagate_validity_bit(parent_valid)
@@ -476,6 +410,41 @@ class P4ComplexInstance():
 
 class StructType(P4ComplexType):
 
+    def __init__(self, name, z3_args):
+        super(StructType, self).__init__(name, z3_args)
+
+        flat_names = []
+        idx = 0
+        self.width = 0
+        for member_name, member_type in z3_args:
+            if isinstance(member_type, P4ComplexType):
+                for sub_member in member_type.flat_names:
+                    member = Member(f"{member_name}.{sub_member.name}",
+                                    sub_member.p4_type,
+                                    sub_member.width)
+                    flat_names.append(member)
+                    idx += 1
+                self.width += member_type.width
+            else:
+                if isinstance(member_type, z3.BoolSortRef):
+                    member_width = 1
+                elif isinstance(member_type, z3.BitVecSortRef):
+                    member_width = member_type.size()
+                else:
+                    member_width = 0
+                self.width += member_width
+                idx += 1
+                member = Member(member_name, member_type, member_width)
+                flat_names.append(member)
+        if self.width == 0:
+            z3_type = z3.Datatype(name)
+            z3_type.declare(f"mk_{name}")
+            self.z3_type = z3_type.create()
+        else:
+            self.z3_type = z3.BitVecSort(self.width)
+        self.z3_args = z3_args
+        self.flat_names = flat_names
+
     def instantiate(self, name, member_id=0):
         return StructInstance(name, self, member_id)
 
@@ -484,18 +453,41 @@ class StructInstance(P4ComplexInstance):
 
     def __init__(self, name, p4z3_type, member_id):
         super(StructInstance, self).__init__(name, p4z3_type, member_id)
-        self.var_buffer = {}
+        self.const = z3.Const(name, p4z3_type.z3_type)
+
+        idx = self.member_id
+        for member_name, member_type in self.members:
+            if isinstance(member_type, P4ComplexType):
+                instance = member_type.instantiate(str(idx), idx)
+                self.locals[member_name] = instance
+                idx += len(member_type.flat_names)
+            else:
+                self.locals[member_name] = z3.Const(idx, member_type)
+                idx += 1
+
+
+    def bind(self, bind_const):
+        # the identification of the member starts with the provided member id
+        bit_width = self.p4z3_type.width
+        # set the members of this class
+        for sub_member in self.p4z3_type.flat_names:
+            bind_var = z3.Extract(bit_width - 1,
+                                  bit_width - sub_member.width, bind_const)
+            if isinstance(sub_member.p4_type, z3.BoolSortRef):
+                bind_var = z3_cast(bind_var, sub_member.p4_type)
+            self.set_or_add_var(sub_member.name, bind_var)
+            bit_width -= sub_member.width
 
     def activate(self, label="undefined"):
         # structs may have headers that can be deactivated
-        for member_name, member_type in self.members:
+        for member_name, _ in self.members:
             member_val = self.resolve_reference(member_name)
             if isinstance(member_val, P4ComplexInstance):
                 member_val.activate()
 
     def deactivate(self, label="undefined"):
         # structs may have headers that can be deactivated
-        for member_name, member_type in self.members:
+        for member_name, _ in self.members:
             member_val = self.resolve_reference(member_name)
             if isinstance(member_val, P4ComplexInstance):
                 member_val.deactivate(label)
@@ -518,7 +510,7 @@ class HeaderInstance(StructInstance):
         self.union_parent = None
 
     def activate(self, label="undefined"):
-        for member_name, member_type in self.members:
+        for member_name, _ in self.members:
             member_val = self.resolve_reference(member_name)
             if isinstance(member_val, P4ComplexInstance):
                 member_val.activate()
@@ -548,7 +540,7 @@ class HeaderInstance(StructInstance):
             # this is a hacky way to invalidate other members
             # in the case that this header is part of a union
             union = self.union_parent
-            for member_name, member_type in union.members:
+            for member_name, _ in union.members:
                 member_hdr = union.resolve_reference(member_name)
                 # check whether the header is the same object
                 # any other header is now invalid
@@ -562,7 +554,7 @@ class HeaderInstance(StructInstance):
             # this is a hacky way to invalidate other members
             # in the case that this header is part of a union
             union = self.union_parent
-            for member_name, member_type in union.members:
+            for member_name, _ in union.members:
                 member_hdr = union.resolve_reference(member_name)
                 # check whether the header is the same object
                 # any other header is now invalid
@@ -580,7 +572,7 @@ class HeaderInstance(StructInstance):
             self.valid = z3.Bool(f"{self.name}_valid")
         parent_valid = self.valid
         # structs can be contained in headers so they can also be deactivated...
-        for member_name, member_type in self.members:
+        for member_name, _ in self.members:
             member_val = self.resolve_reference(member_name)
             if isinstance(member_val, P4ComplexInstance):
                 member_val.propagate_validity_bit(parent_valid)
@@ -642,19 +634,19 @@ class HeaderUnionInstance(HeaderInstance):
     def __init__(self, name, p4z3_type, member_id):
         # TODO: Check if this class is implemented correctly...
         super(HeaderUnionInstance, self).__init__(name, p4z3_type, member_id)
-        for member_name, member_type in self.members:
+        for member_name, _ in self.members:
             member_hdr = self.resolve_reference(member_name)
             member_hdr.bind_to_union(self)
 
     def isValid(self, p4_state=None):
         valid_list = []
-        for member_name, member_type in self.members:
+        for member_name, _ in self.members:
             member_hdr = self.resolve_reference(member_name)
             valid_list.append(member_hdr.isValid())
         return z3.Or(*valid_list)
 
 
-class ListType(P4ComplexType):
+class ListType(StructType):
 
     def __init__(self, name, z3_args):
         for idx, arg in enumerate(z3_args):
@@ -668,7 +660,7 @@ class ListType(P4ComplexType):
         return ListInstance(name, self, member_id)
 
 
-class ListInstance(P4ComplexInstance):
+class ListInstance(StructInstance):
     pass
 
 
@@ -967,9 +959,9 @@ class P4State():
         for z3_arg_name, z3_arg_type in z3_args:
             if isinstance(z3_arg_type, P4ComplexType):
                 member_cls = z3_arg_type.instantiate(f"{name}.{idx}")
-                for sub_arg_name, sub_arg_type in z3_arg_type.flat_names:
-                    flat_args.append((f"{idx}", sub_arg_type))
-                    self.flat_names.append(f"{z3_arg_name}.{sub_arg_name}")
+                for sub_member in z3_arg_type.flat_names:
+                    flat_args.append((f"{idx}", sub_member.p4_type))
+                    self.flat_names.append(f"{z3_arg_name}.{sub_member.name}")
                     idx += 1
                 # this is a complex datatype, create a P4ComplexType
                 self.locals[z3_arg_name] = member_cls
@@ -1069,25 +1061,6 @@ class P4State():
         self.set_or_add_var(lval, rval_expr)
         return
 
-    def merge_attrs(self, cond, then_attrs):
-        for then_name, then_val in then_attrs.items():
-            try:
-                attr_val = self.locals[then_name]
-            except KeyError:
-                # if the attribute does not exist it is not relevant
-                # this is because of scoping
-                # FIXME: Make sure this is actually the case...
-                continue
-            if isinstance(attr_val, P4ComplexInstance):
-                attr_val.valid = z3.simplify(
-                    z3.If(cond, then_val.valid, attr_val.valid))
-                attr_val.merge_attrs(cond, then_val.locals)
-            elif isinstance(attr_val, z3.ExprRef):
-                if then_val.sort() != attr_val.sort():
-                    attr_val = z3_cast(attr_val, then_val.sort())
-                if_expr = z3.simplify(z3.If(cond, then_val, attr_val))
-                self.locals[then_name] = if_expr
-
     def set_or_add_var(self, lval, rval):
         if isinstance(lval, P4Member):
             lval = lval.eval(self)
@@ -1126,7 +1099,7 @@ class P4State():
         ''' This method returns the current representation of the object in z3
         logic.'''
         members = []
-        for member_name, member_type in self.members:
+        for member_name, _ in self.members:
             member_val = self.resolve_reference(member_name)
             if isinstance(member_val, P4ComplexInstance):
                 # first we need to make sure that validity is correct

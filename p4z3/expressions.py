@@ -1,6 +1,7 @@
 import operator as op
-from p4z3.base import log, z3_cast, z3, copy_attrs, copy, gen_instance
+from p4z3.base import log, z3_cast, z3, copy, gen_instance
 from p4z3.base import P4ComplexInstance, P4Expression, P4ComplexType
+from p4z3.base import copy_attrs, merge_attrs
 
 
 class P4Initializer(P4Expression):
@@ -232,7 +233,8 @@ class P4land(P4BinaryOp):
         rval_expr = p4_state.resolve_expr(self.rval)
         else_vars = copy_attrs(p4_state.locals)
         p4_state.restore(var_store, chain_copy)
-        p4_state.merge_attrs(lval_expr, else_vars)
+        context.tmp_forward_cond = forward_cond_copy
+        merge_attrs(lval_expr, else_vars, p4_state.locals)
         return self.operator(lval_expr, rval_expr)
 
 
@@ -253,7 +255,7 @@ class P4lor(P4BinaryOp):
         else_vars = copy_attrs(p4_state.locals)
         p4_state.restore(var_store, chain_copy)
         context.tmp_forward_cond = forward_cond_copy
-        p4_state.merge_attrs(z3.Not(lval_expr), else_vars)
+        merge_attrs(z3.Not(lval_expr), else_vars, p4_state.locals)
 
         return self.operator(lval_expr, rval_expr)
 
@@ -425,7 +427,7 @@ class P4Cast(P4BinaryOp):
         lval_expr = p4_state.resolve_expr(self.lval)
         # it can happen that we cast to a complex type...
         if isinstance(self.rval, P4ComplexType):
-            instance = self.rval.instantiate(self.rval.name)
+            instance = gen_instance(self.rval.name, self.rval)
             initializer = P4Initializer(lval_expr, instance)
             return initializer.eval(p4_state)
         rval_expr = p4_state.resolve_expr(self.rval)
@@ -466,7 +468,7 @@ class P4Mux(P4Expression):
         then_vars = copy_attrs(p4_state.locals)
         p4_state.restore(var_store, chain_copy)
         else_expr = p4_state.resolve_expr(self.else_val)
-        p4_state.merge_attrs(cond, then_vars)
+        merge_attrs(cond, then_vars, p4_state.locals)
 
         # because we have to be able to access the sub values again
         # we have to resolve the if condition in the case of complex types

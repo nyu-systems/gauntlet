@@ -1,5 +1,5 @@
 from p4z3.base import OrderedDict, z3, log, copy, copy_attrs
-from p4z3.base import gen_instance, z3_cast
+from p4z3.base import gen_instance, z3_cast, merge_attrs
 from p4z3.base import P4Z3Class, P4ComplexInstance, P4ComplexType, P4Context
 from p4z3.base import DefaultExpression, P4Extern, P4Expression, P4Argument
 from p4z3.expressions import P4Mux
@@ -112,7 +112,7 @@ class P4Callable(P4Z3Class):
         context = p4_state.contexts[-1]
         while context.return_states:
             cond, return_attrs = context.return_states.pop()
-            p4_state.merge_attrs(cond, return_attrs)
+            merge_attrs(cond, return_attrs, p4_state.locals)
         context = p4_state.contexts.pop()
         context.restore_context(p4_state)
         return expr
@@ -146,10 +146,7 @@ class P4Callable(P4Z3Class):
                 # In the case that the instance is a complex type make sure
                 # to propagate the variable through all its members
                 log.debug("Resetting %s to %s", arg_expr, param_name)
-                if isinstance(arg_expr, P4ComplexInstance):
-                    arg_expr = arg_expr.p4z3_type.instantiate("undefined")
-                else:
-                    arg_expr = z3.Const(f"undefined", arg_expr.sort())
+                arg_expr = gen_instance("undefined", arg.p4_type)
             log.debug("Copy-in: %s to %s", arg_expr, param_name)
             # it is possible to pass an int as value, we need to cast it
             if isinstance(arg_expr, int):
@@ -351,9 +348,13 @@ class P4Method(P4Callable):
                 if isinstance(arg_expr, P4ComplexInstance):
                     # assume that for inout header validity is not touched
                     if arg.is_ref == "inout":
-                        arg_expr.bind_to_name(arg_name)
+                        if arg_expr.width == 0:
+                            const = z3.Const(arg_name, arg_expr.z3_type)
+                        else:
+                            const = z3.Const(arg_name, z3.BitVecSort(arg_expr.width))
+                        arg_expr.bind(const)
                     else:
-                        arg_expr = arg_expr.p4z3_type.instantiate(arg_name)
+                        arg_expr = gen_instance(arg_name, arg_expr.p4z3_type)
                     # we do not know whether the expression is valid afterwards
                     arg_expr.propagate_validity_bit()
                 else:
@@ -601,7 +602,7 @@ class P4Table(P4Callable):
         context.tmp_forward_cond = forward_cond_copy
         # generate a nested set of if expressions per available action
         for cond, then_vars in action_exprs:
-            p4_state.merge_attrs(cond, then_vars)
+            merge_attrs(cond, then_vars, p4_state.locals)
 
     def eval_callable(self, p4_state, merged_args, var_buffer):
         # tables are a little bit special since they also have attributes

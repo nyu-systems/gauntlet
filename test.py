@@ -28,14 +28,12 @@ P4C_BIN = FILE_DIR.joinpath("p4c/build/p4test")
 # ***** P4-16 Standard Tests *****
 
 # these tests show pathological behavior and can currently not be tested
-bad_tests = [
-]
+bad_tests = []
 # create a list of all the programs in the p4c test folder
 p416_tests = set()
 
 # this test is in a custom directory, we need to add it manually
-# right now it leads to a segmentation fault in z3, so comment
-# p416_tests.add("fabric_20190420/fabric.p4")
+p416_tests.add("fabric_20190420/fabric.p4")
 
 # we only go one level deep
 for test in list(P4_DIR.glob("*.p4")):
