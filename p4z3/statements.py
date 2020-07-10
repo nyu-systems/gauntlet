@@ -5,6 +5,7 @@ from p4z3.base import log, DefaultExpression, copy, z3_cast
 from p4z3.base import P4ComplexInstance, P4Statement, P4Z3Class, gen_instance
 from p4z3.base import copy_attrs, merge_attrs
 
+
 class AssignmentStatement(P4Statement):
     # AssignmentStatements are essentially just a wrapper class for the
     # set_or_add_var ḿethod of the p4 state.
@@ -61,18 +62,16 @@ class IfStatement(P4Statement):
         context = p4_state.contexts[-1]
         cond = z3.simplify(p4_state.resolve_expr(self.cond))
         forward_cond_copy = context.tmp_forward_cond
-
+        then_vars = None
         if not cond == z3.BoolVal(False):
             var_store, contexts = p4_state.checkpoint()
             context.tmp_forward_cond = z3.And(forward_cond_copy, cond)
             self.then_block.eval(p4_state)
-            then_has_terminated = context.has_returned or p4_state.has_exited
-            then_vars = copy_attrs(p4_state.locals)
+            if not(context.has_returned or p4_state.has_exited):
+                then_vars = copy_attrs(p4_state.locals)
             p4_state.has_exited = False
             context.has_returned = False
             p4_state.restore(var_store, contexts)
-        else:
-            then_has_terminated = cond == z3.BoolVal(False)
 
         if not cond == z3.BoolVal(True):
             var_store, contexts = p4_state.checkpoint()
@@ -85,7 +84,7 @@ class IfStatement(P4Statement):
 
         context.tmp_forward_cond = forward_cond_copy
 
-        if not then_has_terminated:
+        if then_vars:
             merge_attrs(cond, then_vars, p4_state.locals)
 
 
@@ -186,8 +185,8 @@ class P4Return(P4Statement):
         context.has_returned = True
 
         return_vars = copy_attrs(p4_state.locals)
-        cond = z3.And(z3.Not(z3.Or(*context.forward_conds)),
-                      context.tmp_forward_cond)
+        cond = z3.simplify(z3.And(z3.Not(z3.Or(*context.forward_conds)),
+                                  context.tmp_forward_cond))
         context.return_states.append((cond, return_vars))
 
         # resolve the expr before restoring the state
@@ -220,8 +219,8 @@ class P4Exit(P4Statement):
             tmp_forward_conds.append(context.tmp_forward_cond)
         context = p4_state.contexts[-1]
 
-        cond = z3.And(z3.Not(z3.Or(*forward_conds)),
-                      z3.And(*tmp_forward_conds))
+        cond = z3.simplify(z3.And(z3.Not(z3.Or(*forward_conds)),
+                                  z3.And(*tmp_forward_conds)))
         p4_state.exit_states.append((cond, p4_state.get_z3_repr()))
         p4_state.restore(var_store, contexts)
         p4_state.has_exited = True

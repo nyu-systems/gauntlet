@@ -223,10 +223,10 @@ class P4Slice(P4Expression):
 class P4ComplexType():
     """ A P4ComplexType is a wrapper for any type that is not a simple Z3 type
     such as IntSort, BitVecSort or BoolSort.
-    A P4ComplexType creates an instance of a Z3 DataTypeRef, all subtypes
+    A P4ComplexType creates an P4ComplexInstance , all subtypes
     become members of this class and be accessed in dot-notation
     (e.g., headers.eth.srcmac).
-    If one of the children is a DataTypeRef a new P4ComplexType will be
+    If one of the children is a P4ComplexType a new P4ComplexInstance will be
     instantiated and attached as member.
     Every member of this class should either be a P4ComplexType or a z3.SortRef
      if it is a basic type. A DataTypeRef should never be a member and always
@@ -355,7 +355,7 @@ class P4ComplexInstance():
         # comparisons are almost the same just do not use members
         if isinstance(other, P4ComplexInstance):
             other_list = []
-            for other_member_name, other_member_type in other.members:
+            for other_member_name, _ in other.members:
                 other_list.append(other.resolve_reference(other_member_name))
         elif isinstance(other, list):
             other_list = other
@@ -414,33 +414,39 @@ class StructType(P4ComplexType):
         super(StructType, self).__init__(name, z3_args)
 
         flat_names = []
-        idx = 0
         self.width = 0
         for member_name, member_type in z3_args:
             if isinstance(member_type, P4ComplexType):
+                # the member is a complex type
+                # retrieve it is flat list of members
+                # append it to the member list
                 for sub_member in member_type.flat_names:
                     member = Member(f"{member_name}.{sub_member.name}",
                                     sub_member.p4_type,
                                     sub_member.width)
                     flat_names.append(member)
-                    idx += 1
                 self.width += member_type.width
             else:
                 if isinstance(member_type, z3.BoolSortRef):
+                    # bools do not have a size attribute unfortunately
                     member_width = 1
                 elif isinstance(member_type, z3.BitVecSortRef):
                     member_width = member_type.size()
                 else:
+                    # a kind of strange sub-type, unclear what its width is
+                    # example: generics
                     member_width = 0
                 self.width += member_width
-                idx += 1
                 member = Member(member_name, member_type, member_width)
                 flat_names.append(member)
+
         if self.width == 0:
+            # we are dealing with an empty struct, create a dummy datatype
             z3_type = z3.Datatype(name)
             z3_type.declare(f"mk_{name}")
             self.z3_type = z3_type.create()
         else:
+            # use the flat bit width of the struct as datatype
             self.z3_type = z3.BitVecSort(self.width)
         self.z3_args = z3_args
         self.flat_names = flat_names
@@ -455,38 +461,45 @@ class StructInstance(P4ComplexInstance):
         super(StructInstance, self).__init__(name, p4z3_type, member_id)
         self.const = z3.Const(name, p4z3_type.z3_type)
 
-        idx = self.member_id
+        # we use the overall index of the struct for a uniform naming scheme
+        flat_idx = self.member_id
         for member_name, member_type in self.members:
             if isinstance(member_type, P4ComplexType):
-                instance = member_type.instantiate(str(idx), idx)
+                # the z3 variable of the instance is only an id
+                instance = member_type.instantiate(str(flat_idx), flat_idx)
+                # but what we add is its fully qualified name, e.g. x.y.z
                 self.locals[member_name] = instance
-                idx += len(member_type.flat_names)
+                flat_idx += len(member_type.flat_names)
             else:
-                self.locals[member_name] = z3.Const(idx, member_type)
-                idx += 1
-
+                # this is just a filler value, it must be overridden by bind()
+                self.locals[member_name] = None
+                flat_idx += 1
 
     def bind(self, bind_const):
         # the identification of the member starts with the provided member id
+        # this bit_width must sum up to the bit width of the sub members
         bit_width = self.p4z3_type.width
         # set the members of this class
         for sub_member in self.p4z3_type.flat_names:
+            # we bind by extracting the respective bit range
             bind_var = z3.Extract(bit_width - 1,
                                   bit_width - sub_member.width, bind_const)
             if isinstance(sub_member.p4_type, z3.BoolSortRef):
+                # unfortunately bools still exit, we need to cast them
                 bind_var = z3_cast(bind_var, sub_member.p4_type)
+            # set the new bind value
             self.set_or_add_var(sub_member.name, bind_var)
             bit_width -= sub_member.width
 
     def activate(self, label="undefined"):
-        # structs may have headers that can be deactivated
+        # structs may contain headers that can be deactivated
         for member_name, _ in self.members:
             member_val = self.resolve_reference(member_name)
             if isinstance(member_val, P4ComplexInstance):
                 member_val.activate()
 
     def deactivate(self, label="undefined"):
-        # structs may have headers that can be deactivated
+        # structs may contain headers that can be deactivated
         for member_name, _ in self.members:
             member_val = self.resolve_reference(member_name)
             if isinstance(member_val, P4ComplexInstance):

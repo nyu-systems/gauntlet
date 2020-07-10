@@ -95,8 +95,6 @@ xfails = [
     "generic1.p4",  # complicated type inference
     "functors8.p4",  # complicated type inference
     "shadow-after-use.p4",  # another issue with shadowing
-    "crc32-bmv2.p4",  # lookahead expansion
-    "calc-ebpf.p4",  # lookahead expansion
 ]
 
 
