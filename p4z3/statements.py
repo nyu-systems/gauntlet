@@ -104,8 +104,8 @@ class SwitchHit(P4Z3Class):
             context.tmp_forward_cond = z3.And(
                 forward_cond_copy, case["match"])
             case["case_block"].eval(p4_state)
-            then_vars = copy_attrs(p4_state.locals)
             if not (context.has_returned or p4_state.has_exited):
+                then_vars = copy_attrs(p4_state.locals)
                 case_exprs.append((case["match"], then_vars))
             context.has_returned = False
             p4_state.has_exited = False
@@ -184,15 +184,10 @@ class P4Return(P4Statement):
         context = p4_state.contexts[-1]
         context.has_returned = True
 
-        return_vars = copy_attrs(p4_state.locals)
-        cond = z3.simplify(z3.And(z3.Not(z3.Or(*context.forward_conds)),
-                                  context.tmp_forward_cond))
-        context.return_states.append((cond, return_vars))
-
-        # resolve the expr before restoring the state
         if self.expr is None:
             expr = None
         else:
+            # resolve the expr before restoring the state
             expr = p4_state.resolve_expr(self.expr)
             if isinstance(context.return_type, z3.BitVecSortRef):
                 expr = z3_cast(expr, context.return_type)
@@ -202,14 +197,21 @@ class P4Return(P4Statement):
                 instance.set_list(expr)
                 expr = instance
 
-        if expr is not None:
-            context.return_exprs.append((cond, expr))
+        cond = z3.simplify(z3.And(z3.Not(z3.Or(*context.forward_conds)),
+                                  context.tmp_forward_cond))
+        if not cond == z3.BoolVal(False):
+            context.return_states.append((cond, copy_attrs(p4_state.locals)))
+            if expr is not None:
+                context.return_exprs.append((cond, expr))
+
         context.forward_conds.append(context.tmp_forward_cond)
 
 
 class P4Exit(P4Statement):
 
     def eval(self, p4_state):
+        # FIXME: This checkpointing should not be necessary
+        # Figure out what is going on
         var_store, contexts = p4_state.checkpoint()
         forward_conds = []
         tmp_forward_conds = []
@@ -221,7 +223,8 @@ class P4Exit(P4Statement):
 
         cond = z3.simplify(z3.And(z3.Not(z3.Or(*forward_conds)),
                                   z3.And(*tmp_forward_conds)))
-        p4_state.exit_states.append((cond, p4_state.get_z3_repr()))
+        if not cond == z3.BoolVal(False):
+            p4_state.exit_states.append((cond, p4_state.get_z3_repr()))
         p4_state.restore(var_store, contexts)
         p4_state.has_exited = True
         context.forward_conds.append(context.tmp_forward_cond)

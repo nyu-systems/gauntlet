@@ -464,7 +464,7 @@ class P4Mux(P4Expression):
         cond = p4_state.resolve_expr(self.cond)
 
         # handle side effects for function calls
-        # FIXME: Remember exit in function bodies, even if they are not valid
+        # TODO: Remember exit in function bodies, even if they are not valid
         var_store, chain_copy = p4_state.checkpoint()
         then_expr = p4_state.resolve_expr(self.then_val)
         then_vars = copy_attrs(p4_state.locals)
