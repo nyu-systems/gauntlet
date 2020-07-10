@@ -401,7 +401,6 @@ class P4ComplexInstance():
             else:
                 if parent_validity is None:
                     continue
-                log.info(member, member_type)
                 # if the header is invalid set the variable to "undefined"
                 cond = z3.simplify(z3.If(parent_validity, member,
                                          z3.Const("invalid", member_type)))
@@ -914,7 +913,7 @@ class P4Context(P4Z3Class):
     def prepend_to_buffer(self, var_dict):
         self.var_buffer = {**var_dict, **self.var_buffer}
 
-    def restore_context(self, p4_state):
+    def copy_out(self, p4_state):
         # FIXME: This does not respect local context
         # local variables are overridden in functions and controls
         # restore any variables that may have been overridden
@@ -940,7 +939,7 @@ class P4Context(P4Z3Class):
                 p4_state.set_or_add_var(param_ref, val)
 
     def eval(self, p4_state):
-        self.restore_context(p4_state)
+        self.copy_out(p4_state)
 
 
 class P4State():

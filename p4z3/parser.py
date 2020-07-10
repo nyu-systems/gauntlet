@@ -14,8 +14,8 @@ class RejectState(P4Expression):
 
     def eval(self, p4_state):
         for context in reversed(p4_state.contexts):
-            context.restore_context(p4_state)
-        for member_name, member_type in p4_state.members:
+            context.copy_out(p4_state)
+        for member_name, _ in p4_state.members:
             member_val = p4_state.resolve_reference(member_name)
             if isinstance(member_val, P4ComplexInstance):
                 member_val.deactivate("invalid")

@@ -103,7 +103,7 @@ class P4Callable(P4Z3Class):
         p4_state.contexts.append(context)
 
         # execute the action expression with the new environment
-        self.set_context(p4_state, merged_args)
+        self.copy_in(p4_state, merged_args)
         expr = self.eval_callable(p4_state, merged_args, var_buffer)
         self.call_counter += 1
 
@@ -112,13 +112,13 @@ class P4Callable(P4Z3Class):
             cond, return_attrs = context.return_states.pop()
             merge_attrs(cond, return_attrs, p4_state.locals)
         context = p4_state.contexts.pop()
-        context.restore_context(p4_state)
+        context.copy_out(p4_state)
         return expr
 
     def __call__(self, p4_state, *args, **kwargs):
         return self.eval(p4_state, *args, **kwargs)
 
-    def set_context(self, p4_state, merged_args):
+    def copy_in(self, p4_state, merged_args):
         param_buffer = OrderedDict()
         for param_name, arg in merged_args.items():
             # Sometimes expressions are passed, resolve those first
@@ -137,7 +137,7 @@ class P4Callable(P4Z3Class):
             # it is possible to pass an int as value, we need to cast it
             elif isinstance(arg_expr, int):
                 arg_expr = z3_cast(arg_expr, arg.p4_type)
-            if isinstance(arg_expr, P4ComplexInstance) and arg.is_ref == "inout":
+            if isinstance(arg_expr, P4ComplexInstance):
                 arg_expr = copy.copy(arg_expr)
             if arg.is_ref == "out":
                 # outs are left-values so the arg must be a string
@@ -147,6 +147,7 @@ class P4Callable(P4Z3Class):
                 # to propagate the variable through all its members
                 log.debug("Resetting %s to %s", arg_expr, param_name)
                 arg_expr = gen_instance("undefined", arg.p4_type)
+
             log.debug("Copy-in: %s to %s", arg_expr, param_name)
             # buffer the value, do NOT set it yet
             param_buffer[param_name] = arg_expr
@@ -316,7 +317,7 @@ class P4Method(P4Callable):
         self.return_type = type_params[0]
         self.type_params = type_params[1]
 
-    def set_context(self, p4_state, merged_args):
+    def copy_in(self, p4_state, merged_args):
         # we have to subclass because of slight different behavior
         # inout and out parameters are not undefined they are set
         # with a new free constant

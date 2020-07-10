@@ -216,7 +216,7 @@ class P4Exit(P4Statement):
         forward_conds = []
         tmp_forward_conds = []
         for context in reversed(p4_state.contexts):
-            context.restore_context(p4_state)
+            context.copy_out(p4_state)
             forward_conds.extend(context.forward_conds)
             tmp_forward_conds.append(context.tmp_forward_cond)
         context = p4_state.contexts[-1]
