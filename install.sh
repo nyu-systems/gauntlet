@@ -55,4 +55,7 @@ cd ../..
 # Install z3 locally
 pip3 install --upgrade --user z3-solver
 pip3 install --upgrade --user pytest
+# run tests in parallel
+pip3 install --upgrade --user pytest-xdist
+# Python 3.6 compatibility
 pip3 install --upgrade --user dataclasses

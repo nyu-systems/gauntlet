@@ -324,7 +324,7 @@ class P4ComplexInstance():
         self._update_dict(lval, rval, self.locals)
 
     def sort(self):
-        return self.z3_type
+        return self.p4z3_type
 
     def flatten(self):
         members = []

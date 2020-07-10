@@ -131,7 +131,7 @@ def run_violation_test(test_folder):
 
 
 @pytest.mark.run_default
-@pytest.mark.parametrize("test_name", p416_tests)
+@pytest.mark.parametrize("test_name", sorted(p416_tests))
 def test_p4c(request, test_name):
     p4_file, target_dir = prep_test(test_name)
     request.node.custom_err = run_z3p4_test(p4_file, target_dir)
@@ -141,7 +141,7 @@ def test_p4c(request, test_name):
 
 
 @pytest.mark.run_default
-@pytest.mark.parametrize("test_name", false_friends)
+@pytest.mark.parametrize("test_name", sorted(false_friends))
 def test_friends(request, test_name):
     p4_file, target_dir = prep_test(test_name, FALSE_FRIENDS_DIR)
     request.node.custom_err = run_z3p4_test(p4_file, target_dir)
@@ -149,7 +149,7 @@ def test_friends(request, test_name):
 
 
 @pytest.mark.run_default
-@pytest.mark.parametrize("test_folder", violation_tests)
+@pytest.mark.parametrize("test_folder", sorted(violation_tests))
 def test_violation(test_folder):
     assert run_violation_test(test_folder) == util.EXIT_SUCCESS
 

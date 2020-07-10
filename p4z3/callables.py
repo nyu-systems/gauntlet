@@ -344,12 +344,10 @@ class P4Method(P4Callable):
                 # outs reset the input
                 # In the case that the instance is a complex type make sure
                 # to propagate the variable through all its members
+                arg_expr = gen_instance(arg_name, arg_expr.sort())
                 if isinstance(arg_expr, P4ComplexInstance):
-                    arg_expr.bind(z3.Const(arg_name, arg_expr.z3_type))
                     # we do not know whether the expression is valid afterwards
                     arg_expr.propagate_validity_bit()
-                else:
-                    arg_expr = z3.Const(f"{param_name}", arg_expr.sort())
             log.debug("Copy-in: %s to %s", arg_expr, param_name)
             # buffer the value, do NOT set it yet
             param_buffer[param_name] = arg_expr
