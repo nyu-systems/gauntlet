@@ -1,4 +1,4 @@
-from p4z3.base import log, z3, copy_attrs
+from p4z3.base import log, z3, copy_attrs, merge_attrs
 from p4z3.base import P4Expression, P4ComplexInstance, DefaultExpression
 from p4z3.callables import P4Control
 
@@ -149,4 +149,4 @@ class ParserSelect(P4Expression):
             p4_state.has_exited = False
             p4_state.restore(var_store, contexts)
         for cond, then_vars in switches:
-            p4_state.merge_attrs(cond, then_vars)
+            merge_attrs(cond, then_vars, p4_state.locals)

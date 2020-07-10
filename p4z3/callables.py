@@ -1,5 +1,5 @@
 from p4z3.base import OrderedDict, z3, log, copy, copy_attrs
-from p4z3.base import gen_instance, z3_cast
+from p4z3.base import gen_instance, z3_cast, merge_attrs
 from p4z3.base import P4Z3Class, P4ComplexInstance, P4ComplexType, P4Context
 from p4z3.base import DefaultExpression, P4Extern, P4Expression, P4Argument
 from p4z3.expressions import P4Mux
@@ -14,8 +14,6 @@ def save_variables(p4_state, merged_args):
         # if the variable does not exist, set the value to None
         try:
             param_val = p4_state.resolve_reference(param_name)
-            if not isinstance(param_val, z3.AstRef):
-                param_val = copy.copy(param_val)
             var_buffer[param_name] = (is_ref, param_ref, param_val)
         except KeyError:
             var_buffer[param_name] = (is_ref, param_ref, None)
@@ -112,7 +110,7 @@ class P4Callable(P4Z3Class):
         context = p4_state.contexts[-1]
         while context.return_states:
             cond, return_attrs = context.return_states.pop()
-            p4_state.merge_attrs(cond, return_attrs)
+            merge_attrs(cond, return_attrs, p4_state.locals)
         context = p4_state.contexts.pop()
         context.restore_context(p4_state)
         return expr
@@ -136,9 +134,11 @@ class P4Callable(P4Z3Class):
                     arg_instance = gen_instance("undefined", arg.p4_type)
                     arg_instance.set_list(arg_expr)
                     arg_expr = arg_instance
-            if arg.is_ref == "inout":
-                if isinstance(arg_expr, P4ComplexInstance):
-                    arg_expr = copy.copy(arg_expr)
+            # it is possible to pass an int as value, we need to cast it
+            elif isinstance(arg_expr, int):
+                arg_expr = z3_cast(arg_expr, arg.p4_type)
+            if isinstance(arg_expr, P4ComplexInstance) and arg.is_ref == "inout":
+                arg_expr = copy.copy(arg_expr)
             if arg.is_ref == "out":
                 # outs are left-values so the arg must be a string
                 # infer the type value at runtime, param does not work yet
@@ -146,14 +146,8 @@ class P4Callable(P4Z3Class):
                 # In the case that the instance is a complex type make sure
                 # to propagate the variable through all its members
                 log.debug("Resetting %s to %s", arg_expr, param_name)
-                if isinstance(arg_expr, P4ComplexInstance):
-                    arg_expr = arg_expr.p4z3_type.instantiate("undefined")
-                else:
-                    arg_expr = z3.Const(f"undefined", arg_expr.sort())
+                arg_expr = gen_instance("undefined", arg.p4_type)
             log.debug("Copy-in: %s to %s", arg_expr, param_name)
-            # it is possible to pass an int as value, we need to cast it
-            if isinstance(arg_expr, int):
-                arg_expr = z3_cast(arg_expr, arg.p4_type)
             # buffer the value, do NOT set it yet
             param_buffer[param_name] = arg_expr
         # now we can set the arguments without influencing subsequent variables
@@ -341,27 +335,20 @@ class P4Method(P4Callable):
                     arg_instance = gen_instance(arg_name, arg.p4_type)
                     arg_instance.set_list(arg_expr)
                     arg_expr = arg_instance
+            # it is possible to pass an int as value, we need to cast it
+            if isinstance(arg_expr, int):
+                arg_expr = z3_cast(arg_expr, arg.p4_type)
             if arg.is_ref in ("inout", "out"):
                 # outs are left-values so the arg must be a string
                 # infer the type value at runtime, param does not work yet
                 # outs reset the input
                 # In the case that the instance is a complex type make sure
                 # to propagate the variable through all its members
-                log.debug("Resetting %s to %s", arg_expr, param_name)
+                arg_expr = gen_instance(arg_name, arg_expr.sort())
                 if isinstance(arg_expr, P4ComplexInstance):
-                    # assume that for inout header validity is not touched
-                    if arg.is_ref == "inout":
-                        arg_expr.bind_to_name(arg_name)
-                    else:
-                        arg_expr = arg_expr.p4z3_type.instantiate(arg_name)
                     # we do not know whether the expression is valid afterwards
                     arg_expr.propagate_validity_bit()
-                else:
-                    arg_expr = z3.Const(f"{param_name}", arg_expr.sort())
             log.debug("Copy-in: %s to %s", arg_expr, param_name)
-            # it is possible to pass an int as value, we need to cast it
-            if isinstance(arg_expr, int):
-                arg_expr = z3_cast(arg_expr, arg.p4_type)
             # buffer the value, do NOT set it yet
             param_buffer[param_name] = arg_expr
         # now we can set the arguments without influencing subsequent variables
@@ -400,7 +387,7 @@ class P4Method(P4Callable):
         if self.return_type is not None:
             # methods can return values, we need to generate a new constant
             # we generate the name based on the input arguments
-            var_name = ""
+            # var_name = ""
             # for arg in merged_args.values():
             #     arg = p4_state.resolve_expr(arg.p4_val)
             #     # fold runtime-known values
@@ -420,7 +407,7 @@ class P4Method(P4Callable):
             # we merge the name
             # FIXME: We do not consider call order
             # and assume that externs are stateless
-            return_instance = gen_instance(f"{self.name}", self.return_type)
+            return_instance = gen_instance(self.name, self.return_type)
             # a returned header may or may not be valid
             if isinstance(return_instance, P4ComplexInstance):
                 return_instance.propagate_validity_bit()
@@ -584,11 +571,13 @@ class P4Table(P4Callable):
         context = p4_state.contexts[-1]
         forward_cond_copy = context.tmp_forward_cond
 
-        # note: the action lists are pass by reference here
-        # first evaluate all the constant entries
-        self.eval_const_entries(p4_state, action_exprs, action_matches)
-        # then append dynamic table entries to the constant entries
-        self.eval_table_entries(p4_state, action_exprs, action_matches)
+        # only bother to evaluate if the table can actually hit
+        if not self.locals["hit"] == z3.BoolVal(False):
+            # note: the action lists are pass by reference here
+            # first evaluate all the constant entries
+            self.eval_const_entries(p4_state, action_exprs, action_matches)
+            # then append dynamic table entries to the constant entries
+            self.eval_table_entries(p4_state, action_exprs, action_matches)
         # finally start evaluating the default entry
         var_store, contexts = p4_state.checkpoint()
         # this hits when the table is either missed, or no action matches
@@ -601,13 +590,13 @@ class P4Table(P4Callable):
         context.tmp_forward_cond = forward_cond_copy
         # generate a nested set of if expressions per available action
         for cond, then_vars in action_exprs:
-            p4_state.merge_attrs(cond, then_vars)
+            merge_attrs(cond, then_vars, p4_state.locals)
 
     def eval_callable(self, p4_state, merged_args, var_buffer):
         # tables are a little bit special since they also have attributes
         # so what we do here is first initialize the key
         hit = self.eval_keys(p4_state)
-        self.locals["hit"] = hit
+        self.locals["hit"] = z3.simplify(hit)
         self.locals["miss"] = z3.Not(hit)
         # then execute the table as the next expression in the chain
         self.eval_table(p4_state)

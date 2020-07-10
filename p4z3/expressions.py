@@ -1,6 +1,7 @@
 import operator as op
-from p4z3.base import log, z3_cast, z3, copy_attrs, copy, gen_instance
+from p4z3.base import log, z3_cast, z3, copy, gen_instance
 from p4z3.base import P4ComplexInstance, P4Expression, P4ComplexType
+from p4z3.base import copy_attrs, merge_attrs
 
 
 class P4Initializer(P4Expression):
@@ -232,7 +233,8 @@ class P4land(P4BinaryOp):
         rval_expr = p4_state.resolve_expr(self.rval)
         else_vars = copy_attrs(p4_state.locals)
         p4_state.restore(var_store, chain_copy)
-        p4_state.merge_attrs(lval_expr, else_vars)
+        context.tmp_forward_cond = forward_cond_copy
+        merge_attrs(lval_expr, else_vars, p4_state.locals)
         return self.operator(lval_expr, rval_expr)
 
 
@@ -253,7 +255,7 @@ class P4lor(P4BinaryOp):
         else_vars = copy_attrs(p4_state.locals)
         p4_state.restore(var_store, chain_copy)
         context.tmp_forward_cond = forward_cond_copy
-        p4_state.merge_attrs(z3.Not(lval_expr), else_vars)
+        merge_attrs(z3.Not(lval_expr), else_vars, p4_state.locals)
 
         return self.operator(lval_expr, rval_expr)
 
@@ -414,6 +416,7 @@ class P4Concat(P4Expression):
 
 class P4Cast(P4BinaryOp):
     # TODO: need to take a closer look on how to do this correctly...
+    # TODO: Clean this up
     # If we cast do we add/remove the least or most significant bits?
     def __init__(self, val, to_size):
         self.val = val
@@ -425,7 +428,7 @@ class P4Cast(P4BinaryOp):
         lval_expr = p4_state.resolve_expr(self.lval)
         # it can happen that we cast to a complex type...
         if isinstance(self.rval, P4ComplexType):
-            instance = self.rval.instantiate(self.rval.name)
+            instance = gen_instance(self.rval.name, self.rval)
             initializer = P4Initializer(lval_expr, instance)
             return initializer.eval(p4_state)
         rval_expr = p4_state.resolve_expr(self.rval)
@@ -461,12 +464,13 @@ class P4Mux(P4Expression):
         cond = p4_state.resolve_expr(self.cond)
 
         # handle side effects for function calls
+        # TODO: Remember exit in function bodies, even if they are not valid
         var_store, chain_copy = p4_state.checkpoint()
         then_expr = p4_state.resolve_expr(self.then_val)
         then_vars = copy_attrs(p4_state.locals)
         p4_state.restore(var_store, chain_copy)
         else_expr = p4_state.resolve_expr(self.else_val)
-        p4_state.merge_attrs(cond, then_vars)
+        merge_attrs(cond, then_vars, p4_state.locals)
 
         # because we have to be able to access the sub values again
         # we have to resolve the if condition in the case of complex types
@@ -486,13 +490,4 @@ class P4Mux(P4Expression):
                 if_expr = z3.If(cond, member, else_expr[idx])
                 sub_cond.append(if_expr)
             return sub_cond
-        # then_is_const = isinstance(then_expr, (z3.BitVecRef, int))
-        # else_is_const = isinstance(else_expr, (z3.BitVecRef, int))
-        # if then_is_const and else_is_const:
-        #     # align the bitvectors to allow operations, we cast ints downwards
-        #     # FIXME: Check if this casting style is correct
-        #     if else_expr.size() > then_expr.size():
-        #         else_expr = z3_cast(else_expr, then_expr.size())
-        #     if else_expr.size() < then_expr.size():
-        #         then_expr = z3_cast(then_expr, else_expr.size())
         return z3.If(cond, then_expr, else_expr)

@@ -28,14 +28,12 @@ P4C_BIN = FILE_DIR.joinpath("p4c/build/p4test")
 # ***** P4-16 Standard Tests *****
 
 # these tests show pathological behavior and can currently not be tested
-bad_tests = [
-]
+bad_tests = []
 # create a list of all the programs in the p4c test folder
 p416_tests = set()
 
 # this test is in a custom directory, we need to add it manually
-# right now it leads to a segmentation fault in z3, so comment
-# p416_tests.add("fabric_20190420/fabric.p4")
+p416_tests.add("fabric_20190420/fabric.p4")
 
 # we only go one level deep
 for test in list(P4_DIR.glob("*.p4")):
@@ -97,8 +95,6 @@ xfails = [
     "generic1.p4",  # complicated type inference
     "functors8.p4",  # complicated type inference
     "shadow-after-use.p4",  # another issue with shadowing
-    "crc32-bmv2.p4",  # lookahead expansion
-    "calc-ebpf.p4",  # lookahead expansion
 ]
 
 
@@ -135,7 +131,7 @@ def run_violation_test(test_folder):
 
 
 @pytest.mark.run_default
-@pytest.mark.parametrize("test_name", p416_tests)
+@pytest.mark.parametrize("test_name", sorted(p416_tests))
 def test_p4c(request, test_name):
     p4_file, target_dir = prep_test(test_name)
     request.node.custom_err = run_z3p4_test(p4_file, target_dir)
@@ -145,7 +141,7 @@ def test_p4c(request, test_name):
 
 
 @pytest.mark.run_default
-@pytest.mark.parametrize("test_name", false_friends)
+@pytest.mark.parametrize("test_name", sorted(false_friends))
 def test_friends(request, test_name):
     p4_file, target_dir = prep_test(test_name, FALSE_FRIENDS_DIR)
     request.node.custom_err = run_z3p4_test(p4_file, target_dir)
@@ -153,7 +149,7 @@ def test_friends(request, test_name):
 
 
 @pytest.mark.run_default
-@pytest.mark.parametrize("test_folder", violation_tests)
+@pytest.mark.parametrize("test_folder", sorted(violation_tests))
 def test_violation(test_folder):
     assert run_violation_test(test_folder) == util.EXIT_SUCCESS
 
