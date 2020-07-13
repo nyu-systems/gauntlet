@@ -66,23 +66,8 @@ class MethodCallExpr(P4Expression):
         # TODO: Figure out how these type bindings work
         if isinstance(p4_method, P4Method) and self.type_args:
             p4_method = p4_method.initialize(*self.type_args)
-        expr = p4_method(p4_state, *self.args, **self.kwargs)
-        return expr
 
-class ConstCallExpr(P4Expression):
-
-    def __init__(self, p4_method, *args, **kwargs):
-        self.p4_method = p4_method
-        self.args = args
-        self.kwargs = kwargs
-
-    def eval(self, p4_state):
-        p4_method = self.p4_method
-        if isinstance(p4_method, (P4Control, P4Package)):
-            expr = p4_method(*self.args, **self.kwargs)
-        else:
-            expr = p4_method(p4_state, *self.args, **self.kwargs)
-        return expr
+        return p4_method(p4_state, *self.args, **self.kwargs)
 
 
 class P4Callable(P4Z3Class):
@@ -155,6 +140,15 @@ class P4Callable(P4Z3Class):
         for param_name, param_val in param_buffer.items():
             p4_state.set_or_add_var(param_name, param_val)
 
+class ConstCallExpr(P4Expression):
+
+    def __init__(self, p4_method, *args, **kwargs):
+        self.p4_method = p4_method
+        self.args = args
+        self.kwargs = kwargs
+
+    def eval(self, p4_state=None):
+        return self.p4_method(*self.args, **self.kwargs)
 
 class P4Package(P4Callable):
 
@@ -173,43 +167,26 @@ class P4Package(P4Callable):
         merged_args = merge_parameters(self.params, *args, **kwargs)
         for pipe_name, pipe_arg in merged_args.items():
             log.info("Loading %s pipe...", pipe_name)
-            pipe_val = pipe_arg.p4_val
-            if isinstance(pipe_val, ConstCallExpr):
-                p4_method_obj = pipe_val.p4_method
-                params = p4_method_obj.params
-                obj_name = p4_method_obj.name
+            pipe_val = self.z3_reg.p4_state.resolve_expr(pipe_arg.p4_val)
+            if isinstance(pipe_val, P4Control):
+                # initialize with its own params
+                args = []
+                params = pipe_val.params
+                for param in params:
+                    args.append(param.name)
                 p4_state = self.z3_reg.init_p4_state(pipe_name, params)
-                pipe = pipe_val.eval(p4_state)
-
-                if isinstance(pipe, P4Control):
-                    # initialize with its own params
-                    args = []
-                    for param in params:
-                        args.append(param.name)
-                    pipe.apply(p4_state, *args)
-                    state = p4_state.get_z3_repr()
-                    for exit_cond, exit_state in reversed(p4_state.exit_states):
-                        state = z3.If(exit_cond, exit_state, state)
-                    self.pipes[pipe_name] = (state, p4_state.members)
-                elif isinstance(pipe, P4Extern):
-                    self.pipes[pipe_name] = (pipe.const, [])
-                elif isinstance(pipe, P4Package):
-                    # execute the package by calling it
-                    pipe.initialize()
-                    # resolve all the sub_pipes
-                    for sub_pipe_name, sub_pipe_val in pipe.pipes.items():
-                        sub_pipe_name = f"{pipe_name}_{sub_pipe_name}"
-                        self.pipes[sub_pipe_name] = sub_pipe_val
-                else:
-                    raise RuntimeError(
-                        f"Unsupported ConstCall value {pipe}, type {type(pipe)}."
-                        " It does not make sense as a P4 pipeline.")
-            elif isinstance(pipe_val, str):
-                pipe = self.z3_reg.p4_state.resolve_reference(pipe_val)
+                pipe_val.apply(p4_state, *args)
+                state = p4_state.get_z3_repr()
+                for exit_cond, exit_state in reversed(p4_state.exit_states):
+                    state = z3.If(exit_cond, exit_state, state)
+                self.pipes[pipe_name] = (state, p4_state.members)
+            elif isinstance(pipe_val, P4Extern):
+                self.pipes[pipe_name] = (pipe_val.const, [])
+            elif isinstance(pipe_val, P4Package):
                 # execute the package by calling it
-                pipe.initialize()
+                pipe_val.initialize()
                 # resolve all the sub_pipes
-                for sub_pipe_name, sub_pipe_val in pipe.pipes.items():
+                for sub_pipe_name, sub_pipe_val in pipe_val.pipes.items():
                     sub_pipe_name = f"{pipe_name}_{sub_pipe_name}"
                     self.pipes[sub_pipe_name] = sub_pipe_val
             elif isinstance(pipe_val, z3.ExprRef):
@@ -268,17 +245,24 @@ class P4Function(P4Action):
 
 class P4Control(P4Callable):
 
-    def __init__(self, name, params, const_params, body, local_decls):
+    def __init__(self, name, type_params, params, const_params, body, local_decls):
         super(P4Control, self).__init__(name, params, body)
         self.local_decls = local_decls
+        self.type_params = type_params
         self.const_params = const_params
         self.merged_consts = OrderedDict()
         self.locals["apply"] = self.apply
 
     def init_type_params(self, *args, **kwargs):
-        for idx, c_param in enumerate(self.const_params):
-            c_param.p4_type = args[idx]
-        return self
+        # TODO Figure out what to actually do here
+        init_ctrl = copy.copy(self)
+        # the type params sometimes include the return type also
+        # it is typically the first value, but is bound somewhere else
+        for idx, t_param in enumerate(init_ctrl.type_params):
+            for method_param in init_ctrl.params:
+                if method_param.p4_type == t_param:
+                    method_param.p4_type = args[idx]
+        return init_ctrl
 
     def initialize(self, *args, **kwargs):
         self.merged_consts = merge_parameters(
@@ -385,35 +369,35 @@ class P4Method(P4Callable):
 
     def eval_callable(self, p4_state, merged_args, var_buffer):
         # initialize the local context of the function for execution
-        if self.return_type is not None:
-            # methods can return values, we need to generate a new constant
-            # we generate the name based on the input arguments
-            # var_name = ""
-            # for arg in merged_args.values():
-            #     arg = p4_state.resolve_expr(arg.p4_val)
-            #     # fold runtime-known values
-            #     if isinstance(arg, z3.AstRef):
-            #         arg = z3.simplify(arg)
-            #     # elif isinstance(arg, list):
-            #     #     for idx, member in enumerate(arg):
-            #     #         arg[idx] = z3.simplify(member)
+        if self.return_type is None:
+            return None
+        # methods can return values, we need to generate a new constant
+        # we generate the name based on the input arguments
+        # var_name = ""
+        # for arg in merged_args.values():
+        #     arg = p4_state.resolve_expr(arg.p4_val)
+        #     # fold runtime-known values
+        #     if isinstance(arg, z3.AstRef):
+        #         arg = z3.simplify(arg)
+        #     # elif isinstance(arg, list):
+        #     #     for idx, member in enumerate(arg):
+        #     #         arg[idx] = z3.simplify(member)
 
-            #     # Because we do not know what the extern is doing
-            #     # we initiate a new z3 const and
-            #     # just overwrite all reference types
-            #     # input arguments influence the output behavior
-            #     # add the input value to the return constant
-            #     var_name += str(arg)
-            # If we return something, instantiate the type and return it
-            # we merge the name
-            # FIXME: We do not consider call order
-            # and assume that externs are stateless
-            return_instance = gen_instance(self.name, self.return_type)
-            # a returned header may or may not be valid
-            if isinstance(return_instance, P4ComplexInstance):
-                return_instance.propagate_validity_bit()
-            return return_instance
-        return None
+        #     # Because we do not know what the extern is doing
+        #     # we initiate a new z3 const and
+        #     # just overwrite all reference types
+        #     # input arguments influence the output behavior
+        #     # add the input value to the return constant
+        #     var_name += str(arg)
+        # If we return something, instantiate the type and return it
+        # we merge the name
+        # FIXME: We do not consider call order
+        # and assume that externs are stateless
+        return_instance = gen_instance(self.name, self.return_type)
+        # a returned header may or may not be valid
+        if isinstance(return_instance, P4ComplexInstance):
+            return_instance.propagate_validity_bit()
+        return return_instance
 
 
 def resolve_action(action_expr):

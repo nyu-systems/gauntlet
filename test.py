@@ -93,6 +93,8 @@ xfails = [
     "fold_match.p4",  # range
     "pvs-struct-3-bmv2.p4",  # range
     "generic1.p4",  # complicated type inference
+    "functors6.p4",  # complicated type inference
+    "functors7.p4",  # complicated type inference
     "functors8.p4",  # complicated type inference
     "shadow-after-use.p4",  # another issue with shadowing
 ]

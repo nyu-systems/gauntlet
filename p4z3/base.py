@@ -47,7 +47,7 @@ def merge_attrs(cond, then_attrs, target_attrs):
             # this is because of scoping
             # FIXME: Make sure this is actually the case...
             continue
-        if isinstance(attr_val, P4ComplexInstance):
+        if isinstance(attr_val, StructInstance):
             attr_val.valid = z3.simplify(
                 z3.If(cond, then_val.valid, attr_val.valid))
             merge_attrs(cond, then_val.locals, attr_val.locals)
@@ -861,7 +861,8 @@ class P4Extern(P4ComplexInstance):
 
     def init_type_params(self, *args, **kwargs):
         # the extern is instantiated, we need to copy it
-        init_extern = self.initialize()
+        # FIXME: Do this properly
+        init_extern = copy.copy(self)
         for idx, t_param in enumerate(init_extern.type_params):
             for method in init_extern.locals.values():
                 # bind the method return type
@@ -875,8 +876,7 @@ class P4Extern(P4ComplexInstance):
 
     def initialize(self, *args, **kwargs):
         # TODO Figure out what to actually do here
-        instance = copy.copy(self)
-        return instance
+        return self
 
     def __call__(self, *args, **kwargs):
         return self.initialize(*args, **kwargs)
@@ -1217,7 +1217,7 @@ class Z3Reg():
                 instances[param.name] = instance
         p4_state = P4State(name, stripped_args,
                            self.p4_state.globals, instances)
-        for member_name, member_type in p4_state.members:
+        for member_name, _ in p4_state.members:
             member_val = p4_state.resolve_reference(member_name)
             if isinstance(member_val, P4ComplexInstance):
                 member_val.propagate_validity_bit()
@@ -1225,7 +1225,6 @@ class Z3Reg():
 
     def type(self, type_name):
         if type_name in self._types:
-            z3_type = self._types[type_name]
             return self._types[type_name]
         else:
             # lets be bold here and assume that if a  type is not known
