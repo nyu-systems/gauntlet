@@ -3,7 +3,10 @@ from pathlib import Path
 import sys
 import importlib
 import logging
-from p4z3 import Z3Reg
+
+from p4z3.contrib.tabulate import tabulate
+from p4z3 import z3, Z3Reg, P4ComplexType, P4ComplexInstance, P4State
+
 import p4z3.util as util
 sys.setrecursionlimit(15000)
 
@@ -82,6 +85,71 @@ def get_z3_formulization(p4_file, out_dir=OUT_DIR):
     return pipes_pre, result
 
 
+def get_flat_members(names):
+    flat_members = []
+    for name, p4z3_obj in names:
+        if isinstance(p4z3_obj, P4ComplexType):
+            for sub_member in p4z3_obj.flat_names:
+                flat_members.append(f"{name}.{sub_member.name}")
+        else:
+            flat_members.append(name)
+    return flat_members
+
+
+def reconstruct_input(pipe_name, p4_z3_objs):
+    dummy_state = P4State(pipe_name, p4_z3_objs, {}, {})
+    for member_name, _ in dummy_state.members:
+        member_val = dummy_state.resolve_reference(member_name)
+        if isinstance(member_val, P4ComplexInstance):
+            member_val.propagate_validity_bit()
+    initial_state = dummy_state.get_z3_repr()
+    inital_inputs = initial_state.children()
+    return inital_inputs
+
+
+def handle_nested_ifs(pipe_name, flat_members, inputs, outputs):
+    cond = outputs[0]
+    then_outputs = outputs[1].children()
+    else_outputs = outputs[2].children()
+    if z3.z3util.is_app_of(outputs[1], z3.Z3_OP_ITE):
+        handle_nested_ifs(pipe_name, flat_members, inputs, then_outputs)
+    else:
+        zipped_list = zip(flat_members, inputs, then_outputs)
+        table = tabulate(zipped_list, headers=["NAME", "INPUT", "OUTPUT"])
+        log.info("PIPE %s Condition:\n\"%s\"\n%s\n", pipe_name, cond, table)
+        zipped_list = zip(flat_members, inputs, then_outputs)
+
+    if z3.z3util.is_app_of(outputs[2], z3.Z3_OP_ITE):
+        handle_nested_ifs(pipe_name, flat_members, inputs, else_outputs)
+    else:
+        zipped_list = zip(flat_members, inputs, else_outputs)
+        table = tabulate(zipped_list, headers=["NAME", "INPUT", "OUTPUT"])
+        log.info("PIPE %s Condition:\n\"%s\"\n%s\n",
+                 pipe_name, z3.Not(cond), table)
+        zipped_list = zip(flat_members, inputs, else_outputs)
+
+
+def print_z3_data(pipe_name, pipe_val):
+    z3_datatype, p4_z3_objs = pipe_val
+    z3_datatype = z3.simplify(z3_datatype)
+    flat_members = get_flat_members(p4_z3_objs)
+    inputs = reconstruct_input(pipe_name, p4_z3_objs)
+    outputs = z3_datatype.children()
+    if z3.z3util.is_app_of(z3_datatype, z3.Z3_OP_ITE):
+        handle_nested_ifs(pipe_name, flat_members, inputs, outputs)
+    else:
+        zipped_list = zip(flat_members, inputs, outputs)
+        table = tabulate(zipped_list, headers=["NAME", "INPUT", "OUTPUT"])
+        log.info("PIPE %s:\n%s\n", pipe_name, table)
+    # log.info("%-20s %-20s %-20s" % ("NAME", "INPUT", "OUTPUT"))
+    # log.info("-" * 60)
+    # w = max([max(len(str(x)) for x in col) for col in zipped_list])
+    # zipped_list = zip(flat_members, inputs, outputs)
+    # for name, input, output in zipped_list:
+    #     row = f"{name: <{w}} {str(input): <{w}} {str(output): <{w}}"
+    #     log.info(row)
+
+
 def main(args=None):
     parser = argparse.ArgumentParser()
     parser.add_argument("-i", "--p4_input", dest="p4_input", default=None,
@@ -95,9 +163,7 @@ def main(args=None):
     p4_prog, result = get_z3_formulization(args.p4_input, Path(args.out_dir))
     if result != util.EXIT_FAILURE:
         for pipe_name, pipe_val in p4_prog.items():
-            log.info("-" * 20)
-            log.info("PIPE %s", pipe_name)
-            log.info(pipe_val)
+            print_z3_data(pipe_name, pipe_val)
     return result
 
 

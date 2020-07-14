@@ -13,18 +13,6 @@ FILE_DIR = os.path.dirname(os.path.abspath(__file__))
 log = logging.getLogger(__name__)
 
 
-# We maintain a list of passes that causes segmentation faults
-# TODO: Fix these, likely by using simulation relations
-SKIPPED_PASSES = [
-    # "InlineActions",
-    # "InlineFunctions",
-    # "UniqueNames",
-    # "UniqueParameters",
-    # "SpecializeAll",
-    # "ExpandLookahead",
-]
-
-
 def needs_skipping(post):
     for skip_pass in SKIPPED_PASSES:
         if skip_pass in post:
@@ -112,11 +100,6 @@ def z3_check(prog_paths, fail_dir=None):
         p4_post_path, pipes_post = z3_progs[idx]
         log.info("\nComparing programs\n%s\n%s\n########",
                  p4_pre_path.stem, p4_post_path.stem)
-        # We do not support the passes which rename variables right now
-        # Reason is they generate entirely new variables
-        # which cause z3 to crash for some reason...
-        if needs_skipping(str(p4_post_path)):
-            continue
         if len(pipes_pre) != len(pipes_post):
             log.warning("Pre and post model differ in size!")
             return util.EXIT_SKIPPED
