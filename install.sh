@@ -41,9 +41,9 @@ pip3 install --user pyroute2 ipaddr ply scapy
 mkdir -p p4c/extensions
 # only install bludgeon if we are not running in travis
 if ! $TRAVIS; then
-git clone https://github.com/p4gauntlet/bludgeon p4c/extensions/bludgeon
+ln -s $(pwd)/bludgeon $(pwd)/p4c/extensions/bludgeon
 fi
-git clone https://github.com/p4gauntlet/toz3 p4c/extensions/toz3
+ln -s $(pwd)/toz3 $(pwd)/p4c/extensions/toz3
 # build the p4 compiler
 cd p4c
 mkdir -p build

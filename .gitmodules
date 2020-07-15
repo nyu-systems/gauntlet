@@ -2,3 +2,11 @@
     url = https://github.com/p4lang/p4c
     path = p4c
     ignore = dirty
+
+[submodule "bludgeon"]
+    url = https://github.com/p4gauntlet/bludgeon
+    path = bludgeon
+
+[submodule "toz3"]
+    url = https://github.com/p4gauntlet/toz3
+    path = toz3
