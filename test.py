@@ -87,6 +87,8 @@ xfails = [
     "issue1334.p4",  # overloading, this test should normally not be skipped
     "logging.p4",  # string literal
     "string.p4",  # string literal
+    "issue2201-1-bmv2.p4", # string literal
+    "issue2201-bmv2.p4", # string literal
     "issue-2123-2-bmv2.p4",  # range
     "issue-2123-3-bmv2.p4",  # range
     "table-entries-range-bmv2.p4",  # range
