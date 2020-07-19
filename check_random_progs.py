@@ -17,12 +17,12 @@ import p4z3.util as util
 log = logging.getLogger(__name__)
 
 FILE_DIR = Path(__file__).parent.resolve()
-P4TEST_BIN = FILE_DIR.joinpath("p4c/build/p4test")
-SS_BIN = FILE_DIR.joinpath("p4c/build/p4c-bm2-ss")
-PSA_BIN = FILE_DIR.joinpath("p4c/build/p4c-bm2-psa")
+P4TEST_BIN = FILE_DIR.joinpath("modules/p4c/build/p4test")
+SS_BIN = FILE_DIR.joinpath("modules/p4c/build/p4c-bm2-ss")
+PSA_BIN = FILE_DIR.joinpath("modules/p4c/build/p4c-bm2-psa")
 TNA_BIN = FILE_DIR.joinpath("tofino/bf_src/install/bin/bf-p4c")
-P4Z3_BIN = FILE_DIR.joinpath("p4c/build/p4toz3")
-P4RANDOM_BIN = FILE_DIR.joinpath("p4c/build/p4bludgeon")
+P4Z3_BIN = FILE_DIR.joinpath("modules/p4c/build/p4toz3")
+P4RANDOM_BIN = FILE_DIR.joinpath("modules/p4c/build/p4bludgeon")
 
 OUTPUT_DIR = FILE_DIR.joinpath("random")
 GENERATOR_BUG_DIR = OUTPUT_DIR.joinpath("generator_bugs")

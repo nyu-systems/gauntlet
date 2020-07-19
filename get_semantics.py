@@ -12,7 +12,7 @@ sys.setrecursionlimit(15000)
 
 
 FILE_DIR = Path(__file__).parent.resolve()
-P4Z3_BIN = FILE_DIR.joinpath("p4c/build/p4toz3")
+P4Z3_BIN = FILE_DIR.joinpath("modules/p4c/build/p4toz3")
 OUT_DIR = FILE_DIR.joinpath("validated")
 log = logging.getLogger(__name__)
 

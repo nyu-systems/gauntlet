@@ -133,11 +133,9 @@ single_passes
 dumps
 *.p4i
 *.json
-
-
 generated/
 random/
 validated/
-violated/**/*.py
+tests/violated/**/*.py
 tofino
 out.tofino/

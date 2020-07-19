@@ -7,6 +7,7 @@ set -e
 git submodule update --init --recursive --remote --merge
 sudo apt-get update
 
+MODULE_DIR="$(pwd)/modules"
 
 # Install pip and python
 sudo apt install -y python3
@@ -38,14 +39,14 @@ pip3 install --user wheel
 pip3 install --user pyroute2 ipaddr ply scapy
 
 # grab the toz3 extension for the p4 compiler
-mkdir -p p4c/extensions
+mkdir -p ${MODULE_DIR}/p4c/extensions
 # only install bludgeon if we are not running in travis
 if test -z $TRAVIS; then
-ln -s $(pwd)/bludgeon $(pwd)/p4c/extensions/bludgeon
+ln -sf ${MODULE_DIR}/bludgeon ${MODULE_DIR}/p4c/extensions/bludgeon
 fi
-ln -s $(pwd)/toz3 $(pwd)/p4c/extensions/toz3
+ln -sf ${MODULE_DIR}/toz3 ${MODULE_DIR}/p4c/extensions/toz3
 # build the p4 compiler
-cd p4c
+cd ${MODULE_DIR}/p4c
 mkdir -p build
 cd build
 cmake .. -DCMAKE_BUILD_TYPE=RelWithDebInfo

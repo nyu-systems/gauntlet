@@ -1,12 +1,13 @@
 [submodule "p4c"]
     url = https://github.com/p4lang/p4c
-    path = p4c
+    path = modules/p4c
     ignore = dirty
-
-[submodule "bludgeon"]
-    url = https://github.com/p4gauntlet/bludgeon
-    path = bludgeon
 
 [submodule "toz3"]
     url = https://github.com/p4gauntlet/toz3
-    path = toz3
+    path = modules/toz3
+
+[submodule "bludgeon"]
+    url = https://github.com/p4gauntlet/bludgeon
+    path = modules/bludgeon
+

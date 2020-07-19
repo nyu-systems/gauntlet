@@ -17,12 +17,13 @@ logging.getLogger().addHandler(stderr_log)
 
 # some folder definitions
 FILE_DIR = Path.resolve(Path(__file__)).parent
+TEST_DIR = FILE_DIR.joinpath("tests")
 TARGET_DIR = FILE_DIR.joinpath("generated")
-VIOLATION_DIR = FILE_DIR.joinpath("violated")
-FALSE_FRIENDS_DIR = FILE_DIR.joinpath("false_friends")
-P4_DIR = FILE_DIR.joinpath("p4c/testdata/p4_16_samples/")
+VIOLATION_DIR = TEST_DIR.joinpath("violated")
+FALSE_FRIENDS_DIR = TEST_DIR.joinpath("false_friends")
+P4_DIR = FILE_DIR.joinpath("modules/p4c/testdata/p4_16_samples/")
 # p4c binaries
-P4C_BIN = FILE_DIR.joinpath("p4c/build/p4test")
+P4C_BIN = FILE_DIR.joinpath("modules/p4c/build/p4test")
 
 
 # ***** P4-16 Standard Tests *****

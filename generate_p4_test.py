@@ -17,10 +17,10 @@ from get_semantics import get_z3_formulization
 log = logging.getLogger(__name__)
 
 FILE_DIR = Path(__file__).parent.resolve()
-P4Z3_BIN = FILE_DIR.joinpath("p4c/build/p4toz3")
-P4RANDOM_BIN = FILE_DIR.joinpath("p4c/build/p4bludgeon")
+P4Z3_BIN = FILE_DIR.joinpath("modules/p4c/build/p4toz3")
+P4RANDOM_BIN = FILE_DIR.joinpath("modules/p4c/build/p4bludgeon")
 OUT_DIR = FILE_DIR.joinpath("validated")
-P4C_DIR = FILE_DIR.joinpath("p4c")
+P4C_DIR = FILE_DIR.joinpath("modules/p4c")
 TOFINO_DIR = FILE_DIR.joinpath("tofino/bf_src")
 
 # signifies an invalid header

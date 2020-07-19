@@ -397,7 +397,6 @@ class P4ComplexInstance():
                 self.set_or_add_var(then_name, if_expr)
 
     def set_list(self, rvals):
-        self.valid = z3.BoolVal(True)
         for idx, (member_name, member_type) in enumerate(self.members):
             val = rvals[idx]
             # integers need to be cast to the respective type

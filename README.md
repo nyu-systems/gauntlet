@@ -1,5 +1,6 @@
 
 [![Build Status](https://travis-ci.org/p4gauntlet/p4_tv.svg?branch=master)](https://travis-ci.org/p4gauntlet/p4_tv)
+:License: Apache Software License 2.0
 
 # The Gauntlet Tool Suite
 
@@ -26,10 +27,10 @@ To check whether everything has been installed correctly you can run `python3 -m
 
 ## Instructions
 ### Generating a random program
-After successful installation, you can generate a random P4 program via the `p4c/build/p4bludgeon out.p4 --arch top`  command. To generate Tofino code, the flag needs to be set to  `p4c/build/p4bludgeon --output out.p4 --arch tna`.
+After successful installation, you can generate a random P4 program via the `modules/p4c/build/p4bludgeon out.p4 --arch top`  command. To generate Tofino code, the flag needs to be set to  `modules/p4c/build/p4bludgeon --output out.p4 --arch tna`.
 A typical crash checking workflow might be:
 
-    p4c/build/p4bludgeon --output out.p4 --arch top && p4c/build/p4c-bm2-ss out.p4
+    modules/p4c/build/p4bludgeon --output out.p4 --arch top && modules/p4c/build/p4c-bm2-ss out.p4
 
 ### Retrieving Gauntlet semantics for a P4 program
 For debugging purposes, you can run
@@ -41,7 +42,7 @@ to retrieve the semantic representation of a particular P4 program. This will pr
 ### Validating a P4C program
 To validate that a program is compiled correctly by `p4c`, you can run
 
-     p4c/build/p4bludgeon --output out.p4 --arch top && python3 validate_p4_translation.py -i out.p4
+     modules/p4c/build/p4bludgeon --output out.p4 --arch top && python3 validate_p4_translation.py -i out.p4
 `check_p4_compilation.py` checks if a sequence of P4 programs are all equivalent to each other using the `check_p4_pair.py` program as a sub routine. This sequence is produced by running p4c on an input P4 program. When p4c is run on an input P4 program, it produces a sequence of P4 programs, where each P4 program corresponds to the version of the input P4 program after a p4c optimization pass. This allows us to validate whether compilation/translation
 is working correctly and to pinpoint the faulty optimization pass if it isn't
 working correctly.
@@ -51,11 +52,11 @@ working correctly.
 Symbolic execution requires the behavioral model or the Tofino compiler to be installed. The correct binaries and include files need to be instrumented in the `generate_p4_test.py` file. Exact instructions will follow.
 An example command is
 
-     p4c/build/p4bludgeon --output out.p4 --arch v1model && python3 generate_p4_test.py -i out.p4 -r
+     modules/p4c/build/p4bludgeon --output out.p4 --arch v1model && python3 generate_p4_test.py -i out.p4 -r
 This sequence of commands will first generate a random program, infer expected input and output values, convert them to a test file (in this case, they are stf files) and finally run a full test. If the observed output differs from the expected output, the tool will throw  an error. The `-r` flag denotes randomization of the input, it is optional.
 To run symbolic execution for the Tofino backend, `sudo` will have to be used.
 
-     p4c/build/p4bludgeon --output out.p4 --arch tna && sudo -E python3 generate_p4_test.py -i out.p4 -r -t
+     modules/p4c/build/p4bludgeon --output out.p4 --arch tna && sudo -E python3 generate_p4_test.py -i out.p4 -r -t
 
 ### Fuzz-testing at Scale
 We also include facilities to fuzz test the compilers at scale.

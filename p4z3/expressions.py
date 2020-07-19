@@ -27,13 +27,14 @@ class P4Initializer(P4Expression):
                     instance.set_or_add_var(name, val_expr)
             elif isinstance(val, list):
                 instance.set_list(val)
+                instance.valid = z3.BoolVal(True)
             else:
                 raise RuntimeError(
                     f"P4StructInitializer members {val} not supported!")
             return instance
         else:
             # cast the value we assign to the instance we create
-            # TODO: I do not like this, there must be a better way to do this
+            # FIXME: I do not like this, there must be a better way to do this
             if isinstance(val, int) and isinstance(instance, (z3.BitVecSortRef, z3.BitVecRef)):
                 val = z3_cast(val, instance.sort())
             return val
