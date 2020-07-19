@@ -67,7 +67,7 @@ control ingress(inout Headers h, inout Meta m, inout standard_metadata_t sm) {
     @name("c") compute() c_0;
     apply {
         m.test = 1;
-        bit<8> tmp = 0;
+        bit<9> tmp = 0;
         c_0.apply(h.h);
         sm.egress_spec = tmp;
     }

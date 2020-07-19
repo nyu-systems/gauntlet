@@ -1,22 +1,20 @@
-from p4z3.base import OrderedDict, z3, log, copy, copy_attrs
-from p4z3.base import gen_instance, z3_cast, merge_attrs
+from p4z3.base import OrderedDict, z3, log, copy
+from p4z3.base import gen_instance, z3_cast, handle_mux
 from p4z3.base import P4Z3Class, P4ComplexInstance, P4ComplexType, P4Context
-from p4z3.base import DefaultExpression, P4Extern, P4Expression, P4Argument
-from p4z3.expressions import P4Mux
+from p4z3.base import DefaultExpression, P4Extern
+from p4z3.base import P4Expression, P4Argument, P4Range
 
 
 def save_variables(p4_state, merged_args):
     var_buffer = OrderedDict()
     # save all the variables that may be overridden
     for param_name, arg in merged_args.items():
-        is_ref = arg.is_ref
-        param_ref = arg.p4_val
-        # if the variable does not exist, set the value to None
         try:
             param_val = p4_state.resolve_reference(param_name)
-            var_buffer[param_name] = (is_ref, param_ref, param_val)
-        except KeyError:
-            var_buffer[param_name] = (is_ref, param_ref, None)
+            var_buffer[param_name] = (arg.is_ref, arg.p4_val, param_val)
+        except RuntimeError:
+            # if the variable name does not exist, set the value to None
+            var_buffer[param_name] = (arg.is_ref, arg.p4_val, None)
     return var_buffer
 
 
@@ -84,20 +82,23 @@ class P4Callable(P4Z3Class):
     def eval(self, p4_state, *args, **kwargs):
         merged_args = merge_parameters(self.params, *args, **kwargs)
         var_buffer = save_variables(p4_state, merged_args)
+        param_buffer = self.copy_in(p4_state, merged_args)
+        # only add the context after all the arguments have been resolved
         context = P4Context(var_buffer)
         p4_state.contexts.append(context)
+        # now we can set the arguments without influencing subsequent variables
+        for param_name, param_val in param_buffer.items():
+            p4_state.set_or_add_var(param_name, param_val)
 
         # execute the action expression with the new environment
-        self.copy_in(p4_state, merged_args)
         expr = self.eval_callable(p4_state, merged_args, var_buffer)
         self.call_counter += 1
 
-        context = p4_state.contexts[-1]
         while context.return_states:
             cond, return_attrs = context.return_states.pop()
-            merge_attrs(cond, return_attrs, p4_state.locals)
-        context = p4_state.contexts.pop()
+            p4_state.merge_attrs(cond, return_attrs)
         context.copy_out(p4_state)
+        p4_state.contexts.pop()
         return expr
 
     def __call__(self, p4_state, *args, **kwargs):
@@ -136,9 +137,7 @@ class P4Callable(P4Z3Class):
             log.debug("Copy-in: %s to %s", arg_expr, param_name)
             # buffer the value, do NOT set it yet
             param_buffer[param_name] = arg_expr
-        # now we can set the arguments without influencing subsequent variables
-        for param_name, param_val in param_buffer.items():
-            p4_state.set_or_add_var(param_name, param_val)
+        return param_buffer
 
 class ConstCallExpr(P4Expression):
 
@@ -169,21 +168,25 @@ class P4Package(P4Callable):
             log.info("Loading %s pipe...", pipe_name)
             pipe_val = self.z3_reg.p4_state.resolve_expr(pipe_arg.p4_val)
             if isinstance(pipe_val, P4Control):
-                # initialize with its own params
+                # create the z3 representation of this control state
+                p4_state = self.z3_reg.set_p4_state(pipe_name, pipe_val.params)
+                # initialize the call with its own params
+                # this is essentially the input packet
                 args = []
-                params = pipe_val.params
-                for param in params:
+                for param in pipe_val.params:
                     args.append(param.name)
-                p4_state = self.z3_reg.init_p4_state(pipe_name, params)
                 pipe_val.apply(p4_state, *args)
+                # after executing the pipeline get its z3 representation
                 state = p4_state.get_z3_repr()
+                # and also merge back all the exit states we collected
                 for exit_cond, exit_state in reversed(p4_state.exit_states):
                     state = z3.If(exit_cond, exit_state, state)
+                # all done, that is our P4 representation!
                 self.pipes[pipe_name] = (state, p4_state.members)
             elif isinstance(pipe_val, P4Extern):
                 self.pipes[pipe_name] = (pipe_val.const, [])
             elif isinstance(pipe_val, P4Package):
-                # execute the package by calling it
+                # execute the package by calling its initializer
                 pipe_val.initialize()
                 # resolve all the sub_pipes
                 for sub_pipe_name, sub_pipe_val in pipe_val.pipes.items():
@@ -222,7 +225,7 @@ class P4Function(P4Action):
 
     def eval_callable(self, p4_state, merged_args, var_buffer):
         # execute the action expression with the new environment
-        context = p4_state.contexts[-1]
+        context = p4_state.current_context()
         context.return_type = self.return_type
         self.statements.eval(p4_state)
         return_expr = None
@@ -234,8 +237,7 @@ class P4Function(P4Action):
             if isinstance(return_expr, P4ComplexInstance):
                 while context.return_exprs:
                     then_cond, then_expr = context.return_exprs.pop()
-                    return_expr = P4Mux(then_cond, then_expr, return_expr)
-                return_expr = return_expr.eval(p4_state)
+                    return_expr = handle_mux(then_cond, then_expr, return_expr)
             else:
                 while context.return_exprs:
                     then_cond, then_expr = context.return_exprs.pop()
@@ -265,9 +267,10 @@ class P4Control(P4Callable):
         return init_ctrl
 
     def initialize(self, *args, **kwargs):
-        self.merged_consts = merge_parameters(
-            self.const_params, *args, **kwargs)
-        return self
+        ctrl_copy = copy.copy(self)
+        ctrl_copy.merged_consts = merge_parameters(
+            ctrl_copy.const_params, *args, **kwargs)
+        return ctrl_copy
 
     def __call__(self, *args, **kwargs):
         return self.initialize(*args, **kwargs)
@@ -277,7 +280,7 @@ class P4Control(P4Callable):
 
     def eval_callable(self, p4_state, merged_args, var_buffer):
         # initialize the local context of the function for execution
-        context = p4_state.contexts[-1]
+        context = p4_state.current_context()
 
         merged_vars = save_variables(p4_state, self.merged_consts)
         context.prepend_to_buffer(merged_vars)
@@ -291,6 +294,21 @@ class P4Control(P4Callable):
             if p4_state.has_exited or context.has_returned:
                 break
         self.statements.eval(p4_state)
+
+    def __copy__(self):
+        cls = self.__class__
+        result = cls.__new__(cls)
+        result.__dict__.update(self.__dict__)
+        result.type_params = copy.copy(self.type_params)
+        result.params = []
+        for param in self.params:
+            result.params.append(copy.copy(param))
+        result.const_params = []
+        for param in self.const_params:
+            result.const_params.append(copy.copy(param))
+        result.locals = {}
+        result.locals["apply"] = result.apply
+        return result
 
 
 class P4Method(P4Callable):
@@ -336,17 +354,16 @@ class P4Method(P4Callable):
             log.debug("Copy-in: %s to %s", arg_expr, param_name)
             # buffer the value, do NOT set it yet
             param_buffer[param_name] = arg_expr
-        # now we can set the arguments without influencing subsequent variables
-        for param_name, param_val in param_buffer.items():
-            p4_state.set_or_add_var(param_name, param_val)
+        return param_buffer
 
     def __copy__(self):
         cls = self.__class__
         result = cls.__new__(cls)
         result.__dict__.update(self.__dict__)
-        result.params = copy.deepcopy(result.params)
-        for idx, val in enumerate(result.params):
-            result.params[idx] = copy.copy(val)
+        result.type_params = copy.copy(self.type_params)
+        result.params = []
+        for param in self.params:
+            result.params.append(copy.copy(param))
         return result
 
     def initialize(self, *args, **kwargs):
@@ -505,7 +522,7 @@ class P4Table(P4Callable):
         return self.eval_action(p4_state, action_name, action_args)
 
     def eval_const_entries(self, p4_state, action_exprs, action_matches):
-        context = p4_state.contexts[-1]
+        context = p4_state.current_context()
         forward_cond_copy = context.tmp_forward_cond
         for c_keys, (action_name, action_args) in reversed(self.const_entries):
             matches = []
@@ -513,12 +530,22 @@ class P4Table(P4Callable):
             # this generates the match expression for a specific constant entry
             # this is a little inefficient, fix.
             for index, key in enumerate(self.keys):
+                c_key_expr = c_keys[index]
                 # default implies don't care, do not add
                 # TODO: Verify that this assumption is right...
-                if isinstance(c_keys[index], DefaultExpression):
+                if isinstance(c_key_expr, DefaultExpression):
                     continue
                 key_eval = p4_state.resolve_expr(key)
-                c_key_eval = p4_state.resolve_expr(c_keys[index])
+                if isinstance(c_key_expr, P4Range):
+                    x = c_key_expr.min
+                    y = c_key_expr.max
+                    const_name = f"{self.name}_range_{index}"
+                    range_const = z3.Const(const_name, key_eval.sort())
+                    c_key_eval = z3.If(range_const <= x, x, z3.If(
+                        range_const >= y, y, range_const))
+                else:
+                    c_key_eval = p4_state.resolve_expr(c_key_expr)
+
                 matches.append(key_eval == c_key_eval)
             action_match = z3.And(*matches)
             log.debug("Evaluating constant action %s...", action_name)
@@ -528,13 +555,13 @@ class P4Table(P4Callable):
             context.tmp_forward_cond = z3.And(forward_cond_copy, cond)
             self.eval_action(p4_state, action_name, action_args)
             if not p4_state.has_exited:
-                action_exprs.append((cond, copy_attrs(p4_state.locals)))
+                action_exprs.append((cond, p4_state.get_attrs()))
             p4_state.has_exited = False
             action_matches.append(action_match)
             p4_state.restore(var_store, contexts)
 
     def eval_table_entries(self, p4_state, action_exprs, action_matches):
-        context = p4_state.contexts[-1]
+        context = p4_state.current_context()
         forward_cond_copy = context.tmp_forward_cond
         for act_id, act_name, act_args in reversed(self.actions.values()):
             action_match = (self.tbl_action == z3.IntVal(act_id))
@@ -545,7 +572,7 @@ class P4Table(P4Callable):
             context.tmp_forward_cond = z3.And(forward_cond_copy, cond)
             self.eval_action(p4_state, act_name, act_args)
             if not p4_state.has_exited:
-                action_exprs.append((cond, copy_attrs(p4_state.locals)))
+                action_exprs.append((cond, p4_state.get_attrs()))
             p4_state.has_exited = False
             action_matches.append(action_match)
             p4_state.restore(var_store, contexts)
@@ -553,7 +580,7 @@ class P4Table(P4Callable):
     def eval_table(self, p4_state):
         action_exprs = []
         action_matches = []
-        context = p4_state.contexts[-1]
+        context = p4_state.current_context()
         forward_cond_copy = context.tmp_forward_cond
 
         # only bother to evaluate if the table can actually hit
@@ -575,7 +602,7 @@ class P4Table(P4Callable):
         context.tmp_forward_cond = forward_cond_copy
         # generate a nested set of if expressions per available action
         for cond, then_vars in action_exprs:
-            merge_attrs(cond, then_vars, p4_state.locals)
+            p4_state.merge_attrs(cond, then_vars)
 
     def eval_callable(self, p4_state, merged_args, var_buffer):
         # tables are a little bit special since they also have attributes

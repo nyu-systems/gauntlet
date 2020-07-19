@@ -3,7 +3,6 @@ import z3
 
 from p4z3.base import log, DefaultExpression, copy, z3_cast
 from p4z3.base import P4ComplexInstance, P4Statement, P4Z3Class, gen_instance
-from p4z3.base import copy_attrs, merge_attrs
 
 
 class AssignmentStatement(P4Statement):
@@ -44,7 +43,7 @@ class BlockStatement(P4Statement):
     def eval(self, p4_state):
         for expr in self.exprs:
             expr.eval(p4_state)
-            if p4_state.has_exited or p4_state.contexts[-1].has_returned:
+            if p4_state.has_exited or p4_state.current_context().has_returned:
                 break
 
 
@@ -59,7 +58,7 @@ class IfStatement(P4Statement):
             self.else_block = else_block
 
     def eval(self, p4_state):
-        context = p4_state.contexts[-1]
+        context = p4_state.current_context()
         cond = z3.simplify(p4_state.resolve_expr(self.cond))
         forward_cond_copy = context.tmp_forward_cond
         then_vars = None
@@ -68,7 +67,7 @@ class IfStatement(P4Statement):
             context.tmp_forward_cond = z3.And(forward_cond_copy, cond)
             self.then_block.eval(p4_state)
             if not(context.has_returned or p4_state.has_exited):
-                then_vars = copy_attrs(p4_state.locals)
+                then_vars = p4_state.get_attrs()
             p4_state.has_exited = False
             context.has_returned = False
             p4_state.restore(var_store, contexts)
@@ -85,7 +84,7 @@ class IfStatement(P4Statement):
         context.tmp_forward_cond = forward_cond_copy
 
         if then_vars:
-            merge_attrs(cond, then_vars, p4_state.locals)
+            p4_state.merge_attrs(cond, then_vars)
 
 
 class SwitchHit(P4Z3Class):
@@ -97,7 +96,7 @@ class SwitchHit(P4Z3Class):
     def eval_cases(self, p4_state, cases):
         case_exprs = []
         case_matches = []
-        context = p4_state.contexts[-1]
+        context = p4_state.current_context()
         forward_cond_copy = context.tmp_forward_cond
         for case in reversed(cases.values()):
             var_store, contexts = p4_state.checkpoint()
@@ -105,7 +104,7 @@ class SwitchHit(P4Z3Class):
                 forward_cond_copy, case["match"])
             case["case_block"].eval(p4_state)
             if not (context.has_returned or p4_state.has_exited):
-                then_vars = copy_attrs(p4_state.locals)
+                then_vars = p4_state.get_attrs()
                 case_exprs.append((case["match"], then_vars))
             context.has_returned = False
             p4_state.has_exited = False
@@ -121,7 +120,7 @@ class SwitchHit(P4Z3Class):
         p4_state.has_exited = False
         context.tmp_forward_cond = forward_cond_copy
         for cond, then_vars in case_exprs:
-            merge_attrs(cond, then_vars, p4_state.locals)
+            p4_state.merge_attrs(cond, then_vars)
 
     def set_table(self, table):
         self.table = table
@@ -181,8 +180,7 @@ class P4Return(P4Statement):
         self.expr = expr
 
     def eval(self, p4_state):
-        context = p4_state.contexts[-1]
-        context.has_returned = True
+        context = p4_state.current_context()
 
         if self.expr is None:
             expr = None
@@ -200,10 +198,10 @@ class P4Return(P4Statement):
         cond = z3.simplify(z3.And(z3.Not(z3.Or(*context.forward_conds)),
                                   context.tmp_forward_cond))
         if not cond == z3.BoolVal(False):
-            context.return_states.append((cond, copy_attrs(p4_state.locals)))
+            context.return_states.append((cond, p4_state.copy_attrs()))
             if expr is not None:
                 context.return_exprs.append((cond, expr))
-
+            context.has_returned = True
         context.forward_conds.append(context.tmp_forward_cond)
 
 
@@ -219,12 +217,12 @@ class P4Exit(P4Statement):
             context.copy_out(p4_state)
             forward_conds.extend(context.forward_conds)
             tmp_forward_conds.append(context.tmp_forward_cond)
-        context = p4_state.contexts[-1]
+        context = p4_state.current_context()
 
         cond = z3.simplify(z3.And(z3.Not(z3.Or(*forward_conds)),
                                   z3.And(*tmp_forward_conds)))
         if not cond == z3.BoolVal(False):
             p4_state.exit_states.append((cond, p4_state.get_z3_repr()))
+            p4_state.has_exited = True
         p4_state.restore(var_store, contexts)
-        p4_state.has_exited = True
         context.forward_conds.append(context.tmp_forward_cond)

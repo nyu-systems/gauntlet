@@ -46,7 +46,6 @@ for test in list(P4_DIR.glob("*.p4")):
 
 # these programs show pathological behavior and can currently not be tested
 violation_filter = [
-    "variable_shadowing",  # disabled until I have found a good solution
 ]
 violation_tests = set()
 for test in list(VIOLATION_DIR.glob("*")):
@@ -55,13 +54,12 @@ for test in list(VIOLATION_DIR.glob("*")):
         continue
     violation_tests.add(name)
 
-# ***** tests that should *NOT* trigger a violation bug *****
+# ***** tests that should *NOT* trigger a violation bug or fail*****
 
 # these programs show pathological behavior and can currently not be tested
 false_friends_filter = [
     "extern_arguments_2.p4",  # exit return value name
     "extern_arguments_3.p4",  # exit return value name
-    "lookahead_expansion.p4",  # lookahead_expansion
 ]
 
 false_friends = set()
@@ -74,26 +72,11 @@ for test in list(FALSE_FRIENDS_DIR.glob("*")):
 
 # ***** broken tests, need fixing *****
 xfails = [
-    "array_field.p4",  # runtime index
-    "array_field1.p4",  # runtime index
-    "complex2.p4",  # runtime index
-    "issue1989-bmv2.p4",  # runtime index
-    "index.p4",  # runtime index
-    "issue-2123.p4",  # runtime index
-    "issue314.p4",  # runtime index
-    "runtime-index-2-bmv2.p4",  # runtime index
-    "runtime-index-bmv2.p4",  # runtime index
-    "side_effects.p4",  # runtime index
+    "complex2.p4",  # runtime index, now idea how to resolve this madness
     "issue1334.p4",  # overloading, this test should normally not be skipped
-    "logging.p4",  # string literal
-    "string.p4",  # string literal
-    "issue2201-1-bmv2.p4", # string literal
-    "issue2201-bmv2.p4", # string literal
-    "issue-2123-2-bmv2.p4",  # range
-    "issue-2123-3-bmv2.p4",  # range
-    "table-entries-range-bmv2.p4",  # range
-    "fold_match.p4",  # range
-    "pvs-struct-3-bmv2.p4",  # range
+    "issue-2123-2-bmv2.p4",  # mask incorrectly implemented
+    "issue-2123-3-bmv2.p4",  # mask incorrectly implemented
+    "pvs-struct-3-bmv2.p4",  # mask incorrectly implemented
     "generic1.p4",  # complicated type inference
     "functors6.p4",  # complicated type inference
     "functors7.p4",  # complicated type inference

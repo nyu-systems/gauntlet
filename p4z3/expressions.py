@@ -1,7 +1,6 @@
 import operator as op
-from p4z3.base import log, z3_cast, z3, copy, gen_instance
+from p4z3.base import log, z3_cast, z3, copy, gen_instance, handle_mux
 from p4z3.base import P4ComplexInstance, P4Expression, P4ComplexType
-from p4z3.base import copy_attrs, merge_attrs
 
 
 class P4Initializer(P4Expression):
@@ -149,8 +148,6 @@ class P4sub(P4BinaryOp):
 class P4addsat(P4BinaryOp):
     def __init__(self, lval, rval):
         def operator(x, y):
-            log.info("%s %s", x, y)
-            log.info(type(x))
             no_overflow = z3.BVAddNoOverflow(x, y, False)
             no_underflow = z3.BVAddNoUnderflow(x, y)
             max_return = 2**x.size() - 1
@@ -227,14 +224,14 @@ class P4land(P4BinaryOp):
         # so we save the result of the right-hand expression and merge
         lval_expr = p4_state.resolve_expr(self.lval)
         var_store, chain_copy = p4_state.checkpoint()
-        context = p4_state.contexts[-1]
+        context = p4_state.current_context()
         forward_cond_copy = context.tmp_forward_cond
         context.tmp_forward_cond = z3.And(forward_cond_copy, lval_expr)
         rval_expr = p4_state.resolve_expr(self.rval)
-        else_vars = copy_attrs(p4_state.locals)
+        else_vars = p4_state.get_attrs()
         p4_state.restore(var_store, chain_copy)
         context.tmp_forward_cond = forward_cond_copy
-        merge_attrs(lval_expr, else_vars, p4_state.locals)
+        p4_state.merge_attrs(lval_expr, else_vars)
         return self.operator(lval_expr, rval_expr)
 
 
@@ -248,14 +245,14 @@ class P4lor(P4BinaryOp):
         # so we save the result of the right-hand expression and merge
         lval_expr = p4_state.resolve_expr(self.lval)
         var_store, chain_copy = p4_state.checkpoint()
-        context = p4_state.contexts[-1]
+        context = p4_state.current_context()
         forward_cond_copy = context.tmp_forward_cond
         context.tmp_forward_cond = z3.And(forward_cond_copy, z3.Not(lval_expr))
         rval_expr = p4_state.resolve_expr(self.rval)
-        else_vars = copy_attrs(p4_state.locals)
+        else_vars = p4_state.get_attrs()
         p4_state.restore(var_store, chain_copy)
         context.tmp_forward_cond = forward_cond_copy
-        merge_attrs(z3.Not(lval_expr), else_vars, p4_state.locals)
+        p4_state.merge_attrs(z3.Not(lval_expr), else_vars)
 
         return self.operator(lval_expr, rval_expr)
 
@@ -390,10 +387,19 @@ class P4gt(P4BinaryOp):
 
 
 class P4Mask(P4BinaryOp):
-    # TODO: Check if this mask operator is right
+    # FIXME: Do not really know how to implement a mask in z3 yet...
     def __init__(self, lval, rval):
         operator = op.and_
         P4BinaryOp.__init__(self, lval, rval, operator)
+
+
+# class P4Range(P4BinaryOp):
+#     # FIXME: Check if this range operator is right
+#     # we only generate on variable, this is not right
+#     def __init__(self, lval, rval):
+#         def operator(x, y):
+#             raise RuntimeError("P4Range needs context to be evaluated!")
+#         P4BinaryOp.__init__(self, lval, rval, operator)
 
 
 class P4Concat(P4Expression):
@@ -449,45 +455,25 @@ class P4Mux(P4Expression):
         self.then_val = then_val
         self.else_val = else_val
 
-    def unravel_datatype(self, datatype_list):
-        unravelled_list = []
-        for val in datatype_list:
-            if isinstance(val, P4ComplexInstance):
-                unravelled_list.extend(val.flatten())
-            elif isinstance(val, list):
-                unravelled_list.extend(self.unravel_datatype(val))
-            else:
-                unravelled_list.append(val)
-        return unravelled_list
-
     def eval(self, p4_state):
         cond = p4_state.resolve_expr(self.cond)
 
-        # handle side effects for function calls
-        # TODO: Remember exit in function bodies, even if they are not valid
+        # handle side effects for function and table calls
+        if cond == z3.BoolVal(False):
+            return p4_state.resolve_expr(self.else_val)
+        if cond == z3.BoolVal(True):
+            return p4_state.resolve_expr(self.then_val)
+
         var_store, chain_copy = p4_state.checkpoint()
+        context = p4_state.current_context()
+        forward_cond_copy = context.tmp_forward_cond
+        context.tmp_forward_cond = z3.And(forward_cond_copy, cond)
         then_expr = p4_state.resolve_expr(self.then_val)
-        then_vars = copy_attrs(p4_state.locals)
+        then_vars = p4_state.get_attrs()
         p4_state.restore(var_store, chain_copy)
+        context.tmp_forward_cond = forward_cond_copy
+
         else_expr = p4_state.resolve_expr(self.else_val)
-        merge_attrs(cond, then_vars, p4_state.locals)
+        p4_state.merge_attrs(cond, then_vars)
 
-        # because we have to be able to access the sub values again
-        # we have to resolve the if condition in the case of complex types
-        # we do this by splitting the if statement into a list
-        # lists can easily be assigned to a target structure
-        if isinstance(then_expr, P4ComplexInstance):
-            then_expr = then_expr.flatten()
-        if isinstance(else_expr, P4ComplexInstance):
-            else_expr = else_expr.flatten()
-
-        if isinstance(then_expr, list) and isinstance(else_expr, list):
-            sub_cond = []
-            # handle nested complex types
-            then_expr = self.unravel_datatype(then_expr)
-            else_expr = self.unravel_datatype(else_expr)
-            for idx, member in enumerate(then_expr):
-                if_expr = z3.If(cond, member, else_expr[idx])
-                sub_cond.append(if_expr)
-            return sub_cond
-        return z3.If(cond, then_expr, else_expr)
+        return handle_mux(cond, then_expr, else_expr)

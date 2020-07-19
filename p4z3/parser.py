@@ -1,4 +1,4 @@
-from p4z3.base import log, z3, copy_attrs, merge_attrs
+from p4z3.base import log, z3, P4Range
 from p4z3.base import P4Expression, P4ComplexInstance, DefaultExpression
 from p4z3.callables import P4Control
 
@@ -98,7 +98,7 @@ class ParserSelect(P4Expression):
     def eval(self, p4_state):
         switches = []
         select_conds = []
-        context = p4_state.contexts[-1]
+        context = p4_state.current_context()
         for case_val, case_name in reversed(self.cases):
             case_expr = p4_state.resolve_expr(case_val)
             select_cond = []
@@ -110,18 +110,35 @@ class ParserSelect(P4Expression):
                     # TODO: Verify that this assumption is right...
                     if isinstance(case_match, DefaultExpression):
                         continue
-                    match = self.match[idx]
-                    match_expr = p4_state.resolve_expr(match)
-                    cond = match_expr == case_match
+                    match_expr = p4_state.resolve_expr(self.match[idx])
+                    if isinstance(case_match, P4Range):
+                        x = case_match.min
+                        y = case_match.max
+                        const_name = f"{case_name}_range_{idx}"
+                        range_const = z3.Const(const_name, match_expr.sort())
+                        c_key_eval = z3.If(range_const <= x, x, z3.If(
+                            range_const >= y, y, range_const))
+                        cond = c_key_eval == match_expr
+                    else:
+                        cond = case_match == match_expr
                     select_cond.append(cond)
             else:
                 # default implies don't care, do not add
                 # TODO: Verify that this assumption is right...
                 if isinstance(case_expr, DefaultExpression):
                     continue
-                for match in self.match:
+                for idx, match in enumerate(self.match):
                     match_expr = p4_state.resolve_expr(match)
-                    cond = case_expr == match_expr
+                    if isinstance(case_expr, P4Range):
+                        x = case_expr.min
+                        y = case_expr.max
+                        const_name = f"{case_name}_range_{idx}"
+                        range_const = z3.Const(const_name, match_expr.sort())
+                        c_key_eval = z3.If(range_const <= x, x, z3.If(
+                            range_const >= y, y, range_const))
+                        cond = c_key_eval == match_expr
+                    else:
+                        cond = case_expr == match_expr
                     select_cond.append(cond)
             if not select_cond:
                 select_cond = [z3.BoolVal(False)]
@@ -131,13 +148,12 @@ class ParserSelect(P4Expression):
             parser_state = self.state_list[case_name]
             has_returned_copy = context.has_returned
             parser_state.eval(p4_state)
-            then_vars = copy_attrs(p4_state.locals)
             if p4_state.has_exited:
                 p4_state.exit_states.append((
                     select_cond, p4_state.get_z3_repr()))
                 p4_state.has_exited = False
             else:
-                switches.append((select_cond, then_vars))
+                switches.append((select_cond, p4_state.get_attrs()))
             p4_state.restore(var_store, contexts)
             context.has_returned = has_returned_copy
         default_parser_state = self.state_list[self.default]
@@ -149,4 +165,4 @@ class ParserSelect(P4Expression):
             p4_state.has_exited = False
             p4_state.restore(var_store, contexts)
         for cond, then_vars in switches:
-            merge_attrs(cond, then_vars, p4_state.locals)
+            p4_state.merge_attrs(cond, then_vars)

@@ -40,7 +40,7 @@ pip3 install --user pyroute2 ipaddr ply scapy
 # grab the toz3 extension for the p4 compiler
 mkdir -p p4c/extensions
 # only install bludgeon if we are not running in travis
-if ! $TRAVIS; then
+if test -z $TRAVIS; then
 ln -s $(pwd)/bludgeon $(pwd)/p4c/extensions/bludgeon
 fi
 ln -s $(pwd)/toz3 $(pwd)/p4c/extensions/toz3

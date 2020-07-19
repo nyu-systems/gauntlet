@@ -97,7 +97,8 @@ def get_flat_members(names):
 
 
 def reconstruct_input(pipe_name, p4_z3_objs):
-    dummy_state = P4State(pipe_name, p4_z3_objs, {}, {})
+    dummy_state = P4State()
+    dummy_state.set_datatype(pipe_name, p4_z3_objs, {})
     for member_name, _ in dummy_state.members:
         member_val = dummy_state.resolve_reference(member_name)
         if isinstance(member_val, P4ComplexInstance):
@@ -161,7 +162,7 @@ def main(args=None):
                         help="Where intermediate output is stored.")
     args = parser.parse_args(args)
     p4_prog, result = get_z3_formulization(args.p4_input, Path(args.out_dir))
-    if result != util.EXIT_FAILURE:
+    if result == util.EXIT_SUCCESS:
         for pipe_name, pipe_val in p4_prog.items():
             print_z3_data(pipe_name, pipe_val)
     return result

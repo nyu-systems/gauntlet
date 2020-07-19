@@ -1,7 +1,7 @@
 # Travis CI integration for p4_tv using Docker.
 
-sudo: required
 dist: bionic
+language: minimal
 
 install:
   - ./install.sh

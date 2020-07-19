@@ -29,35 +29,6 @@ def gen_instance(var_name, p4z3_type):
     raise RuntimeError(f"{p4z3_type} instantiation not supported!")
 
 
-def copy_attrs(attrs):
-    attr_copy = {}
-    for attr_name, attr_val in attrs.items():
-        if isinstance(attr_val, P4ComplexInstance):
-            attr_val = copy.copy(attr_val)
-        attr_copy[attr_name] = attr_val
-    return attr_copy
-
-
-def merge_attrs(cond, then_attrs, target_attrs):
-    for then_name, then_val in then_attrs.items():
-        try:
-            attr_val = target_attrs[then_name]
-        except KeyError:
-            # if the attribute does not exist it is not relevant
-            # this is because of scoping
-            # FIXME: Make sure this is actually the case...
-            continue
-        if isinstance(attr_val, StructInstance):
-            attr_val.valid = z3.simplify(
-                z3.If(cond, then_val.valid, attr_val.valid))
-            merge_attrs(cond, then_val.locals, attr_val.locals)
-        elif isinstance(attr_val, z3.ExprRef):
-            if then_val.sort() != attr_val.sort():
-                attr_val = z3_cast(attr_val, then_val.sort())
-            if_expr = z3.simplify(z3.If(cond, then_val, attr_val))
-            target_attrs[then_name] = if_expr
-
-
 def z3_cast(val, to_type):
 
     # some checks to guarantee that the inputs are usable
@@ -94,6 +65,44 @@ def z3_cast(val, to_type):
     else:
         # nothing to do
         return val
+
+
+def unravel_datatype(datatype_list):
+    unravelled_list = []
+    for val in datatype_list:
+        if isinstance(val, P4ComplexInstance):
+            unravelled_list.extend(val.flatten())
+        elif isinstance(val, list):
+            unravelled_list.extend(unravel_datatype(val))
+        else:
+            unravelled_list.append(val)
+    return unravelled_list
+
+
+def handle_mux(cond, then_expr, else_expr):
+    # because we have to be able to access the sub values again
+    # we have to resolve the if condition in the case of complex types
+    # we do this by splitting the if statement into a list
+    # lists can easily be assigned to a target structure
+    if isinstance(then_expr, P4ComplexInstance):
+        then_expr = then_expr.flatten()
+    if isinstance(else_expr, P4ComplexInstance):
+        else_expr = else_expr.flatten()
+
+    if isinstance(then_expr, list) and isinstance(else_expr, list):
+        sub_cond = []
+        # handle nested complex types
+        then_expr = unravel_datatype(then_expr)
+        else_expr = unravel_datatype(else_expr)
+        for idx, member in enumerate(then_expr):
+            if_expr = z3.If(cond, member, else_expr[idx])
+            sub_cond.append(if_expr)
+        return sub_cond
+    return z3.If(cond, then_expr, else_expr)
+
+
+def specialize_type(z3_reg, p4z3_type, *args):
+    return p4z3_type.init_type_params(*args)
 
 
 @dataclass
@@ -145,6 +154,15 @@ class DefaultExpression(P4Z3Class):
         pass
 
 
+class P4Range(P4Z3Class):
+    def __init__(self, range_min, range_max):
+        self.min = range_min
+        self.max = range_max
+
+    def eval(self, p4_state):
+        pass
+
+
 class P4Declaration(P4Statement):
     # the difference between a P4Declaration and a ValueDeclaration is that
     # we resolve the variable in the ValueDeclaration
@@ -155,7 +173,7 @@ class P4Declaration(P4Statement):
         self.rval = rval
 
     def eval(self, p4_state):
-        p4_state.set_or_add_var(self.name, self.rval)
+        p4_state.set_or_add_var(self.name, self.rval, True)
 
 
 class ValueDeclaration(P4Statement):
@@ -164,7 +182,7 @@ class ValueDeclaration(P4Statement):
         self.rval = rval
         self.z3_type = z3_type
 
-    def eval(self, p4_state):
+    def compute_rval(self, p4_state):
         # this will only resolve expressions no other classes
         # FIXME: Untangle this a bit
         if self.rval is not None:
@@ -183,25 +201,116 @@ class ValueDeclaration(P4Statement):
                 raise RuntimeError(msg)
         else:
             rval = gen_instance("undefined", self.z3_type)
-        p4_state.set_or_add_var(self.lval, rval)
+        return rval
+
+    def eval(self, p4_state):
+        rval = self.compute_rval(p4_state)
+        p4_state.set_or_add_var(self.lval, rval, True)
+
+
+class InstanceDeclaration(P4Declaration):
+    def __init__(self, z3_reg, lval, p4z3_type, *args, **kwargs):
+        p4z3_type = p4z3_type.initialize(*args, **kwargs)
+        super(InstanceDeclaration, self).__init__(lval, p4z3_type)
 
 class P4Member(P4Expression):
+
+    __slots__ = ["lval", "member"]
 
     def __init__(self, lval, member):
         self.lval = lval
         self.member = member
 
-    def eval(self, p4_state):
-        lval = self.lval
-        member = self.member
-        while isinstance(lval, P4Member):
-            lval = lval.eval(p4_state)
-        while isinstance(member, P4Member):
-            member = member.eval(p4_state)
-        if isinstance(lval, (P4Z3Class, P4ComplexInstance)):
-            lval = p4_state.resolve_expr(lval)
-            return lval.locals[member]
-        return f"{lval}.{member}"
+    def eval(self, context):
+        if isinstance(self.lval, P4Index):
+            return self.lval.eval(context, self.member)
+        lval = context.resolve_expr(self.lval)
+        return lval.locals[self.member]
+
+    def set_value(self, context, rval):
+        if isinstance(self.lval, P4Index):
+            self.lval.set_value(context, rval, self.member)
+            return
+        target = context.resolve_reference(self.lval)
+        target.set_or_add_var(self.member, rval)
+
+    def __repr__(self):
+        return f"{self.lval}.{self.member}"
+
+
+class P4Index(P4Member):
+    # FIXME: This class is an absolute nightmare. Fix
+    __slots__ = ["lval", "member"]
+
+    def eval(self, context, target_member=None):
+        lval = context.resolve_expr(self.lval)
+        index = context.resolve_expr(self.member)
+        if isinstance(index, z3.ExprRef):
+            index = z3.simplify(index)
+        if isinstance(index, int):
+            index = str(index)
+        elif isinstance(index, z3.BitVecNumRef):
+            index = str(index.as_long())
+        elif isinstance(index, z3.BitVecRef):
+            if target_member:
+                max_idx = lval.locals["size"]
+                return_expr = lval.locals[str(
+                    0)].resolve_reference(target_member)
+                for hdr_idx in range(1, max_idx):
+                    cond = index == hdr_idx
+                    val = lval.locals[f"{hdr_idx}"].resolve_reference(
+                        target_member)
+                    return_expr = handle_mux(cond, val, return_expr)
+                return return_expr
+            else:
+                max_idx = lval.locals["size"]
+                return_expr = lval.locals[f"0"]
+                for hdr_idx in range(1, max_idx):
+                    cond = index == hdr_idx
+                    return_expr = handle_mux(
+                        cond, lval.locals[f"{hdr_idx}"], return_expr)
+                return return_expr
+        else:
+            raise RuntimeError(f"Unsupported index {type(index)}!")
+        if target_member:
+            return lval.locals[index].resolve_reference(target_member)
+        else:
+            return lval.locals[index]
+
+    def set_value(self, context, rval, target_member=None):
+        lval = context.resolve_expr(self.lval)
+        index = context.resolve_expr(self.member)
+        if isinstance(index, z3.ExprRef):
+            index = z3.simplify(index)
+        if isinstance(index, int):
+            index = str(index)
+        elif isinstance(index, z3.BitVecNumRef):
+            index = str(index.as_long())
+        elif isinstance(index, z3.BitVecRef):
+            if target_member:
+                max_idx = lval.locals["size"]
+                for hdr_idx in range(max_idx):
+                    hdr = lval.locals[f"{hdr_idx}"]
+                    cond = index == hdr_idx
+                    cur_val = hdr.resolve_reference(target_member)
+                    if_expr = z3.If(cond, rval, cur_val)
+                    hdr.set_or_add_var(target_member, if_expr)
+            else:
+                max_idx = lval.locals["size"]
+                for hdr_idx in range(1, max_idx):
+                    cond = index == hdr_idx
+                    mux_expr = handle_mux(cond, rval,
+                                          context.locals[f"{hdr_idx}"])
+                    lval.set_or_add_var(hdr_idx, mux_expr)
+            return
+        else:
+            raise RuntimeError(f"Unsupported index {type(index)}!")
+
+        if target_member:
+            hdr = lval.locals[f"{index}"]
+            hdr.set_or_add_var(target_member, rval)
+        else:
+            lval.set_or_add_var(index, rval)
 
 
 class P4Slice(P4Expression):
@@ -268,19 +377,24 @@ class P4ComplexInstance():
         self.valid = z3.BoolVal(False)
 
     def resolve_reference(self, var):
-        log.debug("Resolving reference %s", var)
+        if isinstance(var, P4Member):
+            return var.eval(self)
         if isinstance(var, str):
-            sub_class = self
-            if '.' in var:
-                # this means we are accessing a complex member
-                # get the parent class and update its value
-                prefix, suffix = var.rsplit(".", 1)
-                # prefix may be a pointer to an actual complex type, resolve it
-                sub_class = self.resolve_reference(prefix)
-                var = sub_class.locals[suffix]
-            else:
-                var = self.locals[var]
+            return self.locals[var]
         return var
+
+    def merge_attrs(self, cond, then_attrs):
+        for then_name, then_val in then_attrs.items():
+            attr_val = self.resolve_reference(then_name)
+            if isinstance(attr_val, P4ComplexInstance):
+                attr_val.valid = z3.simplify(
+                    z3.If(cond, then_val.valid, attr_val.valid))
+                attr_val.merge_attrs(cond, then_val.locals)
+            elif isinstance(attr_val, z3.ExprRef):
+                if then_val.sort() != attr_val.sort():
+                    attr_val = z3_cast(attr_val, then_val.sort())
+                if_expr = z3.simplify(z3.If(cond, then_val, attr_val))
+                self.set_or_add_var(then_name, if_expr)
 
     def set_list(self, rvals):
         self.valid = z3.BoolVal(True)
@@ -291,37 +405,20 @@ class P4ComplexInstance():
                 val = z3_cast(val, member_type)
             self.set_or_add_var(member_name, val)
 
-    def _update_dict(self, lval, rval, target_dict):
-        # now that all the preprocessing is done we can assign the value
-        log.debug("Setting %s(%s) to %s(%s) ",
-                  lval, type(lval), rval, type(rval))
-        if '.' in lval:
-            # this means we are accessing a complex member
-            # get the parent class and update its value
-            prefix, suffix = lval.rsplit(".", 1)
-            log.debug("Recursing with %s and %s ", prefix, suffix)
-            # prefix may be a pointer to an actual complex type, resolve it
-            target_class = self.resolve_reference(prefix)
-            target_class.set_or_add_var(suffix, rval)
-        else:
-            if lval in target_dict:
-                # the target variable exists
-                # do not override an existing variable with a string reference!
-                # resolve any possible rvalue reference
-                rval = self.resolve_reference(rval)
-                # rvals could be a list, unroll the assignment
-                if isinstance(rval, list):
-                    tmp_lval = self.resolve_reference(lval)
-                    if isinstance(tmp_lval, P4ComplexInstance):
-                        tmp_lval.set_list(rval)
-                    else:
-                        raise TypeError(
-                            f"set_list {type(tmp_lval)} not supported!")
-                    return
-            target_dict[lval] = rval
-
     def set_or_add_var(self, lval, rval):
-        self._update_dict(lval, rval, self.locals)
+        if isinstance(lval, P4Member):
+            lval.set_value(self, rval)
+            return
+        # rvals could be a list, unroll the assignment
+        if isinstance(rval, list) and lval in self.locals:
+            lval_val = self.locals[lval]
+            if isinstance(lval_val, P4ComplexInstance):
+                lval_val.set_list(rval)
+            else:
+                raise TypeError(
+                    f"set_list {type(lval)} not supported!")
+            return
+        self.locals[lval] = rval
 
     def sort(self):
         return self.p4z3_type
@@ -420,7 +517,7 @@ class StructType(P4ComplexType):
                 # retrieve it is flat list of members
                 # append it to the member list
                 for sub_member in member_type.flat_names:
-                    member = Member(f"{member_name}.{sub_member.name}",
+                    member = Member(P4Member(member_name, sub_member.name),
                                     sub_member.p4_type,
                                     sub_member.width)
                     flat_names.append(member)
@@ -623,7 +720,7 @@ class HeaderInstance(StructInstance):
             for idx, self_val in enumerate(self_const):
                 comps.append(self_val == other_const[idx])
             comparison = z3.And(check_valid, *comps)
-            return z3.Or(check_invalid, comparison)
+            return z3.simplify(z3.Or(check_invalid, comparison))
         return super().__eq__(other)
 
     def __copy__(self):
@@ -735,7 +832,7 @@ class HeaderStackInstance(StructInstance):
         self.locals["push_front"] = self.push_front
         self.locals["pop_front"] = self.pop_front
         self.locals["size"] = len(self.members)
-        self.locals["lastIndex"] = z3.BitVecVal(self.nextIndex, 32) - 1
+        self.locals["lastIndex"] = len(self.members) - 1
 
     def push_front(self, p4_state, num):
         # This is a built-in
@@ -743,7 +840,7 @@ class HeaderStackInstance(StructInstance):
         for hdr_idx in range(1, num):
             hdr_idx = hdr_idx - 1
             try:
-                hdr = self.resolve_reference(f"{hdr_idx}")
+                hdr = self.locals[f"{hdr_idx}"]
                 hdr.setValid(p4_state)
             except KeyError:
                 pass
@@ -754,7 +851,7 @@ class HeaderStackInstance(StructInstance):
         for hdr_idx in range(1, num):
             hdr_idx = hdr_idx - 1
             try:
-                hdr = self.resolve_reference(f"{hdr_idx}")
+                hdr = self.locals[f"{hdr_idx}"]
                 hdr.setInvalid(p4_state)
             except KeyError:
                 pass
@@ -887,6 +984,17 @@ class P4Extern(P4ComplexInstance):
     def deactivate(self):
         log.warning("This method should not be called...")
 
+    def __copy__(self):
+        cls = self.__class__
+        result = cls.__new__(cls)
+        result.__dict__.update(self.__dict__)
+        result.type_params = copy.copy(self.type_params)
+        result.locals = {}
+        for method_name, method in self.locals.items():
+            result.locals[method_name] = copy.copy(method)
+
+        return result
+
 
 class P4ControlType(P4Extern):
     pass
@@ -906,6 +1014,7 @@ class P4Context(P4Z3Class):
         self.return_type = None
         self.forward_conds = deque()
         self.tmp_forward_cond = z3.BoolVal(True)
+        self.locals = {}
 
     def add_to_buffer(self, var_dict):
         self.var_buffer = {**self.var_buffer, **var_dict}
@@ -913,33 +1022,31 @@ class P4Context(P4Z3Class):
     def prepend_to_buffer(self, var_dict):
         self.var_buffer = {**var_dict, **self.var_buffer}
 
+    def declare_var(self, lval, rval):
+        self.locals[lval] = rval
+
     def copy_out(self, p4_state):
-        # FIXME: This does not respect local context
-        # local variables are overridden in functions and controls
         # restore any variables that may have been overridden
-        for param_name, param in self.var_buffer.items():
-            is_ref = param[0]
-            param_ref = param[1]
-            param_val = param[2]
-            if is_ref in ("inout", "out"):
-                val = p4_state.resolve_reference(param_name)
-            if param_val is None:
-                # value has not existed previously, marked for deletion
-                log.debug("Deleting %s", param_name)
-                p4_state.del_var(param_name)
-            else:
-                log.debug("Resetting %s to %s", param_name, type(param_val))
-                p4_state.set_or_add_var(param_name, param_val)
+        # with copy-out we copy from left to right
+        # values on the right override values on the left
+        # the var buffer is an ordered dict that maintains this order
+        for par_name, (is_ref, par_ref, par_val) in self.var_buffer.items():
+            # we retrieve the current value
+            val = p4_state.resolve_reference(par_name)
 
-            if is_ref in ("inout", "out"):
-                # with copy-out we copy from left to right
-                # values on the right override values on the left
-                # the var buffer is an ordered dict that maintains this order
-                log.debug("Copy-out: %s to %s", val, param_val)
-                p4_state.set_or_add_var(param_ref, val)
+            # we then reset the name in the scope to its original
+            log.debug("Resetting %s to %s", par_name, type(par_val))
+            # value has not existed previously, ignore
+            if par_val is not None:
+                p4_state.set_or_add_var(par_name, par_val)
 
-    def eval(self, p4_state):
-        self.copy_out(p4_state)
+            # if the param was copy-out, we copy the value we retrieved
+            # back to the original input reference
+            if is_ref in ("inout", "out"):
+                log.debug("Copy-out: %s to %s", val, par_ref)
+                # copy it back to the input reference
+                # this assumes an lvalue as input
+                p4_state.set_or_add_var(par_ref, val)
 
 
 class P4State():
@@ -950,33 +1057,51 @@ class P4State():
     values. It also manages the execution chain of the program.
     """
 
-    def __init__(self, name, z3_args, global_values, instances):
-        self.name = name
+    def __init__(self):
+        self.name = "init_state"
+        self.main_context = P4Context({})
         # deques allow for much more efficient pop and append operations
         # this is all we do so this works well
-        self.globals = global_values
-        self.locals = {}
-        self.has_exited = False
-        self.exit_states = deque()
         self.contexts = deque()
-        self.valid = z3.BoolVal(False)
+        self.exit_states = deque()
+        self.has_exited = False
+        self.flat_names = []
+        self.members = {}
+        self.z3_type = None
+        self.const = None
+
+    def reset(self):
+        self.exit_states = deque()
+        self.has_exited = False
+        self.contexts = deque()
+        self.flat_names = []
+        self.z3_type = None
+        self.const = None
+
+    def set_datatype(self, name, z3_args, instances):
+        self.reset()
+        self.name = name
         self.members = z3_args
 
+        state_context = P4Context({})
+        self.contexts.append(state_context)
+
         for instance_name, instance_val in instances.items():
-            self.locals[instance_name] = instance_val
+            self.set_or_add_var(instance_name, instance_val)
 
         flat_args = []
-        self.flat_names = []
         idx = 0
         for z3_arg_name, z3_arg_type in z3_args:
             if isinstance(z3_arg_type, P4ComplexType):
                 member_cls = z3_arg_type.instantiate(f"{name}.{idx}")
+                member_cls.propagate_validity_bit()
                 for sub_member in z3_arg_type.flat_names:
                     flat_args.append((f"{idx}", sub_member.p4_type))
-                    self.flat_names.append(f"{z3_arg_name}.{sub_member.name}")
+                    self.flat_names.append(
+                        P4Member(z3_arg_name, sub_member.name))
                     idx += 1
                 # this is a complex datatype, create a P4ComplexType
-                self.locals[z3_arg_name] = member_cls
+                self.set_or_add_var(z3_arg_name, member_cls, True)
             else:
                 flat_args.append((f"{idx}", z3_arg_type))
                 self.flat_names.append(z3_arg_name)
@@ -989,43 +1114,56 @@ class P4State():
 
         for type_idx, arg_name in enumerate(self.flat_names):
             member_constructor = self.z3_type.accessor(0, type_idx)
-            self.set_or_add_var(arg_name, member_constructor(self.const))
+            self.set_or_add_var(arg_name, member_constructor(self.const), True)
 
-    def del_var(self, var_string):
-        # simple wrapper for delattr
-        self.locals.pop(var_string, None)
+    def merge_attrs(self, cond, then_attrs):
+        for then_name, then_val in then_attrs.items():
+            try:
+                attr_val = self.resolve_reference(then_name)
+            except RuntimeError:
+                # if the attribute does not exist it is not relevant
+                # this is because of scoping
+                # FIXME: Make sure this is actually the case...
+                continue
+            if isinstance(attr_val, P4ComplexInstance):
+                attr_val.valid = z3.simplify(
+                    z3.If(cond, then_val.valid, attr_val.valid))
+                attr_val.merge_attrs(cond, then_val.locals)
+            elif isinstance(attr_val, z3.ExprRef):
+                if then_val.sort() != attr_val.sort():
+                    attr_val = z3_cast(attr_val, then_val.sort())
+                if_expr = z3.simplify(z3.If(cond, then_val, attr_val))
+                self.set_or_add_var(then_name, if_expr)
 
     def resolve_expr(self, expr):
-        # Resolves to z3 and z3p4 expressions, ints, lists, and dicts are also okay
+        # Resolves to z3 and z3p4 expressions
+        # ints, lists, and dicts are also okay
+
         # resolve potential string references first
         log.debug("Resolving %s", expr)
         if isinstance(expr, str):
-            val = self.resolve_reference(expr)
-        else:
-            val = expr
-        if isinstance(val, P4Expression):
+            expr = self.resolve_reference(expr)
+        if isinstance(expr, P4Expression):
             # We got a P4 expression, recurse and resolve...
-            val = val.eval(self)
-            return self.resolve_expr(val)
-        if isinstance(val, (z3.AstRef, int)):
+            expr = expr.eval(self)
+            return self.resolve_expr(expr)
+        if isinstance(expr, (z3.AstRef, int)):
             # These are z3 types and can be returned
             # Unfortunately int is part of it because z3 is very inconsistent
             # about var handling...
-            return val
-        if isinstance(val, (P4ComplexInstance, P4Z3Class, types.MethodType)):
-            # If we get a whole class return a new reference to the object
-            # Do not return the z3 type because we may assign a complete structure
+            return expr
+        if isinstance(expr, (P4ComplexInstance, P4Z3Class, types.MethodType)):
             # In a similar manner, just return any remaining class types
-            # Methods can be class attributes and also need to be returned as is
-            return val
-        if isinstance(val, list):
+            # Methods can be class attributes and need to be returned as is
+            return expr
+        if isinstance(expr, list):
             # For lists, resolve each value individually and return a new list
             list_expr = []
-            for val_expr in val:
+            for val_expr in expr:
                 rval_expr = self.resolve_expr(val_expr)
                 list_expr.append(rval_expr)
             return list_expr
-        raise TypeError(f"Value of type {type(val)} cannot be resolved!")
+        raise TypeError(f"Expression of type {type(expr)} cannot be resolved!")
 
     def find_nested_slice(self, lval, slice_l, slice_r):
         # gradually reduce the scope until we have calculated the right slice
@@ -1073,41 +1211,46 @@ class P4State():
         self.set_or_add_var(lval, rval_expr)
         return
 
-    def set_or_add_var(self, lval, rval):
-        if isinstance(lval, P4Member):
-            lval = lval.eval(self)
+    def find_context(self, var):
+        for context in reversed(self.contexts):
+            try:
+                return context, context.locals[var]
+            except KeyError:
+                continue
+        # nothing found, empty result
+        return None, None
+
+    def current_context(self):
+        if self.contexts:
+            return self.contexts[-1]
+        else:
+            return self.main_context
+
+    def set_or_add_var(self, lval, rval, new_decl=False):
         if isinstance(lval, P4Slice):
             self.set_slice(lval, rval)
+            return
+        if isinstance(lval, P4Member):
+            lval.set_value(self, rval)
             return
         # now that all the preprocessing is done we can assign the value
         log.debug("Setting %s(%s) to %s(%s) ",
                   lval, type(lval), rval, type(rval))
-        if '.' in lval:
-            # this means we are accessing a complex member
-            # get the parent class and update its value
-            prefix, suffix = lval.rsplit(".", 1)
-            log.debug("Recursing with %s and %s ", prefix, suffix)
-            # prefix may be a pointer to an actual complex type, resolve it
-            target_class = self.resolve_reference(prefix)
-            target_class.set_or_add_var(suffix, rval)
-        else:
-            if lval in self.locals:
-                # the target variable exists
-                # do not override an existing variable with a string reference!
-                # resolve any possible rvalue reference
-                rval = self.resolve_reference(rval)
-                # rvals could be a list, unroll the assignment
-                if isinstance(rval, list):
-                    tmp_lval = self.resolve_reference(lval)
-                    if isinstance(tmp_lval, P4ComplexInstance):
-                        tmp_lval.set_list(rval)
-                    else:
-                        raise TypeError(
-                            f"set_list {type(tmp_lval)} not supported!")
-                    return
-            self.locals[lval] = rval
+        context, lval_val = self.find_context(lval)
+        if not context or new_decl:
+            context = self.contexts[-1]
 
-    def get_z3_repr(self) -> z3.DatatypeRef:
+        # rvals could be a list, unroll the assignment
+        if isinstance(rval, list) and lval_val is not None:
+            if isinstance(lval_val, P4ComplexInstance):
+                lval_val.set_list(rval)
+            else:
+                raise TypeError(
+                    f"set_list {type(lval)} not supported!")
+            return
+        context.locals[lval] = rval
+
+    def get_z3_repr(self):
         ''' This method returns the current representation of the object in z3
         logic.'''
         members = []
@@ -1121,45 +1264,44 @@ class P4State():
                 members.append(member_val)
         return self.z3_type.constructor(0)(*members)
 
+    def get_attrs(self):
+        attr_dict = {}
+        for context in self.contexts:
+            for var_name, var_val in context.locals.items():
+                attr_dict[var_name] = var_val
+        return attr_dict
+
+    def copy_attrs(self):
+        attr_copy = {}
+        # copy everything except the first context, which are the global values
+        for context in self.contexts:
+            for attr_name, attr_val in context.locals.items():
+                if isinstance(attr_val, P4ComplexInstance):
+                    attr_val = copy.copy(attr_val)
+                attr_copy[attr_name] = attr_val
+        return attr_copy
+
     def resolve_reference(self, var):
         if isinstance(var, P4Member):
-            var = var.eval(self)
-        log.debug("Resolving reference %s", var)
+            return var.eval(self)
         if isinstance(var, str):
-            if '.' in var:
-                # this means we are accessing a complex member
-                # get the parent class and update its value
-                prefix, suffix = var.rsplit(".", 1)
-                # prefix may be a pointer to an actual complex type, resolve it
-                if prefix:
-                    sub_class = self.resolve_reference(prefix)
-                else:
-                    sub_class = self
-                var = sub_class.locals[suffix]
-            else:
+            context, val = self.find_context(var)
+            if not context:
                 try:
-                    var = self.locals[var]
+                    return self.main_context.locals[var]
                 except KeyError:
-                    var = self.globals[var]
+                    raise RuntimeError(f"Variable {var} not found!")
+            return val
         return var
 
     def checkpoint(self):
-        var_store = {}
-        for attr_name, attr_val in self.locals.items():
-            if isinstance(attr_val, z3.AstRef):
-                var_store[attr_name] = attr_val
-            elif isinstance(attr_val, P4ComplexInstance):
-                var_store[attr_name] = copy.copy(attr_val)
-            # this is only required because of some issues with duplicate
-            # states in the parser FIXME
-            elif isinstance(attr_val, P4Expression):
-                var_store[attr_name] = copy.copy(attr_val)
+        var_store = self.copy_attrs()
         contexts = self.contexts.copy()
         return var_store, contexts
 
     def restore(self, var_store, contexts=None):
         for attr_name, attr_val in var_store.items():
-            self.locals[attr_name] = attr_val
+            self.set_or_add_var(attr_name, attr_val)
         if contexts:
             self.contexts = contexts
 
@@ -1167,44 +1309,45 @@ class P4State():
 class Z3Reg():
     def __init__(self):
         self._types = {}
-        self.p4_state = P4State("global_state", {}, {}, {})
+        self.p4_state = P4State()
 
     def declare_global(self, p4_class=None):
         if not p4_class:
             # TODO: Get rid of unimplemented expressions
             return
-        if isinstance(p4_class, P4ComplexType):
+        if isinstance(p4_class, (P4ComplexType, P4Extern)):
             name = p4_class.name
             self._types[name] = p4_class
-        elif isinstance(p4_class, P4Extern):
-            name = p4_class.name
-            self._types[name] = p4_class
-            # I hate externs so much...
-            self.p4_state.globals[name] = p4_class.initialize()
         elif isinstance(p4_class, (Enum)):
             # enums are special static types
             # we need to add them to the list of accessible variables
             # and their type is actually the z3 type, not the class type
             name = p4_class.name
-            self.p4_state.globals[name] = p4_class
+            self.declare_var(name, p4_class)
             self._types[name] = p4_class.z3_type
         elif isinstance(p4_class, P4Declaration):
             # FIXME: Typedefs should not be added here
             name = p4_class.name
-            self.p4_state.globals[name] = p4_class.rval
+            self.declare_var(name, p4_class.rval)
             self._types[name] = p4_class.rval
         elif isinstance(p4_class, ValueDeclaration):
-            # FIXME: Typedefs should not be added here
-            p4_class.eval(self.p4_state)
             name = p4_class.lval
-            rval = self.p4_state.resolve_reference(name)
-            self.p4_state.globals[name] = rval
-            self._types[name] = rval
+            rval = p4_class.compute_rval(self.p4_state)
+            self.declare_var(name, rval)
         else:
             raise RuntimeError(
                 "Unsupported global declaration %s" % type(p4_class))
 
-    def init_p4_state(self, name, p4_params):
+    def resolve_reference(self, var):
+        return self.p4_state.resolve_reference(var)
+
+    def resolve_expr(self, var):
+        return self.p4_state.resolve_expr(var)
+
+    def declare_var(self, lval, rval):
+        self.p4_state.main_context.locals[lval] = rval
+
+    def set_p4_state(self, name, p4_params):
         stripped_args = []
         instances = {}
         for param in p4_params:
@@ -1212,16 +1355,11 @@ class Z3Reg():
                 # only inouts or outs matter as output
                 stripped_args.append((param.name, param.p4_type))
             else:
-                # for inputs we can instantiate something
+                # for other inputs we can instantiate something
                 instance = gen_instance(param.name, param.p4_type)
                 instances[param.name] = instance
-        p4_state = P4State(name, stripped_args,
-                           self.p4_state.globals, instances)
-        for member_name, _ in p4_state.members:
-            member_val = p4_state.resolve_reference(member_name)
-            if isinstance(member_val, P4ComplexInstance):
-                member_val.propagate_validity_bit()
-        return p4_state
+        self.p4_state.set_datatype(name, stripped_args, instances)
+        return self.p4_state
 
     def type(self, type_name):
         if type_name in self._types:
@@ -1243,15 +1381,13 @@ class Z3Reg():
         return self.type(name)
 
     def get_value(self, expr):
-        val = None
-        if isinstance(expr, P4Expression):
-            val = expr.get_value()
-        elif isinstance(expr, str):
-            val = self.p4_state.globals[expr]
-        else:
-            raise RuntimeError(
-                "Unsupported value expression %s" % type(expr))
+        val = self.resolve_expr(expr)
         if isinstance(val, z3.BitVecNumRef):
             # unfortunately, we need to get the real int value here
             val = Z3Int(val.as_long(), val.size())
         return val
+
+    def get_main_function(self):
+        if "main" in self.p4_state.main_context.locals:
+            return self.p4_state.main_context.locals["main"]
+        return None
