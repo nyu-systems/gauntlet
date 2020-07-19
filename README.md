@@ -1,6 +1,5 @@
 
 [![Build Status](https://travis-ci.org/p4gauntlet/p4_tv.svg?branch=master)](https://travis-ci.org/p4gauntlet/p4_tv)
-:License: Apache Software License 2.0
 
 # The Gauntlet Tool Suite
 
