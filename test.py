@@ -83,6 +83,7 @@ xfails = [
     "functors7.p4",  # complicated type inference
     "functors8.p4",  # complicated type inference
     "shadow-after-use.p4",  # another issue with shadowing
+    "bvec_union-bmv2.p4",  # an issue with header union validity
 ]
 
 
@@ -105,7 +106,7 @@ def run_z3p4_test(p4_file, target_dir):
 
 
 def run_violation_test(test_folder):
-    test_folder = Path("violated").joinpath(test_folder)
+    test_folder = VIOLATION_DIR.joinpath(test_folder)
     src_p4_file = test_folder.joinpath("orig.p4")
     src_py_file = test_folder.joinpath(f"{src_p4_file.stem}.py")
     p4c_check.run_p4_to_py(src_p4_file, src_py_file)

@@ -14,7 +14,6 @@ header H {
 
 struct Headers {
     ethernet_t eth_hdr;
-    H     h;
 }
 
 bit<16> simple_fun(inout H dummy) {
@@ -27,20 +26,13 @@ parser p(packet_in pkt, out Headers hdr) {
     }
     state parse_hdrs {
         pkt.extract(hdr.eth_hdr);
-        pkt.extract(hdr.h);
         transition accept;
     }
 }
 
 control ingress(inout Headers h) {
-    bool b = false;
-
-    action dummy() {
-        h.eth_hdr.eth_type = (!b ? 16w1 : simple_fun(h.h));
-    }
-
     apply {
-        dummy();
+        h.eth_hdr = h.eth_hdr.eth_type == 1 ? {48w1, 48w1, 16w1} : {48w2, 48w2, 16w2};
     }
 }
 

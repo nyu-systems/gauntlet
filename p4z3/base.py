@@ -67,37 +67,62 @@ def z3_cast(val, to_type):
         return val
 
 
-def unravel_datatype(datatype_list):
-    unravelled_list = []
-    for val in datatype_list:
-        if isinstance(val, P4ComplexInstance):
-            unravelled_list.extend(val.flatten())
-        elif isinstance(val, list):
-            unravelled_list.extend(unravel_datatype(val))
+def mux_merge(cond, target, attrs):
+    for idx, (member_name, _) in enumerate(target.members):
+        then_val = target.resolve_reference(member_name)
+        else_val = attrs[idx]
+        if isinstance(then_val, P4ComplexInstance):
+            mux_merge(cond, then_val, else_val)
         else:
-            unravelled_list.append(val)
-    return unravelled_list
+            if_expr = z3.If(cond, then_val, else_val)
+            target.set_or_add_var(member_name, if_expr)
 
 
 def handle_mux(cond, then_expr, else_expr):
+
+    if isinstance(then_expr, P4ComplexInstance):
+        then_valid = then_expr.valid
+        if isinstance(else_expr, P4ComplexInstance):
+            else_valid = else_expr.valid
+            members = []
+            for member_name, _ in else_expr.members:
+                members.append(else_expr.resolve_reference(member_name))
+            else_expr = members
+        elif isinstance(else_expr, list):
+            else_valid = z3.BoolVal(True)
+        else:
+            RuntimeError(f"Complex merge not supported for {else_expr}!")
+        mux_merge(cond, then_expr, else_expr)
+        then_expr.propagate_validity_bit(z3.If(cond, then_valid, else_valid))
+        return then_expr
+
+    if isinstance(else_expr, P4ComplexInstance):
+        else_valid = else_expr.valid
+        if isinstance(then_expr, P4ComplexInstance):
+            then_valid = then_expr.valid
+            members = []
+            for member_name, _ in then_expr.members:
+                members.append(then_expr.resolve_reference(member_name))
+            then_expr = members
+        elif isinstance(then_expr, list):
+            then_valid = z3.BoolVal(True)
+        else:
+            RuntimeError(f"Complex merge not supported for {then_expr}!")
+        mux_merge(cond, else_expr, then_expr)
+        else_expr.propagate_validity_bit(z3.If(cond, else_valid, then_valid))
+        return else_expr
+
     # because we have to be able to access the sub values again
     # we have to resolve the if condition in the case of complex types
     # we do this by splitting the if statement into a list
     # lists can easily be assigned to a target structure
-    if isinstance(then_expr, P4ComplexInstance):
-        then_expr = then_expr.flatten()
-    if isinstance(else_expr, P4ComplexInstance):
-        else_expr = else_expr.flatten()
-
     if isinstance(then_expr, list) and isinstance(else_expr, list):
-        sub_cond = []
-        # handle nested complex types
-        then_expr = unravel_datatype(then_expr)
-        else_expr = unravel_datatype(else_expr)
-        for idx, member in enumerate(then_expr):
-            if_expr = z3.If(cond, member, else_expr[idx])
-            sub_cond.append(if_expr)
-        return sub_cond
+        merged_list = [z3.If(cond, then_val, else_val)
+                       for then_val, else_val in zip(then_expr, else_expr)]
+        return merged_list
+
+    # assume normal z3 types at this point
+    # this will fail if there is an unexpected input
     return z3.If(cond, then_expr, else_expr)
 
 
@@ -403,6 +428,8 @@ class P4ComplexInstance():
             if isinstance(val, int):
                 val = z3_cast(val, member_type)
             self.set_or_add_var(member_name, val)
+        # whenever we set a list, the target instances becomes valid
+        self.valid = z3.BoolVal(True)
 
     def set_or_add_var(self, lval, rval):
         if isinstance(lval, P4Member):
@@ -507,9 +534,9 @@ class StructType(P4ComplexType):
 
     def __init__(self, name, z3_args):
         super(StructType, self).__init__(name, z3_args)
-
         flat_names = []
         self.width = 0
+
         for member_name, member_type in z3_args:
             if isinstance(member_type, P4ComplexType):
                 # the member is a complex type
@@ -677,8 +704,8 @@ class HeaderInstance(StructInstance):
 
     def propagate_validity_bit(self, parent_valid=None):
         if parent_valid is None:
-            self.valid = z3.Bool(f"{self.name}_valid")
-        parent_valid = self.valid
+            parent_valid = z3.Bool(f"{self.name}_valid")
+        self.valid = parent_valid
         # structs can be contained in headers so they can also be deactivated...
         for member_name, _ in self.members:
             member_val = self.resolve_reference(member_name)
