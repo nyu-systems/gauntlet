@@ -10,8 +10,6 @@ header H {
     bit<8> a;
 }
 
-
-
 struct Headers {
     ethernet_t eth_hdr;
 }
@@ -32,7 +30,7 @@ parser p(packet_in pkt, out Headers hdr) {
 
 control ingress(inout Headers h) {
     apply {
-        h.eth_hdr = h.eth_hdr.eth_type == 1 ? {48w1, 48w1, 16w1} : {48w2, 48w2, 16w2};
+        h = h.eth_hdr.eth_type == 1 ? {{48w1, 48w1, 16w1}} : {{48w2, 48w2, 16w2}};
     }
 }
 

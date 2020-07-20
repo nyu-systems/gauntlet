@@ -67,10 +67,10 @@ def z3_cast(val, to_type):
         return val
 
 
-def mux_merge(cond, target, attrs):
+def mux_merge(cond, target, else_attrs):
     for idx, (member_name, _) in enumerate(target.members):
         then_val = target.resolve_reference(member_name)
-        else_val = attrs[idx]
+        else_val = else_attrs[idx]
         if isinstance(then_val, P4ComplexInstance):
             mux_merge(cond, then_val, else_val)
         else:
@@ -79,46 +79,66 @@ def mux_merge(cond, target, attrs):
 
 
 def handle_mux(cond, then_expr, else_expr):
+    # TODO: Simplify this
 
+    # we may return complex types, we have to unroll these
     if isinstance(then_expr, P4ComplexInstance):
+        # record the validity
         then_valid = then_expr.valid
+        # if the else expression is complex, we grab a list of the members
         if isinstance(else_expr, P4ComplexInstance):
             else_valid = else_expr.valid
             members = []
             for member_name, _ in else_expr.members:
                 members.append(else_expr.resolve_reference(member_name))
             else_expr = members
+        # if we have a list initializer, it will make the target value valid
         elif isinstance(else_expr, list):
             else_valid = z3.BoolVal(True)
         else:
             RuntimeError(f"Complex merge not supported for {else_expr}!")
+        # start to merge the variables
         mux_merge(cond, then_expr, else_expr)
+        # merge the validity of the return expressions
         then_expr.propagate_validity_bit(z3.If(cond, then_valid, else_valid))
         return then_expr
 
+    # repeat the same check if the else expression is complex
     if isinstance(else_expr, P4ComplexInstance):
+        # record the validity
         else_valid = else_expr.valid
+        # if the else expression is complex, we grab a list of the members
         if isinstance(then_expr, P4ComplexInstance):
             then_valid = then_expr.valid
             members = []
             for member_name, _ in then_expr.members:
                 members.append(then_expr.resolve_reference(member_name))
             then_expr = members
+        # if we have a list initializer, it will make the target value valid
         elif isinstance(then_expr, list):
             then_valid = z3.BoolVal(True)
         else:
             RuntimeError(f"Complex merge not supported for {then_expr}!")
+        # start to merge the variables
         mux_merge(cond, else_expr, then_expr)
+        # merge the validity of the return expressions
         else_expr.propagate_validity_bit(z3.If(cond, else_valid, then_valid))
         return else_expr
 
-    # because we have to be able to access the sub values again
-    # we have to resolve the if condition in the case of complex types
-    # we do this by splitting the if statement into a list
-    # lists can easily be assigned to a target structure
+    # we have to return a nested list when dealing with two lists
     if isinstance(then_expr, list) and isinstance(else_expr, list):
-        merged_list = [z3.If(cond, then_val, else_val)
-                       for then_val, else_val in zip(then_expr, else_expr)]
+        def list_merge(then_list, else_list):
+            merged_list = []
+            for idx, then_val in enumerate(then_list):
+                else_val = else_list[idx]
+                if isinstance(then_val, list):
+                    # note how we append, we do not extend
+                    # we want to maintain the nesting structure
+                    merged_list.append(list_merge(then_val, else_val))
+                else:
+                    merged_list.append(z3.If(cond, then_val, else_val))
+            return merged_list
+        merged_list = list_merge(then_expr, else_expr)
         return merged_list
 
     # assume normal z3 types at this point
@@ -700,6 +720,7 @@ class HeaderInstance(StructInstance):
     def bind_to_union(self, union_instance):
         # FIXME: This ignores copying
         # the reference in the parent will be stale
+        # this works only because we merge all the variables, including parents
         self.union_parent = union_instance
 
     def propagate_validity_bit(self, parent_valid=None):
@@ -759,12 +780,12 @@ class HeaderInstance(StructInstance):
         return result
 
 
-class HeaderUnionType(HeaderType):
+class HeaderUnionType(StructType):
     def instantiate(self, name, member_id=0):
         return HeaderUnionInstance(name, self, member_id)
 
 
-class HeaderUnionInstance(HeaderInstance):
+class HeaderUnionInstance(StructInstance):
 
     def __init__(self, name, p4z3_type, member_id):
         # TODO: Check if this class is implemented correctly...
@@ -772,13 +793,35 @@ class HeaderUnionInstance(HeaderInstance):
         for member_name, _ in self.members:
             member_hdr = self.resolve_reference(member_name)
             member_hdr.bind_to_union(self)
+        self.locals["isValid"] = self.isValid
 
-    def isValid(self, p4_state=None):
+    @property
+    def valid(self):
         valid_list = []
         for member_name, _ in self.members:
             member_hdr = self.resolve_reference(member_name)
             valid_list.append(member_hdr.isValid())
-        return z3.Or(*valid_list)
+        return z3.simplify(z3.Or(*valid_list))
+
+    def isValid(self, p4_state=None):
+        # This is a built-in
+        return self.valid
+
+    def __setattr__(self, name, val):
+        # FIXME: Fix this workaround for valid attributes
+        if name == "valid":
+            # do not override the custom valid computation here
+            # header union validity is dependent on its members
+            pass
+        else:
+            self.__dict__[name] = val
+
+    def __copy__(self):
+        result = super(HeaderUnionInstance, self).__copy__()
+        # we need to update the reference of the function to the new object
+        # quite nasty...
+        result.locals["isValid"] = result.isValid
+        return result
 
 
 class ListType(StructType):

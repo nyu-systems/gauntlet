@@ -83,7 +83,7 @@ xfails = [
     "functors7.p4",  # complicated type inference
     "functors8.p4",  # complicated type inference
     "shadow-after-use.p4",  # another issue with shadowing
-    "bvec_union-bmv2.p4",  # an issue with header union validity
+    "issue1897-bmv2.p4",  # I think there might be a bug related to unions
 ]
 
 
