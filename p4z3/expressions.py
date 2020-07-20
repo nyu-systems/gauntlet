@@ -1,6 +1,7 @@
 import operator as op
 from p4z3.base import log, z3_cast, z3, copy, gen_instance, handle_mux
 from p4z3.base import P4ComplexInstance, P4Expression, P4ComplexType
+from p4z3.base import merge_attrs
 
 
 class P4Initializer(P4Expression):
@@ -231,7 +232,7 @@ class P4land(P4BinaryOp):
         else_vars = p4_state.get_attrs()
         p4_state.restore(var_store, chain_copy)
         context.tmp_forward_cond = forward_cond_copy
-        p4_state.merge_attrs(lval_expr, else_vars)
+        merge_attrs(p4_state, lval_expr, else_vars)
         return self.operator(lval_expr, rval_expr)
 
 
@@ -252,7 +253,7 @@ class P4lor(P4BinaryOp):
         else_vars = p4_state.get_attrs()
         p4_state.restore(var_store, chain_copy)
         context.tmp_forward_cond = forward_cond_copy
-        p4_state.merge_attrs(z3.Not(lval_expr), else_vars)
+        merge_attrs(p4_state, z3.Not(lval_expr), else_vars)
 
         return self.operator(lval_expr, rval_expr)
 
@@ -474,6 +475,6 @@ class P4Mux(P4Expression):
         context.tmp_forward_cond = forward_cond_copy
 
         else_expr = p4_state.resolve_expr(self.else_val)
-        p4_state.merge_attrs(cond, then_vars)
+        merge_attrs(p4_state, cond, then_vars)
 
         return handle_mux(cond, then_expr, else_expr)

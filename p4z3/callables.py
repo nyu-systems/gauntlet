@@ -1,7 +1,7 @@
-from p4z3.base import OrderedDict, z3, log, copy
+from p4z3.base import OrderedDict, z3, log, copy, merge_attrs
 from p4z3.base import gen_instance, z3_cast, handle_mux
 from p4z3.base import P4Z3Class, P4ComplexInstance, P4ComplexType, P4Context
-from p4z3.base import DefaultExpression, P4Extern
+from p4z3.base import DefaultExpression, P4Extern, propagate_validity_bit
 from p4z3.base import P4Expression, P4Argument, P4Range
 
 
@@ -96,7 +96,7 @@ class P4Callable(P4Z3Class):
 
         while context.return_states:
             cond, return_attrs = context.return_states.pop()
-            p4_state.merge_attrs(cond, return_attrs)
+            merge_attrs(p4_state, cond, return_attrs)
         context.copy_out(p4_state)
         p4_state.contexts.pop()
         return expr
@@ -350,7 +350,7 @@ class P4Method(P4Callable):
                 arg_expr = gen_instance(arg_name, arg_expr.sort())
                 if isinstance(arg_expr, P4ComplexInstance):
                     # we do not know whether the expression is valid afterwards
-                    arg_expr.propagate_validity_bit()
+                    propagate_validity_bit(arg_expr)
             log.debug("Copy-in: %s to %s", arg_expr, param_name)
             # buffer the value, do NOT set it yet
             param_buffer[param_name] = arg_expr
@@ -413,7 +413,7 @@ class P4Method(P4Callable):
         return_instance = gen_instance(self.name, self.return_type)
         # a returned header may or may not be valid
         if isinstance(return_instance, P4ComplexInstance):
-            return_instance.propagate_validity_bit()
+            propagate_validity_bit(return_instance)
         return return_instance
 
 
@@ -602,7 +602,7 @@ class P4Table(P4Callable):
         context.tmp_forward_cond = forward_cond_copy
         # generate a nested set of if expressions per available action
         for cond, then_vars in action_exprs:
-            p4_state.merge_attrs(cond, then_vars)
+            merge_attrs(p4_state, cond, then_vars)
 
     def eval_callable(self, p4_state, merged_args, var_buffer):
         # tables are a little bit special since they also have attributes

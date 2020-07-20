@@ -1,7 +1,5 @@
 from collections import OrderedDict
-import z3
-
-from p4z3.base import log, DefaultExpression, copy, z3_cast
+from p4z3.base import log, DefaultExpression, copy, z3_cast, merge_attrs, z3
 from p4z3.base import P4ComplexInstance, P4Statement, P4Z3Class, gen_instance
 
 
@@ -84,7 +82,7 @@ class IfStatement(P4Statement):
         context.tmp_forward_cond = forward_cond_copy
 
         if then_vars:
-            p4_state.merge_attrs(cond, then_vars)
+            merge_attrs(p4_state, cond, then_vars)
 
 
 class SwitchHit(P4Z3Class):
@@ -120,7 +118,7 @@ class SwitchHit(P4Z3Class):
         p4_state.has_exited = False
         context.tmp_forward_cond = forward_cond_copy
         for cond, then_vars in case_exprs:
-            p4_state.merge_attrs(cond, then_vars)
+            merge_attrs(p4_state, cond, then_vars)
 
     def set_table(self, table):
         self.table = table
