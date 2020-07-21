@@ -295,6 +295,12 @@ class P4Control(P4Callable):
         ctrl_copy = copy.copy(self)
         ctrl_copy.merged_consts = merge_parameters(
             ctrl_copy.const_params, *args, **kwargs)
+        # also bind types, because for reasons you can bind types everywhere...
+        for idx, const_param in enumerate(ctrl_copy.const_params):
+            # this means the type is generic
+            if isinstance(const_param.p4_type, str):
+                # grab the type of the input arguments
+                ctrl_copy.type_context[const_param.p4_type] = args[idx].sort()
         return ctrl_copy
 
     def __call__(self, *args, **kwargs):
@@ -365,6 +371,9 @@ class P4Method(P4Callable):
             # it can happen that we receive a list
             # infer the type, generate, and set
             p4_type = resolve_type(p4_state, arg.p4_type)
+            # FIXME Check this hack. This is type inference based on arguments
+            if p4_type is None:
+                self.type_context[arg.p4_type] = arg_expr.sort()
             if isinstance(arg_expr, list):
                 # if the type is undefined, do nothing
                 if isinstance(p4_type, P4ComplexType):

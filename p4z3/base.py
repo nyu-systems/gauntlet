@@ -205,6 +205,7 @@ def resolve_type(context, p4_type):
             p4_type = context.get_type(p4_type)
         except KeyError:
             context.create_user_type(p4_type)
+            p4_type = None
 
     if isinstance(p4_type, TypeSpecializer):
         p4_type = p4_type.eval(context)

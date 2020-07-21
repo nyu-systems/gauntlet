@@ -79,11 +79,6 @@ xfails = [
     "issue-2123-2-bmv2.p4",  # mask incorrectly implemented
     "issue-2123-3-bmv2.p4",  # mask incorrectly implemented
     "pvs-struct-3-bmv2.p4",  # mask incorrectly implemented
-    "generic1.p4",  # complicated type inference
-    "functors6.p4",  # complicated type inference
-    "functors7.p4",  # complicated type inference
-    "functors8.p4",  # complicated type inference
-    "shadow-after-use.p4",  # another issue with shadowing
     "issue1897-bmv2.p4",  # I think there might be a bug related to unions
 ]
 
