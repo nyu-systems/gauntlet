@@ -13,14 +13,6 @@ FILE_DIR = os.path.dirname(os.path.abspath(__file__))
 log = logging.getLogger(__name__)
 
 
-def needs_skipping(post):
-    for skip_pass in SKIPPED_PASSES:
-        if skip_pass in post:
-            log.warning("Skipping \"%s\" pass to avoid crashes...", skip_pass)
-            return True
-    return False
-
-
 def debug_msg(p4_files):
     debug_string = "You can debug this failure by running:\n"
     debug_string += f"python3 {FILE_DIR}/{Path(__file__).stem}.py --progs "

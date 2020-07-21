@@ -9,7 +9,8 @@ from z3int import Z3Int
 log = logging.getLogger(__name__)
 
 
-def gen_instance(var_name, p4z3_type):
+def gen_instance(context, var_name, p4z3_type):
+    p4z3_type = resolve_type(context, p4z3_type)
     if isinstance(p4z3_type, P4ComplexType):
         z3_cls = p4z3_type.instantiate(var_name)
         # this instance is fresh, so bind to itself
@@ -198,8 +199,16 @@ def check_validity(target, parent_validity=None):
             target.set_or_add_var(member_name, cond)
 
 
-def specialize_type(z3_reg, p4z3_type, *args):
-    return p4z3_type.init_type_params(*args)
+def resolve_type(context, p4_type):
+    if isinstance(p4_type, str):
+        try:
+            p4_type = context.get_type(p4_type)
+        except KeyError:
+            context.create_user_type(p4_type)
+
+    if isinstance(p4_type, TypeSpecializer):
+        p4_type = p4_type.eval(context)
+    return p4_type
 
 
 @dataclass
@@ -266,49 +275,86 @@ class P4Declaration(P4Statement):
     # in the declaration we assign variables as is.
     # they are resolved at runtime by other classes
     def __init__(self, lval, rval):
-        self.name = lval
-        self.rval = rval
-
-    def eval(self, p4_state):
-        p4_state.set_or_add_var(self.name, self.rval, True)
-
-
-class ValueDeclaration(P4Statement):
-    def __init__(self, lval, rval, z3_type):
         self.lval = lval
         self.rval = rval
+
+    def compute_rval(self, p4_state):
+        return self.rval
+
+    def eval(self, p4_state):
+        p4_state.set_or_add_var(self.lval, self.compute_rval(p4_state), True)
+
+
+class ValueDeclaration(P4Declaration):
+    def __init__(self, lval, rval, z3_type=None):
+        super(ValueDeclaration, self).__init__(lval, rval)
         self.z3_type = z3_type
 
     def compute_rval(self, p4_state):
         # this will only resolve expressions no other classes
         # FIXME: Untangle this a bit
+        z3_type = resolve_type(p4_state, self.z3_type)
         if self.rval is not None:
             rval = p4_state.resolve_expr(self.rval)
             if isinstance(rval, int):
-                if isinstance(self.z3_type, (z3.BitVecSortRef)):
-                    rval = z3_cast(rval, self.z3_type)
+                if isinstance(z3_type, (z3.BitVecSortRef)):
+                    rval = z3_cast(rval, z3_type)
             elif isinstance(rval, list):
-                instance = gen_instance("undefined", self.z3_type)
+                instance = gen_instance(p4_state, "undefined", z3_type)
                 instance.set_list(rval)
                 rval = instance
-            elif self.z3_type != rval.sort():
+            elif z3_type != rval.sort():
                 msg = f"There was an problem setting {self.lval} to {rval}. " \
-                    f"Type Mismatch! Target type {self.z3_type} " \
+                    f"Type Mismatch! Target type {z3_type} " \
                     f"does not match with input type {rval.sort()}"
                 raise RuntimeError(msg)
         else:
-            rval = gen_instance("undefined", self.z3_type)
+            rval = gen_instance(p4_state, "undefined", z3_type)
         return rval
 
-    def eval(self, p4_state):
-        rval = self.compute_rval(p4_state)
-        p4_state.set_or_add_var(self.lval, rval, True)
+
+class ControlDeclaration(P4Z3Class):
+    # this is a wrapper to deal with the fact that P4Controls can be both types
+    # and accessible variables for some reason
+    def __init__(self, ctrl):
+        self.ctrl = ctrl
 
 
-class InstanceDeclaration(P4Declaration):
-    def __init__(self, z3_reg, lval, p4z3_type, *args, **kwargs):
-        p4z3_type = p4z3_type.initialize(*args, **kwargs)
+class TypeDeclaration(P4Z3Class):
+    # this is a wrapper to deal with the fact that P4Controls can be both types
+    # and accessible variables for some reason
+    def __init__(self, name, p4_type):
+        self.name = name
+        self.p4_type = p4_type
+
+
+class TypeSpecializer():
+    def __init__(self, p4z3_type, *args):
+        self.p4z3_type = p4z3_type
+        self.args = args
+
+    def eval(self, context):
+        args = []
+        for arg in self.args:
+            args.append(resolve_type(context, arg))
+        p4z3_type = resolve_type(context, self.p4z3_type)
+        return p4z3_type.init_type_params(*args)
+
+
+class InstanceDeclaration(ValueDeclaration):
+    def __init__(self, lval, p4z3_type, *args, **kwargs):
         super(InstanceDeclaration, self).__init__(lval, p4z3_type)
+        self.args = args
+        self.kwargs = kwargs
+
+    def compute_rval(self, context):
+        z3_type = resolve_type(context, self.rval)
+        z3_type = z3_type.initialize(*self.args, **self.kwargs)
+        return z3_type
+
+    def eval(self, p4_state):
+        p4_state.set_or_add_var(self.lval, self.compute_rval(p4_state), True)
+
 
 class P4Member(P4Expression):
 
@@ -508,7 +554,6 @@ class P4ComplexInstance():
     def sort(self):
         return self.p4z3_type
 
-
     def __copy__(self):
         cls = self.__class__
         result = cls.__new__(cls)
@@ -550,12 +595,15 @@ class P4ComplexInstance():
 
 class StructType(P4ComplexType):
 
-    def __init__(self, name, z3_args):
+    def __init__(self, name, z3_reg, z3_args):
         super(StructType, self).__init__(name)
         flat_names = []
         self.width = 0
+        self.z3_reg = z3_reg
+        self.z3_args = z3_args
 
-        for member_name, member_type in z3_args:
+        for idx, (member_name, member_type) in enumerate(z3_args):
+            member_type = resolve_type(z3_reg, member_type)
             if isinstance(member_type, P4ComplexType):
                 # the member is a complex type
                 # retrieve it is flat list of members
@@ -579,6 +627,7 @@ class StructType(P4ComplexType):
                 self.width += member_width
                 member = Member(member_name, member_type, member_width)
                 flat_names.append(member)
+            self.z3_args[idx] = (member_name, member_type)
 
         if self.width == 0:
             # we are dealing with an empty struct, create a dummy datatype
@@ -588,7 +637,6 @@ class StructType(P4ComplexType):
         else:
             # use the flat bit width of the struct as datatype
             self.z3_type = z3.BitVecSort(self.width)
-        self.z3_args = z3_args
         self.flat_names = flat_names
 
     def instantiate(self, name, member_id=0):
@@ -604,6 +652,7 @@ class StructInstance(P4ComplexInstance):
         # we use the overall index of the struct for a uniform naming scheme
         flat_idx = self.member_id
         for member_name, member_type in self.members:
+
             if isinstance(member_type, P4ComplexType):
                 # the z3 variable of the instance is only an id
                 instance = member_type.instantiate(str(flat_idx), flat_idx)
@@ -806,12 +855,12 @@ class HeaderUnionInstance(StructInstance):
 
 class ListType(StructType):
 
-    def __init__(self, name, z3_args):
+    def __init__(self, name, z3_reg, z3_args):
         for idx, arg in enumerate(z3_args):
             z3_args[idx] = (f"{idx}", arg)
             # some little hack to automatically infer a random type name
             name += str(arg)
-        super(ListType, self).__init__(name, z3_args)
+        super(ListType, self).__init__(name, z3_reg, z3_args)
 
     # TODO: Implement this class correctly...
     def instantiate(self, name, member_id=0):
@@ -824,10 +873,10 @@ class ListInstance(StructInstance):
 
 class HeaderStack(StructType):
 
-    def __init__(self, name, z3_args):
+    def __init__(self, name, z3_reg, z3_args):
         for idx, arg in enumerate(z3_args):
             z3_args[idx] = (f"{idx}", arg)
-        super(HeaderStack, self).__init__(name, z3_args)
+        super(HeaderStack, self).__init__(name, z3_reg, z3_args)
 
     # TODO: Implement this class correctly...
     def instantiate(self, name, member_id=0):
@@ -1001,23 +1050,20 @@ class P4Extern(P4ComplexInstance):
         self.type_params = type_params
         # these are method declarations, not methods
         for method in methods:
-            self.locals[method.name] = method.rval
+            self.locals[method.lval] = method.rval
         # dummy
         self.valid = False
+        self.type_context = {}
 
     def init_type_params(self, *args, **kwargs):
-        # the extern is instantiated, we need to copy it
-        # FIXME: Do this properly
+        # TODO Figure out what to actually do here
         init_extern = copy.copy(self)
+        # the type params sometimes include the return type also
+        # it is typically the first value, but is bound somewhere else
         for idx, t_param in enumerate(init_extern.type_params):
-            for method in init_extern.locals.values():
-                # bind the method return type
-                if method.return_type == t_param:
-                    method.return_type = args[idx]
-                # bind the method parameters
-                for method_param in method.params:
-                    if method_param.p4_type == t_param:
-                        method_param.p4_type = args[idx]
+            init_extern.type_context[t_param] = args[idx]
+        for method in init_extern.locals.values():
+            method.extern_context = init_extern.type_context
         return init_extern
 
     def initialize(self, *args, **kwargs):
@@ -1046,9 +1092,9 @@ class P4Extern(P4ComplexInstance):
 
 
 class P4ControlType(P4Extern):
-    def __init__(self, name, type_params, method_type):
+    def __init__(self, name, params, type_params):
         super(P4ControlType, self).__init__(name, type_params, [])
-        self.method_type = type_params
+        self.params = params
 
 
 class P4ParserType(P4ControlType):
@@ -1120,6 +1166,8 @@ class P4State():
         self.members = {}
         self.z3_type = None
         self.const = None
+        self.type_map = {}
+        self.type_contexts = deque()
 
     def reset(self):
         self.exit_states = deque()
@@ -1133,7 +1181,6 @@ class P4State():
         self.reset()
         self.name = name
         self.members = z3_args
-
         state_context = P4Context({})
         self.contexts.append(state_context)
 
@@ -1143,6 +1190,7 @@ class P4State():
         flat_args = []
         idx = 0
         for z3_arg_name, z3_arg_type in z3_args:
+            z3_arg_type = resolve_type(self, z3_arg_type)
             if isinstance(z3_arg_type, P4ComplexType):
                 member_cls = z3_arg_type.instantiate(f"{name}.{idx}")
                 propagate_validity_bit(member_cls)
@@ -1326,6 +1374,20 @@ class P4State():
             return val
         return var
 
+    def get_type(self, type_name):
+        for context in reversed(self.type_contexts):
+            try:
+                return context[type_name]
+            except KeyError:
+                continue
+        return self.type_map[type_name]
+
+    def create_user_type(self, type_name):
+        if self.type_contexts:
+            self.type_contexts[-1][type_name] = None
+        else:
+            self.type_map[type_name] = None
+
     def checkpoint(self):
         var_store = self.copy_attrs()
         contexts = self.contexts.copy()
@@ -1340,29 +1402,27 @@ class P4State():
 
 class Z3Reg():
     def __init__(self):
-        self._types = {}
         self.p4_state = P4State()
 
-    def declare_global(self, p4_class=None):
-        if not p4_class:
-            # TODO: Get rid of unimplemented expressions
-            return
+    def declare_global(self, p4_class):
         if isinstance(p4_class, (P4ComplexType, P4Extern)):
             name = p4_class.name
-            self._types[name] = p4_class
-        elif isinstance(p4_class, (Enum)):
+            self.declare_type(name, p4_class)
+        elif isinstance(p4_class, TypeDeclaration):
+            p4_type = resolve_type(self, p4_class.p4_type)
+            self.declare_type(p4_class.name, p4_type)
+        elif isinstance(p4_class, ControlDeclaration):
+            self.declare_var(p4_class.ctrl.name, p4_class.ctrl)
+            self.declare_type(p4_class.ctrl.name, p4_class.ctrl)
+        elif isinstance(p4_class, Enum):
             # enums are special static types
             # we need to add them to the list of accessible variables
             # and their type is actually the z3 type, not the class type
             name = p4_class.name
             self.declare_var(name, p4_class)
-            self._types[name] = p4_class.z3_type
+            p4_type = resolve_type(self, p4_class.z3_type)
+            self.declare_type(name, p4_type)
         elif isinstance(p4_class, P4Declaration):
-            # FIXME: Typedefs should not be added here
-            name = p4_class.name
-            self.declare_var(name, p4_class.rval)
-            self._types[name] = p4_class.rval
-        elif isinstance(p4_class, ValueDeclaration):
             name = p4_class.lval
             rval = p4_class.compute_rval(self.p4_state)
             self.declare_var(name, rval)
@@ -1379,6 +1439,12 @@ class Z3Reg():
     def declare_var(self, lval, rval):
         self.p4_state.main_context.locals[lval] = rval
 
+    def declare_type(self, lval, rval):
+        self.p4_state.type_map[lval] = rval
+
+    def create_user_type(self, type_name):
+        self.p4_state.create_user_type(type_name)
+
     def set_p4_state(self, name, p4_params):
         stripped_args = []
         instances = {}
@@ -1388,32 +1454,25 @@ class Z3Reg():
                 stripped_args.append((param.name, param.p4_type))
             else:
                 # for other inputs we can instantiate something
-                instance = gen_instance(param.name, param.p4_type)
+                instance = gen_instance(self, param.name, param.p4_type)
                 instances[param.name] = instance
         self.p4_state.set_datatype(name, stripped_args, instances)
         return self.p4_state
 
-    def type(self, type_name):
-        if type_name in self._types:
-            return self._types[type_name]
-        else:
-            # lets be bold here and assume that if a  type is not known
-            # it is a user-defined or generic can be declared generically
-            z3_type = z3.DeclareSort(type_name)
-            self._types[type_name] = z3_type
-            return z3_type
+    def get_type(self, type_name):
+        return self.p4_state.type_map[type_name]
 
     def type_var(self, type_name):
-        return self.type(type_name)
+        return type_name
 
     def stack(self, z3_type, num):
         # Header stacks are a bit special because they are basically arrays
         # with specific features
         # We need to declare a new z3 type and add a new complex class
         name = f"{z3_type}{num}"
-        p4_stack = HeaderStack(name, [z3_type] * num)
+        p4_stack = HeaderStack(name, self, [z3_type] * num)
         self.declare_global(p4_stack)
-        return self.type(name)
+        return self.get_type(name)
 
     def get_value(self, expr):
         val = self.resolve_expr(expr)

@@ -6,6 +6,7 @@ import logging
 
 from p4z3.contrib.tabulate import tabulate
 from p4z3 import z3, Z3Reg, P4ComplexType, P4ComplexInstance, P4State
+from p4z3 import propagate_validity_bit
 
 import p4z3.util as util
 sys.setrecursionlimit(15000)
@@ -102,7 +103,7 @@ def reconstruct_input(pipe_name, p4_z3_objs):
     for member_name, _ in dummy_state.members:
         member_val = dummy_state.resolve_reference(member_name)
         if isinstance(member_val, P4ComplexInstance):
-            member_val.propagate_validity_bit()
+            propagate_validity_bit(member_val)
     initial_state = dummy_state.get_z3_repr()
     inital_inputs = initial_state.children()
     return inital_inputs
@@ -134,8 +135,8 @@ def print_z3_data(pipe_name, pipe_val):
     z3_datatype, p4_z3_objs = pipe_val
     z3_datatype = z3.simplify(z3_datatype)
     flat_members = get_flat_members(p4_z3_objs)
-    inputs = reconstruct_input(pipe_name, p4_z3_objs)
     outputs = z3_datatype.children()
+    inputs = outputs
     if z3.z3util.is_app_of(z3_datatype, z3.Z3_OP_ITE):
         handle_nested_ifs(pipe_name, flat_members, inputs, outputs)
     else:
