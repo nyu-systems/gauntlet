@@ -2,7 +2,7 @@ from p4z3.base import OrderedDict, z3, log, copy, merge_attrs
 from p4z3.base import gen_instance, z3_cast, handle_mux, TypeSpecializer
 from p4z3.base import P4Z3Class, P4ComplexInstance, P4ComplexType, P4Context
 from p4z3.base import DefaultExpression, P4Extern, propagate_validity_bit
-from p4z3.base import P4Expression, P4Argument, P4Range, resolve_type
+from p4z3.base import P4Expression, P4Argument, P4Range, resolve_type, ListType
 
 
 def save_variables(p4_state, merged_args):
@@ -148,9 +148,12 @@ class ConstCallExpr(P4Expression):
         self.args = args
         self.kwargs = kwargs
 
-    def eval(self, p4_state=None):
+    def eval(self, p4_state):
         p4_method = resolve_type(p4_state, self.p4_method)
-        return p4_method(*self.args, **self.kwargs)
+        resolved_args = []
+        for arg in self.args:
+            resolved_args.append(p4_state.resolve_expr(arg))
+        return p4_method.initialize(p4_state, *resolved_args, **self.kwargs)
 
 class P4Package(P4Callable):
 
@@ -167,7 +170,7 @@ class P4Package(P4Callable):
     def eval_callable(self, p4_state, merged_args, var_buffer):
         pass
 
-    def initialize(self, *args, **kwargs):
+    def initialize(self, context, *args, **kwargs):
         merged_args = merge_parameters(self.params, *args, **kwargs)
         for pipe_name, pipe_arg in merged_args.items():
             log.info("Loading %s pipe...", pipe_name)
@@ -195,7 +198,7 @@ class P4Package(P4Callable):
                 self.pipes[pipe_name] = (pipe_val.const, [])
             elif isinstance(pipe_val, P4Package):
                 # execute the package by calling its initializer
-                pipe_val.initialize()
+                pipe_val.initialize(context)
                 # resolve all the sub_pipes
                 for sub_pipe_name, sub_pipe_val in pipe_val.pipes.items():
                     sub_pipe_name = f"{pipe_name}_{sub_pipe_name}"
@@ -291,20 +294,21 @@ class P4Control(P4Callable):
                     param.p4_type = args[idx]
         return init_ctrl
 
-    def initialize(self, *args, **kwargs):
+    def initialize(self, context, *args, **kwargs):
         ctrl_copy = copy.copy(self)
         ctrl_copy.merged_consts = merge_parameters(
             ctrl_copy.const_params, *args, **kwargs)
         # also bind types, because for reasons you can bind types everywhere...
         for idx, const_param in enumerate(ctrl_copy.const_params):
             # this means the type is generic
-            if isinstance(const_param.p4_type, str):
+            p4_type = resolve_type(context, const_param.p4_type)
+            if p4_type is None:
                 # grab the type of the input arguments
                 ctrl_copy.type_context[const_param.p4_type] = args[idx].sort()
         return ctrl_copy
 
     def __call__(self, *args, **kwargs):
-        return self.initialize(*args, **kwargs)
+        raise RuntimeError("P4Controls are not directly callable!")
 
     def apply(self, p4_state, *args, **kwargs):
         local_context = {}
@@ -371,9 +375,6 @@ class P4Method(P4Callable):
             # it can happen that we receive a list
             # infer the type, generate, and set
             p4_type = resolve_type(p4_state, arg.p4_type)
-            # FIXME Check this hack. This is type inference based on arguments
-            if p4_type is None:
-                self.type_context[arg.p4_type] = arg_expr.sort()
             if isinstance(arg_expr, list):
                 # if the type is undefined, do nothing
                 if isinstance(p4_type, P4ComplexType):
@@ -381,6 +382,14 @@ class P4Method(P4Callable):
                         p4_state, arg_name, p4_type)
                     arg_instance.set_list(arg_expr)
                     arg_expr = arg_instance
+                else:
+                    # synthesize a list type from the input list
+                    # this mostly just a dummy
+                    # FIXME: Need to get the actual types
+                    p4_type = ListType("tuple", p4_state, arg_expr)
+            # FIXME Check this hack. This is type inference based on arguments
+            if p4_type is None:
+                self.type_context[arg.p4_type] = arg_expr.sort()
             # it is possible to pass an int as value, we need to cast it
             if isinstance(arg_expr, int):
                 arg_expr = z3_cast(arg_expr, p4_type)
@@ -429,7 +438,7 @@ class P4Method(P4Callable):
                     param.p4_type = args[idx]
         return init_ctrl
 
-    def initialize(self, *args, **kwargs):
+    def initialize(self, context, *args, **kwargs):
         # # TODO Figure out what to actually do here
         init_method = copy.copy(self)
         # # deepcopy is important to ensure independent type inference

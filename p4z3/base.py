@@ -350,7 +350,10 @@ class InstanceDeclaration(ValueDeclaration):
 
     def compute_rval(self, context):
         z3_type = resolve_type(context, self.rval)
-        z3_type = z3_type.initialize(*self.args, **self.kwargs)
+        resolved_args = []
+        for arg in self.args:
+            resolved_args.append(context.resolve_expr(arg))
+        z3_type = z3_type.initialize(context, *resolved_args, **self.kwargs)
         return z3_type
 
     def eval(self, p4_state):
@@ -1043,6 +1046,7 @@ class P4Extern(P4ComplexInstance):
         z3_type.declare(f"mk_{name}")
         self.members = []
         self.z3_type = z3_type.create()
+        self.p4z3_type = z3_type
         self.const = z3.Const(name, self.z3_type)
         self.locals = {}
         # simple fix for now until I know how to initialize params for externs
