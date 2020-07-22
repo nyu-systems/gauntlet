@@ -63,7 +63,7 @@ class MethodCallExpr(P4Expression):
             p4_method = p4_state.resolve_expr(p4_method)
         # TODO: Figure out how these type bindings work
         if isinstance(p4_method, P4Method) and self.type_args:
-            p4_method = p4_method.init_type_params(*self.type_args)
+            p4_method = p4_method.init_type_params(p4_state, *self.type_args)
 
         return p4_method(p4_state, *self.args, **self.kwargs)
 
@@ -102,7 +102,7 @@ class P4Callable(P4Z3Class):
         return expr
 
     def __call__(self, p4_state, *args, **kwargs):
-        return self.eval(p4_state, *args, **kwargs)
+        raise NotImplementedError("Method __call__ not implemented!")
 
     def copy_in(self, p4_state, merged_args):
         param_buffer = OrderedDict()
@@ -150,10 +150,7 @@ class ConstCallExpr(P4Expression):
 
     def eval(self, p4_state):
         p4_method = resolve_type(p4_state, self.p4_method)
-        resolved_args = []
-        for arg in self.args:
-            resolved_args.append(p4_state.resolve_expr(arg))
-        return p4_method.initialize(p4_state, *resolved_args, **self.kwargs)
+        return p4_method.initialize(p4_state, *self.args, **self.kwargs)
 
 class P4Package(P4Callable):
 
@@ -162,25 +159,35 @@ class P4Package(P4Callable):
         self.pipes = OrderedDict()
         self.z3_reg = z3_reg
         self.type_params = type_params
+        self.type_context = {}
 
-    def init_type_params(self, *args, **kwargs):
-        # TODO Figure out what to actually do here
+    def init_type_params(self, context, *args, **kwargs):
+        # FIXME: Inference here does not quite work?
+        # The problem is that types inferred here overwrite declared types
+        # How to consolidate?
+        # init_package = copy.copy(self)
+        # for idx, t_param in enumerate(init_package.type_params):
+        #     arg = resolve_type(context, args[idx])
+        #     init_package.type_context[t_param] = arg
+        # return init_package
         return self
 
-    def eval_callable(self, p4_state, merged_args, var_buffer):
-        pass
-
     def initialize(self, context, *args, **kwargs):
+        local_context = {}
+        for type_name, p4_type in self.type_context.items():
+            local_context[type_name] = resolve_type(context, p4_type)
+
         merged_args = merge_parameters(self.params, *args, **kwargs)
         for pipe_name, pipe_arg in merged_args.items():
             log.info("Loading %s pipe...", pipe_name)
-            pipe_val = self.z3_reg.p4_state.resolve_expr(pipe_arg.p4_val)
+            pipe_val = context.resolve_expr(pipe_arg.p4_val)
             if isinstance(pipe_val, P4Control):
-                ctrl_type = resolve_type(self.z3_reg, pipe_arg.p4_type)
+                ctrl_type = resolve_type(context, pipe_arg.p4_type)
                 pipe_val = pipe_val.bind_to_ctrl_type(ctrl_type)
 
                 # create the z3 representation of this control state
                 p4_state = self.z3_reg.set_p4_state(pipe_name, pipe_val.params)
+                p4_state.type_contexts.append(self.type_context)
                 # initialize the call with its own params
                 # this is essentially the input packet
                 args = []
@@ -213,7 +220,7 @@ class P4Package(P4Callable):
         return self
 
     def __call__(self, *args, **kwargs):
-        # TODO Figure out what to actually do here
+        raise RuntimeError("NO CALL")
         return self
 
     def get_pipes(self):
@@ -227,6 +234,8 @@ class P4Action(P4Callable):
         # the only variables that do need to be restored are copy-ins/outs
         self.statements.eval(p4_state)
 
+    def __call__(self, p4_state, *args, **kwargs):
+        return self.eval(p4_state, *args, **kwargs)
 
 class P4Function(P4Action):
 
@@ -255,7 +264,6 @@ class P4Function(P4Action):
                     return_expr = z3.If(then_cond, then_expr, return_expr)
         return return_expr
 
-
 class P4Control(P4Callable):
 
     def __init__(self, name, type_params, params, const_params, body, local_decls):
@@ -268,10 +276,10 @@ class P4Control(P4Callable):
         self.type_context = {}
 
     def bind_to_ctrl_type(self, ctrl_type):
+        # TODO Figure out what to actually do here
         # FIXME: A hack to deal with lack of input params
         if len(ctrl_type.params) < len(self.type_params):
             return self
-        # TODO Figure out what to actually do here
         init_ctrl = copy.copy(self)
         # the type params sometimes include the return type also
         # it is typically the first value, but is bound somewhere else
@@ -282,16 +290,14 @@ class P4Control(P4Callable):
                     init_ctrl.params[param_idx] = ctrl_type.params[idx]
         return init_ctrl
 
-    def init_type_params(self, *args, **kwargs):
+    def init_type_params(self, context, *args, **kwargs):
         # TODO Figure out what to actually do here
         init_ctrl = copy.copy(self)
         # the type params sometimes include the return type also
         # it is typically the first value, but is bound somewhere else
         for idx, t_param in enumerate(init_ctrl.type_params):
-            init_ctrl.type_context[t_param] = args[idx]
-            for param in init_ctrl.params:
-                if isinstance(param.p4_type, str) and param.p4_type == t_param:
-                    param.p4_type = args[idx]
+            arg = resolve_type(context, args[idx])
+            init_ctrl.type_context[t_param] = arg
         return init_ctrl
 
     def initialize(self, context, *args, **kwargs):
@@ -306,9 +312,6 @@ class P4Control(P4Callable):
                 # grab the type of the input arguments
                 ctrl_copy.type_context[const_param.p4_type] = args[idx].sort()
         return ctrl_copy
-
-    def __call__(self, *args, **kwargs):
-        raise RuntimeError("P4Controls are not directly callable!")
 
     def apply(self, p4_state, *args, **kwargs):
         local_context = {}
@@ -426,35 +429,16 @@ class P4Method(P4Callable):
             result.params.append(copy.copy(param))
         return result
 
-    def init_type_params(self, *args, **kwargs):
+    def init_type_params(self, context, *args, **kwargs):
         # TODO Figure out what to actually do here
         init_ctrl = copy.copy(self)
-        # the type params sometimes include the return type also
-        # it is typically the first value, but is bound somewhere else
         for idx, t_param in enumerate(init_ctrl.type_params):
-            init_ctrl.type_context[t_param] = args[idx]
+            arg = resolve_type(context, args[idx])
+            init_ctrl.type_context[t_param] = arg
             for param in init_ctrl.params:
                 if isinstance(param.p4_type, str) and param.p4_type == t_param:
                     param.p4_type = args[idx]
         return init_ctrl
-
-    def initialize(self, context, *args, **kwargs):
-        # # TODO Figure out what to actually do here
-        init_method = copy.copy(self)
-        # # deepcopy is important to ensure independent type inference
-        # # the type params sometimes include the return type also
-        # # it is typically the first value, but is bound somewhere else
-        # if len(args) < len(init_method.type_params):
-        #     type_list = init_method.type_params[1:]
-        # else:
-        #     type_list = init_method.type_params
-        # for idx, t_param in enumerate(type_list):
-        #     if init_method.return_type == t_param:
-        #         init_method.return_type = args[idx]
-        #     for method_param in init_method.params:
-        #         if method_param.p4_type == t_param:
-        #             method_param.p4_type = args[idx]
-        return init_method
 
     def eval_callable(self, p4_state, merged_args, var_buffer):
         local_context = {}
@@ -586,8 +570,8 @@ class P4Table(P4Callable):
         for idx, param in enumerate(p4_action.params):
             if idx > action_args_len:
                 # this is a ctrl argument, generate an input
-                ctrl_arg = gen_instance(p4_state,
-                                        f"{self.name}{param.name}", param.p4_type)
+                ctrl_arg = gen_instance(p4_state, f"{self.name}{param.name}",
+                                        param.p4_type)
                 merged_action_args.append(ctrl_arg)
             else:
                 merged_action_args.append(action_args[idx])

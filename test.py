@@ -80,6 +80,7 @@ xfails = [
     "issue-2123-3-bmv2.p4",  # mask incorrectly implemented
     "pvs-struct-3-bmv2.p4",  # mask incorrectly implemented
     "issue1897-bmv2.p4",  # I think there might be a bug related to unions
+    "shadow-after-user.p4",  # very specific shadowing
 ]
 
 

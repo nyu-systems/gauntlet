@@ -204,7 +204,6 @@ def resolve_type(context, p4_type):
         try:
             p4_type = context.get_type(p4_type)
         except KeyError:
-            context.create_user_type(p4_type)
             p4_type = None
 
     if isinstance(p4_type, TypeSpecializer):
@@ -335,11 +334,8 @@ class TypeSpecializer():
         self.args = args
 
     def eval(self, context):
-        args = []
-        for arg in self.args:
-            args.append(resolve_type(context, arg))
         p4z3_type = resolve_type(context, self.p4z3_type)
-        return p4z3_type.init_type_params(*args)
+        return p4z3_type.init_type_params(context, *self.args)
 
 
 class InstanceDeclaration(ValueDeclaration):
@@ -350,10 +346,7 @@ class InstanceDeclaration(ValueDeclaration):
 
     def compute_rval(self, context):
         z3_type = resolve_type(context, self.rval)
-        resolved_args = []
-        for arg in self.args:
-            resolved_args.append(context.resolve_expr(arg))
-        z3_type = z3_type.initialize(context, *resolved_args, **self.kwargs)
+        z3_type = z3_type.initialize(context, *self.args, **self.kwargs)
         return z3_type
 
     def eval(self, p4_state):
@@ -1041,7 +1034,7 @@ class SerEnum(Enum):
 class P4Extern(P4ComplexInstance):
     def __init__(self, name, type_params=[], methods=[]):
         # Externs are this weird bastard child of callables and a complex type
-        # FIXME: Unify types
+        # FIXME: Unify types, this is a royal mess
         z3_type = z3.Datatype(name)
         z3_type.declare(f"mk_{name}")
         self.members = []
@@ -1060,23 +1053,25 @@ class P4Extern(P4ComplexInstance):
         self.valid = False
         self.type_context = {}
 
-    def init_type_params(self, *args, **kwargs):
+    def init_type_params(self, context, *args, **kwargs):
         # TODO Figure out what to actually do here
         init_extern = copy.copy(self)
         # the type params sometimes include the return type also
         # it is typically the first value, but is bound somewhere else
         for idx, t_param in enumerate(init_extern.type_params):
-            init_extern.type_context[t_param] = args[idx]
+            arg = resolve_type(context, args[idx])
+            init_extern.type_context[t_param] = arg
         for method in init_extern.locals.values():
             method.extern_context = init_extern.type_context
         return init_extern
 
-    def initialize(self, *args, **kwargs):
-        # TODO Figure out what to actually do here
+    def initialize(self, context, *args, **kwargs):
+        # FIXME: Try to understand constructor args and what they mean
+        # Example: psa-hash.p4
         return self
 
-    def __call__(self, *args, **kwargs):
-        return self.initialize(*args, **kwargs)
+    def __call__(self, context, *args, **kwargs):
+        raise RuntimeError("NO CALLING EXTERNS!")
 
     def __repr__(self):
         return self.name
@@ -1387,12 +1382,6 @@ class P4State():
                 continue
         return self.type_map[type_name]
 
-    def create_user_type(self, type_name):
-        if self.type_contexts:
-            self.type_contexts[-1][type_name] = None
-        else:
-            self.type_map[type_name] = None
-
     def checkpoint(self):
         var_store = self.copy_attrs()
         contexts = self.contexts.copy()
@@ -1446,9 +1435,6 @@ class Z3Reg():
 
     def declare_type(self, lval, rval):
         self.p4_state.type_map[lval] = rval
-
-    def create_user_type(self, type_name):
-        self.p4_state.create_user_type(type_name)
 
     def set_p4_state(self, name, p4_params):
         stripped_args = []
