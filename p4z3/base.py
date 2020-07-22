@@ -242,6 +242,7 @@ class P4Z3Class():
         raise NotImplementedError("Method eval not implemented!")
 
 
+
 class P4Expression(P4Z3Class):
     def eval(self, p4_state):
         raise NotImplementedError("Method eval not implemented!")
@@ -1452,9 +1453,6 @@ class Z3Reg():
 
     def get_type(self, type_name):
         return self.p4_state.type_map[type_name]
-
-    def type_var(self, type_name):
-        return type_name
 
     def stack(self, z3_type, num):
         # Header stacks are a bit special because they are basically arrays

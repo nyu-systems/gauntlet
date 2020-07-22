@@ -1,5 +1,5 @@
 from p4z3.base import OrderedDict, z3, log, copy, merge_attrs
-from p4z3.base import gen_instance, z3_cast, handle_mux, TypeSpecializer
+from p4z3.base import gen_instance, z3_cast, handle_mux
 from p4z3.base import P4Z3Class, P4ComplexInstance, P4ComplexType, P4Context
 from p4z3.base import DefaultExpression, P4Extern, propagate_validity_bit
 from p4z3.base import P4Expression, P4Argument, P4Range, resolve_type, ListType
@@ -392,7 +392,7 @@ class P4Method(P4Callable):
                     p4_type = ListType("tuple", p4_state, arg_expr)
             # FIXME Check this hack. This is type inference based on arguments
             if p4_type is None:
-                self.type_context[arg.p4_type] = arg_expr.sort()
+                p4_state.type_contexts[-1][arg.p4_type] = arg_expr.sort()
             # it is possible to pass an int as value, we need to cast it
             if isinstance(arg_expr, int):
                 arg_expr = z3_cast(arg_expr, p4_type)
@@ -411,11 +411,35 @@ class P4Method(P4Callable):
         return param_buffer
 
     def __call__(self, p4_state, *args, **kwargs):
+        merged_args = merge_parameters(self.params, *args, **kwargs)
+        var_buffer = save_variables(p4_state, merged_args)
+        for param_name, arg in merged_args.items():
+            arg.p4_val = p4_state.resolve_expr(arg.p4_val)
         local_context = {}
         for type_name, p4_type in self.extern_context.items():
             local_context[type_name] = resolve_type(p4_state, p4_type)
+        for type_name, p4_type in self.type_context.items():
+            local_context[type_name] = resolve_type(p4_state, p4_type)
         p4_state.type_contexts.append(local_context)
-        expr = self.eval(p4_state, *args, **kwargs)
+
+        param_buffer = self.copy_in(p4_state, merged_args)
+        # only add the context after all the arguments have been resolved
+        context = P4Context(var_buffer)
+        p4_state.contexts.append(context)
+        # now we can set the arguments without influencing subsequent variables
+        for param_name, param_val in param_buffer.items():
+            p4_state.set_or_add_var(param_name, param_val)
+
+        # execute the action expression with the new environment
+        expr = self.eval_callable(p4_state, merged_args, var_buffer)
+        self.call_counter += 1
+
+        while context.return_states:
+            cond, return_attrs = context.return_states.pop()
+            merge_attrs(p4_state, cond, return_attrs)
+        context.copy_out(p4_state)
+        p4_state.contexts.pop()
+
         p4_state.type_contexts.pop()
         return expr
 
@@ -431,20 +455,16 @@ class P4Method(P4Callable):
 
     def init_type_params(self, context, *args, **kwargs):
         # TODO Figure out what to actually do here
-        init_ctrl = copy.copy(self)
-        for idx, t_param in enumerate(init_ctrl.type_params):
+        init_method = copy.copy(self)
+        for idx, t_param in enumerate(init_method.type_params):
             arg = resolve_type(context, args[idx])
-            init_ctrl.type_context[t_param] = arg
-            for param in init_ctrl.params:
-                if isinstance(param.p4_type, str) and param.p4_type == t_param:
-                    param.p4_type = args[idx]
-        return init_ctrl
+            init_method.type_context[t_param] = arg
+            # for param in init_method.params:
+            #     if isinstance(param.p4_type, str) and param.p4_type == t_param:
+            #         param.p4_type = args[idx]
+        return init_method
 
     def eval_callable(self, p4_state, merged_args, var_buffer):
-        local_context = {}
-        for type_name, p4_type in self.type_context.items():
-            local_context[type_name] = resolve_type(p4_state, p4_type)
-        p4_state.type_contexts.append(local_context)
         # initialize the local context of the function for execution
         if self.return_type is None:
             return None
@@ -474,7 +494,6 @@ class P4Method(P4Callable):
         # a returned header may or may not be valid
         if isinstance(return_instance, P4ComplexInstance):
             propagate_validity_bit(return_instance)
-        p4_state.type_contexts.pop()
         return return_instance
 
 
