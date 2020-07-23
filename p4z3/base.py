@@ -16,7 +16,7 @@ def gen_instance(context, var_name, p4z3_type):
         # this instance is fresh, so bind to itself
         z3_cls.bind(z3_cls.const)
         return z3_cls
-    elif isinstance(p4z3_type, P4ComplexInstance):
+    elif isinstance(p4z3_type, StaticType):
         # static complex type, just return
         return p4z3_type
     elif isinstance(p4z3_type, z3.SortRef):
@@ -103,11 +103,11 @@ def handle_mux(cond, then_expr, else_expr):
     # TODO: Simplify this
 
     # we may return complex types, we have to unroll these
-    if isinstance(then_expr, P4ComplexInstance):
+    if isinstance(then_expr, StructInstance):
         # record the validity
         then_valid = then_expr.valid
         # if the else expression is complex, we grab a list of the members
-        if isinstance(else_expr, P4ComplexInstance):
+        if isinstance(else_expr, StructInstance):
             else_valid = else_expr.valid
             members = []
             for member_name, _ in else_expr.members:
@@ -125,11 +125,11 @@ def handle_mux(cond, then_expr, else_expr):
         return then_expr
 
     # repeat the same check if the else expression is complex
-    if isinstance(else_expr, P4ComplexInstance):
+    if isinstance(else_expr, StructInstance):
         # record the validity
         else_valid = else_expr.valid
         # if the else expression is complex, we grab a list of the members
-        if isinstance(then_expr, P4ComplexInstance):
+        if isinstance(then_expr, StructInstance):
             then_valid = then_expr.valid
             members = []
             for member_name, _ in then_expr.members:
@@ -175,7 +175,7 @@ def propagate_validity_bit(target, parent_valid=None):
     # structs can be contained in headers so they can also be deactivated...
     for member_name, _ in target.members:
         member_val = target.resolve_reference(member_name)
-        if isinstance(member_val, P4ComplexInstance):
+        if isinstance(member_val, StructInstance):
             propagate_validity_bit(member_val, parent_valid)
 
 
@@ -186,7 +186,7 @@ def check_validity(target, parent_validity=None):
     for member_name, member_type in target.members:
         # retrieve the member we are accessing
         member = target.resolve_reference(member_name)
-        if isinstance(member, P4ComplexInstance):
+        if isinstance(member, StructInstance):
             # it is a complex type
             # propagate the validity to all children
             check_validity(member, parent_validity)
@@ -240,7 +240,6 @@ class P4Z3Class():
 
     def eval(self, p4_state):
         raise NotImplementedError("Method eval not implemented!")
-
 
 
 class P4Expression(P4Z3Class):
@@ -366,7 +365,7 @@ class P4Member(P4Expression):
         if isinstance(self.lval, P4Index):
             return self.lval.eval(context, self.member)
         lval = context.resolve_expr(self.lval)
-        return lval.locals[self.member]
+        return lval.resolve_reference(self.member)
 
     def set_value(self, context, rval):
         if isinstance(self.lval, P4Index):
@@ -682,21 +681,21 @@ class StructInstance(P4ComplexInstance):
         # structs may contain headers that can be deactivated
         for member_name, _ in self.members:
             member_val = self.resolve_reference(member_name)
-            if isinstance(member_val, P4ComplexInstance):
+            if isinstance(member_val, StructInstance):
                 member_val.activate()
 
     def deactivate(self, label="undefined"):
         # structs may contain headers that can be deactivated
         for member_name, _ in self.members:
             member_val = self.resolve_reference(member_name)
-            if isinstance(member_val, P4ComplexInstance):
+            if isinstance(member_val, StructInstance):
                 member_val.deactivate(label)
 
     def flatten(self):
         members = []
         for member_name, _ in self.members:
             member = self.resolve_reference(member_name)
-            if isinstance(member, P4ComplexInstance):
+            if isinstance(member, StructInstance):
                 sub_members = member.flatten()
                 members.extend(sub_members)
             else:
@@ -990,7 +989,10 @@ class HeaderStackInstance(StructInstance):
         return result
 
 
-class Enum(P4ComplexInstance):
+class StaticType():
+    pass
+
+class Enum(StaticType):
 
     def __init__(self, name, z3_args):
         self.locals = {}
@@ -1002,6 +1004,13 @@ class Enum(P4ComplexInstance):
 
     def instantiate(self, name, member_id=0):
         return self
+
+    def resolve_reference(self, var):
+        if isinstance(var, P4Member):
+            return var.eval(self)
+        if isinstance(var, str):
+            return self.locals[var]
+        return var
 
     def __eq__(self, other):
         if isinstance(other, z3.ExprRef):
@@ -1032,38 +1041,33 @@ class SerEnum(Enum):
         return self
 
 
-class P4Extern(P4ComplexInstance):
-    def __init__(self, name, type_params=[], methods=[]):
-        # Externs are this weird bastard child of callables and a complex type
-        # FIXME: Unify types, this is a royal mess
+class P4Extern(StaticType):
+    # Externs are P4ComplexInstance in name only...
+    def __init__(self, name, type_params, methods):
+        self.name = name
         z3_type = z3.Datatype(name)
         z3_type.declare(f"mk_{name}")
-        self.members = []
         self.z3_type = z3_type.create()
         self.p4z3_type = z3_type
-        self.const = z3.Const(name, self.z3_type)
-        self.locals = {}
-        # simple fix for now until I know how to initialize params for externs
-        self.params = {}
-        self.name = name
         self.type_params = type_params
-        # these are method declarations, not methods
-        for method in methods:
-            self.locals[method.lval] = method.rval
+        self.type_context = {}
         # dummy
         self.valid = False
-        self.type_context = {}
+        # attach the methods
+        self.locals = {}
+        for method in methods:
+            self.locals.setdefault(method.lval, []).append(method.rval)
 
     def init_type_params(self, context, *args, **kwargs):
-        # TODO Figure out what to actually do here
         init_extern = copy.copy(self)
-        # the type params sometimes include the return type also
-        # it is typically the first value, but is bound somewhere else
+        # bind the types and set the type context
         for idx, t_param in enumerate(init_extern.type_params):
             arg = resolve_type(context, args[idx])
             init_extern.type_context[t_param] = arg
-        for method in init_extern.locals.values():
-            method.extern_context = init_extern.type_context
+        # the types bound in an extern also apply to its objects
+        for method_list in init_extern.locals.values():
+            for method in method_list:
+                method.extern_context = init_extern.type_context
         return init_extern
 
     def initialize(self, context, *args, **kwargs):
@@ -1071,14 +1075,8 @@ class P4Extern(P4ComplexInstance):
         # Example: psa-hash.p4
         return self
 
-    def __call__(self, context, *args, **kwargs):
-        raise RuntimeError("NO CALLING EXTERNS!")
-
     def __repr__(self):
         return self.name
-
-    def deactivate(self):
-        log.warning("This method should not be called...")
 
     def __copy__(self):
         cls = self.__class__
@@ -1088,8 +1086,14 @@ class P4Extern(P4ComplexInstance):
         result.locals = {}
         for method_name, method in self.locals.items():
             result.locals[method_name] = copy.copy(method)
-
         return result
+
+    def resolve_reference(self, var):
+        if isinstance(var, P4Member):
+            return var.eval(self)
+        if isinstance(var, str):
+            var = self.locals[var]
+        return var
 
 
 class P4ControlType(P4Extern):
@@ -1233,7 +1237,7 @@ class P4State():
             # Unfortunately int is part of it because z3 is very inconsistent
             # about var handling...
             return expr
-        if isinstance(expr, (P4ComplexInstance, P4Z3Class, types.MethodType)):
+        if isinstance(expr, (StaticType, P4ComplexInstance, P4Z3Class, types.MethodType)):
             # In a similar manner, just return any remaining class types
             # Methods can be class attributes and need to be returned as is
             return expr

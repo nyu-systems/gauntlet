@@ -1,5 +1,5 @@
 from p4z3.base import log, z3, P4Range, merge_attrs
-from p4z3.base import P4Expression, P4ComplexInstance, DefaultExpression
+from p4z3.base import P4Expression, StructInstance, DefaultExpression
 from p4z3.callables import P4Control
 
 
@@ -17,7 +17,7 @@ class RejectState(P4Expression):
             context.copy_out(p4_state)
         for member_name, _ in p4_state.members:
             member_val = p4_state.resolve_reference(member_name)
-            if isinstance(member_val, P4ComplexInstance):
+            if isinstance(member_val, StructInstance):
                 member_val.deactivate("invalid")
         p4_state.has_exited = True
 
@@ -102,7 +102,7 @@ class ParserSelect(P4Expression):
         for case_val, case_name in reversed(self.cases):
             case_expr = p4_state.resolve_expr(case_val)
             select_cond = []
-            if isinstance(case_expr, P4ComplexInstance):
+            if isinstance(case_expr, StructInstance):
                 case_expr = case_expr.flatten()
             if isinstance(case_expr, list):
                 for idx, case_match in enumerate(case_expr):

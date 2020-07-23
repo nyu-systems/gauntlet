@@ -1,6 +1,6 @@
 from p4z3.callables import P4Method
 from p4z3.base import P4Extern, z3, P4Parameter
-from p4z3.base import P4ComplexInstance, HeaderStackInstance
+from p4z3.base import StructInstance, HeaderStackInstance
 
 
 # extern packet_in {
@@ -78,7 +78,7 @@ class packet_in(P4Extern):
                 # and assume that externs are stateless
                 return_instance = gen_instance(self.name, self.return_type)
                 # a returned header may or may not be valid
-                if isinstance(return_instance, P4ComplexInstance):
+                if isinstance(return_instance, StructInstance):
                     return_instance.propagate_validity_bit()
                 return return_instance
 

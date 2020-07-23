@@ -1,6 +1,6 @@
 from p4z3.base import OrderedDict, z3, log, copy, merge_attrs
-from p4z3.base import gen_instance, z3_cast, handle_mux
-from p4z3.base import P4Z3Class, P4ComplexInstance, P4ComplexType, P4Context
+from p4z3.base import gen_instance, z3_cast, handle_mux, StructInstance
+from p4z3.base import P4Z3Class, StructInstance, P4ComplexType, P4Context
 from p4z3.base import DefaultExpression, P4Extern, propagate_validity_bit
 from p4z3.base import P4Expression, P4Argument, P4Range, resolve_type, ListType
 
@@ -56,15 +56,28 @@ class MethodCallExpr(P4Expression):
         self.kwargs = kwargs
         self.type_args = type_args
 
+    def pick_method(self, method_list):
+        arg_len = len(self.args) + len(self.kwargs)
+        for method in method_list:
+            if len(method.params) == arg_len:
+                return method
+        # do not really know how to match, use the last declaration
+        # this happens because of default values, no idea how to resolve yet
+        return method_list[-1]
+
     def eval(self, p4_state):
         p4_method = self.p4_method
         # if we get a reference just try to find the method in the state
         if not callable(p4_method):
             p4_method = p4_state.resolve_expr(p4_method)
-        # TODO: Figure out how these type bindings work
+        # methods may be overloaded
+        # we use a dumb method where we match the number of parameters
+        if isinstance(p4_method, list):
+            p4_method = self.pick_method(p4_method)
+        # Method calls might sometimes have type arguments
+        # bind the method
         if isinstance(p4_method, P4Method) and self.type_args:
             p4_method = p4_method.init_type_params(p4_state, *self.type_args)
-
         return p4_method(p4_state, *self.args, **self.kwargs)
 
 
@@ -125,7 +138,7 @@ class P4Callable(P4Z3Class):
             # it is possible to pass an int as value, we need to cast it
             elif isinstance(arg_expr, int):
                 arg_expr = z3_cast(arg_expr, p4_type)
-            if isinstance(arg_expr, P4ComplexInstance):
+            if isinstance(arg_expr, StructInstance):
                 arg_expr = copy.copy(arg_expr)
             if arg.is_ref == "out":
                 # outs are left-values so the arg must be a string
@@ -140,6 +153,10 @@ class P4Callable(P4Z3Class):
             # buffer the value, do NOT set it yet
             param_buffer[param_name] = arg_expr
         return param_buffer
+
+    def resolve_reference(self, var):
+        return self.locals[var]
+
 
 class ConstCallExpr(P4Expression):
 
@@ -202,7 +219,8 @@ class P4Package(P4Callable):
                 # all done, that is our P4 representation!
                 self.pipes[pipe_name] = (state, p4_state.members)
             elif isinstance(pipe_val, P4Extern):
-                self.pipes[pipe_name] = (pipe_val.const, [])
+                var = z3.Const(f"{pipe_name}{pipe_val.name}", pipe_val.z3_type)
+                self.pipes[pipe_name] = (var, [])
             elif isinstance(pipe_val, P4Package):
                 # execute the package by calling its initializer
                 pipe_val.initialize(context)
@@ -254,7 +272,7 @@ class P4Function(P4Action):
         elif len(context.return_exprs) > 1:
             # the first condition is not needed since it is the default
             _, return_expr = context.return_exprs.pop()
-            if isinstance(return_expr, P4ComplexInstance):
+            if isinstance(return_expr, StructInstance):
                 while context.return_exprs:
                     then_cond, then_expr = context.return_exprs.pop()
                     return_expr = handle_mux(then_cond, then_expr, return_expr)
@@ -403,7 +421,7 @@ class P4Method(P4Callable):
                 # In the case that the instance is a complex type make sure
                 # to propagate the variable through all its members
                 arg_expr = gen_instance(p4_state, arg_name, arg_expr.sort())
-                if isinstance(arg_expr, P4ComplexInstance):
+                if isinstance(arg_expr, StructInstance):
                     # we do not know whether the expression is valid afterwards
                     propagate_validity_bit(arg_expr)
             # buffer the value, do NOT set it yet
@@ -492,7 +510,7 @@ class P4Method(P4Callable):
         # and assume that externs are stateless
         return_instance = gen_instance(p4_state, self.name, self.return_type)
         # a returned header may or may not be valid
-        if isinstance(return_instance, P4ComplexInstance):
+        if isinstance(return_instance, StructInstance):
             propagate_validity_bit(return_instance)
         return return_instance
 

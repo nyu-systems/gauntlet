@@ -1,6 +1,6 @@
 from collections import OrderedDict
 from p4z3.base import log, DefaultExpression, copy, z3_cast, merge_attrs, z3
-from p4z3.base import P4ComplexInstance, P4Statement, P4Z3Class, gen_instance
+from p4z3.base import StructInstance, P4Statement, P4Z3Class, gen_instance
 
 
 class AssignmentStatement(P4Statement):
@@ -16,7 +16,7 @@ class AssignmentStatement(P4Statement):
         log.debug("Assigning %s to %s ", self.rval, self.lval)
         rval_expr = p4_state.resolve_expr(self.rval)
         # in assignments all complex types values are copied
-        if isinstance(rval_expr, P4ComplexInstance):
+        if isinstance(rval_expr, StructInstance):
             rval_expr = copy.copy(rval_expr)
         if isinstance(rval_expr, int):
             lval = p4_state.resolve_expr(self.lval)

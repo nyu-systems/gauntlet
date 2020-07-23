@@ -1,6 +1,6 @@
 import operator as op
 from p4z3.base import log, z3_cast, z3, copy, gen_instance, handle_mux
-from p4z3.base import P4ComplexInstance, P4Expression, P4ComplexType
+from p4z3.base import StructInstance, P4Expression, P4ComplexType
 from p4z3.base import merge_attrs, resolve_type
 
 
@@ -17,10 +17,10 @@ class P4Initializer(P4Expression):
         else:
             instance = gen_instance(p4_state, "None", self.instance_type)
 
-        if isinstance(val, P4ComplexInstance):
+        if isinstance(val, StructInstance):
             # copy the reference if we initialize with another complex type
             return copy.copy(val)
-        if isinstance(instance, P4ComplexInstance):
+        if isinstance(instance, StructInstance):
             if isinstance(val, dict):
                 instance.setValid()
                 for name, val in val.items():
@@ -437,8 +437,8 @@ class P4Cast(P4BinaryOp):
 
         # it can happen that we cast to a complex type...
         if isinstance(rval_expr, P4ComplexType):
-            instance = gen_instance(p4_state, rval_expr.name, rval_expr)
-            initializer = P4Initializer(lval_expr, instance)
+            # we produce an initializer that takes care of the details
+            initializer = P4Initializer(lval_expr, rval_expr)
             return initializer.eval(p4_state)
         return self.operator(lval_expr, rval_expr)
 
