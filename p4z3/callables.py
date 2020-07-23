@@ -477,9 +477,6 @@ class P4Method(P4Callable):
         for idx, t_param in enumerate(init_method.type_params):
             arg = resolve_type(context, args[idx])
             init_method.type_context[t_param] = arg
-            # for param in init_method.params:
-            #     if isinstance(param.p4_type, str) and param.p4_type == t_param:
-            #         param.p4_type = args[idx]
         return init_method
 
     def eval_callable(self, p4_state, merged_args, var_buffer):

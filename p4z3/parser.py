@@ -3,7 +3,7 @@ from p4z3.base import P4Expression, StructInstance, DefaultExpression
 from p4z3.callables import P4Control
 
 
-MAX_LOOP = 2
+MAX_LOOP = 1
 
 
 class P4Parser(P4Control):
@@ -11,17 +11,30 @@ class P4Parser(P4Control):
 
 
 class RejectState(P4Expression):
+    counter = 0
 
     def eval(self, p4_state):
+        forward_conds = []
+        tmp_forward_conds = []
         for context in reversed(p4_state.contexts):
-            context.copy_out(p4_state)
+            forward_conds.extend(context.forward_conds)
+            tmp_forward_conds.append(context.tmp_forward_cond)
+        context = p4_state.current_context()
         for member_name, _ in p4_state.members:
             member_val = p4_state.resolve_reference(member_name)
             if isinstance(member_val, StructInstance):
                 member_val.deactivate("invalid")
-        p4_state.has_exited = True
+
+        cond = z3.simplify(z3.And(z3.Not(z3.Or(*forward_conds)),
+                                  z3.And(*tmp_forward_conds)))
+        if not cond == z3.BoolVal(False):
+            p4_state.exit_states.append((cond, p4_state.get_z3_repr()))
+            p4_state.has_exited = True
+        context.forward_conds.append(context.tmp_forward_cond)
+
 
 class AcceptState(P4Expression):
+    counter = 0
 
     def eval(self, p4_state):
         pass
@@ -63,9 +76,9 @@ class ParserState(P4Expression):
 
     def eval(self, p4_state):
         if self.counter > MAX_LOOP:
-            log.warning("Parser exceeded current loop limit, aborting...")
+            pass
+            # log.warning("Parser exceeded current loop limit, aborting...")
         else:
-            self.counter += 1
             if isinstance(self.select, ParserSelect):
                 select = self.select
                 select.set_state_list(self.state_list)
@@ -99,6 +112,8 @@ class ParserSelect(P4Expression):
         switches = []
         select_conds = []
         context = p4_state.current_context()
+        forward_cond_copy = context.tmp_forward_cond
+
         for case_val, case_name in reversed(self.cases):
             case_expr = p4_state.resolve_expr(case_val)
             select_cond = []
@@ -142,27 +157,34 @@ class ParserSelect(P4Expression):
                     select_cond.append(cond)
             if not select_cond:
                 select_cond = [z3.BoolVal(False)]
-            select_cond = z3.And(*select_cond)
-            select_conds.append(select_cond)
+
+            # state forks here
             var_store, contexts = p4_state.checkpoint()
+            cond = z3.And(*select_cond)
+            context.tmp_forward_cond = z3.And(forward_cond_copy, cond)
             parser_state = self.state_list[case_name]
-            has_returned_copy = context.has_returned
-            parser_state.eval(p4_state)
-            if p4_state.has_exited:
-                p4_state.exit_states.append((
-                    select_cond, p4_state.get_z3_repr()))
-                p4_state.has_exited = False
-            else:
-                switches.append((select_cond, p4_state.get_attrs()))
-            p4_state.restore(var_store, contexts)
-            context.has_returned = has_returned_copy
-        default_parser_state = self.state_list[self.default]
-        var_store, contexts = p4_state.checkpoint()
-        default_parser_state.eval(p4_state)
-        if p4_state.has_exited:
-            cond = z3.Not(z3.Or(*select_conds))
-            p4_state.exit_states.append((cond, p4_state.get_z3_repr()))
+            counter = parser_state.counter
+            parser_state.counter += 1
+            self.state_list[case_name].eval(p4_state)
+            parser_state.counter = counter
+            if not p4_state.has_exited:
+                switches.append((cond, p4_state.get_attrs()))
             p4_state.has_exited = False
+            select_conds.append(cond)
             p4_state.restore(var_store, contexts)
+
+        var_store, contexts = p4_state.checkpoint()
+        # this hits when the table is either missed, or no action matches
+        cond = z3.Not(z3.Or(*select_conds))
+        context.tmp_forward_cond = z3.And(forward_cond_copy, cond)
+        default_state = self.state_list[self.default]
+        counter = default_state.counter
+        default_state.counter += 1
+        self.state_list[self.default].eval(p4_state)
+        if p4_state.has_exited:
+            default_state.counter = counter
+            p4_state.restore(var_store, contexts)
+        p4_state.has_exited = False
+        context.tmp_forward_cond = forward_cond_copy
         for cond, then_vars in switches:
             merge_attrs(p4_state, cond, then_vars)

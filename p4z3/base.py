@@ -847,6 +847,9 @@ class HeaderUnionInstance(StructInstance):
         # we need to update the reference of the function to the new object
         # quite nasty...
         result.locals["isValid"] = result.isValid
+        for member_name, _ in result.members:
+            member_hdr = result.resolve_reference(member_name)
+            member_hdr.bind_to_union(result)
         return result
 
 
