@@ -5,7 +5,7 @@ import importlib
 import logging
 
 from p4z3.contrib.tabulate import tabulate
-from p4z3 import z3, Z3Reg, P4ComplexType, P4ComplexInstance, P4State
+from p4z3 import z3, Z3Reg, P4ComplexType, P4Extern
 
 import p4z3.util as util
 sys.setrecursionlimit(15000)
@@ -37,7 +37,7 @@ def get_z3_asts(p4_module, p4_path):
         if not p4_package:
             log.warning("No main module, nothing to evaluate!")
             return z3_asts, util.EXIT_SKIPPED
-        z3_asts = p4_package.get_pipes()
+        z3_asts = p4_package
     except Exception:
         log.exception("Failed to compile Python to Z3:\n")
         return z3_asts, util.EXIT_FAILURE
@@ -79,10 +79,10 @@ def get_z3_formulization(p4_file, out_dir=OUT_DIR):
     p4py_module = get_py_module(p4_file)
     if p4py_module is None:
         return None, util.EXIT_FAILURE
-    pipes_pre, result = get_z3_asts(p4py_module, p4_file)
+    package, result = get_z3_asts(p4py_module, p4_file)
     if result != util.EXIT_SUCCESS:
         return None, result
-    return pipes_pre, result
+    return package, result
 
 
 def get_flat_members(names):
@@ -96,14 +96,14 @@ def get_flat_members(names):
     return flat_members
 
 
-def reconstruct_input(pipe_name, p4_z3_objs):
-    dummy_state = P4State()
-    dummy_state.set_datatype(pipe_name, p4_z3_objs, {})
-    for member_name, _ in dummy_state.members:
-        member_val = dummy_state.resolve_reference(member_name)
-        if isinstance(member_val, P4ComplexInstance):
-            member_val.propagate_validity_bit()
-    initial_state = dummy_state.get_z3_repr()
+def reconstruct_input(pipe_name, package, pipe_cls):
+    # these names are not quite accurate
+    if isinstance(pipe_cls, P4Extern):
+        initial_state = z3.Const(f"{pipe_name}", pipe_cls.z3_type)
+    else:
+        p4_state = package.z3_reg.set_p4_state(pipe_name, pipe_cls.params)
+        initial_state = p4_state.get_z3_repr()
+
     inital_inputs = initial_state.children()
     return inital_inputs
 
@@ -130,11 +130,11 @@ def handle_nested_ifs(pipe_name, flat_members, inputs, outputs):
         zipped_list = zip(flat_members, inputs, else_outputs)
 
 
-def print_z3_data(pipe_name, pipe_val):
-    z3_datatype, p4_z3_objs = pipe_val
+def print_z3_data(pipe_name, pipe_val, package):
+    z3_datatype, p4_z3_objs, pipe_cls = pipe_val
     z3_datatype = z3.simplify(z3_datatype)
     flat_members = get_flat_members(p4_z3_objs)
-    inputs = reconstruct_input(pipe_name, p4_z3_objs)
+    inputs = reconstruct_input(pipe_name, package, pipe_cls)
     outputs = z3_datatype.children()
     if z3.z3util.is_app_of(z3_datatype, z3.Z3_OP_ITE):
         handle_nested_ifs(pipe_name, flat_members, inputs, outputs)
@@ -161,10 +161,10 @@ def main(args=None):
                         default=OUT_DIR,
                         help="Where intermediate output is stored.")
     args = parser.parse_args(args)
-    p4_prog, result = get_z3_formulization(args.p4_input, Path(args.out_dir))
+    package, result = get_z3_formulization(args.p4_input, Path(args.out_dir))
     if result == util.EXIT_SUCCESS:
-        for pipe_name, pipe_val in p4_prog.items():
-            print_z3_data(pipe_name, pipe_val)
+        for pipe_name, pipe_val in package.get_pipes().items():
+            print_z3_data(pipe_name, pipe_val, package)
     return result
 
 

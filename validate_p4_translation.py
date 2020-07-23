@@ -3,6 +3,9 @@ import argparse
 import subprocess
 import logging
 import hashlib
+import time
+from datetime import datetime
+
 from pathlib import Path
 
 import p4z3.util as util
@@ -136,6 +139,7 @@ def prune_passes(p4_passes):
 def validate_translation(p4_file, target_dir, p4c_bin):
     log.info("\n\n" + "-" * 70)
     log.info("Analysing %s", p4_file)
+    start_time = datetime.now()
     util.check_dir(target_dir)
     fail_dir = target_dir.joinpath("failed")
     # run the p4 compiler and dump all the passes for this file
@@ -161,6 +165,13 @@ def validate_translation(p4_file, target_dir, p4c_bin):
         return util.EXIT_SKIPPED
     # perform the actual comparison
     result = z3check.z3_check(p4_py_files, fail_dir)
+    done_time = datetime.now()
+    elapsed = done_time - start_time
+    time_str = time.strftime("%H hours %M minutes %S seconds",
+                             time.gmtime(elapsed.total_seconds()))
+    ms = elapsed.microseconds / 1000
+    log.info("Translation validation took %s %s milliseconds.",
+             time_str, ms)
     return result
 
 

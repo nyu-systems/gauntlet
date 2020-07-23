@@ -13,14 +13,6 @@ FILE_DIR = os.path.dirname(os.path.abspath(__file__))
 log = logging.getLogger(__name__)
 
 
-def needs_skipping(post):
-    for skip_pass in SKIPPED_PASSES:
-        if skip_pass in post:
-            log.warning("Skipping \"%s\" pass to avoid crashes...", skip_pass)
-            return True
-    return False
-
-
 def debug_msg(p4_files):
     debug_string = "You can debug this failure by running:\n"
     debug_string += f"python3 {FILE_DIR}/{Path(__file__).stem}.py --progs "
@@ -87,15 +79,15 @@ def z3_check(prog_paths, fail_dir=None):
     z3_progs = []
     for p4_prog in prog_paths:
         p4_path = Path(p4_prog)
-        pipes, result = get_z3_formulization(p4_path)
+        package, result = get_z3_formulization(p4_path)
         if result != util.EXIT_SUCCESS:
             if fail_dir and result != util.EXIT_SKIPPED:
                 handle_pyz3_error(fail_dir, p4_path)
                 debug_msg([p4_path, p4_path])
             return result
+        pipes = package.get_pipes()
         z3_progs.append((p4_path, pipes))
     for idx in range(1, len(z3_progs)):
-
         p4_pre_path, pipes_pre = z3_progs[idx - 1]
         p4_post_path, pipes_post = z3_progs[idx]
         log.info("\nComparing programs\n%s\n%s\n########",

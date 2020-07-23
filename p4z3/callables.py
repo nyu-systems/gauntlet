@@ -1,8 +1,8 @@
 from p4z3.base import OrderedDict, z3, log, copy, merge_attrs
-from p4z3.base import gen_instance, z3_cast, handle_mux
-from p4z3.base import P4Z3Class, P4ComplexInstance, P4ComplexType, P4Context
+from p4z3.base import gen_instance, z3_cast, handle_mux, StructInstance
+from p4z3.base import P4Z3Class, StructInstance, P4ComplexType, P4Context
 from p4z3.base import DefaultExpression, P4Extern, propagate_validity_bit
-from p4z3.base import P4Expression, P4Argument, P4Range
+from p4z3.base import P4Expression, P4Argument, P4Range, resolve_type, ListType
 
 
 def save_variables(p4_state, merged_args):
@@ -56,15 +56,28 @@ class MethodCallExpr(P4Expression):
         self.kwargs = kwargs
         self.type_args = type_args
 
+    def pick_method(self, method_list):
+        arg_len = len(self.args) + len(self.kwargs)
+        for method in method_list:
+            if len(method.params) == arg_len:
+                return method
+        # do not really know how to match, use the last declaration
+        # this happens because of default values, no idea how to resolve yet
+        return method_list[-1]
+
     def eval(self, p4_state):
         p4_method = self.p4_method
         # if we get a reference just try to find the method in the state
         if not callable(p4_method):
             p4_method = p4_state.resolve_expr(p4_method)
-        # TODO: Figure out how these type bindings work
+        # methods may be overloaded
+        # we use a dumb method where we match the number of parameters
+        if isinstance(p4_method, list):
+            p4_method = self.pick_method(p4_method)
+        # Method calls might sometimes have type arguments
+        # bind the method
         if isinstance(p4_method, P4Method) and self.type_args:
-            p4_method = p4_method.initialize(*self.type_args)
-
+            p4_method = p4_method.init_type_params(p4_state, *self.type_args)
         return p4_method(p4_state, *self.args, **self.kwargs)
 
 
@@ -102,7 +115,7 @@ class P4Callable(P4Z3Class):
         return expr
 
     def __call__(self, p4_state, *args, **kwargs):
-        return self.eval(p4_state, *args, **kwargs)
+        raise NotImplementedError("Method __call__ not implemented!")
 
     def copy_in(self, p4_state, merged_args):
         param_buffer = OrderedDict()
@@ -114,16 +127,18 @@ class P4Callable(P4Z3Class):
             arg_name = f"{self.name}_{param_name}"
             # it can happen that we receive a list
             # infer the type, generate, and set
+            p4_type = resolve_type(p4_state, arg.p4_type)
             if isinstance(arg_expr, list):
                 # if the type is undefined, do nothing
-                if isinstance(arg.p4_type, P4ComplexType):
-                    arg_instance = gen_instance("undefined", arg.p4_type)
+                if isinstance(p4_type, P4ComplexType):
+                    arg_instance = gen_instance(
+                        p4_state, "undefined", p4_type)
                     arg_instance.set_list(arg_expr)
                     arg_expr = arg_instance
             # it is possible to pass an int as value, we need to cast it
             elif isinstance(arg_expr, int):
-                arg_expr = z3_cast(arg_expr, arg.p4_type)
-            if isinstance(arg_expr, P4ComplexInstance):
+                arg_expr = z3_cast(arg_expr, p4_type)
+            if isinstance(arg_expr, StructInstance):
                 arg_expr = copy.copy(arg_expr)
             if arg.is_ref == "out":
                 # outs are left-values so the arg must be a string
@@ -132,12 +147,16 @@ class P4Callable(P4Z3Class):
                 # In the case that the instance is a complex type make sure
                 # to propagate the variable through all its members
                 log.debug("Resetting %s to %s", arg_expr, param_name)
-                arg_expr = gen_instance("undefined", arg.p4_type)
+                arg_expr = gen_instance(p4_state, "undefined", p4_type)
 
             log.debug("Copy-in: %s to %s", arg_expr, param_name)
             # buffer the value, do NOT set it yet
             param_buffer[param_name] = arg_expr
         return param_buffer
+
+    def resolve_reference(self, var):
+        return self.locals[var]
+
 
 class ConstCallExpr(P4Expression):
 
@@ -146,30 +165,46 @@ class ConstCallExpr(P4Expression):
         self.args = args
         self.kwargs = kwargs
 
-    def eval(self, p4_state=None):
-        return self.p4_method(*self.args, **self.kwargs)
+    def eval(self, p4_state):
+        p4_method = resolve_type(p4_state, self.p4_method)
+        return p4_method.initialize(p4_state, *self.args, **self.kwargs)
 
 class P4Package(P4Callable):
 
-    def __init__(self, z3_reg, name, params):
+    def __init__(self, z3_reg, name, params, type_params):
         super(P4Package, self).__init__(name, params)
         self.pipes = OrderedDict()
         self.z3_reg = z3_reg
+        self.type_params = type_params
+        self.type_context = {}
 
-    def init_type_params(self, *args, **kwargs):
+    def init_type_params(self, context, *args, **kwargs):
+        # FIXME: Inference here does not quite work?
+        # The problem is that types inferred here overwrite declared types
+        # How to consolidate?
+        # init_package = copy.copy(self)
+        # for idx, t_param in enumerate(init_package.type_params):
+        #     arg = resolve_type(context, args[idx])
+        #     init_package.type_context[t_param] = arg
+        # return init_package
         return self
 
-    def eval_callable(self, p4_state, merged_args, var_buffer):
-        pass
+    def initialize(self, context, *args, **kwargs):
+        local_context = {}
+        for type_name, p4_type in self.type_context.items():
+            local_context[type_name] = resolve_type(context, p4_type)
 
-    def initialize(self, *args, **kwargs):
         merged_args = merge_parameters(self.params, *args, **kwargs)
         for pipe_name, pipe_arg in merged_args.items():
             log.info("Loading %s pipe...", pipe_name)
-            pipe_val = self.z3_reg.p4_state.resolve_expr(pipe_arg.p4_val)
+            pipe_val = context.resolve_expr(pipe_arg.p4_val)
             if isinstance(pipe_val, P4Control):
+                ctrl_type = resolve_type(context, pipe_arg.p4_type)
+                pipe_val = pipe_val.bind_to_ctrl_type(ctrl_type)
+
                 # create the z3 representation of this control state
                 p4_state = self.z3_reg.set_p4_state(pipe_name, pipe_val.params)
+                p4_state.type_contexts.append(self.type_context)
                 # initialize the call with its own params
                 # this is essentially the input packet
                 args = []
@@ -182,19 +217,20 @@ class P4Package(P4Callable):
                 for exit_cond, exit_state in reversed(p4_state.exit_states):
                     state = z3.If(exit_cond, exit_state, state)
                 # all done, that is our P4 representation!
-                self.pipes[pipe_name] = (state, p4_state.members)
+                self.pipes[pipe_name] = (state, p4_state.members, pipe_val)
             elif isinstance(pipe_val, P4Extern):
-                self.pipes[pipe_name] = (pipe_val.const, [])
+                var = z3.Const(f"{pipe_name}{pipe_val.name}", pipe_val.z3_type)
+                self.pipes[pipe_name] = (var, [], pipe_val)
             elif isinstance(pipe_val, P4Package):
                 # execute the package by calling its initializer
-                pipe_val.initialize()
+                pipe_val.initialize(context)
                 # resolve all the sub_pipes
                 for sub_pipe_name, sub_pipe_val in pipe_val.pipes.items():
                     sub_pipe_name = f"{pipe_name}_{sub_pipe_name}"
                     self.pipes[sub_pipe_name] = sub_pipe_val
             elif isinstance(pipe_val, z3.ExprRef):
                 # for some reason simple expressions are also possible.
-                self.pipes[pipe_name] = (pipe_val, [])
+                self.pipes[pipe_name] = (pipe_val, [], pipe_val)
             else:
                 raise RuntimeError(
                     f"Unsupported value {pipe_val}, type {type(pipe_val)}."
@@ -202,7 +238,7 @@ class P4Package(P4Callable):
         return self
 
     def __call__(self, *args, **kwargs):
-        # TODO Figure out what to actually do here
+        raise RuntimeError("NO CALL")
         return self
 
     def get_pipes(self):
@@ -216,6 +252,8 @@ class P4Action(P4Callable):
         # the only variables that do need to be restored are copy-ins/outs
         self.statements.eval(p4_state)
 
+    def __call__(self, p4_state, *args, **kwargs):
+        return self.eval(p4_state, *args, **kwargs)
 
 class P4Function(P4Action):
 
@@ -234,7 +272,7 @@ class P4Function(P4Action):
         elif len(context.return_exprs) > 1:
             # the first condition is not needed since it is the default
             _, return_expr = context.return_exprs.pop()
-            if isinstance(return_expr, P4ComplexInstance):
+            if isinstance(return_expr, StructInstance):
                 while context.return_exprs:
                     then_cond, then_expr = context.return_exprs.pop()
                     return_expr = handle_mux(then_cond, then_expr, return_expr)
@@ -243,7 +281,6 @@ class P4Function(P4Action):
                     then_cond, then_expr = context.return_exprs.pop()
                     return_expr = z3.If(then_cond, then_expr, return_expr)
         return return_expr
-
 
 class P4Control(P4Callable):
 
@@ -254,29 +291,53 @@ class P4Control(P4Callable):
         self.const_params = const_params
         self.merged_consts = OrderedDict()
         self.locals["apply"] = self.apply
+        self.type_context = {}
 
-    def init_type_params(self, *args, **kwargs):
+    def bind_to_ctrl_type(self, ctrl_type):
+        # TODO Figure out what to actually do here
+        # FIXME: A hack to deal with lack of input params
+        if len(ctrl_type.params) < len(self.type_params):
+            return self
+        init_ctrl = copy.copy(self)
+        # the type params sometimes include the return type also
+        # it is typically the first value, but is bound somewhere else
+        for idx, t_param in enumerate(init_ctrl.type_params):
+            init_ctrl.type_context[t_param] = ctrl_type.params[idx].p4_type
+            for param_idx, param in enumerate(init_ctrl.params):
+                if isinstance(param.p4_type, str) and param.p4_type == t_param:
+                    init_ctrl.params[param_idx] = ctrl_type.params[idx]
+        return init_ctrl
+
+    def init_type_params(self, context, *args, **kwargs):
         # TODO Figure out what to actually do here
         init_ctrl = copy.copy(self)
         # the type params sometimes include the return type also
         # it is typically the first value, but is bound somewhere else
         for idx, t_param in enumerate(init_ctrl.type_params):
-            for method_param in init_ctrl.params:
-                if method_param.p4_type == t_param:
-                    method_param.p4_type = args[idx]
+            arg = resolve_type(context, args[idx])
+            init_ctrl.type_context[t_param] = arg
         return init_ctrl
 
-    def initialize(self, *args, **kwargs):
+    def initialize(self, context, *args, **kwargs):
         ctrl_copy = copy.copy(self)
         ctrl_copy.merged_consts = merge_parameters(
             ctrl_copy.const_params, *args, **kwargs)
+        # also bind types, because for reasons you can bind types everywhere...
+        for idx, const_param in enumerate(ctrl_copy.const_params):
+            # this means the type is generic
+            p4_type = resolve_type(context, const_param.p4_type)
+            if p4_type is None:
+                # grab the type of the input arguments
+                ctrl_copy.type_context[const_param.p4_type] = args[idx].sort()
         return ctrl_copy
 
-    def __call__(self, *args, **kwargs):
-        return self.initialize(*args, **kwargs)
-
     def apply(self, p4_state, *args, **kwargs):
-        return self.eval(p4_state, *args, **kwargs)
+        local_context = {}
+        for type_name, p4_type in self.type_context.items():
+            local_context[type_name] = resolve_type(p4_state, p4_type)
+        p4_state.type_contexts.append(self.type_context)
+        self.eval(p4_state, *args, **kwargs)
+        p4_state.type_contexts.pop()
 
     def eval_callable(self, p4_state, merged_args, var_buffer):
         # initialize the local context of the function for execution
@@ -318,6 +379,8 @@ class P4Method(P4Callable):
         # P4Methods, which are also black-box functions, can have return types
         self.return_type = type_params[0]
         self.type_params = type_params[1]
+        self.type_context = {}
+        self.extern_context = {}
 
     def copy_in(self, p4_state, merged_args):
         # we have to subclass because of slight different behavior
@@ -332,29 +395,71 @@ class P4Method(P4Callable):
             arg_name = f"{self.name}_{param_name}"
             # it can happen that we receive a list
             # infer the type, generate, and set
+            p4_type = resolve_type(p4_state, arg.p4_type)
             if isinstance(arg_expr, list):
                 # if the type is undefined, do nothing
-                if isinstance(arg.p4_type, P4ComplexType):
-                    arg_instance = gen_instance(arg_name, arg.p4_type)
+                if isinstance(p4_type, P4ComplexType):
+                    arg_instance = gen_instance(
+                        p4_state, arg_name, p4_type)
                     arg_instance.set_list(arg_expr)
                     arg_expr = arg_instance
+                else:
+                    # synthesize a list type from the input list
+                    # this mostly just a dummy
+                    # FIXME: Need to get the actual types
+                    p4_type = ListType("tuple", p4_state, arg_expr)
+            # FIXME Check this hack. This is type inference based on arguments
+            if p4_type is None:
+                p4_state.type_contexts[-1][arg.p4_type] = arg_expr.sort()
             # it is possible to pass an int as value, we need to cast it
             if isinstance(arg_expr, int):
-                arg_expr = z3_cast(arg_expr, arg.p4_type)
+                arg_expr = z3_cast(arg_expr, p4_type)
             if arg.is_ref in ("inout", "out"):
                 # outs are left-values so the arg must be a string
                 # infer the type value at runtime, param does not work yet
                 # outs reset the input
                 # In the case that the instance is a complex type make sure
                 # to propagate the variable through all its members
-                arg_expr = gen_instance(arg_name, arg_expr.sort())
-                if isinstance(arg_expr, P4ComplexInstance):
+                arg_expr = gen_instance(p4_state, arg_name, arg_expr.sort())
+                if isinstance(arg_expr, StructInstance):
                     # we do not know whether the expression is valid afterwards
                     propagate_validity_bit(arg_expr)
-            log.debug("Copy-in: %s to %s", arg_expr, param_name)
             # buffer the value, do NOT set it yet
             param_buffer[param_name] = arg_expr
         return param_buffer
+
+    def __call__(self, p4_state, *args, **kwargs):
+        merged_args = merge_parameters(self.params, *args, **kwargs)
+        var_buffer = save_variables(p4_state, merged_args)
+        for param_name, arg in merged_args.items():
+            arg.p4_val = p4_state.resolve_expr(arg.p4_val)
+        local_context = {}
+        for type_name, p4_type in self.extern_context.items():
+            local_context[type_name] = resolve_type(p4_state, p4_type)
+        for type_name, p4_type in self.type_context.items():
+            local_context[type_name] = resolve_type(p4_state, p4_type)
+        p4_state.type_contexts.append(local_context)
+
+        param_buffer = self.copy_in(p4_state, merged_args)
+        # only add the context after all the arguments have been resolved
+        context = P4Context(var_buffer)
+        p4_state.contexts.append(context)
+        # now we can set the arguments without influencing subsequent variables
+        for param_name, param_val in param_buffer.items():
+            p4_state.set_or_add_var(param_name, param_val)
+
+        # execute the action expression with the new environment
+        expr = self.eval_callable(p4_state, merged_args, var_buffer)
+        self.call_counter += 1
+
+        while context.return_states:
+            cond, return_attrs = context.return_states.pop()
+            merge_attrs(p4_state, cond, return_attrs)
+        context.copy_out(p4_state)
+        p4_state.contexts.pop()
+
+        p4_state.type_contexts.pop()
+        return expr
 
     def __copy__(self):
         cls = self.__class__
@@ -366,22 +471,15 @@ class P4Method(P4Callable):
             result.params.append(copy.copy(param))
         return result
 
-    def initialize(self, *args, **kwargs):
+    def init_type_params(self, context, *args, **kwargs):
         # TODO Figure out what to actually do here
         init_method = copy.copy(self)
-        # deepcopy is important to ensure independent type inference
-        # the type params sometimes include the return type also
-        # it is typically the first value, but is bound somewhere else
-        if len(args) < len(init_method.type_params):
-            type_list = init_method.type_params[1:]
-        else:
-            type_list = init_method.type_params
-        for idx, t_param in enumerate(type_list):
-            if init_method.return_type == t_param:
-                init_method.return_type = args[idx]
-            for method_param in init_method.params:
-                if method_param.p4_type == t_param:
-                    method_param.p4_type = args[idx]
+        for idx, t_param in enumerate(init_method.type_params):
+            arg = resolve_type(context, args[idx])
+            init_method.type_context[t_param] = arg
+            # for param in init_method.params:
+            #     if isinstance(param.p4_type, str) and param.p4_type == t_param:
+            #         param.p4_type = args[idx]
         return init_method
 
     def eval_callable(self, p4_state, merged_args, var_buffer):
@@ -410,9 +508,9 @@ class P4Method(P4Callable):
         # we merge the name
         # FIXME: We do not consider call order
         # and assume that externs are stateless
-        return_instance = gen_instance(self.name, self.return_type)
+        return_instance = gen_instance(p4_state, self.name, self.return_type)
         # a returned header may or may not be valid
-        if isinstance(return_instance, P4ComplexInstance):
+        if isinstance(return_instance, StructInstance):
             propagate_validity_bit(return_instance)
         return return_instance
 
@@ -509,8 +607,8 @@ class P4Table(P4Callable):
         for idx, param in enumerate(p4_action.params):
             if idx > action_args_len:
                 # this is a ctrl argument, generate an input
-                ctrl_arg = gen_instance(
-                    f"{self.name}{param.name}", param.p4_type)
+                ctrl_arg = gen_instance(p4_state, f"{self.name}{param.name}",
+                                        param.p4_type)
                 merged_action_args.append(ctrl_arg)
             else:
                 merged_action_args.append(action_args[idx])

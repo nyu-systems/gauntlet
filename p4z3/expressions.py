@@ -1,7 +1,7 @@
 import operator as op
 from p4z3.base import log, z3_cast, z3, copy, gen_instance, handle_mux
-from p4z3.base import P4ComplexInstance, P4Expression, P4ComplexType
-from p4z3.base import merge_attrs
+from p4z3.base import StructInstance, P4Expression, P4ComplexType
+from p4z3.base import merge_attrs, resolve_type
 
 
 class P4Initializer(P4Expression):
@@ -15,12 +15,12 @@ class P4Initializer(P4Expression):
             # no type defined, return just the value
             return val
         else:
-            instance = gen_instance("None", self.instance_type)
+            instance = gen_instance(p4_state, "None", self.instance_type)
 
-        if isinstance(val, P4ComplexInstance):
+        if isinstance(val, StructInstance):
             # copy the reference if we initialize with another complex type
             return copy.copy(val)
-        if isinstance(instance, P4ComplexInstance):
+        if isinstance(instance, StructInstance):
             if isinstance(val, dict):
                 instance.setValid()
                 for name, val in val.items():
@@ -72,7 +72,6 @@ class P4BinaryOp(P4Op):
     def eval(self, p4_state):
         lval_expr = p4_state.resolve_expr(self.lval)
         rval_expr = p4_state.resolve_expr(self.rval)
-
         # align the bitvectors to allow operations
         lval_is_bitvec = isinstance(lval_expr, (z3.BitVecRef, z3.BitVecNumRef))
         rval_is_bitvec = isinstance(rval_expr, (z3.BitVecRef, z3.BitVecNumRef))
@@ -423,7 +422,7 @@ class P4Concat(P4Expression):
 
 class P4Cast(P4BinaryOp):
     # TODO: need to take a closer look on how to do this correctly...
-    # TODO: Clean this up
+    # FIXME: Clean this up
     # If we cast do we add/remove the least or most significant bits?
     def __init__(self, val, to_size):
         self.val = val
@@ -433,20 +432,14 @@ class P4Cast(P4BinaryOp):
 
     def eval(self, p4_state):
         lval_expr = p4_state.resolve_expr(self.lval)
+
+        rval_expr = resolve_type(p4_state, self.rval)
+
         # it can happen that we cast to a complex type...
-        if isinstance(self.rval, P4ComplexType):
-            instance = gen_instance(self.rval.name, self.rval)
-            initializer = P4Initializer(lval_expr, instance)
+        if isinstance(rval_expr, P4ComplexType):
+            # we produce an initializer that takes care of the details
+            initializer = P4Initializer(lval_expr, rval_expr)
             return initializer.eval(p4_state)
-        rval_expr = p4_state.resolve_expr(self.rval)
-        # align the bitvectors to allow operations
-        lval_is_bitvec = isinstance(lval_expr, z3.BitVecRef)
-        rval_is_bitvec = isinstance(rval_expr, z3.BitVecRef)
-        if lval_is_bitvec and rval_is_bitvec:
-            if lval_expr.size() < rval_expr.size():
-                rval_expr = z3_cast(rval_expr, lval_expr.size())
-            if lval_expr.size() > rval_expr.size():
-                lval_expr = z3_cast(lval_expr, rval_expr.size())
         return self.operator(lval_expr, rval_expr)
 
 
