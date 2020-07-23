@@ -1029,16 +1029,12 @@ class Enum(StaticType):
 class SerEnum(Enum):
 
     def __init__(self, name, z3_args, z3_type):
-        self.arg_vals = []
         self.name = name
         self.z3_type = z3_type
         self.locals = {}
         self.members = z3_args
         for z3_arg_name, z3_arg_val in z3_args:
             self.locals[z3_arg_name] = z3_arg_val
-
-    def instantiate(self, name, member_id=0):
-        return self
 
 
 class P4Extern(StaticType):
@@ -1048,11 +1044,8 @@ class P4Extern(StaticType):
         z3_type = z3.Datatype(name)
         z3_type.declare(f"mk_{name}")
         self.z3_type = z3_type.create()
-        self.p4z3_type = z3_type
         self.type_params = type_params
         self.type_context = {}
-        # dummy
-        self.valid = False
         # attach the methods
         self.locals = {}
         for method in methods:
@@ -1327,7 +1320,7 @@ class P4State():
 
         # rvals could be a list, unroll the assignment
         if isinstance(rval, list) and lval_val is not None:
-            if isinstance(lval_val, P4ComplexInstance):
+            if isinstance(lval_val, StructInstance):
                 lval_val.set_list(rval)
             else:
                 raise TypeError(
@@ -1341,7 +1334,7 @@ class P4State():
         members = []
         for member_name, _ in self.members:
             member_val = self.resolve_reference(member_name)
-            if isinstance(member_val, P4ComplexInstance):
+            if isinstance(member_val, StructInstance):
                 # first we need to make sure that validity is correct
                 check_validity(member_val)
                 members.extend(member_val.flatten())
@@ -1361,7 +1354,7 @@ class P4State():
         # copy everything except the first context, which are the global values
         for context in self.contexts:
             for attr_name, attr_val in context.locals.items():
-                if isinstance(attr_val, P4ComplexInstance):
+                if isinstance(attr_val, StructInstance):
                     attr_val = copy.copy(attr_val)
                 attr_copy[attr_name] = attr_val
         return attr_copy
@@ -1445,12 +1438,13 @@ class Z3Reg():
         stripped_args = []
         instances = {}
         for param in p4_params:
+            p4_type = resolve_type(self, param.p4_type)
             if param.is_ref in ("inout", "out"):
                 # only inouts or outs matter as output
-                stripped_args.append((param.name, param.p4_type))
+                stripped_args.append((param.name, p4_type))
             else:
                 # for other inputs we can instantiate something
-                instance = gen_instance(self, param.name, param.p4_type)
+                instance = gen_instance(self, param.name, p4_type)
                 instances[param.name] = instance
         self.p4_state.set_datatype(name, stripped_args, instances)
         return self.p4_state

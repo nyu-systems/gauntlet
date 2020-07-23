@@ -142,7 +142,8 @@ def get_semantics(config):
             err_file.write(result.stderr.decode("utf-8"))
         util.copy_file([p4_input, py_file], fail_dir)
         return None, result.returncode
-    z3_prog, result = get_z3_formulization(py_file)
+    package, result = get_z3_formulization(py_file)
+    z3_prog = package.get_pipes()
     if result != util.EXIT_SUCCESS:
         if fail_dir and result != util.EXIT_SKIPPED:
             util.check_dir(fail_dir)
@@ -405,7 +406,7 @@ def get_main_formula(config):
     if result != util.EXIT_SUCCESS:
         return result
     # we currently ignore all other pipelines and focus on the ingress pipeline
-    main_formula, main_map = z3_main_prog[config["pipe_name"]]
+    main_formula, main_map, pipe_cls = z3_main_prog[config["pipe_name"]]
     pkt_range = None
     idx = 0
     # FIXME: Make this more robust, assume HEADER_VAR is always first
