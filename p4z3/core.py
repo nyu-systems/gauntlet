@@ -1,7 +1,7 @@
 from p4z3.callables import P4Method
-from p4z3.base import P4Extern, z3, P4Parameter
-from p4z3.base import StructInstance, HeaderStackInstance
-
+from p4z3.base import gen_instance, P4Extern, P4Parameter, P4Member, z3
+from p4z3.base import propagate_validity_bit, HeaderStackInstance
+from p4z3.base import StructInstance
 
 # extern packet_in {
 #     /// Read a header from the packet into a fixed-sized header @hdr and advance the cursor.
@@ -31,61 +31,91 @@ class packet_in(P4Extern):
         self.name = "packet_in"
         z3_type = z3.Datatype(self.name)
         z3_type.declare(f"mk_{self.name}")
-        self.members = []
         self.z3_type = z3_type.create()
-        self.const = z3.Const(self.name, self.z3_type)
+        self.type_params = {}
+        self.type_context = {}
+        # attach the methods
         self.locals = {}
-        # simple fix for now until I know how to initialize params for externs
-        self.params = {}
-        self.type_params = []
 
         class extract(P4Method):
-
             def __init__(self):
-                self.name = "extract"
-                self.params = [P4Parameter(
-                    "out", "hdr", z3.SortRef("T"), None), ]
-                self.type_params = (None, [z3.SortRef("T"), ])
-                self.call_counter = 0
-                self.locals = {}
+                name = "extract"
+                params = [P4Parameter(
+                    "out", "hdr", "T", None), ]
+                type_params = (None, ["T", ])
+                super(extract, self).__init__(name, type_params, params)
+
+            def __call__(self, p4_state, *args, **kwargs):
+                for arg in args:
+                    while isinstance(arg, P4Member):
+                        member = arg.member
+                        arg = arg.lval
+                        if member == "next":
+                            arg = p4_state.resolve_reference(arg)
+                            if isinstance(arg, HeaderStackInstance):
+                                arg.nextIndex += 1
+                                arg.locals["lastIndex"] += 1
+                                if arg.nextIndex > arg.locals["size"]:
+                                    p4_state.parser_exception = True
+                                    return
 
             def eval_callable(self, p4_state, merged_args, var_buffer):
-                log.info("ASDASDASD")
                 # initialize the local context of the function for execution
                 if self.return_type is None:
                     return None
-                # methods can return values, we need to generate a new constant
-                # we generate the name based on the input arguments
-                # var_name = ""
-                # for arg in merged_args.values():
-                #     arg = p4_state.resolve_expr(arg.p4_val)
-                #     # fold runtime-known values
-                #     if isinstance(arg, z3.AstRef):
-                #         arg = z3.simplify(arg)
-                #     # elif isinstance(arg, list):
-                #     #     for idx, member in enumerate(arg):
-                #     #         arg[idx] = z3.simplify(member)
 
-                #     # Because we do not know what the extern is doing
-                #     # we initiate a new z3 const and
-                #     # just overwrite all reference types
-                #     # input arguments influence the output behavior
-                #     # add the input value to the return constant
-                #     var_name += str(arg)
-                # If we return something, instantiate the type and return it
-                # we merge the name
-                # FIXME: We do not consider call order
-                # and assume that externs are stateless
-                return_instance = gen_instance(self.name, self.return_type)
+                return_instance = gen_instance(
+                    p4_state, self.name, self.return_type)
                 # a returned header may or may not be valid
                 if isinstance(return_instance, StructInstance):
-                    return_instance.propagate_validity_bit()
+                    propagate_validity_bit(return_instance)
                 return return_instance
 
-        self.locals["extract"] = extract()
+        self.locals.setdefault("extract", []).append(extract())
+        class extract(P4Method):
 
-        # dummy
-        self.valid = False
+            def __init__(self):
+                name = "extract"
+                params = [
+                    P4Parameter("out", "variableSizeHeader", "T", None),
+                    P4Parameter("in", "variableFieldSizeInBits", z3.BitVecSort(32), None), ]
+                type_params = (None, ["T", ])
+                super(extract, self).__init__(name, type_params, params)
 
+            def __call__(self, p4_state, *args, **kwargs):
+                for arg in args:
+                    while isinstance(arg, P4Member):
+                        member = arg.member
+                        arg = arg.lval
+                        if member == "next":
+                            arg = p4_state.resolve_reference(arg)
+                            if isinstance(arg, HeaderStackInstance):
+                                arg.nextIndex += 1
+                                arg.locals["lastIndex"] += 1
+                                if arg.nextIndex > arg.locals["size"]:
+                                    p4_state.parser_exception = True
+                                    return
 
-core_externs = {"packet_in": packet_in()}
+            def eval_callable(self, p4_state, merged_args, var_buffer):
+                # initialize the local context of the function for execution
+                if self.return_type is None:
+                    return None
+
+                return_instance = gen_instance(
+                    p4_state, self.name, self.return_type)
+                # a returned header may or may not be valid
+                if isinstance(return_instance, StructInstance):
+                    propagate_validity_bit(return_instance)
+                return return_instance
+
+        self.locals.setdefault("extract", []).append(extract())
+
+        class lookahead(P4Method):
+
+            def __init__(self):
+                name = "lookahead"
+                type_params = ("T", ["T", ])
+                params = []
+                super(lookahead, self).__init__(name, type_params, params)
+
+        self.locals.setdefault("lookahead", []).append(lookahead())

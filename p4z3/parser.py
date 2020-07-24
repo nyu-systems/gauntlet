@@ -1,4 +1,4 @@
-from p4z3.base import log, z3, P4Range, merge_attrs, OrderedDict
+from p4z3.base import log, z3, P4Range, merge_attrs
 from p4z3.base import P4Expression, StructInstance, DefaultExpression
 from p4z3.callables import P4Control
 
@@ -17,23 +17,13 @@ class RejectState(P4Expression):
         self.counter = 0
 
     def eval(self, p4_state):
-        forward_conds = []
-        tmp_forward_conds = []
         for context in reversed(p4_state.contexts):
-            forward_conds.extend(context.forward_conds)
-            tmp_forward_conds.append(context.tmp_forward_cond)
-        context = p4_state.current_context()
+            context.copy_out(p4_state)
         for member_name, _ in p4_state.members:
             member_val = p4_state.resolve_reference(member_name)
             if isinstance(member_val, StructInstance):
                 member_val.deactivate("invalid")
-
-        cond = z3.simplify(z3.And(z3.Not(z3.Or(*forward_conds)),
-                                  z3.And(*tmp_forward_conds)))
-        if not cond == z3.BoolVal(False):
-            p4_state.exit_states.append((cond, p4_state.get_z3_repr()))
-            p4_state.has_exited = True
-        context.forward_conds.append(context.tmp_forward_cond)
+        p4_state.has_exited = True
 
 
 class AcceptState(P4Expression):
@@ -144,7 +134,11 @@ class ParserSelect(P4Expression):
             parser_state.eval(p4_state)
             select_conds.append(cond)
             parser_state.counter = counter
-            if not p4_state.has_exited:
+            if p4_state.has_exited:
+                p4_state.exit_states.append((
+                    cond, p4_state.get_z3_repr()))
+                p4_state.has_exited = False
+            else:
                 switches.append((cond, p4_state.get_attrs()))
             p4_state.has_exited = False
             p4_state.restore(var_store, contexts)
@@ -158,6 +152,7 @@ class ParserSelect(P4Expression):
         default_state.counter += 1
         default_state.eval(p4_state)
         if p4_state.has_exited:
+            p4_state.exit_states.append((cond, p4_state.get_z3_repr()))
             default_state.counter = counter
             p4_state.restore(var_store, contexts)
         p4_state.has_exited = False

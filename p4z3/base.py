@@ -69,6 +69,7 @@ def z3_cast(val, to_type):
 
 
 def merge_attrs(target_cls, cond, then_attrs):
+    cond = z3.simplify(cond)
     for then_name, then_val in then_attrs.items():
         try:
             attr_val = target_cls.resolve_reference(then_name)
@@ -77,7 +78,9 @@ def merge_attrs(target_cls, cond, then_attrs):
             # this is because of scoping
             # FIXME: Make sure this is actually the case...
             continue
-        if isinstance(attr_val, P4ComplexInstance):
+        if id(attr_val) == id(then_val):
+            continue
+        if isinstance(attr_val, StructInstance):
             attr_val.valid = z3.simplify(
                 z3.If(cond, then_val.valid, attr_val.valid))
             merge_attrs(attr_val, cond, then_val.locals)
@@ -92,7 +95,7 @@ def mux_merge(cond, target, else_attrs):
     for idx, (member_name, _) in enumerate(target.members):
         then_val = target.resolve_reference(member_name)
         else_val = else_attrs[idx]
-        if isinstance(then_val, P4ComplexInstance):
+        if isinstance(then_val, StructInstance):
             mux_merge(cond, then_val, else_val)
         else:
             if_expr = z3.If(cond, then_val, else_val)
@@ -561,8 +564,9 @@ class P4ComplexInstance():
                 result.locals[name] = copy.copy(val)
         return result
 
+
     def __repr__(self):
-        return f"{self.__class__.__name__}"
+        return f"{self.__class__.__name__}_{self.name}"
 
     def __eq__(self, other):
         # It can happen that we compare to a list
