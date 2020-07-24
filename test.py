@@ -75,10 +75,6 @@ for test in list(FALSE_FRIENDS_DIR.glob("*")):
 xfails = [
     "complex2.p4",  # runtime index, now idea how to resolve this madness
     "issue1334.p4",  # overloading, this test should normally not be skipped
-    "issue-2123.p4",  # mask incorrectly implemented
-    "issue-2123-2-bmv2.p4",  # mask incorrectly implemented
-    "issue-2123-3-bmv2.p4",  # mask incorrectly implemented
-    "pvs-struct-3-bmv2.p4",  # mask incorrectly implemented
     "shadow-after-user.p4",  # very specific shadowing
 ]
 

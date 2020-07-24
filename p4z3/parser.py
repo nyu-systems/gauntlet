@@ -1,4 +1,4 @@
-from p4z3.base import log, z3, P4Range, merge_attrs
+from p4z3.base import log, z3, P4Range, merge_attrs, P4Mask
 from p4z3.base import P4Expression, StructInstance, DefaultExpression
 from p4z3.callables import P4Control
 
@@ -86,7 +86,7 @@ class ParserSelect(P4Expression):
                 break
             self.cases.append((case_key, case_state))
 
-    def build_select_cond(self, case_expr, case_name, match_list):
+    def build_select_cond(self, p4_state, case_expr, match_list):
         select_cond = []
         # these casts are kind of silly but simplify the code a lot
         if isinstance(case_expr, StructInstance):
@@ -102,12 +102,14 @@ class ParserSelect(P4Expression):
             elif isinstance(case_match, P4Range):
                 x = case_match.min
                 y = case_match.max
-                const_name = f"{case_name}_range_{idx}"
-                range_const = z3.Const(
-                    const_name, match_list[idx].sort())
-                c_key_eval = z3.If(range_const <= x, x, z3.If(
-                    range_const >= y, y, range_const))
-                select_cond.append(c_key_eval == match_list[idx])
+                match_key = z3.And(
+                    z3.ULE(x, match_list[idx]), z3.UGE(y, match_list[idx]))
+                select_cond.append(match_key)
+            elif isinstance(case_match, P4Mask):
+                val = p4_state.resolve_expr(case_match.value)
+                mask = case_match.mask
+                match_key = (val | ~mask) == (match_list[idx] | ~mask)
+                select_cond.append(match_key)
             else:
                 select_cond.append(case_match == match_list[idx])
         if not select_cond:
@@ -123,7 +125,7 @@ class ParserSelect(P4Expression):
 
         for case_val, case_name in reversed(self.cases):
             case_expr = p4_state.resolve_expr(case_val)
-            cond = self.build_select_cond(case_expr, case_name, match_list)
+            cond = self.build_select_cond(p4_state, case_expr, match_list)
 
             # state forks here
             var_store, contexts = p4_state.checkpoint()

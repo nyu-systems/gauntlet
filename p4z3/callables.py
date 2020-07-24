@@ -1,6 +1,6 @@
 from p4z3.base import OrderedDict, z3, log, copy, merge_attrs
 from p4z3.base import gen_instance, z3_cast, handle_mux, StructInstance
-from p4z3.base import P4Z3Class, StructInstance, P4ComplexType, P4Context
+from p4z3.base import P4Z3Class, P4Mask, P4ComplexType, P4Context
 from p4z3.base import DefaultExpression, P4Extern, propagate_validity_bit
 from p4z3.base import P4Expression, P4Argument, P4Range, resolve_type, ListType
 
@@ -634,14 +634,17 @@ class P4Table(P4Callable):
                 if isinstance(c_key_expr, P4Range):
                     x = c_key_expr.min
                     y = c_key_expr.max
-                    const_name = f"{self.name}_range_{index}"
-                    range_const = z3.Const(const_name, key_eval.sort())
-                    c_key_eval = z3.If(range_const <= x, x, z3.If(
-                        range_const >= y, y, range_const))
+                    c_key_eval = z3.And(z3.ULE(x, key_eval),
+                                        z3.UGE(y, key_eval))
+                    matches.append(c_key_eval)
+                elif isinstance(c_key_expr, P4Mask):
+                    val = p4_state.resolve_expr(c_key_expr.mask)
+                    mask = c_key_expr.mask
+                    c_key_eval = (val & mask) == (key_eval & mask)
+                    matches.append(c_key_eval)
                 else:
                     c_key_eval = p4_state.resolve_expr(c_key_expr)
-
-                matches.append(key_eval == c_key_eval)
+                    matches.append(key_eval == c_key_eval)
             action_match = z3.And(*matches)
             log.debug("Evaluating constant action %s...", action_name)
             # state forks here

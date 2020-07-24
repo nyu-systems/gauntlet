@@ -271,6 +271,14 @@ class P4Range(P4Z3Class):
     def eval(self, p4_state):
         pass
 
+class P4Mask(P4Z3Class):
+    def __init__(self, value, mask):
+        self.value = value
+        self.mask = mask
+
+    def eval(self, p4_state):
+        pass
+
 
 class P4Declaration(P4Statement):
     # the difference between a P4Declaration and a ValueDeclaration is that

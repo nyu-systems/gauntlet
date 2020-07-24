@@ -386,11 +386,11 @@ class P4gt(P4BinaryOp):
         P4BinaryOp.__init__(self, lval, rval, operator)
 
 
-class P4Mask(P4BinaryOp):
-    # FIXME: Do not really know how to implement a mask in z3 yet...
-    def __init__(self, lval, rval):
-        operator = op.and_
-        P4BinaryOp.__init__(self, lval, rval, operator)
+# class P4Mask(P4BinaryOp):
+#     # FIXME: Do not really know how to implement a mask in z3 yet...
+#     def __init__(self, lval, rval):
+#         operator = op.and_
+#         P4BinaryOp.__init__(self, lval, rval, operator)
 
 
 # class P4Range(P4BinaryOp):
