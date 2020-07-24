@@ -1,4 +1,4 @@
-from p4z3.base import log, z3, P4Range, merge_attrs
+from p4z3.base import log, z3, P4Range, merge_attrs, OrderedDict
 from p4z3.base import P4Expression, StructInstance, DefaultExpression
 from p4z3.callables import P4Control
 
@@ -12,6 +12,9 @@ class P4Parser(P4Control):
 
 class RejectState(P4Expression):
     counter = 0
+
+    def reset_counter(self):
+        self.counter = 0
 
     def eval(self, p4_state):
         forward_conds = []
@@ -36,6 +39,9 @@ class RejectState(P4Expression):
 class AcceptState(P4Expression):
     counter = 0
 
+    def reset_counter(self):
+        self.counter = 0
+
     def eval(self, p4_state):
         pass
 
@@ -43,20 +49,16 @@ class ParserTree(P4Expression):
 
     def __init__(self, states):
         self.states = {}
-        self.exit_states = ["accept", "reject"]
         for state in states:
-            state_name = state.name
-            self.states[state_name] = state
+            self.states[state.name] = state
         self.states["accept"] = AcceptState()
         self.states["reject"] = RejectState()
-        for state in states:
-            state.set_state_list(self.states)
 
     def eval(self, p4_state):
+        for state_name, state in self.states.items():
+            state.reset_counter()
+            p4_state.set_or_add_var(state_name, state, True)
         self.states["start"].eval(p4_state)
-        for state in self.states.values():
-            if isinstance(state, ParserState):
-                state.reset_counter()
 
 
 class ParserState(P4Expression):
@@ -68,9 +70,6 @@ class ParserState(P4Expression):
         self.counter = 0
         self.state_list = {}
 
-    def set_state_list(self, state_list):
-        self.state_list = state_list
-
     def reset_counter(self):
         self.counter = 0
 
@@ -79,24 +78,16 @@ class ParserState(P4Expression):
             pass
             # log.warning("Parser exceeded current loop limit, aborting...")
         else:
-            if isinstance(self.select, ParserSelect):
-                select = self.select
-                select.set_state_list(self.state_list)
-            elif isinstance(self.select, str):
-                select = self.state_list[self.select]
-            else:
-                select = self.select
+            select = p4_state.resolve_reference(self.select)
             for component in self.components:
                 component.eval(p4_state)
-            if not p4_state.has_exited:
-                select.eval(p4_state)
+            select.eval(p4_state)
 
 
 class ParserSelect(P4Expression):
     def __init__(self, match, *cases):
         self.match = match
         self.cases = []
-        self.state_list = {}
         self.default = "reject"
         for case_key, case_state in cases:
             if isinstance(case_key, DefaultExpression):
@@ -105,82 +96,67 @@ class ParserSelect(P4Expression):
                 break
             self.cases.append((case_key, case_state))
 
-    def set_state_list(self, state_list):
-        self.state_list = state_list
+    def build_select_cond(self, case_expr, case_name, match_list):
+        select_cond = []
+        # these casts are kind of silly but simplify the code a lot
+        if isinstance(case_expr, StructInstance):
+            case_expr = case_expr.flatten()
+        elif not isinstance(case_expr, list):
+            case_expr = [case_expr]
+
+        for idx, case_match in enumerate(case_expr):
+            # default implies don't care, do not add
+            # TODO: Verify that this assumption is right...
+            if isinstance(case_match, DefaultExpression):
+                select_cond.append(z3.BoolVal(True))
+            elif isinstance(case_match, P4Range):
+                x = case_match.min
+                y = case_match.max
+                const_name = f"{case_name}_range_{idx}"
+                range_const = z3.Const(
+                    const_name, match_list[idx].sort())
+                c_key_eval = z3.If(range_const <= x, x, z3.If(
+                    range_const >= y, y, range_const))
+                select_cond.append(c_key_eval == match_list[idx])
+            else:
+                select_cond.append(case_match == match_list[idx])
+        if not select_cond:
+            return z3.BoolVal(False)
+        return z3.And(*select_cond)
 
     def eval(self, p4_state):
         switches = []
         select_conds = []
         context = p4_state.current_context()
         forward_cond_copy = context.tmp_forward_cond
+        match_list = p4_state.resolve_expr(self.match)
 
         for case_val, case_name in reversed(self.cases):
             case_expr = p4_state.resolve_expr(case_val)
-            select_cond = []
-            if isinstance(case_expr, StructInstance):
-                case_expr = case_expr.flatten()
-            if isinstance(case_expr, list):
-                for idx, case_match in enumerate(case_expr):
-                    # default implies don't care, do not add
-                    # TODO: Verify that this assumption is right...
-                    if isinstance(case_match, DefaultExpression):
-                        continue
-                    match_expr = p4_state.resolve_expr(self.match[idx])
-                    if isinstance(case_match, P4Range):
-                        x = case_match.min
-                        y = case_match.max
-                        const_name = f"{case_name}_range_{idx}"
-                        range_const = z3.Const(const_name, match_expr.sort())
-                        c_key_eval = z3.If(range_const <= x, x, z3.If(
-                            range_const >= y, y, range_const))
-                        cond = c_key_eval == match_expr
-                    else:
-                        cond = case_match == match_expr
-                    select_cond.append(cond)
-            else:
-                # default implies don't care, do not add
-                # TODO: Verify that this assumption is right...
-                if isinstance(case_expr, DefaultExpression):
-                    continue
-                for idx, match in enumerate(self.match):
-                    match_expr = p4_state.resolve_expr(match)
-                    if isinstance(case_expr, P4Range):
-                        x = case_expr.min
-                        y = case_expr.max
-                        const_name = f"{case_name}_range_{idx}"
-                        range_const = z3.Const(const_name, match_expr.sort())
-                        c_key_eval = z3.If(range_const <= x, x, z3.If(
-                            range_const >= y, y, range_const))
-                        cond = c_key_eval == match_expr
-                    else:
-                        cond = case_expr == match_expr
-                    select_cond.append(cond)
-            if not select_cond:
-                select_cond = [z3.BoolVal(False)]
+            cond = self.build_select_cond(case_expr, case_name, match_list)
 
             # state forks here
             var_store, contexts = p4_state.checkpoint()
-            cond = z3.And(*select_cond)
             context.tmp_forward_cond = z3.And(forward_cond_copy, cond)
-            parser_state = self.state_list[case_name]
+            parser_state = p4_state.resolve_reference(case_name)
             counter = parser_state.counter
             parser_state.counter += 1
-            self.state_list[case_name].eval(p4_state)
+            parser_state.eval(p4_state)
+            select_conds.append(cond)
             parser_state.counter = counter
             if not p4_state.has_exited:
                 switches.append((cond, p4_state.get_attrs()))
             p4_state.has_exited = False
-            select_conds.append(cond)
             p4_state.restore(var_store, contexts)
 
         var_store, contexts = p4_state.checkpoint()
         # this hits when the table is either missed, or no action matches
         cond = z3.Not(z3.Or(*select_conds))
         context.tmp_forward_cond = z3.And(forward_cond_copy, cond)
-        default_state = self.state_list[self.default]
+        default_state = p4_state.resolve_reference(self.default)
         counter = default_state.counter
         default_state.counter += 1
-        self.state_list[self.default].eval(p4_state)
+        default_state.eval(p4_state)
         if p4_state.has_exited:
             default_state.counter = counter
             p4_state.restore(var_store, contexts)

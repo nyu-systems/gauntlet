@@ -989,6 +989,7 @@ class HeaderStackInstance(StructInstance):
         # update references to the method calls
         result.locals["push_front"] = result.push_front
         result.locals["pop_front"] = result.pop_front
+        result.locals = HeaderStackDict(result.locals, result)
         return result
 
 
