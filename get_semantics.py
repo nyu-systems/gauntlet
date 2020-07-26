@@ -8,6 +8,9 @@ from p4z3.contrib.tabulate import tabulate
 from p4z3 import z3, Z3Reg, P4ComplexType, P4Extern
 
 import p4z3.util as util
+from p4z3.core import core_externs
+
+
 sys.setrecursionlimit(15000)
 
 
@@ -33,7 +36,8 @@ def get_z3_asts(p4_module, p4_path):
     log.info("Loading %s ASTs...", p4_path.name)
     z3_asts = {}
     try:
-        p4_package = p4_module(Z3Reg())
+        z3_reg = Z3Reg([core_externs])
+        p4_package = p4_module(z3_reg)
         if not p4_package:
             log.warning("No main module, nothing to evaluate!")
             return z3_asts, util.EXIT_SKIPPED

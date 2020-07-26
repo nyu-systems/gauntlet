@@ -216,8 +216,8 @@ def resolve_type(context, p4_type):
 
 @dataclass
 class P4Parameter:
-    __slots__ = ["is_ref", "name", "p4_type", "p4_default"]
-    is_ref: str
+    __slots__ = ["mode", "name", "p4_type", "p4_default"]
+    mode: str
     name: str
     p4_type: object
     p4_default: object
@@ -225,8 +225,8 @@ class P4Parameter:
 
 @dataclass
 class P4Argument:
-    __slots__ = ["is_ref", "p4_type", "p4_val"]
-    is_ref: str
+    __slots__ = ["mode", "p4_type", "p4_val"]
+    mode: str
     p4_type: object
     p4_val: object
 
@@ -270,6 +270,7 @@ class P4Range(P4Z3Class):
 
     def eval(self, p4_state):
         pass
+
 
 class P4Mask(P4Z3Class):
     def __init__(self, value, mask):
@@ -571,7 +572,6 @@ class P4ComplexInstance():
             if isinstance(val, P4ComplexInstance):
                 result.locals[name] = copy.copy(val)
         return result
-
 
     def __repr__(self):
         return f"{self.__class__.__name__}_{self.name}"
@@ -1141,7 +1141,7 @@ class P4Context(P4Z3Class):
         # with copy-out we copy from left to right
         # values on the right override values on the left
         # the var buffer is an ordered dict that maintains this order
-        for par_name, (is_ref, par_ref, par_val) in self.var_buffer.items():
+        for par_name, (mode, par_ref, par_val) in self.var_buffer.items():
             # we retrieve the current value
             val = p4_state.resolve_reference(par_name)
 
@@ -1153,7 +1153,7 @@ class P4Context(P4Z3Class):
 
             # if the param was copy-out, we copy the value we retrieved
             # back to the original input reference
-            if is_ref in ("inout", "out"):
+            if mode in ("inout", "out"):
                 log.debug("Copy-out: %s to %s", val, par_ref)
                 # copy it back to the input reference
                 # this assumes an lvalue as input
@@ -1409,8 +1409,9 @@ class P4State():
 
 
 class Z3Reg():
-    def __init__(self):
+    def __init__(self, extern_extensions):
         self.p4_state = P4State()
+        self.extern_extensions = extern_extensions
 
     def declare_global(self, p4_class):
         if isinstance(p4_class, (P4ComplexType, P4Extern)):
@@ -1455,13 +1456,16 @@ class Z3Reg():
         instances = {}
         for param in p4_params:
             p4_type = resolve_type(self, param.p4_type)
-            if param.is_ref in ("inout", "out"):
+            if param.mode in ("inout", "out"):
                 # only inouts or outs matter as output
                 stripped_args.append((param.name, p4_type))
             else:
                 # for other inputs we can instantiate something
                 instance = gen_instance(self, param.name, p4_type)
                 instances[param.name] = instance
+        # for extern_set in self.extern_extensions:
+        #     for extern_name, extern in extern_set.items():
+        #         self.declare_type(extern_name, extern)
         self.p4_state.set_datatype(name, stripped_args, instances)
         return self.p4_state
 

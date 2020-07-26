@@ -17,14 +17,13 @@ struct headers {
 
 parser p(packet_in b, out headers hdr, inout metadata meta, inout standard_metadata_t stdmeta) {
     state start {
-        b.extract<H>(hdr);
         transition accept;
     }
 }
 
-control ingress(inout headers hdr) {
+control ingress(inout headers hdr, inout metadata meta, inout standard_metadata_t stdmeta) {
     apply {
-            hdr.h.s = hdr.h.s + 8w2;
+        hdr.h.s = hdr.h.s + 8w2;
     }
 }
 
@@ -46,7 +45,6 @@ control uc(inout headers hdr, inout metadata meta) {
 control deparser(packet_out packet, in headers hdr) {
     apply {
         {
-            packet.emit<H>(hdr.h);
         }
     }
 }
