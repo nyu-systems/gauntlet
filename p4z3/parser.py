@@ -1,5 +1,6 @@
-from p4z3.base import log, z3, P4Range, merge_attrs, P4Mask
-from p4z3.base import P4Expression, StructInstance, DefaultExpression
+from p4z3.base import log, z3, P4Range, merge_attrs, P4Mask, DefaultExpression
+from p4z3.base import P4Expression, StructInstance
+from p4z3.base import ParserException
 from p4z3.callables import P4Control
 
 
@@ -69,9 +70,12 @@ class ParserState(P4Expression):
             # log.warning("Parser exceeded current loop limit, aborting...")
         else:
             select = p4_state.resolve_reference(self.select)
-            for component in self.components:
-                component.eval(p4_state)
-            select.eval(p4_state)
+            try:
+                for component in self.components:
+                    component.eval(p4_state)
+                select.eval(p4_state)
+            except ParserException:
+                return RejectState().eval(p4_state)
 
 
 class ParserSelect(P4Expression):

@@ -8,5 +8,5 @@ sys.path.append(FILE_DIR)
 from p4z3.base import *
 from p4z3.expressions import *
 from p4z3.statements import *
-from p4z3.parser import *
 from p4z3.callables import *
+from p4z3.parser import *

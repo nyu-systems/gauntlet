@@ -883,6 +883,10 @@ class ListInstance(StructInstance):
     pass
 
 
+class ParserException(Exception):
+    pass
+
+
 class HeaderStack(StructType):
 
     def __init__(self, name, z3_reg, z3_args):
@@ -890,7 +894,6 @@ class HeaderStack(StructType):
             z3_args[idx] = (f"{idx}", arg)
         super(HeaderStack, self).__init__(name, z3_reg, z3_args)
 
-    # TODO: Implement this class correctly...
     def instantiate(self, name, member_id=0):
         return HeaderStackInstance(name, self, member_id)
 
@@ -903,23 +906,23 @@ class HeaderStackDict(dict):
             dict.__setitem__(self, key, val)
 
     def __getitem__(self, key):
+
         if key == "next":
-            # This is a built-in
-            # TODO: Check if this implementation makes sense
+            # This is a built-in defined in the spec
             try:
                 hdr = self.parent_hdr.locals[f"{self.parent_hdr.nextIndex}"]
             except KeyError:
-                # if the header does not exist use it to break out of the loop?
-                size = self.parent_hdr.locals["size"]
-                hdr = self.parent_hdr.locals[f"{size -1}"]
+                raise ParserException("Index out of bounds!")
             self.parent_hdr.nextIndex += 1
-            self.parent_hdr.locals["lastIndex"] += 1
+            self.parent_hdr.locals["lastIndex"] = self.parent_hdr.nextIndex
             return hdr
+
         if key == "last":
-            # This is a built-in
-            # TODO: Check if this implementation makes sense
-            last = 0 if self.parent_hdr.locals["size"] < 1 else self.parent_hdr.locals["size"] - 1
-            hdr = self.parent_hdr.locals[f"{last}"]
+            # This is a built-in defined in the spec
+            try:
+                hdr = self.parent_hdr.locals[f"{self.parent_hdr.nextIndex}"]
+            except KeyError:
+                raise ParserException("Index out of bounds!")
             return hdr
 
         val = dict.__getitem__(self, key)
@@ -942,59 +945,35 @@ class HeaderStackInstance(StructInstance):
         self.locals["push_front"] = self.push_front
         self.locals["pop_front"] = self.pop_front
         self.locals["size"] = len(self.members)
-        self.locals["lastIndex"] = len(self.members) - 1
+        self.locals["lastIndex"] = self.nextIndex
 
-    def push_front(self, p4_state, num):
-        # This is a built-in
-        # TODO: Check if this implementation makes sense
-        for hdr_idx in range(1, num):
-            hdr_idx = hdr_idx - 1
-            try:
-                hdr = self.locals[f"{hdr_idx}"]
-                hdr.setValid(p4_state)
-            except KeyError:
-                pass
-
-    def pop_front(self, p4_state, num):
-        # This is a built-in
-        # TODO: Check if this implementation makes sense
-        for hdr_idx in range(1, num):
-            hdr_idx = hdr_idx - 1
-            try:
+    def push_front(self, p4_state, count):
+        # This is a built-in defined in the spec
+        for hdr_idx in range(0, self.locals["size"]):
+            if hdr_idx < count:
                 hdr = self.locals[f"{hdr_idx}"]
                 hdr.setInvalid(p4_state)
-            except KeyError:
-                pass
+        self.nextIndex += count
+        if self.nextIndex > self.locals["size"]:
+            self.nextIndex = self.locals["size"]
+        self.locals["lastIndex"] = self.nextIndex
 
-    @property
-    def next(self):
-        # This is a built-in
-        # TODO: Check if this implementation makes sense
-        try:
-            hdr = self.locals[f"{self.nextIndex}"]
-        except KeyError:
-            # if the header does not exist use it to break out of the loop?
-            size = self.locals["size"]
-            hdr = self.locals[f"{size -1}"]
-        self.nextIndex += 1
-        self.locals["lastIndex"] += 1
-        return hdr
+    def pop_front(self, p4_state, count):
+        # This is a built-in defined in the spec
+        last_range = self.locals["size"] - count
+        last_range = 0 if last_range < 0 else last_range
+        for hdr_idx in range(last_range, self.locals["size"]):
+            if hdr_idx < self.locals["size"] - 1:
+                hdr = self.locals[f"{hdr_idx}"]
+                hdr.setInvalid(p4_state)
 
-    @property
-    def last(self):
-        # This is a built-in
-        # TODO: Check if this implementation makes sense
-        last = 0 if self.locals["size"] < 1 else self.locals["size"] - 1
-        hdr = self.locals[f"{last}"]
-        return hdr
+        self.nextIndex -= count
+        if self.nextIndex < 0:
+            self.nextIndex = 0
+        self.locals["lastIndex"] = self.nextIndex
 
     def __setattr__(self, name, val):
-        # TODO: Fix this workaround for next attributes
-        if name == "next":
-            self.__setattr__(f"{self.nextIndex}", val)
-            self.nextIndex += 1
-        else:
-            self.__dict__[name] = val
+        self.__dict__[name] = val
 
     def __copy__(self):
         result = super(HeaderStackInstance, self).__copy__()
@@ -1454,6 +1433,9 @@ class Z3Reg():
     def set_p4_state(self, name, p4_params):
         stripped_args = []
         instances = {}
+        for extern_set in self.extern_extensions:
+            for extern_name, extern in extern_set.items():
+                self.declare_type(extern_name, extern)
         for param in p4_params:
             p4_type = resolve_type(self, param.p4_type)
             if param.mode in ("inout", "out"):
@@ -1463,9 +1445,6 @@ class Z3Reg():
                 # for other inputs we can instantiate something
                 instance = gen_instance(self, param.name, p4_type)
                 instances[param.name] = instance
-        # for extern_set in self.extern_extensions:
-        #     for extern_name, extern in extern_set.items():
-        #         self.declare_type(extern_name, extern)
         self.p4_state.set_datatype(name, stripped_args, instances)
         return self.p4_state
 
