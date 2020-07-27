@@ -391,8 +391,28 @@ class P4Member(P4Expression):
 
 
 class P4Index(P4Member):
-    # FIXME: This class is an absolute nightmare. Fix
+    # FIXME: This class is an absolute nightmare.
     __slots__ = ["lval", "member"]
+
+    def resolve_runtime_index(self, lval, target_member, index):
+        if target_member:
+            max_idx = lval.locals["size"]
+            return_expr = lval.locals[str(
+                0)].resolve_reference(target_member)
+            for hdr_idx in range(1, max_idx):
+                cond = index == hdr_idx
+                val = lval.locals[f"{hdr_idx}"].resolve_reference(
+                    target_member)
+                return_expr = handle_mux(cond, val, return_expr)
+            return return_expr
+        else:
+            max_idx = lval.locals["size"]
+            return_expr = lval.locals["0"]
+            for hdr_idx in range(1, max_idx):
+                cond = index == hdr_idx
+                return_expr = handle_mux(
+                    cond, lval.locals[f"{hdr_idx}"], return_expr)
+            return return_expr
 
     def eval(self, context, target_member=None):
         lval = context.resolve_expr(self.lval)
@@ -404,30 +424,14 @@ class P4Index(P4Member):
         elif isinstance(index, z3.BitVecNumRef):
             index = str(index.as_long())
         elif isinstance(index, z3.BitVecRef):
-            if target_member:
-                max_idx = lval.locals["size"]
-                return_expr = lval.locals[str(
-                    0)].resolve_reference(target_member)
-                for hdr_idx in range(1, max_idx):
-                    cond = index == hdr_idx
-                    val = lval.locals[f"{hdr_idx}"].resolve_reference(
-                        target_member)
-                    return_expr = handle_mux(cond, val, return_expr)
-                return return_expr
-            else:
-                max_idx = lval.locals["size"]
-                return_expr = lval.locals[f"0"]
-                for hdr_idx in range(1, max_idx):
-                    cond = index == hdr_idx
-                    return_expr = handle_mux(
-                        cond, lval.locals[f"{hdr_idx}"], return_expr)
-                return return_expr
+            return self.resolve_runtime_index(lval, target_member, index)
         else:
             raise RuntimeError(f"Unsupported index {type(index)}!")
+        expr = lval.resolve_reference(index)
         if target_member:
-            return lval.locals[index].resolve_reference(target_member)
+            return expr.resolve_reference(target_member)
         else:
-            return lval.locals[index]
+            return expr
 
     def set_value(self, context, rval, target_member=None):
         lval = context.resolve_expr(self.lval)
@@ -910,17 +914,17 @@ class HeaderStackDict(dict):
         if key == "next":
             # This is a built-in defined in the spec
             try:
-                hdr = self.parent_hdr.locals[f"{self.parent_hdr.nextIndex}"]
+                next_id = self.parent_hdr.nextIndex
+                hdr = self.parent_hdr.locals[str(next_id)]
             except KeyError:
                 raise ParserException("Index out of bounds!")
-            self.parent_hdr.nextIndex += 1
-            self.parent_hdr.locals["lastIndex"] = self.parent_hdr.nextIndex
             return hdr
 
         if key == "last":
             # This is a built-in defined in the spec
             try:
-                hdr = self.parent_hdr.locals[f"{self.parent_hdr.nextIndex}"]
+                last_idx = self.parent_hdr.locals["lastIndex"]
+                hdr = self.parent_hdr.locals[str(last_idx)]
             except KeyError:
                 raise ParserException("Index out of bounds!")
             return hdr
@@ -945,7 +949,7 @@ class HeaderStackInstance(StructInstance):
         self.locals["push_front"] = self.push_front
         self.locals["pop_front"] = self.pop_front
         self.locals["size"] = len(self.members)
-        self.locals["lastIndex"] = self.nextIndex
+        self.locals["lastIndex"] = z3.BitVec("undefined", 32)
 
     def push_front(self, p4_state, count):
         # This is a built-in defined in the spec
@@ -956,7 +960,7 @@ class HeaderStackInstance(StructInstance):
         self.nextIndex += count
         if self.nextIndex > self.locals["size"]:
             self.nextIndex = self.locals["size"]
-        self.locals["lastIndex"] = self.nextIndex
+        self.locals["lastIndex"] = z3.BitVecVal(self.nextIndex, 32)
 
     def pop_front(self, p4_state, count):
         # This is a built-in defined in the spec
@@ -968,12 +972,10 @@ class HeaderStackInstance(StructInstance):
                 hdr.setInvalid(p4_state)
 
         self.nextIndex -= count
+        self.locals["lastIndex"] = self.nextIndex
         if self.nextIndex < 0:
             self.nextIndex = 0
-        self.locals["lastIndex"] = self.nextIndex
-
-    def __setattr__(self, name, val):
-        self.__dict__[name] = val
+            self.locals["lastIndex"] = z3.BitVec("undefined", 32)
 
     def __copy__(self):
         result = super(HeaderStackInstance, self).__copy__()

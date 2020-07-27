@@ -1,7 +1,8 @@
 from p4z3.callables import P4Method
 from p4z3.base import P4Extern, P4Parameter, z3
-from p4z3.base import log
+from p4z3.base import log, P4Member, HeaderStackInstance
 from p4z3.callables import merge_parameters, resolve_type
+from p4z3.parser import ParserException
 
 '''
  extern packet_in {
@@ -29,6 +30,17 @@ from p4z3.callables import merge_parameters, resolve_type
 '''
 
 
+def detect_hdr_stack_next(p4_state, hdr_ref):
+    while isinstance(hdr_ref, P4Member):
+        member = hdr_ref.member
+        hdr_ref = hdr_ref.lval
+        if member == "next":
+            hdr_ref = p4_state.resolve_reference(hdr_ref)
+            if isinstance(hdr_ref, HeaderStackInstance):
+                return hdr_ref
+    return None
+
+
 class packet_in(P4Extern):
     def __init__(self):
         super(packet_in, self).__init__(
@@ -44,6 +56,7 @@ class packet_in(P4Extern):
 
             def extract_hdr(self, p4_state, merged_args):
                 hdr = merged_args[self.hdr_param_name].p4_val
+
                 # apply the local and parent extern type contexts
                 local_context = {}
                 for type_name, p4_type in self.extern_context.items():
@@ -51,6 +64,13 @@ class packet_in(P4Extern):
                 for type_name, p4_type in self.type_context.items():
                     local_context[type_name] = resolve_type(p4_state, p4_type)
                 p4_state.type_contexts.append(local_context)
+
+                # advance the header index if a next field has been accessed
+                hdr_stack = detect_hdr_stack_next(p4_state, hdr)
+                if hdr_stack:
+                    if hdr_stack.nextIndex >= hdr_stack.locals["size"]:
+                        raise ParserException("Index out of bounds!")
+
                 # grab the hdr value
                 hdr_expr = p4_state.resolve_expr(hdr)
 
@@ -58,6 +78,12 @@ class packet_in(P4Extern):
                 bind_const = z3.Const(
                     f"{self.name}_{self.hdr_param_name}", hdr_expr.z3_type)
                 hdr_expr.bind(bind_const)
+
+                # advance the stack, if it exists
+                if hdr_stack:
+                    hdr_stack.locals["lastIndex"] = z3.BitVecVal(
+                        hdr_stack.nextIndex, 32)
+                    hdr_stack.nextIndex += 1
                 # cleanup
                 p4_state.type_contexts.pop()
                 self.call_counter += 1

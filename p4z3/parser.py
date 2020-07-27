@@ -65,10 +65,7 @@ class ParserState(P4Expression):
         self.counter = 0
 
     def eval(self, p4_state):
-        if self.counter > MAX_LOOP:
-            pass
-            # log.warning("Parser exceeded current loop limit, aborting...")
-        else:
+        if self.counter <= MAX_LOOP:
             select = p4_state.resolve_reference(self.select)
             try:
                 for component in self.components:
