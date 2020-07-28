@@ -10,8 +10,8 @@ class P4Parser(P4Control):
         if isinstance(p4_type, HeaderStack):
             sizes.append(len(p4_type.z3_args))
         if isinstance(p4_type, StructType):
-            for member in p4_type.z3_args:
-                self.collect_stack_sizes(member, sizes)
+            for member_name, member_type in p4_type.z3_args:
+                self.collect_stack_sizes(member_type, sizes)
 
     def compute_loop_bound(self, p4_state):
         sizes = []
@@ -68,6 +68,7 @@ class ParserNode():
         self.child = None
         self.match = match
         self.default = RejectState()
+        self.is_terminal = False
 
     def set_child(self, child):
         self.child = child
@@ -83,8 +84,8 @@ class ParserNode():
         select_conds = []
         context = p4_state.current_context()
         forward_cond_copy = context.tmp_forward_cond
+        match_list = p4_state.resolve_expr(self.match)
         for parser_cond, parser_node in reversed(self.child):
-            match_list = p4_state.resolve_expr(parser_node.match)
             case_expr = p4_state.resolve_expr(parser_cond)
             cond = build_select_cond(p4_state, case_expr, match_list)
             # state forks here
@@ -92,6 +93,7 @@ class ParserNode():
             context.tmp_forward_cond = z3.And(forward_cond_copy, cond)
             parser_node.eval(p4_state)
             select_conds.append(cond)
+            then_vars = p4_state.get_attrs()
             if p4_state.has_exited:
                 p4_state.exit_states.append((
                     cond, p4_state.get_z3_repr()))
@@ -120,8 +122,15 @@ class ParserNode():
         child = self.child
         if isinstance(child, list):
             self.handle_select(p4_state)
+            return
         elif isinstance(child, ParserNode):
             self.child.eval(p4_state)
+            return
+        if self.is_terminal:
+            context = p4_state.current_context()
+            key = self.parser_state
+            val = [(context.tmp_forward_cond, p4_state.copy_attrs())]
+            p4_state.terminal_nodes.setdefault(key, []).extend(val)
 
 
 def print_tree(start_node, indent=0):
@@ -134,7 +143,7 @@ def print_tree(start_node, indent=0):
             child_str = print_tree(child, tmp_indent)
             node_str += tmp_indent * "  " + " ->"
             if child_cond is not None:
-                node_str += f" {child.match} == {child_cond} ? : {child_str}"
+                node_str += f" {start_node.match} == {child_cond} ? : {child_str}"
             else:
                 node_str += f" {child_str}"
         child_str = print_tree(start_node.default, tmp_indent)
@@ -155,7 +164,6 @@ class ParserTree(P4Expression):
         self.states["accept"] = AcceptState()
         self.states["reject"] = RejectState()
         self.nodes = OrderedDict()
-        self.loop_leafs = set()
         self.max_loop = 0
 
     def get_parser_dag(self, p4_state, visited_states, init_state):
@@ -163,23 +171,22 @@ class ParserTree(P4Expression):
         if isinstance(init_state, (AcceptState, RejectState)):
             return node
         if init_state in visited_states:
-            self.loop_leafs.add(init_state)
+            node.is_terminal = True
             return node
-        self.nodes[init_state] = node
+        self.nodes[init_state.name] = node
         visited_states.add(init_state)
         select = p4_state.resolve_reference(init_state.select)
         if isinstance(select, ParserSelect):
             child_list = []
+            node.add_match(select.match)
             for case_key, case_name in select.cases:
                 parser_state = p4_state.resolve_reference(case_name)
                 child_node = self.get_parser_dag(
                     p4_state, set(visited_states), parser_state)
-                child_node.add_match(select.match)
                 child_list.append((case_key, child_node))
             default = p4_state.resolve_reference(select.default)
             child_node = self.get_parser_dag(
                 p4_state, set(visited_states), default)
-            child_node.add_match(select.match)
             node.add_default(child_node)
             node.set_child(child_list)
         else:
@@ -200,10 +207,25 @@ class ParserTree(P4Expression):
         node.eval(p4_state)
         counter = 0
         while counter < self.max_loop:
-            for loop_leaf in self.loop_leafs:
-                node = self.nodes[loop_leaf]
+            switch_states = []
+            terminal_nodes = p4_state.terminal_nodes
+            p4_state.terminal_nodes = {}
+            for parser_state, states in terminal_nodes.items():
+                node = self.nodes[parser_state.name]
+                # state forks here
+                var_store, contexts = p4_state.checkpoint()
+                conds = []
+                for cond, state in states:
+                    conds.append(cond)
+                    merge_attrs(p4_state, cond, state)
                 node.eval(p4_state)
+                switch_states.append((z3.Or(*conds), p4_state.get_attrs()))
+                p4_state.restore(var_store, contexts)
+            for cond, then_vars in switch_states:
+                merge_attrs(p4_state, cond, then_vars)
             counter += 1
+        p4_state.terminal_nodes = {}
+
 
 class ParserState(P4Expression):
 

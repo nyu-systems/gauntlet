@@ -68,6 +68,27 @@ def z3_cast(val, to_type):
         return val
 
 
+def merge_dicts(target_dict, cond, then_attrs):
+    cond = z3.simplify(cond)
+    for then_name, then_val in then_attrs.items():
+        try:
+            attr_val = target_dict[then_name]
+        except RuntimeError:
+            # if the attribute does not exist it is not relevant
+            # this is because of scoping
+            # FIXME: Make sure this is actually the case...
+            continue
+        if isinstance(attr_val, StructInstance):
+            attr_val.valid = z3.simplify(
+                z3.If(cond, then_val.valid, attr_val.valid))
+            merge_attrs(attr_val, cond, then_val.locals)
+        elif isinstance(attr_val, z3.ExprRef):
+            if then_val.sort() != attr_val.sort():
+                attr_val = z3_cast(attr_val, then_val.sort())
+            if_expr = z3.simplify(z3.If(cond, then_val, attr_val))
+            target_dict[then_name] = if_expr
+
+
 def merge_attrs(target_cls, cond, then_attrs):
     cond = z3.simplify(cond)
     for then_name, then_val in then_attrs.items():
@@ -1162,6 +1183,7 @@ class P4State():
         self.const = None
         self.type_map = {}
         self.type_contexts = deque()
+        self.terminal_nodes = {}
 
     def reset(self):
         self.exit_states = deque()
