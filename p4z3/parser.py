@@ -1,18 +1,42 @@
 from p4z3.base import log, z3, P4Range, merge_attrs, P4Mask, DefaultExpression
-from p4z3.base import P4Expression, StructInstance
-from p4z3.base import ParserException
+from p4z3.base import P4Expression, StructInstance, OrderedDict, resolve_type
+from p4z3.base import ParserException, StructType, HeaderStack
 from p4z3.callables import P4Control
 
 
-MAX_LOOP = 1
-
-
 class P4Parser(P4Control):
-    pass
+
+    def collect_stack_sizes(self, p4_type, sizes):
+        if isinstance(p4_type, HeaderStack):
+            sizes.append(len(p4_type.z3_args))
+        if isinstance(p4_type, StructType):
+            for member in p4_type.z3_args:
+                self.collect_stack_sizes(member, sizes)
+
+    def compute_loop_bound(self, p4_state):
+        sizes = []
+        for param in self.params:
+            p4_type = resolve_type(p4_state, param.p4_type)
+            self.collect_stack_sizes(p4_type, sizes)
+        if sizes:
+            max_size = max(sizes)
+        else:
+            max_size = 1
+        return max_size
+
+    def apply(self, p4_state, *args, **kwargs):
+        local_context = {}
+        for type_name, p4_type in self.type_context.items():
+            local_context[type_name] = resolve_type(p4_state, p4_type)
+        p4_state.type_contexts.append(self.type_context)
+        self.statements.max_loop = self.compute_loop_bound(p4_state)
+        self.eval(p4_state, *args, **kwargs)
+        p4_state.type_contexts.pop()
 
 
 class RejectState(P4Expression):
     counter = 0
+    name = "reject"
 
     def reset_counter(self):
         self.counter = 0
@@ -28,6 +52,7 @@ class RejectState(P4Expression):
 
 
 class AcceptState(P4Expression):
+    name = "accept"
     counter = 0
 
     def reset_counter(self):
@@ -36,111 +61,40 @@ class AcceptState(P4Expression):
     def eval(self, p4_state):
         pass
 
-class ParserTree(P4Expression):
 
-    def __init__(self, states):
-        self.states = {}
-        for state in states:
-            self.states[state.name] = state
-        self.states["accept"] = AcceptState()
-        self.states["reject"] = RejectState()
-
-    def eval(self, p4_state):
-        for state_name, state in self.states.items():
-            state.reset_counter()
-            p4_state.set_or_add_var(state_name, state, True)
-        self.states["start"].eval(p4_state)
-
-
-class ParserState(P4Expression):
-
-    def __init__(self, name, select, components):
-        self.name = name
-        self.components = components
-        self.select = select
-        self.counter = 0
-        self.state_list = {}
-
-    def reset_counter(self):
-        self.counter = 0
-
-    def eval(self, p4_state):
-        if self.counter <= MAX_LOOP:
-            select = p4_state.resolve_reference(self.select)
-            try:
-                for component in self.components:
-                    component.eval(p4_state)
-                select.eval(p4_state)
-            except ParserException:
-                return RejectState().eval(p4_state)
-
-
-class ParserSelect(P4Expression):
-    def __init__(self, match, *cases):
+class ParserNode():
+    def __init__(self, parser_state, match=None):
+        self.parser_state = parser_state
+        self.child = None
         self.match = match
-        self.cases = []
-        self.default = "reject"
-        for case_key, case_state in cases:
-            if isinstance(case_key, DefaultExpression):
-                self.default = case_state
-                # anything after default is considered unreachable
-                break
-            self.cases.append((case_key, case_state))
+        self.default = RejectState()
 
-    def build_select_cond(self, p4_state, case_expr, match_list):
-        select_cond = []
-        # these casts are kind of silly but simplify the code a lot
-        if isinstance(case_expr, StructInstance):
-            case_expr = case_expr.flatten()
-        elif not isinstance(case_expr, list):
-            case_expr = [case_expr]
+    def set_child(self, child):
+        self.child = child
 
-        for idx, case_match in enumerate(case_expr):
-            # default implies don't care, do not add
-            # TODO: Verify that this assumption is right...
-            if isinstance(case_match, DefaultExpression):
-                select_cond.append(z3.BoolVal(True))
-            elif isinstance(case_match, P4Range):
-                x = case_match.min
-                y = case_match.max
-                match_key = z3.And(
-                    z3.ULE(x, match_list[idx]), z3.UGE(y, match_list[idx]))
-                select_cond.append(match_key)
-            elif isinstance(case_match, P4Mask):
-                val = p4_state.resolve_expr(case_match.value)
-                mask = case_match.mask
-                match_key = (val | ~mask) == (match_list[idx] | ~mask)
-                select_cond.append(match_key)
-            else:
-                select_cond.append(case_match == match_list[idx])
-        if not select_cond:
-            return z3.BoolVal(False)
-        return z3.And(*select_cond)
+    def add_match(self, match):
+        self.match = match
 
-    def eval(self, p4_state):
+    def add_default(self, default):
+        self.default = default
+
+    def handle_select(self, p4_state):
         switches = []
         select_conds = []
         context = p4_state.current_context()
         forward_cond_copy = context.tmp_forward_cond
-        match_list = p4_state.resolve_expr(self.match)
-
-        for case_val, case_name in reversed(self.cases):
-            case_expr = p4_state.resolve_expr(case_val)
-            cond = self.build_select_cond(p4_state, case_expr, match_list)
-
+        for parser_cond, parser_node in reversed(self.child):
+            match_list = p4_state.resolve_expr(parser_node.match)
+            case_expr = p4_state.resolve_expr(parser_cond)
+            cond = build_select_cond(p4_state, case_expr, match_list)
             # state forks here
             var_store, contexts = p4_state.checkpoint()
             context.tmp_forward_cond = z3.And(forward_cond_copy, cond)
-            parser_state = p4_state.resolve_reference(case_name)
-            counter = parser_state.counter
-            parser_state.counter += 1
-            parser_state.eval(p4_state)
+            parser_node.eval(p4_state)
             select_conds.append(cond)
-            parser_state.counter = counter
             if p4_state.has_exited:
                 p4_state.exit_states.append((
                     cond, p4_state.get_z3_repr()))
-                p4_state.has_exited = False
             else:
                 switches.append((cond, p4_state.get_attrs()))
             p4_state.has_exited = False
@@ -150,15 +104,165 @@ class ParserSelect(P4Expression):
         # this hits when the table is either missed, or no action matches
         cond = z3.Not(z3.Or(*select_conds))
         context.tmp_forward_cond = z3.And(forward_cond_copy, cond)
-        default_state = p4_state.resolve_reference(self.default)
-        counter = default_state.counter
-        default_state.counter += 1
-        default_state.eval(p4_state)
+        self.default.eval(p4_state)
         if p4_state.has_exited:
             p4_state.exit_states.append((cond, p4_state.get_z3_repr()))
-            default_state.counter = counter
             p4_state.restore(var_store, contexts)
         p4_state.has_exited = False
         context.tmp_forward_cond = forward_cond_copy
         for cond, then_vars in switches:
             merge_attrs(p4_state, cond, then_vars)
+
+    def eval(self, p4_state):
+        parser_state = self.parser_state
+        parser_state.eval(p4_state)
+
+        child = self.child
+        if isinstance(child, list):
+            self.handle_select(p4_state)
+        elif isinstance(child, ParserNode):
+            self.child.eval(p4_state)
+
+
+def print_tree(start_node, indent=0):
+    node_str = f"{start_node.parser_state.name}\n"
+    tmp_indent = indent + 1
+    start_child = start_node.child
+
+    if isinstance(start_child, list):
+        for child_cond, child in start_node.child:
+            child_str = print_tree(child, tmp_indent)
+            node_str += tmp_indent * "  " + " ->"
+            if child_cond is not None:
+                node_str += f" {child.match} == {child_cond} ? : {child_str}"
+            else:
+                node_str += f" {child_str}"
+        child_str = print_tree(start_node.default, tmp_indent)
+        node_str += tmp_indent * "  " + f" -> {child_str}"
+    elif isinstance(start_child, ParserNode):
+        child_str = print_tree(start_child, tmp_indent)
+        node_str += tmp_indent * "  " + f" -> {child_str}"
+
+    return node_str
+
+
+class ParserTree(P4Expression):
+
+    def __init__(self, states):
+        self.states = {}
+        for state in states:
+            self.states[state.name] = state
+        self.states["accept"] = AcceptState()
+        self.states["reject"] = RejectState()
+        self.nodes = OrderedDict()
+        self.loop_leafs = set()
+        self.max_loop = 0
+
+    def get_parser_dag(self, p4_state, visited_states, init_state):
+        node = ParserNode(init_state)
+        if isinstance(init_state, (AcceptState, RejectState)):
+            return node
+        if init_state in visited_states:
+            self.loop_leafs.add(init_state)
+            return node
+        self.nodes[init_state] = node
+        visited_states.add(init_state)
+        select = p4_state.resolve_reference(init_state.select)
+        if isinstance(select, ParserSelect):
+            child_list = []
+            for case_key, case_name in select.cases:
+                parser_state = p4_state.resolve_reference(case_name)
+                child_node = self.get_parser_dag(
+                    p4_state, set(visited_states), parser_state)
+                child_node.add_match(select.match)
+                child_list.append((case_key, child_node))
+            default = p4_state.resolve_reference(select.default)
+            child_node = self.get_parser_dag(
+                p4_state, set(visited_states), default)
+            child_node.add_match(select.match)
+            node.add_default(child_node)
+            node.set_child(child_list)
+        else:
+            child_node = self.get_parser_dag(
+                p4_state, set(visited_states), select)
+            node.set_child(child_node)
+        return node
+
+    def eval(self, p4_state):
+        for state_name, state in self.states.items():
+            state.reset_counter()
+            p4_state.set_or_add_var(state_name, state, True)
+        visited_states = set()
+        node = self.get_parser_dag(
+            p4_state, visited_states, self.states["start"])
+        # node_str = "\n" + print_tree(node, 0)
+        # log.info(node_str)
+        node.eval(p4_state)
+        counter = 0
+        while counter < self.max_loop:
+            for loop_leaf in self.loop_leafs:
+                node = self.nodes[loop_leaf]
+                node.eval(p4_state)
+            counter += 1
+
+class ParserState(P4Expression):
+
+    def __init__(self, name, select, components):
+        self.name = name
+        self.components = components
+        self.select = select
+        self.counter = 0
+
+    def reset_counter(self):
+        self.counter = 0
+
+    def eval(self, p4_state):
+        try:
+            for component in self.components:
+                component.eval(p4_state)
+        except ParserException:
+            return RejectState().eval(p4_state)
+
+
+def build_select_cond(p4_state, case_expr, match_list):
+    select_cond = []
+    # these casts are kind of silly but simplify the code a lot
+    if isinstance(case_expr, StructInstance):
+        case_expr = case_expr.flatten()
+    elif not isinstance(case_expr, list):
+        case_expr = [case_expr]
+
+    for idx, case_match in enumerate(case_expr):
+        # default implies don't care, do not add
+        # TODO: Verify that this assumption is right...
+        if isinstance(case_match, DefaultExpression):
+            select_cond.append(z3.BoolVal(True))
+        elif isinstance(case_match, P4Range):
+            x = case_match.min
+            y = case_match.max
+            match_key = z3.And(
+                z3.ULE(x, match_list[idx]), z3.UGE(y, match_list[idx]))
+            select_cond.append(match_key)
+        elif isinstance(case_match, P4Mask):
+            val = p4_state.resolve_expr(case_match.value)
+            mask = case_match.mask
+            match_key = (val | ~mask) == (match_list[idx] | ~mask)
+            select_cond.append(match_key)
+        else:
+            select_cond.append(case_match == match_list[idx])
+    if not select_cond:
+        return z3.BoolVal(False)
+    return z3.And(*select_cond)
+
+
+class ParserSelect(P4Expression):
+    def __init__(self, match, *cases):
+        self.match = match
+        self.cases = []
+        self.default = "reject"
+        for case_key, case_name in cases:
+            if isinstance(case_key, DefaultExpression):
+                self.default = case_name
+                # anything after default is considered unreachable
+                break
+            self.cases.append((case_key, case_name))

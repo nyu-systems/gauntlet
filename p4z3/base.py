@@ -78,8 +78,6 @@ def merge_attrs(target_cls, cond, then_attrs):
             # this is because of scoping
             # FIXME: Make sure this is actually the case...
             continue
-        if id(attr_val) == id(then_val):
-            continue
         if isinstance(attr_val, StructInstance):
             attr_val.valid = z3.simplify(
                 z3.If(cond, then_val.valid, attr_val.valid))
@@ -914,7 +912,7 @@ class HeaderStackDict(dict):
         if key == "next":
             # This is a built-in defined in the spec
             try:
-                next_id = self.parent_hdr.nextIndex
+                next_id = z3.simplify(self.parent_hdr.locals["nextIndex"])
                 hdr = self.parent_hdr.locals[str(next_id)]
             except KeyError:
                 raise ParserException("Index out of bounds!")
@@ -923,7 +921,7 @@ class HeaderStackDict(dict):
         if key == "last":
             # This is a built-in defined in the spec
             try:
-                last_idx = self.parent_hdr.locals["lastIndex"]
+                last_idx = z3.simplify(self.parent_hdr.locals["lastIndex"])
                 hdr = self.parent_hdr.locals[str(last_idx)]
             except KeyError:
                 raise ParserException("Index out of bounds!")
@@ -945,11 +943,12 @@ class HeaderStackInstance(StructInstance):
         # no idea how to deal with properties
         # this intercepts dictionary lookups and modifies the header in place
         self.locals = HeaderStackDict(self.locals, self)
-        self.nextIndex = 0
+        self.locals["nextIndex"] = z3.BitVecVal(0, 32)
         self.locals["push_front"] = self.push_front
         self.locals["pop_front"] = self.pop_front
         self.locals["size"] = len(self.members)
-        self.locals["lastIndex"] = z3.BitVec("undefined", 32)
+        # FIXME: This should be undefined...
+        self.locals["lastIndex"] = self.locals["nextIndex"]
 
     def push_front(self, p4_state, count):
         # This is a built-in defined in the spec
@@ -957,10 +956,10 @@ class HeaderStackInstance(StructInstance):
             if hdr_idx < count:
                 hdr = self.locals[f"{hdr_idx}"]
                 hdr.setInvalid(p4_state)
-        self.nextIndex += count
-        if self.nextIndex > self.locals["size"]:
-            self.nextIndex = self.locals["size"]
-        self.locals["lastIndex"] = z3.BitVecVal(self.nextIndex, 32)
+        self.locals["nextIndex"] += count
+        if z3.simplify(self.locals["nextIndex"] > self.locals["size"]) == z3.BoolVal(True):
+            self.locals["nextIndex"] = z3.BitVecVal(self.locals["size"], 32)
+        self.locals["lastIndex"] = self.locals["nextIndex"]
 
     def pop_front(self, p4_state, count):
         # This is a built-in defined in the spec
@@ -971,11 +970,11 @@ class HeaderStackInstance(StructInstance):
                 hdr = self.locals[f"{hdr_idx}"]
                 hdr.setInvalid(p4_state)
 
-        self.nextIndex -= count
-        self.locals["lastIndex"] = self.nextIndex
-        if self.nextIndex < 0:
-            self.nextIndex = 0
-            self.locals["lastIndex"] = z3.BitVec("undefined", 32)
+        self.locals["nextIndex"] -= count
+        self.locals["lastIndex"] = self.locals["nextIndex"]
+        if z3.simplify(self.locals["nextIndex"] < 0) == z3.BoolVal(True):
+            self.locals["nextIndex"] = z3.BitVecVal(0, 32)
+            self.locals["lastIndex"] = z3.BitVecVal(0, 32)
 
     def __copy__(self):
         result = super(HeaderStackInstance, self).__copy__()
