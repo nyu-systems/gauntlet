@@ -68,7 +68,7 @@ class packet_in(P4Extern):
                 # advance the header index if a next field has been accessed
                 hdr_stack = detect_hdr_stack_next(p4_state, hdr)
                 if hdr_stack:
-                    compare =  hdr_stack.locals["nextIndex"] >= hdr_stack.locals["size"]
+                    compare = hdr_stack.locals["nextIndex"] >= hdr_stack.locals["size"]
                     if z3.simplify(compare) == z3.BoolVal(True):
                         raise ParserException("Index out of bounds!")
 
