@@ -35,11 +35,7 @@ class P4Parser(P4Control):
 
 
 class RejectState(P4Expression):
-    counter = 0
     name = "reject"
-
-    def reset_counter(self):
-        self.counter = 0
 
     def eval(self, p4_state):
         for context in reversed(p4_state.contexts):
@@ -53,10 +49,6 @@ class RejectState(P4Expression):
 
 class AcceptState(P4Expression):
     name = "accept"
-    counter = 0
-
-    def reset_counter(self):
-        self.counter = 0
 
     def eval(self, p4_state):
         pass
@@ -93,6 +85,7 @@ class ParserNode():
             var_store, contexts = p4_state.checkpoint()
             context.tmp_forward_cond = z3.And(forward_cond_copy, cond)
             parser_node.eval(p4_state)
+
             select_conds.append(cond)
             then_vars = p4_state.get_attrs()
             if p4_state.has_exited:
@@ -134,12 +127,11 @@ class ParserNode():
                 for context in reversed(p4_state.contexts):
                     tmp_forward_conds.append(context.tmp_forward_cond)
                 cond = z3.And(*tmp_forward_conds)
-                val = [(cond, p4_state.copy_attrs())]
-                self.parser_tree.terminal_nodes.setdefault(key, []).extend(val)
+                val = (cond, p4_state.copy_attrs())
+                self.parser_tree.terminal_nodes.setdefault(key, []).append(val)
         except ParserException:
             RejectState().eval(p4_state)
             p4_state.has_exited = False
-            return
 
 
 def print_tree(start_node, indent=0):
@@ -173,9 +165,8 @@ class ParserTree(P4Expression):
         self.states["accept"] = AcceptState()
         self.states["reject"] = RejectState()
         self.nodes = OrderedDict()
-        self.max_loop = 0
+        self.max_loop = 1
         self.terminal_nodes = {}
-
 
     def get_parser_dag(self, p4_state, visited_states, init_state):
         node = ParserNode(self, init_state)
@@ -209,7 +200,6 @@ class ParserTree(P4Expression):
     def eval(self, p4_state):
         self.terminal_nodes = {}
         for state_name, state in self.states.items():
-            state.reset_counter()
             p4_state.set_or_add_var(state_name, state, True)
         visited_states = set()
         node = self.get_parser_dag(
@@ -218,7 +208,6 @@ class ParserTree(P4Expression):
         # log.info(node_str)
         node.eval(p4_state)
         counter = 0
-
         while counter < self.max_loop:
             switch_states = []
             terminal_nodes = self.terminal_nodes
@@ -252,10 +241,6 @@ class ParserState(P4Expression):
         self.name = name
         self.components = components
         self.select = select
-        self.counter = 0
-
-    def reset_counter(self):
-        self.counter = 0
 
     def eval(self, p4_state):
         for component in self.components:
