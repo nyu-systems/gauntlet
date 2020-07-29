@@ -1,3 +1,4 @@
+import math
 from p4z3.base import OrderedDict, z3, log, copy, merge_attrs
 from p4z3.base import gen_instance, z3_cast, handle_mux, StructInstance
 from p4z3.base import P4Z3Class, P4Mask, P4ComplexType, P4Context
@@ -571,11 +572,25 @@ class P4Table(P4Callable):
         if not self.keys:
             # there is nothing to match with...
             return z3.BoolVal(False)
-        for index, key in enumerate(self.keys):
-            key_eval = p4_state.resolve_expr(key)
+        for index, (key_expr, key_type) in enumerate(self.keys):
+            key_eval = p4_state.resolve_expr(key_expr)
             key_sort = key_eval.sort()
             key_match = z3.Const(f"{self.name}_table_key_{index}", key_sort)
-            key_pairs.append(key_eval == key_match)
+            if key_type == "exact":
+                key_pairs.append(key_eval == key_match)
+            elif key_type == "lpm":
+                bits = math.log2(key_sort.size())
+                mask_var = z3.BitVec(
+                    f"{self.name}_table_mask_{index}", key_sort)
+                lpm_mask = z3.BitVecVal(1, key_sort) << mask_var
+                match = (key_eval & lpm_mask) == (key_match & lpm_mask)
+                key_pairs.append(z3.And(match, z3.ULE(mask_var, bits)))
+            elif key_type == "ternary":
+                mask = z3.Const(f"{self.name}_table_mask_{index}", key_sort)
+                match = (key_eval & mask) == (key_match & mask)
+                key_pairs.append(match)
+            else:
+                raise RuntimeError("Key type {key_type} not supported!")
         return z3.And(key_pairs)
 
     def eval_action(self, p4_state, action_name, action_args):
@@ -607,13 +622,14 @@ class P4Table(P4Callable):
             # match the constant keys with the normal table keys
             # this generates the match expression for a specific constant entry
             # this is a little inefficient, fix.
-            for index, key in enumerate(self.keys):
+            # TODO: Figure out if key type matters here?
+            for index, (key_expr, key_type) in enumerate(self.keys):
                 c_key_expr = c_keys[index]
                 # default implies don't care, do not add
                 # TODO: Verify that this assumption is right...
                 if isinstance(c_key_expr, DefaultExpression):
                     continue
-                key_eval = p4_state.resolve_expr(key)
+                key_eval = p4_state.resolve_expr(key_expr)
                 if isinstance(c_key_expr, P4Range):
                     x = c_key_expr.min
                     y = c_key_expr.max
