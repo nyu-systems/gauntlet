@@ -519,15 +519,19 @@ class P4Table(P4Callable):
         self.actions = OrderedDict()
         self.default_action = None
         self.tbl_action = z3.Int(f"{self.name}_action")
+        self.implementation = None
         self.locals["hit"] = z3.BoolVal(False)
         self.locals["miss"] = z3.BoolVal(True)
         self.locals["action_run"] = self
         self.locals["apply"] = self.apply
 
+        # some custom logic to resolve properties
         self.add_keys(properties)
         self.add_default(properties)
         self.add_actions(properties)
         self.add_const_entries(properties)
+        # set the rest
+        self.properties = properties
 
     def add_actions(self, properties):
         if "actions" not in properties:
@@ -574,23 +578,55 @@ class P4Table(P4Callable):
             return z3.BoolVal(False)
         for index, (key_expr, key_type) in enumerate(self.keys):
             key_eval = p4_state.resolve_expr(key_expr)
+            log.info(key_eval)
             key_sort = key_eval.sort()
             key_match = z3.Const(f"{self.name}_table_key_{index}", key_sort)
             if key_type == "exact":
+                # Just a simple comparison, nothing special
                 key_pairs.append(key_eval == key_match)
             elif key_type == "lpm":
-                bits = math.log2(key_sort.size())
+                # I think this can be arbitrarily large...
+                # If the shift exceeds the bit width, everything will be zero
+                # but that does not matter
+                # TODO: Test this?
                 mask_var = z3.BitVec(
                     f"{self.name}_table_mask_{index}", key_sort)
-                lpm_mask = z3.BitVecVal(1, key_sort) << mask_var
+                lpm_mask = z3.BitVecVal(
+                    2**key_sort.size() - 1, key_sort) << mask_var
                 match = (key_eval & lpm_mask) == (key_match & lpm_mask)
-                key_pairs.append(z3.And(match, z3.ULE(mask_var, bits)))
+                key_pairs.append(match)
             elif key_type == "ternary":
+                # Just apply a symbolic mask, any zero bit is a wildcard
+                # TODO: Test this?
                 mask = z3.Const(f"{self.name}_table_mask_{index}", key_sort)
                 match = (key_eval & mask) == (key_match & mask)
                 key_pairs.append(match)
+            elif key_type == "range":
+                # Pick an arbitrary minimum and maximum within the bit range
+                # the minimum must be strictly lesser than the max
+                # I do not think a match is needed?
+                # TODO: Test this?
+                min_key = z3.Const(f"{self.name}_table_min_{index}", key_sort)
+                max_key = z3.Const(f"{self.name}_table_max_{index}", key_sort)
+                match = z3.And(z3.ULE(min_key, key_eval),
+                               z3.UGE(max_key, key_eval))
+                key_pairs.append(z3.And(match, z3.ULT(min_key, max_key)))
+            elif key_type == "optional":
+                # As far as I understand this is just a wildcard for control
+                # plane purposes. Semantically, there is no point?
+                # TODO: Test this?
+                key_pairs.append(z3.BoolVal(True))
+            elif key_type == "selector":
+                # Selectors are a deep rabbit hole
+                # This rabbit hole does not yet make sense to me
+                # FIXME: Implement
+                # will intentionally fail if no implementation is present
+                # impl = self.properties["implementation"]
+                # impl_extern = self.p4_state.resolve_reference(impl)
+                key_pairs.append(z3.BoolVal(True))
             else:
-                raise RuntimeError("Key type {key_type} not supported!")
+                # weird key, might be some specific specification
+                raise RuntimeError(f"Key type {key_type} not supported!")
         return z3.And(key_pairs)
 
     def eval_action(self, p4_state, action_name, action_args):
