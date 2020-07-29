@@ -1183,7 +1183,6 @@ class P4State():
         self.const = None
         self.type_map = {}
         self.type_contexts = deque()
-        self.terminal_nodes = {}
 
     def reset(self):
         self.exit_states = deque()

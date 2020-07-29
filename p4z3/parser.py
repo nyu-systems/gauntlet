@@ -63,8 +63,9 @@ class AcceptState(P4Expression):
 
 
 class ParserNode():
-    def __init__(self, parser_state, match=None):
+    def __init__(self, parser_tree, parser_state, match=None):
         self.parser_state = parser_state
+        self.parser_tree = parser_tree
         self.child = None
         self.match = match
         self.default = RejectState()
@@ -134,7 +135,7 @@ class ParserNode():
                     tmp_forward_conds.append(context.tmp_forward_cond)
                 cond = z3.And(*tmp_forward_conds)
                 val = [(cond, p4_state.copy_attrs())]
-                p4_state.terminal_nodes.setdefault(key, []).extend(val)
+                self.parser_tree.terminal_nodes.setdefault(key, []).extend(val)
         except ParserException:
             RejectState().eval(p4_state)
             p4_state.has_exited = False
@@ -173,9 +174,11 @@ class ParserTree(P4Expression):
         self.states["reject"] = RejectState()
         self.nodes = OrderedDict()
         self.max_loop = 0
+        self.terminal_nodes = {}
+
 
     def get_parser_dag(self, p4_state, visited_states, init_state):
-        node = ParserNode(init_state)
+        node = ParserNode(self, init_state)
         if isinstance(init_state, (AcceptState, RejectState)):
             return node
         if init_state in visited_states:
@@ -204,7 +207,7 @@ class ParserTree(P4Expression):
         return node
 
     def eval(self, p4_state):
-        p4_state.terminal_nodes = {}
+        self.terminal_nodes = {}
         for state_name, state in self.states.items():
             state.reset_counter()
             p4_state.set_or_add_var(state_name, state, True)
@@ -218,8 +221,8 @@ class ParserTree(P4Expression):
 
         while counter < self.max_loop:
             switch_states = []
-            terminal_nodes = p4_state.terminal_nodes
-            p4_state.terminal_nodes = {}
+            terminal_nodes = self.terminal_nodes
+            self.terminal_nodes = {}
             context = p4_state.current_context()
             forward_cond_copy = context.tmp_forward_cond
             for parser_state, states in terminal_nodes.items():
@@ -240,7 +243,7 @@ class ParserTree(P4Expression):
             context.tmp_forward_cond = forward_cond_copy
             counter += 1
 
-        p4_state.terminal_nodes = {}
+        self.terminal_nodes = {}
 
 
 class ParserState(P4Expression):
