@@ -359,13 +359,13 @@ class TypeDeclaration(P4Z3Class):
         self.p4_type = p4_type
 
 
-class TypeSpecializer():
+class TypeSpecializer(P4Expression):
     def __init__(self, p4z3_type, *args):
         self.p4z3_type = p4z3_type
         self.args = args
 
     def eval(self, context):
-        p4z3_type = resolve_type(context, self.p4z3_type)
+        p4z3_type = context.resolve_expr(self.p4z3_type)
         return p4z3_type.init_type_params(context, *self.args)
 
 
@@ -376,7 +376,7 @@ class InstanceDeclaration(ValueDeclaration):
         self.kwargs = kwargs
 
     def compute_rval(self, context):
-        z3_type = resolve_type(context, self.rval)
+        z3_type = context.resolve_expr(self.rval)
         z3_type = z3_type.initialize(context, *self.args, **self.kwargs)
         return z3_type
 
@@ -1111,6 +1111,14 @@ class P4ControlType(P4Extern):
         super(P4ControlType, self).__init__(name, type_params, [])
         self.params = params
 
+    def init_type_params(self, context, *args, **kwargs):
+        init_ctrl_type = copy.copy(self)
+        # bind the types and set the type context
+        for idx, t_param in enumerate(init_ctrl_type.type_params):
+            arg = resolve_type(context, args[idx])
+            init_ctrl_type.type_context[t_param] = arg
+        return init_ctrl_type
+
 
 class P4ParserType(P4ControlType):
     pass
@@ -1415,15 +1423,17 @@ class Z3Reg():
         self.extern_extensions = extern_extensions
 
     def declare_global(self, p4_class):
-        if isinstance(p4_class, (P4ComplexType, P4Extern)):
+        if isinstance(p4_class, P4ComplexType):
             name = p4_class.name
             self.declare_type(name, p4_class)
+        elif isinstance(p4_class, P4Extern):
+            self.declare_type(p4_class.name, p4_class)
+            self.declare_var(p4_class.name, p4_class)
         elif isinstance(p4_class, TypeDeclaration):
             p4_type = resolve_type(self, p4_class.p4_type)
             self.declare_type(p4_class.name, p4_type)
         elif isinstance(p4_class, ControlDeclaration):
             self.declare_var(p4_class.ctrl.name, p4_class.ctrl)
-            self.declare_type(p4_class.ctrl.name, p4_class.ctrl)
         elif isinstance(p4_class, Enum):
             # enums are special static types
             # we need to add them to the list of accessible variables
@@ -1459,7 +1469,7 @@ class Z3Reg():
             for extern_name, extern in extern_set.items():
                 self.declare_type(extern_name, extern)
         for param in p4_params:
-            p4_type = resolve_type(self, param.p4_type)
+            p4_type = resolve_type(self.p4_state, param.p4_type)
             if param.mode in ("inout", "out"):
                 # only inouts or outs matter as output
                 stripped_args.append((param.name, p4_type))

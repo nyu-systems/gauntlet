@@ -31,12 +31,13 @@ def merge_parameters(params, *args, **kwargs):
                 # Default expressions are pointless arguments, so skip them
                 continue
             arg = P4Argument(param.mode, param.p4_type, arg_val)
-            merged_args[param.name] = arg
         elif param.p4_default is not None:
             # there is no argument but we have a default value, so use that
             arg_val = param.p4_default
             arg = P4Argument(param.mode, param.p4_type, arg_val)
-            merged_args[param.name] = arg
+        else:
+            arg = P4Argument(param.mode, param.p4_type, None)
+        merged_args[param.name] = arg
     for param_name, arg_val in kwargs.items():
         # this is expensive but at least works reliably
         if isinstance(arg_val, DefaultExpression):
@@ -168,9 +169,9 @@ class ConstCallExpr(P4Expression):
         self.args = args
         self.kwargs = kwargs
 
-    def eval(self, p4_state):
-        p4_method = resolve_type(p4_state, self.p4_method)
-        return p4_method.initialize(p4_state, *self.args, **self.kwargs)
+    def eval(self, context):
+        p4_method = context.resolve_expr(self.p4_method)
+        return p4_method.initialize(context, *self.args, **self.kwargs)
 
 class P4Package(P4Callable):
 
@@ -185,34 +186,41 @@ class P4Package(P4Callable):
         # FIXME: Inference here does not quite work?
         # The problem is that types inferred here overwrite declared types
         # How to consolidate?
-        # init_package = copy.copy(self)
-        # for idx, t_param in enumerate(init_package.type_params):
-        #     arg = resolve_type(context, args[idx])
-        #     init_package.type_context[t_param] = arg
-        # return init_package
-        return self
+        init_package = copy.copy(self)
+        for idx, t_param in enumerate(init_package.type_params):
+            arg = resolve_type(context, args[idx])
+            init_package.type_context[t_param] = arg
+        return init_package
 
     def initialize(self, context, *args, **kwargs):
-        local_context = {}
-        for type_name, p4_type in self.type_context.items():
-            local_context[type_name] = resolve_type(context, p4_type)
-
         merged_args = merge_parameters(self.params, *args, **kwargs)
         for pipe_name, pipe_arg in merged_args.items():
+            if pipe_arg.p4_val is None:
+                # for some reason, the argument is uninitialized.
+                # FIXME: This should not happen. Why?
+                continue
             log.info("Loading %s pipe...", pipe_name)
             pipe_val = context.resolve_expr(pipe_arg.p4_val)
             if isinstance(pipe_val, P4Control):
+                context.type_contexts.append(self.type_context)
                 ctrl_type = resolve_type(context, pipe_arg.p4_type)
-                pipe_val = pipe_val.bind_to_ctrl_type(ctrl_type)
 
-                # create the z3 representation of this control state
-                p4_state = self.z3_reg.set_p4_state(pipe_name, pipe_val.params)
-                p4_state.type_contexts.append(self.type_context)
+                pipe_val = pipe_val.bind_to_ctrl_type(context, ctrl_type)
+                context.type_contexts.append(ctrl_type.type_context)
+                args = []
                 # initialize the call with its own params
                 # this is essentially the input packet
-                args = []
-                for param in pipe_val.params:
+                for idx, param in enumerate(pipe_val.params):
+                    generic_type = resolve_type(
+                        context, ctrl_type.params[idx].p4_type)
+                    if generic_type is None:
+                        self.type_context[ctrl_type.params[idx].p4_type] = resolve_type(
+                            context, param.p4_type)
                     args.append(param.name)
+                # create the z3 representation of this control state
+                p4_state = self.z3_reg.set_p4_state(pipe_name, pipe_val.params)
+                context.type_contexts.pop()
+                context.type_contexts.pop()
                 pipe_val.apply(p4_state, *args)
                 # after executing the pipeline get its z3 representation
                 state = p4_state.get_z3_repr()
@@ -292,7 +300,7 @@ class P4Control(P4Callable):
         self.locals["apply"] = self.apply
         self.type_context = {}
 
-    def bind_to_ctrl_type(self, ctrl_type):
+    def bind_to_ctrl_type(self, context, ctrl_type):
         # TODO Figure out what to actually do here
         # FIXME: A hack to deal with lack of input params
         if len(ctrl_type.params) < len(self.type_params):
@@ -301,7 +309,8 @@ class P4Control(P4Callable):
         # the type params sometimes include the return type also
         # it is typically the first value, but is bound somewhere else
         for idx, t_param in enumerate(init_ctrl.type_params):
-            init_ctrl.type_context[t_param] = ctrl_type.params[idx].p4_type
+            sub_type = resolve_type(context, ctrl_type.params[idx].p4_type)
+            init_ctrl.type_context[t_param] = sub_type
             for param_idx, param in enumerate(init_ctrl.params):
                 if isinstance(param.p4_type, str) and param.p4_type == t_param:
                     init_ctrl.params[param_idx] = ctrl_type.params[idx]
@@ -578,7 +587,6 @@ class P4Table(P4Callable):
             return z3.BoolVal(False)
         for index, (key_expr, key_type) in enumerate(self.keys):
             key_eval = p4_state.resolve_expr(key_expr)
-            log.info(key_eval)
             key_sort = key_eval.sort()
             key_match = z3.Const(f"{self.name}_table_key_{index}", key_sort)
             if key_type == "exact":
