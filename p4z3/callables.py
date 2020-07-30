@@ -1,4 +1,3 @@
-import math
 from p4z3.base import OrderedDict, z3, log, copy, merge_attrs
 from p4z3.base import gen_instance, z3_cast, handle_mux, StructInstance
 from p4z3.base import P4Z3Class, P4Mask, P4ComplexType, P4Context
@@ -170,7 +169,7 @@ class ConstCallExpr(P4Expression):
         self.kwargs = kwargs
 
     def eval(self, context):
-        p4_method = context.resolve_expr(self.p4_method)
+        p4_method = resolve_type(context, self.p4_method)
         return p4_method.initialize(context, *self.args, **self.kwargs)
 
 class P4Package(P4Callable):
@@ -183,9 +182,6 @@ class P4Package(P4Callable):
         self.type_context = {}
 
     def init_type_params(self, context, *args, **kwargs):
-        # FIXME: Inference here does not quite work?
-        # The problem is that types inferred here overwrite declared types
-        # How to consolidate?
         init_package = copy.copy(self)
         for idx, t_param in enumerate(init_package.type_params):
             arg = resolve_type(context, args[idx])
@@ -202,25 +198,28 @@ class P4Package(P4Callable):
             log.info("Loading %s pipe...", pipe_name)
             pipe_val = context.resolve_expr(pipe_arg.p4_val)
             if isinstance(pipe_val, P4Control):
+                # This boilerplate is all necessary to initialize state...
+                # FIXME: Ideally, this should be handled by the control...
                 context.type_contexts.append(self.type_context)
                 ctrl_type = resolve_type(context, pipe_arg.p4_type)
-
                 pipe_val = pipe_val.bind_to_ctrl_type(context, ctrl_type)
                 context.type_contexts.append(ctrl_type.type_context)
                 args = []
-                # initialize the call with its own params
-                # this is essentially the input packet
                 for idx, param in enumerate(pipe_val.params):
-                    generic_type = resolve_type(
-                        context, ctrl_type.params[idx].p4_type)
+                    ctrl_type_param_type = ctrl_type.params[idx].p4_type
+                    generic_type = resolve_type(context, ctrl_type_param_type)
                     if generic_type is None:
-                        self.type_context[ctrl_type.params[idx].p4_type] = resolve_type(
-                            context, param.p4_type)
+                        param_type = resolve_type(context, param.p4_type)
+                        self.type_context[ctrl_type_param_type] = param_type
                     args.append(param.name)
                 # create the z3 representation of this control state
                 p4_state = self.z3_reg.set_p4_state(pipe_name, pipe_val.params)
+                # dp not need the types for now
                 context.type_contexts.pop()
                 context.type_contexts.pop()
+
+                # initialize the call with its own params we collected
+                # this is essentially the input packet
                 pipe_val.apply(p4_state, *args)
                 # after executing the pipeline get its z3 representation
                 state = p4_state.get_z3_repr()
