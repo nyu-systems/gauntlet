@@ -1,6 +1,8 @@
 from collections import OrderedDict
 from p4z3.base import log, DefaultExpression, copy, z3_cast, merge_attrs, z3
 from p4z3.base import StructInstance, P4Statement, P4Z3Class, gen_instance
+from p4z3.base import ParserException
+from p4z3.parser import RejectState
 
 
 class AssignmentStatement(P4Statement):
@@ -63,7 +65,10 @@ class IfStatement(P4Statement):
         if not cond == z3.BoolVal(False):
             var_store, contexts = p4_state.checkpoint()
             context.tmp_forward_cond = z3.And(forward_cond_copy, cond)
-            self.then_block.eval(p4_state)
+            try:
+                self.then_block.eval(p4_state)
+            except ParserException:
+                RejectState().eval(p4_state)
             if not(context.has_returned or p4_state.has_exited):
                 then_vars = p4_state.get_attrs()
             p4_state.has_exited = False
@@ -73,7 +78,10 @@ class IfStatement(P4Statement):
         if not cond == z3.BoolVal(True):
             var_store, contexts = p4_state.checkpoint()
             context.tmp_forward_cond = z3.And(forward_cond_copy, z3.Not(cond))
-            self.else_block.eval(p4_state)
+            try:
+                self.else_block.eval(p4_state)
+            except ParserException:
+                RejectState().eval(p4_state)
             if p4_state.has_exited or context.has_returned:
                 p4_state.restore(var_store, contexts)
             p4_state.has_exited = False
