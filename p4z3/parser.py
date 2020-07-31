@@ -1,6 +1,7 @@
 from p4z3.base import log, z3, P4Range, merge_attrs, P4Mask, DefaultExpression
 from p4z3.base import P4Expression, StructInstance, OrderedDict, resolve_type
-from p4z3.base import ParserException, StructType, HeaderStack
+from p4z3.base import ParserException, StructType, HeaderStack, merge_dicts
+from p4z3.base import P4Context
 from p4z3.callables import P4Control
 
 
@@ -138,8 +139,14 @@ class ParserNode():
                 for context in reversed(p4_state.contexts):
                     tmp_forward_conds.append(context.tmp_forward_cond)
                 cond = z3.And(*tmp_forward_conds)
-                val = (cond, p4_state.copy_attrs())
-                self.parser_tree.terminal_nodes.setdefault(key, []).append(val)
+                attrs = p4_state.copy_attrs()
+                if key in self.parser_tree.terminal_nodes:
+                    orig_cond = self.parser_tree.terminal_nodes[key][0]
+                    orig_dict = self.parser_tree.terminal_nodes[key][1]
+                    merge_dicts(orig_dict, cond, attrs)
+                    attrs = orig_dict
+                    cond = z3.And(orig_cond, cond)
+                self.parser_tree.terminal_nodes[key] = (cond, attrs)
                 return
 
             parser_state.eval(p4_state)
@@ -202,55 +209,48 @@ class ParserTree(P4Expression):
         visited_states.add(init_state)
         select = init_state.select
         if isinstance(select, ParserSelect):
-            child_list = []
+            child_node = []
             node.add_match(select.match)
             for case_key, case_name in select.cases:
-                parser_state = self.states[case_name]
-                child_node = self.get_parser_dag(
-                    set(visited_states), parser_state)
-                child_list.append((case_key, child_node))
+                sub_child_node = self.get_parser_dag(
+                    set(visited_states), self.states[case_name])
+                child_node.append((case_key, sub_child_node))
             default = self.states[select.default]
-            child_node = self.get_parser_dag(set(visited_states), default)
-            node.add_default(child_node)
-            node.set_child(child_list)
-        else:
+            node.add_default(self.get_parser_dag(set(visited_states), default))
+        elif isinstance(select, str):
             select = self.states[select]
             child_node = self.get_parser_dag(set(visited_states), select)
-            node.set_child(child_node)
+        else:
+            child_node = self.get_parser_dag(set(visited_states), select)
+        node.set_child(child_node)
         return node
 
     def eval(self, p4_state):
-        self.terminal_nodes = {}
 
         # node_str = "\n" + print_tree(node, 0)
         # log.info(node_str)
         self.start_node.eval(p4_state)
         counter = 0
         while counter < self.max_loop:
-            switch_states = []
+            parser_states = []
             terminal_nodes = self.terminal_nodes
             self.terminal_nodes = {}
             context = p4_state.current_context()
             forward_cond_copy = context.tmp_forward_cond
-            for parser_state, states in terminal_nodes.items():
+            for parser_state, (cond, state) in terminal_nodes.items():
                 sub_node = self.nodes[parser_state]
                 # state forks here
-                var_store, contexts = p4_state.checkpoint()
-                conds = []
-                for cond, state in reversed(states):
-                    conds.append(cond)
-                    merge_attrs(p4_state, cond, state)
-                cond = z3.Or(*conds)
-                context.tmp_forward_cond = z3.And(forward_cond_copy, cond)
+                dummy_context = P4Context({})
+                dummy_context.locals = state
+                p4_state.contexts.append(dummy_context)
                 sub_node.eval(p4_state)
-                switch_states.append((cond, p4_state.get_attrs()))
-                p4_state.restore(var_store, contexts)
-            for cond, then_vars in switch_states:
+                parser_states.append((cond, p4_state.get_attrs()))
+                p4_state.contexts.pop()
+
+            for cond, then_vars in parser_states:
                 merge_attrs(p4_state, cond, then_vars)
             context.tmp_forward_cond = forward_cond_copy
             counter += 1
-
-        self.terminal_nodes = {}
 
 
 class ParserState(P4Expression):
