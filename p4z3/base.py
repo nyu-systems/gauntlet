@@ -68,6 +68,27 @@ def z3_cast(val, to_type):
         return val
 
 
+def merge_dicts(target_dict, cond, then_attrs):
+    cond = z3.simplify(cond)
+    for then_name, then_val in then_attrs.items():
+        try:
+            attr_val = target_dict[then_name]
+        except RuntimeError:
+            # if the attribute does not exist it is not relevant
+            # this is because of scoping
+            # FIXME: Make sure this is actually the case...
+            continue
+        if isinstance(attr_val, StructInstance):
+            attr_val.valid = z3.simplify(
+                z3.If(cond, then_val.valid, attr_val.valid))
+            merge_attrs(attr_val, cond, then_val.locals)
+        elif isinstance(attr_val, z3.ExprRef):
+            if then_val.sort() != attr_val.sort():
+                attr_val = z3_cast(attr_val, then_val.sort())
+            if_expr = z3.simplify(z3.If(cond, then_val, attr_val))
+            target_dict[then_name] = if_expr
+
+
 def merge_attrs(target_cls, cond, then_attrs):
     cond = z3.simplify(cond)
     for then_name, then_val in then_attrs.items():
@@ -77,8 +98,6 @@ def merge_attrs(target_cls, cond, then_attrs):
             # if the attribute does not exist it is not relevant
             # this is because of scoping
             # FIXME: Make sure this is actually the case...
-            continue
-        if id(attr_val) == id(then_val):
             continue
         if isinstance(attr_val, StructInstance):
             attr_val.valid = z3.simplify(
@@ -914,7 +933,7 @@ class HeaderStackDict(dict):
         if key == "next":
             # This is a built-in defined in the spec
             try:
-                next_id = self.parent_hdr.nextIndex
+                next_id = z3.simplify(self.parent_hdr.locals["nextIndex"])
                 hdr = self.parent_hdr.locals[str(next_id)]
             except KeyError:
                 raise ParserException("Index out of bounds!")
@@ -923,7 +942,7 @@ class HeaderStackDict(dict):
         if key == "last":
             # This is a built-in defined in the spec
             try:
-                last_idx = self.parent_hdr.locals["lastIndex"]
+                last_idx = z3.simplify(self.parent_hdr.locals["lastIndex"])
                 hdr = self.parent_hdr.locals[str(last_idx)]
             except KeyError:
                 raise ParserException("Index out of bounds!")
@@ -945,11 +964,12 @@ class HeaderStackInstance(StructInstance):
         # no idea how to deal with properties
         # this intercepts dictionary lookups and modifies the header in place
         self.locals = HeaderStackDict(self.locals, self)
-        self.nextIndex = 0
+        self.locals["nextIndex"] = z3.BitVecVal(0, 32)
         self.locals["push_front"] = self.push_front
         self.locals["pop_front"] = self.pop_front
         self.locals["size"] = len(self.members)
-        self.locals["lastIndex"] = z3.BitVec("undefined", 32)
+        # FIXME: This should be undefined...
+        self.locals["lastIndex"] = self.locals["nextIndex"]
 
     def push_front(self, p4_state, count):
         # This is a built-in defined in the spec
@@ -957,10 +977,10 @@ class HeaderStackInstance(StructInstance):
             if hdr_idx < count:
                 hdr = self.locals[f"{hdr_idx}"]
                 hdr.setInvalid(p4_state)
-        self.nextIndex += count
-        if self.nextIndex > self.locals["size"]:
-            self.nextIndex = self.locals["size"]
-        self.locals["lastIndex"] = z3.BitVecVal(self.nextIndex, 32)
+        self.locals["nextIndex"] += count
+        if z3.simplify(self.locals["nextIndex"] > self.locals["size"]) == z3.BoolVal(True):
+            self.locals["nextIndex"] = z3.BitVecVal(self.locals["size"], 32)
+        self.locals["lastIndex"] = self.locals["nextIndex"]
 
     def pop_front(self, p4_state, count):
         # This is a built-in defined in the spec
@@ -971,11 +991,11 @@ class HeaderStackInstance(StructInstance):
                 hdr = self.locals[f"{hdr_idx}"]
                 hdr.setInvalid(p4_state)
 
-        self.nextIndex -= count
-        self.locals["lastIndex"] = self.nextIndex
-        if self.nextIndex < 0:
-            self.nextIndex = 0
-            self.locals["lastIndex"] = z3.BitVec("undefined", 32)
+        self.locals["nextIndex"] -= count
+        self.locals["lastIndex"] = self.locals["nextIndex"]
+        if z3.simplify(self.locals["nextIndex"] < 0) == z3.BoolVal(True):
+            self.locals["nextIndex"] = z3.BitVecVal(0, 32)
+            self.locals["lastIndex"] = z3.BitVecVal(0, 32)
 
     def __copy__(self):
         result = super(HeaderStackInstance, self).__copy__()
@@ -1090,6 +1110,14 @@ class P4ControlType(P4Extern):
     def __init__(self, name, params, type_params):
         super(P4ControlType, self).__init__(name, type_params, [])
         self.params = params
+
+    def init_type_params(self, context, *args, **kwargs):
+        init_ctrl_type = copy.copy(self)
+        # bind the types and set the type context
+        for idx, t_param in enumerate(init_ctrl_type.type_params):
+            arg = resolve_type(context, args[idx])
+            init_ctrl_type.type_context[t_param] = arg
+        return init_ctrl_type
 
 
 class P4ParserType(P4ControlType):
@@ -1439,7 +1467,7 @@ class Z3Reg():
             for extern_name, extern in extern_set.items():
                 self.declare_type(extern_name, extern)
         for param in p4_params:
-            p4_type = resolve_type(self, param.p4_type)
+            p4_type = resolve_type(self.p4_state, param.p4_type)
             if param.mode in ("inout", "out"):
                 # only inouts or outs matter as output
                 stripped_args.append((param.name, p4_type))

@@ -30,12 +30,13 @@ def merge_parameters(params, *args, **kwargs):
                 # Default expressions are pointless arguments, so skip them
                 continue
             arg = P4Argument(param.mode, param.p4_type, arg_val)
-            merged_args[param.name] = arg
         elif param.p4_default is not None:
             # there is no argument but we have a default value, so use that
             arg_val = param.p4_default
             arg = P4Argument(param.mode, param.p4_type, arg_val)
-            merged_args[param.name] = arg
+        else:
+            arg = P4Argument(param.mode, param.p4_type, None)
+        merged_args[param.name] = arg
     for param_name, arg_val in kwargs.items():
         # this is expensive but at least works reliably
         if isinstance(arg_val, DefaultExpression):
@@ -167,9 +168,9 @@ class ConstCallExpr(P4Expression):
         self.args = args
         self.kwargs = kwargs
 
-    def eval(self, p4_state):
-        p4_method = resolve_type(p4_state, self.p4_method)
-        return p4_method.initialize(p4_state, *self.args, **self.kwargs)
+    def eval(self, context):
+        p4_method = resolve_type(context, self.p4_method)
+        return p4_method.initialize(context, *self.args, **self.kwargs)
 
 class P4Package(P4Callable):
 
@@ -181,37 +182,44 @@ class P4Package(P4Callable):
         self.type_context = {}
 
     def init_type_params(self, context, *args, **kwargs):
-        # FIXME: Inference here does not quite work?
-        # The problem is that types inferred here overwrite declared types
-        # How to consolidate?
-        # init_package = copy.copy(self)
-        # for idx, t_param in enumerate(init_package.type_params):
-        #     arg = resolve_type(context, args[idx])
-        #     init_package.type_context[t_param] = arg
-        # return init_package
-        return self
+        init_package = copy.copy(self)
+        for idx, t_param in enumerate(init_package.type_params):
+            arg = resolve_type(context, args[idx])
+            init_package.type_context[t_param] = arg
+        return init_package
 
     def initialize(self, context, *args, **kwargs):
-        local_context = {}
-        for type_name, p4_type in self.type_context.items():
-            local_context[type_name] = resolve_type(context, p4_type)
-
         merged_args = merge_parameters(self.params, *args, **kwargs)
         for pipe_name, pipe_arg in merged_args.items():
+            if pipe_arg.p4_val is None:
+                # for some reason, the argument is uninitialized.
+                # FIXME: This should not happen. Why?
+                continue
             log.info("Loading %s pipe...", pipe_name)
             pipe_val = context.resolve_expr(pipe_arg.p4_val)
             if isinstance(pipe_val, P4Control):
+                # This boilerplate is all necessary to initialize state...
+                # FIXME: Ideally, this should be handled by the control...
+                context.type_contexts.append(self.type_context)
                 ctrl_type = resolve_type(context, pipe_arg.p4_type)
-                pipe_val = pipe_val.bind_to_ctrl_type(ctrl_type)
-
+                pipe_val = pipe_val.bind_to_ctrl_type(context, ctrl_type)
+                context.type_contexts.append(ctrl_type.type_context)
+                args = []
+                for idx, param in enumerate(pipe_val.params):
+                    ctrl_type_param_type = ctrl_type.params[idx].p4_type
+                    generic_type = resolve_type(context, ctrl_type_param_type)
+                    if generic_type is None:
+                        param_type = resolve_type(context, param.p4_type)
+                        self.type_context[ctrl_type_param_type] = param_type
+                    args.append(param.name)
                 # create the z3 representation of this control state
                 p4_state = self.z3_reg.set_p4_state(pipe_name, pipe_val.params)
-                p4_state.type_contexts.append(self.type_context)
-                # initialize the call with its own params
+                # dp not need the types for now
+                context.type_contexts.pop()
+                context.type_contexts.pop()
+
+                # initialize the call with its own params we collected
                 # this is essentially the input packet
-                args = []
-                for param in pipe_val.params:
-                    args.append(param.name)
                 pipe_val.apply(p4_state, *args)
                 # after executing the pipeline get its z3 representation
                 state = p4_state.get_z3_repr()
@@ -291,7 +299,7 @@ class P4Control(P4Callable):
         self.locals["apply"] = self.apply
         self.type_context = {}
 
-    def bind_to_ctrl_type(self, ctrl_type):
+    def bind_to_ctrl_type(self, context, ctrl_type):
         # TODO Figure out what to actually do here
         # FIXME: A hack to deal with lack of input params
         if len(ctrl_type.params) < len(self.type_params):
@@ -300,7 +308,8 @@ class P4Control(P4Callable):
         # the type params sometimes include the return type also
         # it is typically the first value, but is bound somewhere else
         for idx, t_param in enumerate(init_ctrl.type_params):
-            init_ctrl.type_context[t_param] = ctrl_type.params[idx].p4_type
+            sub_type = resolve_type(context, ctrl_type.params[idx].p4_type)
+            init_ctrl.type_context[t_param] = sub_type
             for param_idx, param in enumerate(init_ctrl.params):
                 if isinstance(param.p4_type, str) and param.p4_type == t_param:
                     init_ctrl.params[param_idx] = ctrl_type.params[idx]
@@ -518,15 +527,19 @@ class P4Table(P4Callable):
         self.actions = OrderedDict()
         self.default_action = None
         self.tbl_action = z3.Int(f"{self.name}_action")
+        self.implementation = None
         self.locals["hit"] = z3.BoolVal(False)
         self.locals["miss"] = z3.BoolVal(True)
         self.locals["action_run"] = self
         self.locals["apply"] = self.apply
 
+        # some custom logic to resolve properties
         self.add_keys(properties)
         self.add_default(properties)
         self.add_actions(properties)
         self.add_const_entries(properties)
+        # set the rest
+        self.properties = properties
 
     def add_actions(self, properties):
         if "actions" not in properties:
@@ -571,11 +584,56 @@ class P4Table(P4Callable):
         if not self.keys:
             # there is nothing to match with...
             return z3.BoolVal(False)
-        for index, key in enumerate(self.keys):
-            key_eval = p4_state.resolve_expr(key)
+        for index, (key_expr, key_type) in enumerate(self.keys):
+            key_eval = p4_state.resolve_expr(key_expr)
             key_sort = key_eval.sort()
             key_match = z3.Const(f"{self.name}_table_key_{index}", key_sort)
-            key_pairs.append(key_eval == key_match)
+            if key_type == "exact":
+                # Just a simple comparison, nothing special
+                key_pairs.append(key_eval == key_match)
+            elif key_type == "lpm":
+                # I think this can be arbitrarily large...
+                # If the shift exceeds the bit width, everything will be zero
+                # but that does not matter
+                # TODO: Test this?
+                mask_var = z3.BitVec(
+                    f"{self.name}_table_mask_{index}", key_sort)
+                lpm_mask = z3.BitVecVal(
+                    2**key_sort.size() - 1, key_sort) << mask_var
+                match = (key_eval & lpm_mask) == (key_match & lpm_mask)
+                key_pairs.append(match)
+            elif key_type == "ternary":
+                # Just apply a symbolic mask, any zero bit is a wildcard
+                # TODO: Test this?
+                mask = z3.Const(f"{self.name}_table_mask_{index}", key_sort)
+                match = (key_eval & mask) == (key_match & mask)
+                key_pairs.append(match)
+            elif key_type == "range":
+                # Pick an arbitrary minimum and maximum within the bit range
+                # the minimum must be strictly lesser than the max
+                # I do not think a match is needed?
+                # TODO: Test this?
+                min_key = z3.Const(f"{self.name}_table_min_{index}", key_sort)
+                max_key = z3.Const(f"{self.name}_table_max_{index}", key_sort)
+                match = z3.And(z3.ULE(min_key, key_eval),
+                               z3.UGE(max_key, key_eval))
+                key_pairs.append(z3.And(match, z3.ULT(min_key, max_key)))
+            elif key_type == "optional":
+                # As far as I understand this is just a wildcard for control
+                # plane purposes. Semantically, there is no point?
+                # TODO: Test this?
+                key_pairs.append(z3.BoolVal(True))
+            elif key_type == "selector":
+                # Selectors are a deep rabbit hole
+                # This rabbit hole does not yet make sense to me
+                # FIXME: Implement
+                # will intentionally fail if no implementation is present
+                # impl = self.properties["implementation"]
+                # impl_extern = self.p4_state.resolve_reference(impl)
+                key_pairs.append(z3.BoolVal(True))
+            else:
+                # weird key, might be some specific specification
+                raise RuntimeError(f"Key type {key_type} not supported!")
         return z3.And(key_pairs)
 
     def eval_action(self, p4_state, action_name, action_args):
@@ -607,13 +665,14 @@ class P4Table(P4Callable):
             # match the constant keys with the normal table keys
             # this generates the match expression for a specific constant entry
             # this is a little inefficient, fix.
-            for index, key in enumerate(self.keys):
+            # TODO: Figure out if key type matters here?
+            for index, (key_expr, key_type) in enumerate(self.keys):
                 c_key_expr = c_keys[index]
                 # default implies don't care, do not add
                 # TODO: Verify that this assumption is right...
                 if isinstance(c_key_expr, DefaultExpression):
                     continue
-                key_eval = p4_state.resolve_expr(key)
+                key_eval = p4_state.resolve_expr(key_expr)
                 if isinstance(c_key_expr, P4Range):
                     x = c_key_expr.min
                     y = c_key_expr.max

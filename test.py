@@ -61,6 +61,7 @@ for test in list(VIOLATION_DIR.glob("*")):
 false_friends_filter = [
     "extern_arguments_2.p4",  # exit return value name
     "extern_arguments_3.p4",  # exit return value name
+    "infinite_loop.p4",  # how to evaluate the output of an infinite loop?
 ]
 
 false_friends = set()
@@ -75,7 +76,7 @@ for test in list(FALSE_FRIENDS_DIR.glob("*")):
 xfails = [
     "complex2.p4",  # runtime index, now idea how to resolve this madness
     "issue1334.p4",  # overloading, this test should normally not be skipped
-    "shadow-after-user.p4",  # very specific shadowing
+    "shadow-after-use.p4",  # very specific shadowing
 ]
 
 
