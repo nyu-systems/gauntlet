@@ -20,18 +20,11 @@ parser p(packet_in pkt, out Headers hdr) {
 }
 
 control ingress(inout Headers h) {
-
-    action dummy_action() {
-        if(h.eth_hdr.eth_type == 1) {
-            h.eth_hdr.src_addr = 1;
-        } else {
-            ethernet_t tmp = { h.eth_hdr.src_addr, h.eth_hdr.src_addr, h.eth_hdr.eth_type };
-            h.eth_hdr.src_addr =  tmp.src_addr;
-        }
+    action reset_action(in Headers in_hdr, out Headers out_hdr) {
+        exit;
     }
-
     apply {
-        dummy_action();
+        reset_action(h, h);
     }
 }
 

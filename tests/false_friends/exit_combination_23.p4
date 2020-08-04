@@ -20,18 +20,27 @@ parser p(packet_in pkt, out Headers hdr) {
 }
 
 control ingress(inout Headers h) {
-
-    action dummy_action() {
-        if(h.eth_hdr.eth_type == 1) {
-            h.eth_hdr.src_addr = 1;
-        } else {
-            ethernet_t tmp = { h.eth_hdr.src_addr, h.eth_hdr.src_addr, h.eth_hdr.eth_type };
-            h.eth_hdr.src_addr =  tmp.src_addr;
-        }
+    action simple_action() {
+        h.eth_hdr.dst_addr = 1;
+        exit;
     }
 
+    table simple_table {
+        key = {
+            h.eth_hdr.eth_type: exact @name("key") ;
+        }
+        actions = {
+            simple_action();
+        }
+    }
     apply {
-        dummy_action();
+        switch (simple_table.apply().action_run) {
+            simple_action: {
+                exit;
+            }
+        }
+
+        h.eth_hdr.dst_addr = h.eth_hdr.src_addr + h.eth_hdr.dst_addr;
     }
 }
 

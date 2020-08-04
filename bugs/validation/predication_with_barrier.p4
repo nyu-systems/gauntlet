@@ -1,4 +1,5 @@
 #include <core.p4>
+
 header ethernet_t {
     bit<48> dst_addr;
     bit<48> src_addr;
@@ -8,6 +9,8 @@ header ethernet_t {
 struct Headers {
     ethernet_t eth_hdr;
 }
+
+action dummy(inout Headers val) {}
 
 parser p(packet_in pkt, out Headers hdr) {
     state start {
@@ -20,18 +23,21 @@ parser p(packet_in pkt, out Headers hdr) {
 }
 
 control ingress(inout Headers h) {
-
-    action dummy_action() {
-        if(h.eth_hdr.eth_type == 1) {
-            h.eth_hdr.src_addr = 1;
-        } else {
-            ethernet_t tmp = { h.eth_hdr.src_addr, h.eth_hdr.src_addr, h.eth_hdr.eth_type };
-            h.eth_hdr.src_addr =  tmp.src_addr;
+    action simple_action() {
+        if (h.eth_hdr.eth_type == 1) {
+            return;
         }
+        h.eth_hdr.src_addr = 48w1;
+        // this serves as a barrier
+        dummy(h);
     }
 
     apply {
-        dummy_action();
+        h.eth_hdr.src_addr = 48w2;
+        h.eth_hdr.dst_addr = 48w2;
+        h.eth_hdr.eth_type = 16w2;
+
+        simple_action();
     }
 }
 

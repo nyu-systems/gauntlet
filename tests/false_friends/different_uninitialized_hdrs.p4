@@ -5,8 +5,13 @@ header ethernet_t {
     bit<16> eth_type;
 }
 
+header H {
+    bit<8> a;
+}
+
 struct Headers {
     ethernet_t eth_hdr;
+    H h;
 }
 
 parser p(packet_in pkt, out Headers hdr) {
@@ -15,23 +20,18 @@ parser p(packet_in pkt, out Headers hdr) {
     }
     state parse_hdrs {
         pkt.extract(hdr.eth_hdr);
+        pkt.extract(hdr.h);
         transition accept;
     }
 }
 
 control ingress(inout Headers h) {
-
-    action dummy_action() {
-        if(h.eth_hdr.eth_type == 1) {
-            h.eth_hdr.src_addr = 1;
-        } else {
-            ethernet_t tmp = { h.eth_hdr.src_addr, h.eth_hdr.src_addr, h.eth_hdr.eth_type };
-            h.eth_hdr.src_addr =  tmp.src_addr;
-        }
+    action reset_action(out Headers out_h, inout Headers inout_h) {
+        inout_h.eth_hdr.eth_type = out_h.eth_hdr.eth_type;
     }
 
     apply {
-        dummy_action();
+        reset_action(h, h);
     }
 }
 
