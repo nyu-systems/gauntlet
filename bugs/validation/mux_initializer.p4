@@ -1,5 +1,5 @@
 /*Invoking preprocessor
-cpp -C -undef -nostdinc -x assembler-with-cpp  -I/mnt/windows/Projekte/p4_tv/modules/p4c/build/p4include bugs/crash/conditional_execution_p4test.p4.txt
+cpp -C -undef -nostdinc -x assembler-with-cpp  -I/mnt/windows/Projekte/p4_tv/modules/p4c/build/p4include bugs/validation/mux_initializer.p4
 FrontEnd_0_P4V1::getV1ModelVersion
 ParseAnnotationBodies_0_ParseAnnotations
 ParseAnnotationBodies_1_ClearTypeMap
@@ -157,6 +157,14 @@ P4::TypeChecking_0_ResolveReferences
 P4::TypeChecking_1_TypeInference
 SimplifyControlFlow_0_TypeChecking
 SimplifyControlFlow_1_DoSimplifyControlFlow
+P4::TypeChecking_2_ResolveReferences
+P4::TypeChecking_3_TypeInference
+SimplifyControlFlow_2_TypeChecking
+SimplifyControlFlow_3_DoSimplifyControlFlow
+P4::TypeChecking_4_ResolveReferences
+P4::TypeChecking_5_TypeInference
+SimplifyControlFlow_4_TypeChecking
+SimplifyControlFlow_5_DoSimplifyControlFlow
 FrontEnd_37_SimplifyControlFlow
 P4::TypeChecking_0_ResolveReferences
 P4::TypeChecking_1_TypeInference
@@ -278,8 +286,6 @@ LocalizeAllActions_3_FindRepeatedActionUses
 LocalizeAllActions_4_DuplicateActions
 PassRepeated_0_ResolveReferences
 PassRepeated_1_RemoveUnusedDeclarations
-PassRepeated_2_ResolveReferences
-PassRepeated_3_RemoveUnusedDeclarations
 RemoveAllUnusedDeclarations_0_PassRepeated
 LocalizeAllActions_5_RemoveAllUnusedDeclarations
 FrontEnd_53_LocalizeAllActions
@@ -315,29 +321,24 @@ MidEnd_9_ExpandEmit
 MidEnd_10_HandleNoMatch
 MidEnd_11_SimplifyParsers
 MidEnd_12_StrengthReduction
-MidEnd_13_EliminateTuples
-MidEnd_14_SimplifyComparisons
-MidEnd_15_CopyStructures
-MidEnd_16_NestedStructs
-MidEnd_17_SimplifySelectList
-MidEnd_18_RemoveSelectBooleans
-MidEnd_19_FlattenHeaders
-MidEnd_20_FlattenInterfaceStructs
-MidEnd_21_ReplaceSelectRange
-bugs/crash/conditional_execution_p4test.p4.txt(25): [--Werror=target-error] error: swap.setValid: Conditional execution in actions unsupported on this target
-            ethernet_t swap = { h.eth_hdr.src_addr, h.eth_hdr.dst_addr, h.eth_hdr.eth_type };
-                       ^^^^
-bugs/crash/conditional_execution_p4test.p4.txt(25): [--Werror=target-error] error: swap.setValid: Conditional execution in actions unsupported on this target
-            ethernet_t swap = { h.eth_hdr.src_addr, h.eth_hdr.dst_addr, h.eth_hdr.eth_type };
-            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+bugs/validation/mux_initializer.p4(29): [--Werror=type-error] error: AssignmentStatement: Cannot unify tuple_0 with ethernet_t
+        h.eth_hdr = h.eth_hdr.eth_type == 1 ? {48w1, 48w1, 16w1} : {48w2, 48w2, 16w2};
+                  ^
+bugs/validation/mux_initializer.p4(2)
+header ethernet_t {
+       ^^^^^^^^^^
 Done.*/
-
 
 #include <core.p4>
 header ethernet_t {
     bit<48> dst_addr;
     bit<48> src_addr;
     bit<16> eth_type;
+}
+
+
+header H {
+    bit<8> a;
 }
 
 struct Headers {
@@ -355,14 +356,8 @@ parser p(packet_in pkt, out Headers hdr) {
 }
 
 control ingress(inout Headers h) {
-    action dummy_action() {
-        if(h.eth_hdr.eth_type == 0xDEAD) {
-            ethernet_t swap = { h.eth_hdr.src_addr, h.eth_hdr.dst_addr, h.eth_hdr.eth_type };
-            h.eth_hdr =  swap;
-        }
-    }
     apply {
-        dummy_action();
+        h.eth_hdr = h.eth_hdr.eth_type == 1 ? {48w1, 48w1, 16w1} : {48w2, 48w2, 16w2};
     }
 }
 

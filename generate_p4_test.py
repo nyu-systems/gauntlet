@@ -123,8 +123,9 @@ def get_stf_str(flat_input, flat_output, dont_care_map):
 
     stf_str = "packet 0 "
     stf_str += insert_spaces(input_pkt_str, 2)
-    stf_str += "\nexpect 0 "
-    stf_str += insert_spaces(output_pkt_str, 2)
+    if output_pkt_str:
+        stf_str += "\nexpect 0 "
+        stf_str += insert_spaces(output_pkt_str, 2)
     return stf_str
 
 

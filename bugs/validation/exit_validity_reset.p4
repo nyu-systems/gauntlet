@@ -7,11 +7,6 @@ header ethernet_t {
     bit<16> eth_type;
 }
 
-
-header H {
-    bit<16> a;
-}
-
 struct Headers {
     ethernet_t eth_hdr;
 }
@@ -29,18 +24,14 @@ parser p(packet_in pkt, out Headers hdr, inout Meta m, inout standard_metadata_t
     }
 }
 
-bit<48> set(inout bit<48> set) {
-    set = 1;
-    return 48w2;
-}
 control ingress(inout Headers h, inout Meta m, inout standard_metadata_t sm) {
-    Headers tmp = { { h.eth_hdr.dst_addr, set(h.eth_hdr.dst_addr), 1 } };
-
+    action reset_action(in Headers in_hdr, out Headers out_hdr) {
+        exit;
+    }
     apply {
-        h = tmp;
+        reset_action(h, h);
     }
 }
-
 control vrfy(inout Headers h, inout Meta m) { apply {} }
 
 control update(inout Headers h, inout Meta m) { apply {} }
