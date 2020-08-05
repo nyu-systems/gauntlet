@@ -3,6 +3,9 @@ from pathlib import Path
 import sys
 import importlib
 import logging
+import time
+from datetime import datetime
+
 
 from p4z3.contrib.tabulate import tabulate
 from p4z3 import z3, Z3Reg, P4ComplexType, P4Extern
@@ -165,7 +168,15 @@ def main(args=None):
                         default=OUT_DIR,
                         help="Where intermediate output is stored.")
     args = parser.parse_args(args)
+    start_time = datetime.now()
     package, result = get_z3_formulization(args.p4_input, Path(args.out_dir))
+    done_time = datetime.now()
+    elapsed = done_time - start_time
+    time_str = time.strftime("%H hours %M minutes %S seconds",
+                             time.gmtime(elapsed.total_seconds()))
+    ms = elapsed.microseconds / 1000
+    log.info("Retrieving semantics took %s %s milliseconds.",
+             time_str, ms)
     if result == util.EXIT_SUCCESS:
         for pipe_name, pipe_val in package.get_pipes().items():
             print_z3_data(pipe_name, pipe_val, package)

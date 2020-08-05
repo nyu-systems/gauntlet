@@ -30,7 +30,9 @@ class P4Parser(P4Control):
         for type_name, p4_type in self.type_context.items():
             local_context[type_name] = resolve_type(p4_state, p4_type)
         p4_state.type_contexts.append(self.type_context)
-        self.statements.max_loop = self.compute_loop_bound(p4_state)
+        # disable unrolling for now, we do not really need it for validation
+        # and with it, tests take unpleasantly long
+        # self.statements.max_loop = self.compute_loop_bound(p4_state)
         self.eval(p4_state, *args, **kwargs)
         p4_state.type_contexts.pop()
 
@@ -42,26 +44,26 @@ class RejectState(P4Expression):
 
         # FIXME: This checkpointing should not be necessary
         # Figure out what is going on
-        var_store, contexts = p4_state.checkpoint()
         forward_conds = []
         tmp_forward_conds = []
         for context in reversed(p4_state.contexts):
-            context.copy_out(p4_state)
             forward_conds.extend(context.forward_conds)
             tmp_forward_conds.append(context.tmp_forward_cond)
         context = p4_state.current_context()
 
         cond = z3.simplify(z3.And(z3.Not(z3.Or(*forward_conds)),
                                   z3.And(*tmp_forward_conds)))
-        for member_name, _ in p4_state.members:
-            member_val = p4_state.resolve_reference(member_name)
-            if isinstance(member_val, StructInstance):
-                member_val.deactivate("invalid")
+
         if not cond == z3.BoolVal(False):
+            var_store, contexts = p4_state.checkpoint()
+            for member_name, _ in p4_state.members:
+                member_val = p4_state.resolve_reference(member_name)
+                if isinstance(member_val, StructInstance):
+                    member_val.deactivate("invalid")
             p4_state.exit_states.append((cond, p4_state.get_z3_repr()))
             p4_state.has_exited = True
-        p4_state.restore(var_store, contexts)
-        context.forward_conds.append(context.tmp_forward_cond)
+            p4_state.restore(var_store, contexts)
+            context.forward_conds.append(context.tmp_forward_cond)
 
 
 class AcceptState(P4Expression):
@@ -73,7 +75,7 @@ class AcceptState(P4Expression):
         cond = z3.simplify(z3.And(z3.Not(z3.Or(*context.forward_conds)),
                                   context.tmp_forward_cond))
         if not cond == z3.BoolVal(False):
-            context.return_states.append((cond, p4_state.copy_attrs()))
+            context.return_states.append((cond, p4_state.get_attrs()))
             context.has_returned = True
         context.forward_conds.append(context.tmp_forward_cond)
 
@@ -110,19 +112,16 @@ class ParserNode():
             context.tmp_forward_cond = z3.And(forward_cond_copy, cond)
             parser_node.eval(p4_state)
             select_conds.append(cond)
-            if not p4_state.has_exited or context.has_returned:
+            if not p4_state.has_exited:
                 switches.append((cond, p4_state.get_attrs()))
             p4_state.has_exited = False
             context.has_returned = False
             p4_state.restore(var_store, contexts)
 
-        var_store, contexts = p4_state.checkpoint()
         # this hits when the table is either missed, or no action matches
         cond = z3.Not(z3.Or(*select_conds))
         context.tmp_forward_cond = z3.And(forward_cond_copy, cond)
         self.default.eval(p4_state)
-        if p4_state.has_exited:
-            p4_state.restore(var_store, contexts)
         p4_state.has_exited = False
         context.has_returned = False
         context.tmp_forward_cond = forward_cond_copy
@@ -130,33 +129,33 @@ class ParserNode():
             merge_attrs(p4_state, cond, then_vars)
 
     def eval(self, p4_state):
+        if self.is_terminal:
+            context = p4_state.current_context()
+            key = self.parser_state.name
+            tmp_forward_conds = []
+            for context in reversed(p4_state.contexts):
+                tmp_forward_conds.append(context.tmp_forward_cond)
+            cond = z3.And(*tmp_forward_conds)
+            attrs = p4_state.get_attrs()
+            # add the
+            if key in self.parser_tree.terminal_nodes:
+                orig_cond = self.parser_tree.terminal_nodes[key][0]
+                orig_dict = self.parser_tree.terminal_nodes[key][1]
+                merge_dicts(orig_dict, cond, attrs)
+                attrs = orig_dict
+                cond = z3.And(orig_cond, cond)
+            self.parser_tree.terminal_nodes[key] = (cond, attrs)
+            return
+
         parser_state = self.parser_state
         try:
-            if self.is_terminal:
-                context = p4_state.current_context()
-                key = self.parser_state.name
-                tmp_forward_conds = []
-                for context in reversed(p4_state.contexts):
-                    tmp_forward_conds.append(context.tmp_forward_cond)
-                cond = z3.And(*tmp_forward_conds)
-                attrs = p4_state.copy_attrs()
-                if key in self.parser_tree.terminal_nodes:
-                    orig_cond = self.parser_tree.terminal_nodes[key][0]
-                    orig_dict = self.parser_tree.terminal_nodes[key][1]
-                    merge_dicts(orig_dict, cond, attrs)
-                    attrs = orig_dict
-                    cond = z3.And(orig_cond, cond)
-                self.parser_tree.terminal_nodes[key] = (cond, attrs)
-                return
-
             parser_state.eval(p4_state)
-            child = self.child
-            if isinstance(child, list):
+            if isinstance(self.child, list):
+                # there is a switch case try to untangle it.
                 self.handle_select(p4_state)
-                return
-            elif isinstance(child, ParserNode):
+            elif isinstance(self.child, ParserNode):
+                # direct descendant, continue the evaluation
                 self.child.eval(p4_state)
-                return
         except ParserException:
             RejectState().eval(p4_state)
 

@@ -69,7 +69,6 @@ def z3_cast(val, to_type):
 
 
 def merge_dicts(target_dict, cond, then_attrs):
-    cond = z3.simplify(cond)
     for then_name, then_val in then_attrs.items():
         try:
             attr_val = target_dict[then_name]
@@ -79,18 +78,16 @@ def merge_dicts(target_dict, cond, then_attrs):
             # FIXME: Make sure this is actually the case...
             continue
         if isinstance(attr_val, StructInstance):
-            attr_val.valid = z3.simplify(
-                z3.If(cond, then_val.valid, attr_val.valid))
+            attr_val.valid = z3.If(cond, then_val.valid, attr_val.valid)
             merge_attrs(attr_val, cond, then_val.locals)
         elif isinstance(attr_val, z3.ExprRef):
             if then_val.sort() != attr_val.sort():
                 attr_val = z3_cast(attr_val, then_val.sort())
-            if_expr = z3.simplify(z3.If(cond, then_val, attr_val))
+            if_expr = z3.If(cond, then_val, attr_val)
             target_dict[then_name] = if_expr
 
 
 def merge_attrs(target_cls, cond, then_attrs):
-    cond = z3.simplify(cond)
     for then_name, then_val in then_attrs.items():
         try:
             attr_val = target_cls.resolve_reference(then_name)
@@ -100,13 +97,12 @@ def merge_attrs(target_cls, cond, then_attrs):
             # FIXME: Make sure this is actually the case...
             continue
         if isinstance(attr_val, StructInstance):
-            attr_val.valid = z3.simplify(
-                z3.If(cond, then_val.valid, attr_val.valid))
+            attr_val.valid = z3.If(cond, then_val.valid, attr_val.valid)
             merge_attrs(attr_val, cond, then_val.locals)
         elif isinstance(attr_val, z3.ExprRef):
             if then_val.sort() != attr_val.sort():
                 attr_val = z3_cast(attr_val, then_val.sort())
-            if_expr = z3.simplify(z3.If(cond, then_val, attr_val))
+            if_expr = z3.If(cond, then_val, attr_val)
             target_cls.set_or_add_var(then_name, if_expr)
 
 

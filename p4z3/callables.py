@@ -606,7 +606,11 @@ class P4Table(P4Callable):
                 # Just apply a symbolic mask, any zero bit is a wildcard
                 # TODO: Test this?
                 mask = z3.Const(f"{self.name}_table_mask_{index}", key_sort)
-                match = (key_eval & mask) == (key_match & mask)
+                # this is dumb...
+                if isinstance(key_sort, z3.BoolSortRef):
+                    match = z3.And(key_eval, mask) == z3.And(key_match, mask)
+                else:
+                    match = (key_eval & mask) == (key_match & mask)
                 key_pairs.append(match)
             elif key_type == "range":
                 # Pick an arbitrary minimum and maximum within the bit range
