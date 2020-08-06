@@ -51,34 +51,24 @@ class RejectState(P4Expression):
             tmp_forward_conds.append(context.tmp_forward_cond)
         context = p4_state.current_context()
 
-        cond = z3.simplify(z3.And(z3.Not(z3.Or(*forward_conds)),
-                                  z3.And(*tmp_forward_conds)))
-
-        if not cond == z3.BoolVal(False):
-            var_store, contexts = p4_state.checkpoint()
-            for member_name, _ in p4_state.members:
-                member_val = p4_state.resolve_reference(member_name)
-                if isinstance(member_val, StructInstance):
-                    member_val.deactivate("invalid")
-            p4_state.exit_states.append((cond, p4_state.get_z3_repr()))
-            p4_state.has_exited = True
-            p4_state.restore(var_store, contexts)
-            context.forward_conds.append(context.tmp_forward_cond)
+        cond = z3.And(z3.Not(z3.Or(*forward_conds)),
+                      z3.And(*tmp_forward_conds))
+        var_store, contexts = p4_state.checkpoint()
+        for member_name, _ in p4_state.members:
+            member_val = p4_state.resolve_reference(member_name)
+            if isinstance(member_val, StructInstance):
+                member_val.deactivate("invalid")
+        p4_state.exit_states.append((cond, p4_state.get_z3_repr()))
+        p4_state.restore(var_store, contexts)
+        p4_state.has_exited = True
+        context.forward_conds.append(context.tmp_forward_cond)
 
 
 class AcceptState(P4Expression):
     name = "accept"
 
     def eval(self, p4_state):
-        context = p4_state.current_context()
-
-        cond = z3.simplify(z3.And(z3.Not(z3.Or(*context.forward_conds)),
-                                  context.tmp_forward_cond))
-        if not cond == z3.BoolVal(False):
-            context.return_states.append((cond, p4_state.get_attrs()))
-            context.has_returned = True
-        context.forward_conds.append(context.tmp_forward_cond)
-
+        pass
 
 class ParserNode():
     def __init__(self, parser_tree, parser_state, match=None):
@@ -113,7 +103,8 @@ class ParserNode():
             parser_node.eval(p4_state)
             select_conds.append(cond)
             if not p4_state.has_exited:
-                switches.append((cond, p4_state.get_attrs()))
+                switches.append(
+                    (context.tmp_forward_cond, p4_state.get_attrs()))
             p4_state.has_exited = False
             context.has_returned = False
             p4_state.restore(var_store, contexts)
@@ -142,8 +133,8 @@ class ParserNode():
                 orig_cond = self.parser_tree.terminal_nodes[key][0]
                 orig_dict = self.parser_tree.terminal_nodes[key][1]
                 merge_dicts(orig_dict, cond, attrs)
-                attrs = orig_dict
                 cond = z3.And(orig_cond, cond)
+                attrs = orig_dict
             self.parser_tree.terminal_nodes[key] = (cond, attrs)
             return
 
@@ -225,7 +216,6 @@ class ParserTree(P4Expression):
         return node
 
     def eval(self, p4_state):
-
         # node_str = "\n" + print_tree(node, 0)
         # log.info(node_str)
         self.start_node.eval(p4_state)
@@ -234,13 +224,12 @@ class ParserTree(P4Expression):
             parser_states = []
             terminal_nodes = self.terminal_nodes
             self.terminal_nodes = {}
-            context = p4_state.current_context()
-            forward_cond_copy = context.tmp_forward_cond
             for parser_state, (cond, state) in terminal_nodes.items():
                 sub_node = self.nodes[parser_state]
                 # state forks here
                 dummy_context = P4Context({})
                 dummy_context.locals = state
+                dummy_context.tmp_forward_cond = cond
                 p4_state.contexts.append(dummy_context)
                 sub_node.eval(p4_state)
                 parser_states.append((cond, p4_state.get_attrs()))
@@ -248,7 +237,6 @@ class ParserTree(P4Expression):
 
             for cond, then_vars in parser_states:
                 merge_attrs(p4_state, cond, then_vars)
-            context.tmp_forward_cond = forward_cond_copy
             counter += 1
 
 
