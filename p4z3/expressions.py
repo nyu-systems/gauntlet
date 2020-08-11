@@ -450,7 +450,7 @@ class P4Mux(P4Expression):
         self.else_val = else_val
 
     def eval(self, p4_state):
-        cond = p4_state.resolve_expr(self.cond)
+        cond = z3.simplify(p4_state.resolve_expr(self.cond))
 
         # handle side effects for function and table calls
         if cond == z3.BoolVal(False):
