@@ -11,7 +11,21 @@ sys.setrecursionlimit(15000)
 
 FILE_DIR = os.path.dirname(os.path.abspath(__file__))
 log = logging.getLogger(__name__)
+allow_undefined_vars = False
 
+# We maintain a list of passes to skip for convenience
+# This reduces the amount of noise when generating random programs
+SKIPPED_PASSES = [
+    "InlineActions",
+    # "InlineFunctions",
+]
+
+def needs_skipping(post):
+    for skip_pass in SKIPPED_PASSES:
+        if skip_pass in post:
+            log.warning("Skipping \"%s\" pass to avoid crashes...", skip_pass)
+            return True
+    return False
 
 def debug_msg(p4_files):
     debug_string = "You can debug this failure by running:\n"
@@ -92,6 +106,9 @@ def z3_check(prog_paths, fail_dir=None):
         p4_post_path, pipes_post = z3_progs[idx]
         log.info("\nComparing programs\n%s\n%s\n########",
                  p4_pre_path.stem, p4_post_path.stem)
+        # sometimes we want to skip a specific pass
+        if needs_skipping(str(p4_post_path)):
+            continue
         if len(pipes_pre) != len(pipes_post):
             log.warning("Pre and post model differ in size!")
             return util.EXIT_SKIPPED

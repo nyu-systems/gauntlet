@@ -34,7 +34,7 @@ NUM_PROCESSES = 4
 
 KNOWN_BUGS = [
     "functionsInlining.cpp:41: Null stat",
-    ": declaration not found",
+    ": no definitions",
     # bf
     "PHV allocation was not successful",
     "Unsupported action spanning multiple stages",
