@@ -755,11 +755,11 @@ class HeaderInstance(StructInstance):
             member_val = self.resolve_reference(member_name)
             if isinstance(member_val, StructInstance):
                 member_val.activate()
-            else:
-                # only if the header was invalid, reallocate all variables
-                if self.valid == z3.BoolVal(False):
-                    allocated_var = z3.Const(label, member_val.sort())
-                    self.set_or_add_var(member_name, allocated_var)
+            # else:
+                # # only if the header was invalid, reallocate all variables
+                # if self.valid == z3.BoolVal(False):
+                #     allocated_var = z3.Const(label, member_val.sort())
+                #     self.set_or_add_var(member_name, allocated_var)
         self.valid = z3.BoolVal(True)
 
     def deactivate(self, label="undefined"):

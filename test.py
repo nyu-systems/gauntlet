@@ -63,7 +63,7 @@ false_friends_filter = [
     "extern_arguments_3.p4",  # exit return value name
     "infinite_loop.p4",  # how to evaluate the output of an infinite loop?
     "exit_combination_23.p4",  # z3 seems to get stuck?
-    "different_uninitialized_hdrs.p4",  # different uninit values
+    "undefined_2.p4",  # different uninit values
 ]
 
 false_friends = set()
