@@ -35,6 +35,8 @@ NUM_PROCESSES = 4
 KNOWN_BUGS = [
     "functionsInlining.cpp:41: Null stat",
     ": no definitions",
+    "Value too large for int",
+    "Shifts with negative amounts are not permitted",
     # bf
     "PHV allocation was not successful",
     "Unsupported action spanning multiple stages",

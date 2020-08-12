@@ -50,7 +50,22 @@ def check_equivalence(prog_before, prog_after):
     try:
         # the equivalence equation
         log.debug("Simplifying equation...")
-        tv_equiv = z3.simplify(prog_before != prog_after)
+        tv_equiv = prog_before != prog_after
+        # equiv_vars = z3.z3util.get_vars(tv_equiv)
+        # relevant_vars = []
+        # undefined_vars = []
+        # for var in equiv_vars:
+        #     if str(var) != "undefined":
+        #         relevant_vars.append(var)
+        #     else:
+        #         undefined_vars.append(var)
+        # # if undefined_vars:
+        # #     tv_equiv = z3.And(tv_equiv, z3.ForAll(
+        # #         undefined_vars, tv_equiv))
+        # undefs = []
+        # for undef_var in undefined_vars:
+        #     undefs.append(undef_var == 0)
+        # tv_equiv = z3.And(tv_equiv, *undefs)
     except z3.Z3Exception as e:
         prog_before_simpl = z3.simplify(prog_before)
         prog_after_simpl = z3.simplify(prog_after)

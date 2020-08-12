@@ -1,5 +1,5 @@
 /*Invoking preprocessor
-cpp -C -undef -nostdinc -x assembler-with-cpp  -D__TARGET_BMV2__ -I/mnt/windows/Projekte/p4_tv/modules/p4c/build/p4include bugs/crash/empty_table_miss.p4.txt
+cpp -C -undef -nostdinc -x assembler-with-cpp  -D__TARGET_BMV2__ -Ip4c/build/p4include bugs/crash/empty_table_miss.p4.txt
 FrontEnd_0_P4V1::getV1ModelVersion
 ParseAnnotationBodies_0_ParseAnnotations
 ParseAnnotationBodies_1_ClearTypeMap
@@ -372,7 +372,7 @@ PassManager_13_ClonePathExpressions
 PassManager_14_ClearTypeMap
 PassManager_15_EvaluatorPass
 PassManager_16_VisitFunctor
-In file: /mnt/windows/Projekte/p4_tv/modules/p4c/backends/bmv2/common/expression.cpp:97
+In file: p4c/backends/bmv2/common/expression.cpp:97
 [31mCompiler Bug[0m: bugs/crash/empty_table_miss.p4.txt(37): dummy_table_0/dummy_table;: could not convert to Json
         if (dummy_table.apply().miss) {*/
 
