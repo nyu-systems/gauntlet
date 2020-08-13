@@ -288,13 +288,18 @@ class P4lshift(P4BinaryOp):
             # the only size adjustment is to make the rval expr large enough
             # for some reason a small rval leads to erroneous shifts...
             return op.lshift(lval_expr, rval_expr)
+        if isinstance(rval_expr, int):
+            # shift is larger than width, all zero
+            if lval_expr.size() <= rval_expr:
+                return z3.BitVecVal(0, lval_expr.size())
         # align the bitvectors to allow operations
         lval_is_bitvec = isinstance(lval_expr, z3.BitVecRef)
         rval_is_bitvec = isinstance(rval_expr, z3.BitVecRef)
         orig_lval_size = lval_expr.size()
         if lval_is_bitvec and rval_is_bitvec:
-            if lval_expr.size() < rval_expr.size():
-                lval_expr = z3_cast(lval_expr, rval_expr.size())
+            # shift is larger than width, all zero
+            if lval_expr.size() <= rval_expr.size():
+                return z3.BitVecVal(0, lval_expr.size())
             if lval_expr.size() > rval_expr.size():
                 rval_expr = z3_cast(rval_expr, lval_expr.size())
         return z3_cast(op.lshift(lval_expr, rval_expr), orig_lval_size)

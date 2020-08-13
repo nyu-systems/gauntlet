@@ -32,6 +32,7 @@ header LSH {
     bit<8> a;
     bit<8> b;
     bit<8> c;
+    bit<8> d;
 }
 
 header COMPARE {
@@ -97,6 +98,8 @@ control ig(inout Headers h) {
         h.lshift.a = (bit<8>)(4w4 << 8w2);
         h.lshift.b = (bit<8>)(4w4 << 8w16);
         h.lshift.c = 1 << 1;
+        h.lshift.d = (bit<8>)1 << 256;
+
         // comparing various constants
         if (4w15  > 2) { h.comp.a = 1; }
         if (4w3  > 2) { h.comp.b = 1; }
