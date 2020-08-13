@@ -1228,7 +1228,7 @@ class P4State():
         z3_type.declare(f"mk_{name}", *flat_args)
         self.z3_type = z3_type.create()
 
-        self.const = z3.Const(f"{name}", self.z3_type)
+        self.const = z3.Const(name, self.z3_type)
 
         for type_idx, arg_name in enumerate(self.flat_names):
             member_constructor = self.z3_type.accessor(0, type_idx)

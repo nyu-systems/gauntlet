@@ -16,16 +16,18 @@ allow_undefined_vars = False
 # We maintain a list of passes to skip for convenience
 # This reduces the amount of noise when generating random programs
 SKIPPED_PASSES = [
-    "InlineActions",
-    # "InlineFunctions",
+    "InlineActions",  # too many bugs
+    "SideEffectOrdering",  # too many bugs
 ]
+
 
 def needs_skipping(post):
     for skip_pass in SKIPPED_PASSES:
         if skip_pass in post:
-            log.warning("Skipping \"%s\" pass to avoid crashes...", skip_pass)
+            log.warning("Skipping \"%s\" pass...", skip_pass)
             return True
     return False
+
 
 def debug_msg(p4_files):
     debug_string = "You can debug this failure by running:\n"
@@ -51,21 +53,17 @@ def check_equivalence(prog_before, prog_after):
         # the equivalence equation
         log.debug("Simplifying equation...")
         tv_equiv = prog_before != prog_after
-        # equiv_vars = z3.z3util.get_vars(tv_equiv)
-        # relevant_vars = []
-        # undefined_vars = []
-        # for var in equiv_vars:
-        #     if str(var) != "undefined":
-        #         relevant_vars.append(var)
-        #     else:
-        #         undefined_vars.append(var)
-        # # if undefined_vars:
-        # #     tv_equiv = z3.And(tv_equiv, z3.ForAll(
-        # #         undefined_vars, tv_equiv))
-        # undefs = []
-        # for undef_var in undefined_vars:
-        #     undefs.append(undef_var == 0)
-        # tv_equiv = z3.And(tv_equiv, *undefs)
+        if allow_undefined_vars:
+            equiv_vars = z3.z3util.get_vars(tv_equiv)
+            relevant_vars = []
+            undefined_vars = []
+            for var in equiv_vars:
+                if str(var) != "undefined":
+                    relevant_vars.append(var)
+                else:
+                    undefined_vars.append(var)
+            if relevant_vars:
+                tv_equiv = z3.ForAll(relevant_vars, tv_equiv)
     except z3.Z3Exception as e:
         prog_before_simpl = z3.simplify(prog_before)
         prog_after_simpl = z3.simplify(prog_after)
