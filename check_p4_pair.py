@@ -63,7 +63,7 @@ def check_equivalence(prog_before, prog_after):
                 else:
                     undefined_vars.append(var)
             if relevant_vars:
-                tv_equiv = z3.ForAll(relevant_vars, tv_equiv)
+                tv_equiv = z3.Exists(relevant_vars, tv_equiv)
     except z3.Z3Exception as e:
         prog_before_simpl = z3.simplify(prog_before)
         prog_after_simpl = z3.simplify(prog_after)
