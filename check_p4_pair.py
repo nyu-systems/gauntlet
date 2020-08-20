@@ -52,18 +52,7 @@ def check_equivalence(prog_before, prog_after):
     try:
         # the equivalence equation
         log.debug("Simplifying equation...")
-        tv_equiv = prog_before != prog_after
-        if allow_undefined_vars:
-            equiv_vars = z3.z3util.get_vars(tv_equiv)
-            relevant_vars = []
-            undefined_vars = []
-            for var in equiv_vars:
-                if str(var) != "undefined":
-                    relevant_vars.append(var)
-                else:
-                    undefined_vars.append(var)
-            if relevant_vars:
-                tv_equiv = z3.Exists(relevant_vars, tv_equiv)
+        tv_equiv = z3.simplify(prog_before != prog_after)
     except z3.Z3Exception as e:
         prog_before_simpl = z3.simplify(prog_before)
         prog_after_simpl = z3.simplify(prog_after)
@@ -72,9 +61,7 @@ def check_equivalence(prog_before, prog_after):
         log.error("PROGRAM AFTER\n%s", prog_after_simpl)
         return util.EXIT_VIOLATION
     log.debug("Checking...")
-    g = z3.Goal()
     log.debug(z3.tactics())
-    g.add(tv_equiv)
     t = z3.Then(
         z3.Tactic("qflia"),
         z3.Tactic("propagate-values"),
@@ -86,6 +73,18 @@ def check_equivalence(prog_before, prog_after):
     ret = s.check(tv_equiv)
     log.debug(tv_equiv)
     log.debug(ret)
+    if allow_undefined_vars and ret == z3.sat:
+        equiv_vars = z3.z3util.get_vars(tv_equiv)
+        undefined_vars = []
+        relevant_vars = []
+        for var in equiv_vars:
+            if str(var) == "undefined":
+                undefined_vars.append(var)
+            else:
+                relevant_vars.append(var)
+        if undefined_vars:
+            tv_equiv = z3.ForAll(undefined_vars, tv_equiv)
+            ret = s.check(tv_equiv)
     if ret == z3.sat:
         prog_before_simpl = z3.simplify(prog_before)
         prog_after_simpl = z3.simplify(prog_after)

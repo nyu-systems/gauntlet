@@ -187,13 +187,13 @@ def run_tofino_test(out_dir, p4_input, stf_file_name):
     # initialize the target install
     log.info("Building the tofino target...")
     config_cmd = f"{TOFINO_DIR}/pkgsrc/p4-build/configure "
-    config_cmd += f"--with-tofino --with-p4c=bf-p4c "
+    config_cmd += "--with-tofino --with-p4c=bf-p4c "
     config_cmd += f"--prefix={TOFINO_DIR}/install "
     config_cmd += f"--bindir={TOFINO_DIR}/install/bin "
     config_cmd += f"P4_NAME={prog_name} "
     config_cmd += f"P4_PATH={p4_input.resolve()} "
-    config_cmd += f"P4_VERSION=p4-16 "
-    config_cmd += f"P4_ARCHITECTURE=tna "
+    config_cmd += "P4_VERSION=p4-16 "
+    config_cmd += "P4_ARCHITECTURE=tna "
     result = util.exec_process(config_cmd, cwd=out_dir)
     if result.returncode != util.EXIT_SUCCESS:
         return result, result.stdout, result.stderr
@@ -227,7 +227,7 @@ def run_tofino_test(out_dir, p4_input, stf_file_name):
     os_env["SDE_INSTALL"] = f"{TOFINO_DIR}/install"
 
     switch_cmd = f"{TOFINO_DIR}/run_switchd.sh "
-    switch_cmd += f"--arch tofino "
+    switch_cmd += "--arch tofino "
     switch_cmd += f"-p {prog_name} "
     proc = util.start_process(
         switch_cmd, preexec_fn=os.setsid, env=os_env, cwd=out_dir)
