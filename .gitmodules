@@ -3,6 +3,11 @@
     path = modules/p4c
     ignore = dirty
 
+[submodule "behavioral-model"]
+    url = https://github.com/p4lang/behavioral-model
+    path = modules/behavioral-model
+    ignore = dirty
+
 [submodule "toz3"]
     url = https://github.com/p4gauntlet/toz3
     path = modules/toz3
