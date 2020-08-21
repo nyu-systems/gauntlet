@@ -11,14 +11,11 @@ sys.setrecursionlimit(15000)
 
 FILE_DIR = os.path.dirname(os.path.abspath(__file__))
 log = logging.getLogger(__name__)
-allow_undefined_vars = False
+allow_undefined_vars = True
 
 # We maintain a list of passes to skip for convenience
 # This reduces the amount of noise when generating random programs
-SKIPPED_PASSES = [
-    "InlineActions",  # too many bugs
-    "SideEffectOrdering",  # too many bugs
-]
+SKIPPED_PASSES = []
 
 
 def needs_skipping(post):
@@ -74,7 +71,7 @@ def check_equivalence(prog_before, prog_after):
     log.debug(tv_equiv)
     log.debug(ret)
     if allow_undefined_vars and ret == z3.sat:
-        equiv_vars = z3.z3util.get_vars(tv_equiv)
+        equiv_vars = z3.z3util.get_vars(z3.simplify(prog_before))
         undefined_vars = []
         relevant_vars = []
         for var in equiv_vars:

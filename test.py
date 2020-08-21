@@ -47,6 +47,7 @@ for test in list(P4_DIR.glob("*.p4")):
 
 # these programs show pathological behavior and can currently not be tested
 violation_filter = [
+    "parser_loop",  # needs some work around undefined behavior
 ]
 violation_tests = set()
 for test in list(VIOLATION_DIR.glob("*")):
@@ -63,7 +64,6 @@ false_friends_filter = [
     "extern_arguments_3.p4",  # exit return value name
     "infinite_loop.p4",  # how to evaluate the output of an infinite loop?
     "exit_combination_23.p4",  # z3 seems to get stuck?
-    "undefined_2.p4",  # different uninit values
 ]
 
 false_friends = set()

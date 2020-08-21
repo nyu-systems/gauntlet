@@ -46,7 +46,7 @@ def run_p4_to_py(p4_file, py_file, config, option_str=""):
     cmd += f"--output {py_file} "
     cmd += option_str
     if config["use_tofino"]:
-        include_dir = TOFINO_DIR.joinpath(f"install/share/p4c/p4include/ ")
+        include_dir = TOFINO_DIR.joinpath("install/share/p4c/p4include/ ")
         cmd += f"-I {include_dir}"
     log.info("Converting p4 to z3 python with command %s ", cmd)
     return util.exec_process(cmd)

@@ -1,7 +1,6 @@
 bit<16> max(in bit<16> left, in bit<16> right) {
-    bit<16> random;
-    if (random > right)
-        return left;
+    if (left > right)
+        return left + 1 ;
     return right;
 }
 
