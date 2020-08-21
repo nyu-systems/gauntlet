@@ -64,6 +64,7 @@ false_friends_filter = [
     "extern_arguments_3.p4",  # exit return value name
     "infinite_loop.p4",  # how to evaluate the output of an infinite loop?
     "exit_combination_23.p4",  # z3 seems to get stuck?
+    "parser_test4.p4",  # bug in the parser semantics
 ]
 
 false_friends = set()

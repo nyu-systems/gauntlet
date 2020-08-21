@@ -94,7 +94,7 @@ class ParserNode():
         context = p4_state.current_context()
         forward_cond_copy = context.tmp_forward_cond
         match_list = p4_state.resolve_expr(self.match)
-        for parser_cond, parser_node in self.child:
+        for parser_cond, parser_node in reversed(self.child):
             case_expr = p4_state.resolve_expr(parser_cond)
             cond = build_select_cond(p4_state, case_expr, match_list)
             # state forks here
@@ -108,8 +108,6 @@ class ParserNode():
             p4_state.has_exited = False
             context.has_returned = False
             p4_state.restore(var_store, contexts)
-            if z3.simplify(cond) == z3.BoolVal(True):
-                break
 
         # this hits when the table is either missed, or no action matches
         cond = z3.Not(z3.Or(*select_conds))
@@ -118,7 +116,7 @@ class ParserNode():
         p4_state.has_exited = False
         context.has_returned = False
         context.tmp_forward_cond = forward_cond_copy
-        for cond, then_vars in reversed(switches):
+        for cond, then_vars in switches:
             merge_attrs(p4_state, cond, then_vars)
 
     def eval(self, p4_state):
@@ -227,8 +225,6 @@ class ParserTree(P4Expression):
             terminal_nodes = self.terminal_nodes
             self.terminal_nodes = {}
             for parser_state, (cond, state) in terminal_nodes.items():
-                if z3.simplify(cond) == z3.BoolVal(False):
-                    continue
                 sub_node = self.nodes[parser_state]
                 # state forks here
                 dummy_context = P4Context({})
