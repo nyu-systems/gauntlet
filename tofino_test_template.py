@@ -4,7 +4,7 @@ FILE_NAME = Path(__file__).stem
 import ptf.testutils as testutils
 from ptf import mask
 from bfruntime_client_base_tests import BfRuntimeTest
-from p4c.tools.stf.stf_parser import STFParser
+from modules.p4c.tools.stf.stf_parser import STFParser
 
 
 class VerifyTest(BfRuntimeTest):

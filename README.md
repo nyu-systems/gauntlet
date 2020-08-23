@@ -86,7 +86,7 @@ We also include facilities to fuzz test the compilers at scale.
 
 | Architecture | Compiler | Bludgeon Support | Validation Testing | Model-based Testing |
 | ------------- | ------------- | ------------- | ------------- | ------------- |
-| psa | `p4c-bm2-psa` | :heavy_check_mark: | :heavy_check_mark: | :x: |
+| psa | `p4c-bm2-psa` | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
 | tna | `p4c-bf` | :heavy_check_mark: | :x: | :heavy_check_mark: |
 | top | `p4test` | :heavy_check_mark: | :heavy_check_mark: | :x: |
 | v1model | `p4c-bm2-ss` | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |

@@ -29,15 +29,13 @@ INVALID_VAR = "invalid"
 HEADER_VAR = "h"
 
 
-def generate_random_prog(p4c_bin, p4_file, config):
+def generate_p4_prog(p4c_bin, p4_file, config):
+    arch = config["arch"]
     p4_cmd = f"{p4c_bin} "
-    p4_cmd += f"{p4_file} "
-    if config["use_tofino"]:
-        p4_cmd += "1 "
-    else:
-        p4_cmd += "0 "
-    log.info("Generating random p4 code with command %s ", p4_cmd)
-    return util.exec_process(p4_cmd)
+    p4_cmd += f"--output {p4_file} "
+    p4_cmd += f"--arch {arch} "
+    log.debug("Generating random p4 code with command %s ", p4_cmd)
+    return util.exec_process(p4_cmd), p4_file
 
 
 def run_p4_to_py(p4_file, py_file, config, option_str=""):
@@ -45,7 +43,7 @@ def run_p4_to_py(p4_file, py_file, config, option_str=""):
     cmd += f"{p4_file} "
     cmd += f"--output {py_file} "
     cmd += option_str
-    if config["use_tofino"]:
+    if config["arch"] == "tna":
         include_dir = TOFINO_DIR.joinpath("install/share/p4c/p4include/ ")
         cmd += f"-I {include_dir}"
     log.info("Converting p4 to z3 python with command %s ", cmd)
@@ -153,10 +151,12 @@ def get_semantics(config):
     return z3_prog, util.EXIT_SUCCESS
 
 
-def run_bmv2_test(out_dir, p4_input):
+def run_bmv2_test(out_dir, p4_input, use_psa=False):
     cmd = "python3 "
     cmd += f"{P4C_DIR}/backends/bmv2/run-bmv2-test.py "
     cmd += f"{P4C_DIR} -v "
+    if use_psa:
+        cmd += "-p "
     cmd += f"-bd {P4C_DIR}/build "
     cmd += f"{out_dir}/{p4_input.name} "
     test_proc = util.start_process(cmd, cwd=out_dir)
@@ -268,11 +268,15 @@ def run_stf_test(config, stf_str):
     stf_file_name = out_dir.joinpath(f"{p4_input.stem}.stf")
     with open(stf_file_name, 'w+') as stf_file:
         stf_file.write(stf_str)
-    if config["use_tofino"]:
+    if config["arch"] == "tna":
         result, stdout, stderr = run_tofino_test(
             out_dir, p4_input, stf_file_name)
-    else:
+    elif config["arch"] == "v1model":
         result, stdout, stderr = run_bmv2_test(out_dir, p4_input)
+    elif config["arch"] == "psa":
+        result, stdout, stderr = run_bmv2_test(out_dir, p4_input, use_psa=True)
+    else:
+        raise RuntimeError("Unsupported test arch \"%s\"!" % config["arch"])
     if result.returncode != util.EXIT_SUCCESS:
         log.error("Failed to validate %s with a stf test:", p4_input.name)
         err_file = Path(f"{fail_dir}/{p4_input.stem}_error.txt")
@@ -496,8 +500,10 @@ def perform_blackbox_test(config):
     config["p4_input"] = p4_input
 
     main_formula, pkt_range = get_main_formula(config)
-
-    conditions = get_branch_conditions(main_formula)
+    conditions = set()
+    # FIXME: Another hack to deal with branch conditions we cannot control
+    for child in main_formula.children()[pkt_range]:
+        conditions |= get_branch_conditions(child)
     cond_tuple = dissect_conds(config, conditions)
     stf_str = build_test(config, main_formula, cond_tuple, pkt_range)
     # finally, run the test with the stf string we have assembled
@@ -523,14 +529,18 @@ def main(args):
                      "sat.phase", "random",)
 
     config = {}
-    config["use_tofino"] = args.use_tofino
-    # FIXME: I do not like having to differentiate like this
-    if args.use_tofino:
+    config["arch"] = args.arch
+    if config["arch"] == "tna":
         config["pipe_name"] = "pipe0_ingress"
         config["ingress_var"] = "ingress"
-    else:
+    elif config["arch"] == "v1model":
         config["pipe_name"] = "ig"
         config["ingress_var"] = "ig"
+    elif config["arch"] == "psa":
+        config["pipe_name"] = "ingress_ig"
+        config["ingress_var"] = "ig"
+    else:
+        raise RuntimeError("Unsupported test arch \"%s\"!" % config["arch"])
 
     if args.p4_input:
         p4_input = Path(args.p4_input)
@@ -540,7 +550,7 @@ def main(args):
         util.check_dir(out_base_dir)
         p4_input = out_base_dir.joinpath("rnd_test.p4")
         # generate a random program from scratch
-        generate_random_prog(P4RANDOM_BIN, p4_input, config)
+        generate_p4_prog(P4RANDOM_BIN, p4_input, config)
 
     if os.path.isfile(p4_input):
         out_dir = out_base_dir.joinpath(p4_input.stem)
@@ -564,13 +574,12 @@ if __name__ == '__main__':
     parser.add_argument("-i", "--p4_input", dest="p4_input", default=None,
                         type=lambda x: util.is_valid_file(parser, x),
                         help="The main reference p4 file.")
-    parser.add_argument("--tofino", "-t", dest="use_tofino",
-                        action='store_true',
-                        help="Use the Tofino compiler instead of P4C.")
+    parser.add_argument("-a", "--arch", dest="arch", default="v1model",
+                        type=str, help="Specify the back end to test.")
     parser.add_argument("-o", "--out_dir", dest="out_dir", default=OUT_DIR,
                         help="The output folder where all passes are dumped.")
     parser.add_argument("-l", "--log_file", dest="log_file",
-                        default="blackbox.log",
+                        default="model.log",
                         help="Specifies name of the log file.")
     parser.add_argument("-r", "--randomize-input", dest="randomize_input",
                         action='store_true',

@@ -62,7 +62,7 @@ KNOWN_BUGS = [
 
 SUPPORT_MATRIX = {
     "psa": {"random": True, "validation": True,
-            "blackbox": False, "compiler": PSA_BIN},
+            "blackbox": True, "compiler": PSA_BIN},
     # Tofino does not allow insights into the individual passes
     # So we are forced to use the blackbox technique
     "tna": {"random": True, "validation": False,
@@ -166,9 +166,7 @@ def validate_p4_blackbox(p4_file, target_dir, log_file, config):
     p4z3_cmd += f"-i {p4_file} "
     p4z3_cmd += f"-o {target_dir} "
     p4z3_cmd += f"-l {log_file} "
-    # FIXME: This should be an arch argument
-    if config["arch"] == "tna":
-        p4z3_cmd += "-t "
+    p4z3_cmd += f"-a {config['arch']} "
     if config["randomize_input"]:
         p4z3_cmd += "-r "
     result = util.exec_process(p4z3_cmd)
@@ -289,7 +287,7 @@ def validate_choice(args):
         return util.EXIT_FAILURE, config
 
     if not arch_config["blackbox"] and args.use_blackbox:
-        log.error("Symbolic blackbox testing not supported for this target.")
+        log.error("Model-based testing not supported for this target.")
         return util.EXIT_FAILURE, config
 
     config["arch"] = args.arch
