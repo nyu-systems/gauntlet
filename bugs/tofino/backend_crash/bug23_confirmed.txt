@@ -1,0 +1,5 @@
+In file: /bf-sde/submodules/bf-p4c-compilers/p4c/frontends/p4/parameterSubstitution.cpp:39
+[31mCompiler Bug[0m: tofino/tofino-nyu/compiler_bugs/bug23.p4(62): Incompatible number of arguments for parameter list:  and <Vector<Argument>>(151684)
+bit<16> call_function_1() {
+                        ^
+

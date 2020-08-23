@@ -1,0 +1,5 @@
+In file: /bf-sde/submodules/bf-p4c-compilers/p4c/extensions/bf-p4c/mau/instruction_selection.cpp:721
+[31mCompiler Bug[0m: invalid slice on slice
+
+No valid sections found in assembly file
+failed command assembler

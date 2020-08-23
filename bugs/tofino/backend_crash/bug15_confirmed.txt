@@ -1,0 +1,10 @@
+In file: /bf-sde/submodules/bf-p4c-compilers/p4c/extensions/bf-p4c/phv/allocate_phv.cpp:983
+[31mCompiler Bug[0m: Unable to find hi field slice associated with wide arithmetic operation in the cluster SUPERCLUSTER Uid: 142
+    slice lists:	
+        [ ingress::hdr.eth_hdr.dst_addr<48> ^0 deparsed solitary exact_containers wide_arith [16:47] ]
+    rotational clusters:	
+        [[ingress::hdr.eth_hdr.dst_addr<48> ^0 deparsed solitary exact_containers wide_arith [16:47]]]
+
+
+No valid sections found in assembly file
+failed command assembler

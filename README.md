@@ -12,16 +12,21 @@ The goal is to ensure that a P4 compiler correctly translates a given input P4 p
 
 2.  **Translation Validation**, which analyzes the intermediate representation of a program after each compiler pass and identifies potential discrepancies. We support translation validation for the open-source p4c compiler front- and mid-end libraries.
 
-3. **Symbolic Execution**, which infers input and and corresponding output for a particular P4 program and generates end-to-end test packets. We have currently implemented symbolic execution for the [bmv2 simple-switch](https://github.com/p4lang/behavioral-model) and the Tofino hardware switch.
+3. **Model-based Testing**, which infers input and and corresponding output for a particular P4 program and generates end-to-end test packets. We have currently implemented model-based testing for the [bmv2 simple-switch](https://github.com/p4lang/behavioral-model) and the Tofino hardware switch.
 
 For more details and a broad overview of the concepts in Gauntlet, refer to our [preprint](https://arxiv.org/abs/2006.01074).
 
 ##  Requirements
-This repository works best with a recent version of Ubuntu (18.04+). The minimum required Python version is 3.6 (f-strings).
+This repository run best with a recent version of Ubuntu (18.04+). The minimum required Python version is 3.6 ([f-strings](https://www.python.org/dev/peps/pep-0498/)).
 
-All tools require `p4c` to be installed. The fuzz tester and P4-to-Z3 converter are also p4c extensions which need to be copied into the `extensions` folder of the compiler. The `install.sh` contains detailed command instructions. Most dependencies can be installed by running `./install.sh` in the source folder (**Careful**, the installation assumes root privileges and installs several large packages).
+All tools require `p4c` to be installed. The fuzz tester and P4-to-Z3 converter are also p4c extensions which need to be copied or symlinked into the `extensions` folder of the compiler. The `install.sh` contains detailed command instructions. Most dependencies can be installed by running `./install.sh` in the source folder (**Careful**, the installation assumes root privileges and installs several large packages).
 
 To check whether everything has been installed correctly you can run `python3 -m pytest test.py -vrf`. This will take about 30 minutes.
+
+###  Frameworks for model-based testing
+Model-based testing requires a full test harness. Gauntlet currently supports the [bmv2 simple-switch](https://github.com/p4lang/behavioral-model) and the Tofino packet test framework. The behavioral model can be installed running the installation script with the option `./install.sh INSTALL_BMV2=ON`.
+
+The Tofino test framework requires access to the SDK and a manual setup. Gauntlet's scripts assume that the folder is installed under `tofino/bf_src`. We typically run the installation script as `./tofino/bf_src/p4studio_build/p4studio_build.py --use-profile p416_examples_profile`.
 
 
 ## Instructions
@@ -36,24 +41,22 @@ For debugging purposes, you can run
 
     python3 get_semantics.py -i out.p4
 
-to retrieve the semantic representation of a particular P4 program. This will print the z3 formula of each pipe in the package. These semantics can be used for equality comparison or test-case inference.
+to retrieve the semantic representation of a particular P4 program. This will print the Z3 formula of each pipe in the package. These semantics can be used for equality comparison or test-case inference.
 
 ### Validating a P4C program
 To validate that a program is compiled correctly by `p4c`, you can run
 
      modules/p4c/build/p4bludgeon --output out.p4 --arch top && python3 validate_p4_translation.py -i out.p4
-`check_p4_compilation.py` checks if a sequence of P4 programs are all equivalent to each other using the `check_p4_pair.py` program as a sub routine. This sequence is produced by running p4c on an input P4 program. When p4c is run on an input P4 program, it produces a sequence of P4 programs, where each P4 program corresponds to the version of the input P4 program after a p4c optimization pass. This allows us to validate whether compilation/translation
-is working correctly and to pinpoint the faulty optimization pass if it isn't
+`check_p4_compilation.py` checks if a sequence of P4 programs are all equivalent to each other using the `check_p4_pair.py` program as a sub routine. This sequence is produced by running p4c on an input P4 program. When p4c is run on an input P4 program, it produces a sequence of P4 programs, where each P4 program corresponds to the version of the input P4 program after a p4c optimization pass. This allows us to validate whether compilation/translation is working correctly and to pinpoint the faulty optimization pass if it isn't
 working correctly.
 
-### Symbolic Execution
+### Model-based Testing
 
-Symbolic execution requires the behavioral model or the Tofino compiler to be installed. The correct binaries and include files need to be instrumented in the `generate_p4_test.py` file. Exact instructions will follow.
-An example command is
+Model-based testing requires the behavioral model or the Tofino compiler to be installed. The correct binaries and include files need to be instrumented in the `generate_p4_test.py` file. An example command is
 
      modules/p4c/build/p4bludgeon --output out.p4 --arch v1model && python3 generate_p4_test.py -i out.p4 -r
 This sequence of commands will first generate a random program, infer expected input and output values, convert them to a test file (in this case, they are stf files) and finally run a full test. If the observed output differs from the expected output, the tool will throw  an error. The `-r` flag denotes randomization of the input, it is optional.
-To run symbolic execution for the Tofino backend, `sudo` will have to be used.
+To run model-based testing for the Tofino backend, `sudo` will have to be used.
 
      modules/p4c/build/p4bludgeon --output out.p4 --arch tna && sudo -E python3 generate_p4_test.py -i out.p4 -r -t
 
@@ -81,7 +84,7 @@ We also include facilities to fuzz test the compilers at scale.
 
 #### Fuzz-testing Support Matrix
 
-| Architecture | Compiler | Bludgeon Support | Validation Testing | Symbolic Execution |
+| Architecture | Compiler | Bludgeon Support | Validation Testing | Model-based Testing |
 | ------------- | ------------- | ------------- | ------------- | ------------- |
 | psa | `p4c-bm2-psa` | :heavy_check_mark: | :heavy_check_mark: | :x: |
 | tna | `p4c-bf` | :heavy_check_mark: | :x: | :heavy_check_mark: |

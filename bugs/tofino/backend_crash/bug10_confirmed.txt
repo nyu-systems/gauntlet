@@ -1,0 +1,3 @@
+bug10_confirmed.tofino/pipe/bug10_confirmed.bfa:94: error: Ghost bit eth_struct_0.dst_addr:8 does not appear on the hash function for way 0
+bug10_confirmed.tofino/pipe/bug10_confirmed.bfa:0: error: Due to errors, no binary will be generated
+failed command assembler

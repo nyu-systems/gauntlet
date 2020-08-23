@@ -1,0 +1,22 @@
+tofino/tofino-nyu/compiler_bugs/backend_crash/bug11_confirmed.p4(36): [--Wwarn=uninitialized_use] warning: val may be uninitialized
+        h.eth_hdr.dst_addr = (bit<48>)(16w3 & val);
+                                              ^^^
+tofino/tofino-nyu/compiler_bugs/backend_crash/bug11_confirmed.p4(35): [--Wwarn=uninitialized_out_param] warning: out parameter val may be uninitialized when WyyPn terminates
+    action WyyPn(out bit<16> val) {
+                             ^^^
+tofino/tofino-nyu/compiler_bugs/backend_crash/bug11_confirmed.p4(35)
+    action WyyPn(out bit<16> val) {
+           ^^^^^
+tofino/tofino-nyu/compiler_bugs/backend_crash/bug11_confirmed.p4(36): warning: slice 16..47 invalid for field ++ of size 16
+        h.eth_hdr.dst_addr = (bit<48>)(16w3 & val);
+                                              ^^^
+In file: /bf-sde/submodules/bf-p4c-compilers/p4c/extensions/bf-p4c/mau/action_analysis.cpp:641
+[31mCompiler Bug[0m: tofino/tofino-nyu/compiler_bugs/backend_crash/bug11_confirmed.p4(36): : Operand (0 ++ ingress::val_1)[47:16]; of instruction { and ingress::hdr.eth_hdr.dst_addr[47:16];, 0, (0 ++ ingress::val_1)[47:16];; } operating on container W0 must be a PHV.
+        h.eth_hdr.dst_addr = (bit<48>)(16w3 & val);
+                                              ^^^
+tofino/tofino-nyu/compiler_bugs/backend_crash/bug11_confirmed.p4(36)
+        h.eth_hdr.dst_addr = (bit<48>)(16w3 & val);
+                                              ^^^
+
+No valid sections found in assembly file
+failed command assembler

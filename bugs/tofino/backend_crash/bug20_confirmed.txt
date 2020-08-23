@@ -1,0 +1,21 @@
+warning: In action bug20l45, write ingress::hdr.eth_hdr.src_addr; and read 0 sizes do not match up
+warning: In action ingress.simple_action, write ingress::hdr.eth_hdr.eth_type; and read 0 sizes do not match up
+warning: Instruction selection creates an instruction that the rest of the compiler cannot correctly interpret
+In file: /bf-sde/submodules/bf-p4c-compilers/p4c/extensions/bf-p4c/phv/allocate_phv.cpp:2714
+[31mCompiler Bug[0m: The compiler failed in slicing the following group of fields related by parser alignment and MAU constraints
+SUPERCLUSTER Uid: 99
+    slice lists:	
+        [ ingress::hdr.eth_hdr.src_addr<48> ^0 deparsed solitary exact_containers wide_arith [0:15]
+          ingress::hdr.eth_hdr.src_addr<48> ^0 deparsed solitary exact_containers wide_arith [16:31]
+          ingress::hdr.eth_hdr.src_addr<48> ^0 deparsed solitary exact_containers wide_arith [32:47] ]
+        [ ingress::hdr.h.a<32> ^0 ^bit[0..271] deparsed solitary no_split exact_containers [0:15]
+          ingress::hdr.h.a<32> ^0 ^bit[0..255] deparsed solitary no_split exact_containers [16:31] ]
+        [ ingress::hdr.eth_hdr.eth_type<16> ^0 deparsed solitary no_split exact_containers [0:15] ]
+    rotational clusters:	
+        [[ingress::hdr.eth_hdr.src_addr<48> ^0 deparsed solitary exact_containers wide_arith [0:15], ingress::hdr.h.a<32> ^0 ^bit[0..271] deparsed solitary no_split exact_containers [0:15], ingress::hdr.eth_hdr.eth_type<16> ^0 deparsed solitary no_split exact_containers [0:15]]]
+        [[ingress::hdr.eth_hdr.src_addr<48> ^0 deparsed solitary exact_containers wide_arith [16:31], ingress::hdr.h.a<32> ^0 ^bit[0..255] deparsed solitary no_split exact_containers [16:31]]]
+        [[ingress::hdr.eth_hdr.src_addr<48> ^0 deparsed solitary exact_containers wide_arith [32:47]]]
+
+
+No valid sections found in assembly file
+failed command assembler

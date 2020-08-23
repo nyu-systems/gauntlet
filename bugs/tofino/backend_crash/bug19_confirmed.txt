@@ -1,0 +1,8 @@
+error: Fields involved in the same MAU operations have conflicting PARDE alignment requirements: alignment = 0 and alignment = 5
+Fields in cluster:
+    ingress::hdr.eth_hdr.eth_type<16> ^0 deparsed solitary no_split exact_containers [0:15]
+    ingress::hdr.eth_hdr.dst_addr<48> ^5 ^bit[0..170] deparsed exact_containers [5:20]
+
+terminate called after throwing an instance of 'Util::CompilationError'
+  what():  Number of errors exceeded set maximum of 1
+

@@ -1,0 +1,7 @@
+In file: /bf-sde/submodules/bf-p4c-compilers/p4c/extensions/bf-p4c/mau/table_layout.cpp:311
+[31mCompiler Bug[0m: tofino/tofino-nyu/compiler_bugs/bug25.p4(37): unexpected reads expression (-ingress::hdr.eth_hdr.eth_type)[15:0];
+            ((-(bit<16>)h.eth_hdr.eth_type))[15:0]: exact @name("tmp") ;
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+No valid sections found in assembly file
+failed command assembler

@@ -1,0 +1,5 @@
+tofino/tofino-nyu/compiler_bugs/bug17.p4(36): [--Wwarn=overflow] warning: >>: shifting value with 16 bits by 32
+         h.eth_hdr.eth_type = h.eth_hdr.eth_type >> 32;
+                              ^^^^^^^^^^^^^^^^^^^^^^^^
+bug17.tofino/pipe/bug17.bfa:86: error: invalid shift
+failed command assembler

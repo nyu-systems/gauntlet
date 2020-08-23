@@ -1,0 +1,14 @@
+tofino/tofino-nyu/compiler_bugs/bug18.p4(63): [--Wwarn=uninitialized_out_param] warning: out parameter val may be uninitialized when tmp_action terminates
+    action tmp_action(out bit<48> val) {
+                                  ^^^
+tofino/tofino-nyu/compiler_bugs/bug18.p4(63)
+    action tmp_action(out bit<48> val) {
+           ^^^^^^^^^^
+tofino/tofino-nyu/compiler_bugs/bug18.p4(63): [--Werror=not-found] error: val: Not found declaration
+    action tmp_action(out bit<48> val) {
+                                  ^^^
+In file: /bf-sde/submodules/bf-p4c-compilers/p4c/frontends/common/resolveReferences/referenceMap.cpp:81
+[31mCompiler Bug[0m: tofino/tofino-nyu/compiler_bugs/bug18.p4(63): Cannot find declaration for val_1/val
+    action tmp_action(out bit<48> val) {
+                                  ^^^
+

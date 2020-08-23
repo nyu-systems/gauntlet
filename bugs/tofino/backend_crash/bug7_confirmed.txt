@@ -1,0 +1,5 @@
+In file: /bf-sde/submodules/bf-p4c-compilers/p4c/ir/ir.cpp:199
+[31mCompiler Bug[0m: tofino/tofino-nyu/compiler_bugs/backend_crash/bug7_confirmed.p4(35): {0, 0, 0}; already set in <ControlBlock>(342702) ingress(); instance type=control ingress<>(inout Headers h, inout ingress_metadata_t m, in ingress_intrinsic_metadata_t ig_intr_md, in ingress_intrinsic_metadata_from_parser_t ig_prsr_md, inout ingress_intrinsic_metadata_for_deparser_t ig_dprsr_md, inout ingress_intrinsic_metadata_for_tm_t ig_tm_md); to <ListCompileTimeValue>(342711), not <ListCompileTimeValue>(342706)
+        ethernet_t simple_header = { 0, 0, 0};
+                                   ^^^^^^^^^^
+

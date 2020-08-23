@@ -137,5 +137,5 @@ generated/
 random/
 validated/
 tests/violated/**/*.py
-tofino
+/tofino
 out.tofino/

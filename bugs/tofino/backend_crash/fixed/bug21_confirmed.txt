@@ -1,0 +1,12 @@
+warning: In action bug21l35, the following instruction has multiple action data parameters: xor ingress::hdr.eth_hdr.src_addr;, 2, 0
+warning: Instruction selection creates an instruction that the rest of the compiler cannot correctly interpret
+tofino/tofino-nyu/compiler_bugs/bug21.p4(35): warning: table tbl_bug21l35: In the ALU operation over container H1 in action bug21l35, the number of operands does not match the number of sources { xor ingress::hdr.eth_hdr.src_addr[15:0];, 2, 0; }
+        ig_tm_md.ucast_egress_port = 0;
+                                   ^
+tofino/tofino-nyu/compiler_bugs/bug21.p4(35): warning: table tbl_bug21l35: In the ALU operation over container W0 in action bug21l35, the number of operands does not match the number of sources { xor ingress::hdr.eth_hdr.src_addr[47:16];, 0, 0; }
+        ig_tm_md.ucast_egress_port = 0;
+                                   ^
+warning: PHV allocation creates an invalid container action within a Tofino ALU
+bug21.tofino/pipe/bug21.bfa:84: error: src2 must be phv register
+bug21.tofino/pipe/bug21.bfa:85: error: src2 must be phv register
+failed command assembler
