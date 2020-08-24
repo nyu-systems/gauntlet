@@ -1,4 +1,5 @@
 import os
+import sys
 import argparse
 import subprocess
 import logging
@@ -136,7 +137,7 @@ def prune_passes(p4_passes):
     return pruned_passes
 
 
-def validate_translation(p4_file, target_dir, p4c_bin):
+def validate_translation(p4_file, target_dir, p4c_bin, allow_undef=False):
     log.info("\n\n" + "-" * 70)
     log.info("Analysing %s", p4_file)
     start_time = datetime.now()
@@ -164,7 +165,7 @@ def validate_translation(p4_file, target_dir, p4c_bin):
         log.warning("P4 file did not generate enough passes!")
         return util.EXIT_SKIPPED
     # perform the actual comparison
-    result = z3check.z3_check(p4_py_files, fail_dir)
+    result = z3check.z3_check(p4_py_files, fail_dir, allow_undef)
     done_time = datetime.now()
     elapsed = done_time - start_time
     time_str = time.strftime("%H hours %M minutes %S seconds",
@@ -180,18 +181,20 @@ def main(args):
     p4_input = Path(args.p4_input)
     pass_dir = Path(args.pass_dir)
     p4c_bin = args.p4c_bin
+    allow_undef = args.allow_undef
     if os.path.isfile(p4_input):
         pass_dir = pass_dir.joinpath(p4_input.stem)
         util.del_dir(pass_dir)
-        result = validate_translation(p4_input, pass_dir, p4c_bin)
-        exit(result)
+        result = validate_translation(p4_input, pass_dir, p4c_bin, allow_undef)
+        sys.exit(result)
     else:
         util.check_dir(pass_dir)
         for p4_file in list(p4_input.glob("**/*.p4")):
             output_dir = pass_dir.joinpath(p4_file.stem)
             util.del_dir(output_dir)
-            result = validate_translation(p4_file, output_dir, p4c_bin)
-    exit(util.EXIT_SUCCESS)
+            result = validate_translation(
+                p4_file, output_dir, p4c_bin, allow_undef)
+    sys.exit(util.EXIT_SUCCESS)
 
 
 if __name__ == '__main__':
@@ -207,6 +210,9 @@ if __name__ == '__main__':
     parser.add_argument("-p", "--p4c_bin", dest="p4c_bin",
                         default=P4C_BIN,
                         help="Specifies the p4c binary to compile a p4 file.")
+    parser.add_argument("-u", "--allow_undefined", dest="allow_undef",
+                        action="store_true",
+                        help="Ignore changes in undefined behavior.")
     parser.add_argument("-l", "--log_file", dest="log_file",
                         default="analysis.log",
                         help="Specifies name of the log file.")

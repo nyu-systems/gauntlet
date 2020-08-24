@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 import p4z3.util as util
-import validate_p4_translation as p4c_check
+import validate_p4_translation as tv_check
 import check_p4_pair as z3_check
 
 # configure logging
@@ -95,7 +95,7 @@ def run_z3p4_test(p4_file, target_dir):
     if p4_file.name in bad_tests:
         pytest.skip(f"Skipping slow test {p4_file}.")
         return util.EXIT_SKIPPED
-    result = p4c_check.validate_translation(p4_file, target_dir, P4C_BIN)
+    result = tv_check.validate_translation(p4_file, target_dir, P4C_BIN, True)
     if result == util.EXIT_SKIPPED:
         pytest.skip(f"Skipping file {p4_file}.")
     return result
@@ -105,11 +105,12 @@ def run_violation_test(test_folder):
     test_folder = VIOLATION_DIR.joinpath(test_folder)
     src_p4_file = test_folder.joinpath("orig.p4")
     src_py_file = test_folder.joinpath(f"{src_p4_file.stem}.py")
-    p4c_check.run_p4_to_py(src_p4_file, src_py_file)
+    tv_check.run_p4_to_py(src_p4_file, src_py_file)
     for p4_file in list(test_folder.glob("**/[0-9]*.p4")):
         py_file = test_folder.joinpath(f"{p4_file.stem}.py")
-        p4c_check.run_p4_to_py(p4_file, py_file)
-        result = z3_check.z3_check([str(src_py_file), str(py_file)])
+        tv_check.run_p4_to_py(p4_file, py_file)
+        result = z3_check.z3_check(
+            [str(src_py_file), str(py_file)], None, True)
         if result != util.EXIT_VIOLATION:
             return util.EXIT_FAILURE
     return util.EXIT_SUCCESS

@@ -11,7 +11,6 @@ sys.setrecursionlimit(15000)
 
 FILE_DIR = os.path.dirname(os.path.abspath(__file__))
 log = logging.getLogger(__name__)
-allow_undefined_vars = True
 
 # We maintain a list of passes to skip for convenience
 # This reduces the amount of noise when generating random programs
@@ -42,7 +41,7 @@ def handle_pyz3_error(fail_dir, p4_file):
     util.copy_file(failed, fail_dir)
 
 
-def check_equivalence(prog_before, prog_after):
+def check_equivalence(prog_before, prog_after, allow_undef):
     # The equivalence check of the solver
     # For all input packets and possible table matches the programs should
     # be the same
@@ -70,7 +69,7 @@ def check_equivalence(prog_before, prog_after):
     ret = s.check(tv_equiv)
     log.debug(tv_equiv)
     log.debug(ret)
-    if allow_undefined_vars and ret == z3.sat:
+    if allow_undef and ret == z3.sat:
         equiv_vars = z3.z3util.get_vars(z3.simplify(prog_before))
         undefined_vars = []
         relevant_vars = []
@@ -95,7 +94,7 @@ def check_equivalence(prog_before, prog_after):
         return util.EXIT_SUCCESS
 
 
-def z3_check(prog_paths, fail_dir=None):
+def z3_check(prog_paths, fail_dir=None, allow_undef=False):
     if len(prog_paths) < 2:
         log.error("Equivalence checks require at least two input programs!")
         return util.EXIT_FAILURE
@@ -125,7 +124,7 @@ def z3_check(prog_paths, fail_dir=None):
             pipe_pre = pipes_pre[pipe_name][0]
             pipe_post = pipes_post[pipe_name][0]
             log.info("Checking z3 equivalence for pipe %s...", pipe_name)
-            ret = check_equivalence(pipe_pre, pipe_post)
+            ret = check_equivalence(pipe_pre, pipe_post, allow_undef)
             if ret != util.EXIT_SUCCESS:
                 if fail_dir:
                     handle_pyz3_error(fail_dir, p4_pre_path)
@@ -141,6 +140,9 @@ def main(args=None):
     parser.add_argument("--progs", "-p", dest="progs",
                         type=str, nargs='+', required=True,
                         help="The ordered list of programs to compare.")
+    parser.add_argument("-u", "--allow_undefined", dest="allow_undef",
+                        action="store_true",
+                        help="Ignore changes in undefined behavior.")
     args = parser.parse_args(args)
     return z3_check(args.progs)
 
