@@ -22,6 +22,7 @@ done
 git submodule update --init --recursive
 sudo apt-get update
 
+SRC_DIR="$(pwd)"
 MODULE_DIR="$(pwd)/modules"
 
 # Install pip and python
@@ -99,17 +100,30 @@ sudo apt install -y automake \
     g++ \
     libssl-dev \
     libnanomsg-dev \
-    libthrift-dev \
     libgrpc-dev \
     thrift-compiler
 
-# build the p4 compiler
+# this only works on Ubuntu 19.10+...
+# sudo apt install libthrift-dev
+
+# unfortunately we still have to install thrift the manual way...
+cd ${MODULE_DIR}/behavioral-model
+wget -N https://archive.apache.org/dist/thrift/0.13.0/thrift-0.13.0.tar.gz
+tar -xvf thrift-0.13.0.tar.gz
+cd thrift-0.13.0/
+./bootstrap.sh
+./configure
+make
+sudo make install
+sudo ldconfig
+
+# build the behavioral model
 cd ${MODULE_DIR}/behavioral-model
 ./autogen.sh
 ./configure
 make
 sudo make install
-cd -
+cd ${SRC_DIR}
 fi
 
 
