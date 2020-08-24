@@ -19,11 +19,14 @@ do
 done
 
 # fetch submodules and update apt
+echo "Initializing submodules..."
 git submodule update --init --recursive
 sudo apt-get update
 
 SRC_DIR="$(pwd)"
 MODULE_DIR="$(pwd)/modules"
+
+echo "Installing P4C dependencies..."
 
 # Install pip and python
 sudo apt install -y python3
@@ -61,7 +64,9 @@ if test -z $TRAVIS; then
      ln -sf ${MODULE_DIR}/bludgeon ${MODULE_DIR}/p4c/extensions/bludgeon
 fi
 ln -sf ${MODULE_DIR}/toz3 ${MODULE_DIR}/p4c/extensions/toz3
+
 # build the p4 compiler
+echo "Building P4C..."
 cd ${MODULE_DIR}/p4c
 mkdir -p build
 cd build
@@ -69,18 +74,22 @@ cmake .. -DCMAKE_BUILD_TYPE=RelWithDebInfo
 make -j `getconf _NPROCESSORS_ONLN`
 cd ../..
 
+echo "Installing Gauntlet Python dependencies..."
 # Install z3 locally
 pip3 install --upgrade --user z3-solver
+# Pytests for tests
 pip3 install --upgrade --user pytest
-# run tests in parallel
+# Run tests in parallel
 pip3 install --upgrade --user pytest-xdist
 # Python 3.6 compatibility
 pip3 install --upgrade --user dataclasses
 
 # only install the behavioral model if requested
 if [ "$INSTALL_BMV2" == "ON" ]; then
+echo "Behavioral model install selected."
 
 # Install the behavioral model dependencies
+echo "Installing behavioral model dependencies."
 sudo apt install -y automake \
     cmake \
     libjudy-dev \
@@ -107,6 +116,7 @@ sudo apt install -y automake \
 # sudo apt install libthrift-dev
 
 # unfortunately we still have to install thrift the manual way...
+echo "Installing thrift dependency."
 cd ${MODULE_DIR}/behavioral-model
 wget -N https://archive.apache.org/dist/thrift/0.13.0/thrift-0.13.0.tar.gz
 tar -xvf thrift-0.13.0.tar.gz
@@ -118,7 +128,9 @@ sudo make install
 sudo ldconfig
 
 # build the behavioral model
+echo "Installing behavioral model..."
 cd ${MODULE_DIR}/behavioral-model
+autoreconf -i # this is needed for some reason...
 ./autogen.sh
 ./configure
 make
@@ -126,4 +138,4 @@ sudo make install
 cd ${SRC_DIR}
 fi
 
-
+echo "Gauntlet installation completed successfully."
