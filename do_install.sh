@@ -57,33 +57,6 @@ pip3 install --upgrade pip
 pip3 install --user wheel
 pip3 install --user pyroute2 ipaddr ply scapy
 
-# grab the toz3 extension for the p4 compiler
-mkdir -p ${MODULE_DIR}/p4c/extensions
-# only install bludgeon if we are not running in travis
-if test -z $TRAVIS; then
-     ln -sf ${MODULE_DIR}/bludgeon ${MODULE_DIR}/p4c/extensions/bludgeon
-fi
-ln -sf ${MODULE_DIR}/toz3 ${MODULE_DIR}/p4c/extensions/toz3
-
-# build the p4 compiler
-echo "Building P4C..."
-cd ${MODULE_DIR}/p4c
-mkdir -p build
-cd build
-cmake .. -DCMAKE_BUILD_TYPE=RelWithDebInfo
-make -j `getconf _NPROCESSORS_ONLN`
-cd ../..
-
-echo "Installing Gauntlet Python dependencies..."
-# Install z3 locally
-pip3 install --upgrade --user z3-solver
-# Pytests for tests
-pip3 install --upgrade --user pytest
-# Run tests in parallel
-pip3 install --upgrade --user pytest-xdist
-# Python 3.6 compatibility
-pip3 install --upgrade --user dataclasses
-
 # only install the behavioral model if requested
 if [ "$INSTALL_BMV2" == "ON" ]; then
 echo "Behavioral model install selected."
@@ -137,5 +110,35 @@ make
 sudo make install
 cd ${SRC_DIR}
 fi
+
+
+# grab the toz3 extension for the p4 compiler
+mkdir -p ${MODULE_DIR}/p4c/extensions
+# only install bludgeon if we are not running in travis
+if test -z $TRAVIS; then
+     ln -sf ${MODULE_DIR}/bludgeon ${MODULE_DIR}/p4c/extensions/bludgeon
+fi
+ln -sf ${MODULE_DIR}/toz3 ${MODULE_DIR}/p4c/extensions/toz3
+
+# build the p4 compiler
+echo "Building P4C..."
+cd ${MODULE_DIR}/p4c
+mkdir -p build
+cd build
+cmake .. -DCMAKE_BUILD_TYPE=RelWithDebInfo
+make -j `getconf _NPROCESSORS_ONLN`
+cd ../..
+
+echo "Installing Gauntlet Python dependencies..."
+# Install z3 locally
+pip3 install --upgrade --user z3-solver
+# Pytests for tests
+pip3 install --upgrade --user pytest
+# Run tests in parallel
+pip3 install --upgrade --user pytest-xdist
+# Python 3.6 compatibility
+pip3 install --upgrade --user dataclasses
+
+
 
 echo "Gauntlet installation completed successfully."
