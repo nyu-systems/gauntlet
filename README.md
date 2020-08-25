@@ -19,12 +19,12 @@ For more details and a broad overview of the concepts in Gauntlet, refer to our 
 ##  Requirements
 This repository run best with a recent version of Ubuntu (18.04+). The minimum required Python version is 3.6 ([f-strings](https://www.python.org/dev/peps/pep-0498/)).
 
-All tools require `p4c` to be installed. The fuzz tester and P4-to-Z3 converter are also p4c extensions which need to be copied or symlinked into the `extensions` folder of the compiler. The `install.sh` contains detailed command instructions. Most dependencies can be installed by running `./install.sh` in the source folder (**Careful**, the installation assumes root privileges and installs several large packages).
+All tools require `p4c` to be installed. The fuzz tester and P4-to-Z3 converter are also p4c extensions which need to be copied or symlinked into the `extensions` folder of the compiler. The `do_install.sh` contains detailed command instructions. Most dependencies can be installed by running `./do_install.sh` in the source folder (**Careful**, the installation assumes root privileges and installs several large packages).
 
 To check whether everything has been installed correctly you can run `python3 -m pytest test.py -vrf`. This will take about 30 minutes.
 
 ###  Frameworks for model-based testing
-Model-based testing requires a full test harness. Gauntlet currently supports the [bmv2 simple-switch](https://github.com/p4lang/behavioral-model) and the Tofino packet test framework. The behavioral model can be installed running the installation script with the option `./install.sh INSTALL_BMV2=ON`.
+Model-based testing requires a full test harness. Gauntlet currently supports the [bmv2 simple-switch](https://github.com/p4lang/behavioral-model) and the Tofino packet test framework. The behavioral model can be installed running the installation script with the option `./do_install.sh INSTALL_BMV2=ON`.
 
 The Tofino test framework requires access to the SDK and a manual setup. Gauntlet's scripts assume that the folder is installed under `tofino/bf_src`. We typically run the installation script as `./tofino/bf_src/p4studio_build/p4studio_build.py --use-profile p416_examples_profile`.
 

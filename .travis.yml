@@ -4,7 +4,7 @@ dist: bionic
 language: minimal
 
 install:
-  - ./install.sh
+  - ./do_install.sh
 
 script:
   - python3 -m pytest test.py -vrf
