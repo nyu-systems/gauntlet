@@ -421,8 +421,9 @@ def get_main_formula(config):
     if not pkt_range:
         log.error("No valid input formula found!"
                   " Check if your variable names are correct.")
-        log.error("This program checks for \"%s\".", HEADER_VAR)
-        return util.EXIT_FAILURE
+        log.error(
+            "This program checks for the \"%s\" variable in the pipe call.", HEADER_VAR)
+        return None, None
     main_formula = z3.simplify(main_formula)
     return main_formula, pkt_range
 
@@ -500,6 +501,8 @@ def perform_blackbox_test(config):
     config["p4_input"] = p4_input
 
     main_formula, pkt_range = get_main_formula(config)
+    if main_formula == None or not pkt_range:
+        return util.EXIT_FAILURE
     conditions = set()
     # FIXME: Another hack to deal with branch conditions we cannot control
     for child in main_formula.children()[pkt_range]:

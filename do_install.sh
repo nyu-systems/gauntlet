@@ -82,9 +82,7 @@ sudo apt install -y automake \
     g++ \
     libssl-dev \
     libnanomsg-dev \
-    libgrpc-dev \
-    thrift-compiler
-
+    libgrpc-dev
 # this only works on Ubuntu 19.10+...
 # sudo apt install libthrift-dev
 
@@ -99,6 +97,12 @@ cd thrift-0.13.0/
 make
 sudo make install
 sudo ldconfig
+
+# behavioral model still uses Python2...
+# this may not work on newer versions of Ubuntu
+sudo apt install -y python-pip || true
+pip install --user thrift==0.13.0
+pip3 install --user thrift==0.13.0
 
 # build the behavioral model
 echo "Installing behavioral model..."
