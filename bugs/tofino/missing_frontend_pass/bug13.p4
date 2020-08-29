@@ -32,13 +32,9 @@ parser SwitchIngressParser(packet_in pkt, out Headers hdr, out ingress_metadata_
 }
 
 control ingress(inout Headers h, inout ingress_metadata_t m, in ingress_intrinsic_metadata_t ig_intr_md, in ingress_intrinsic_metadata_from_parser_t ig_prsr_md, inout ingress_intrinsic_metadata_for_deparser_t ig_dprsr_md, inout ingress_intrinsic_metadata_for_tm_t ig_tm_md) {
-    bit<16> tmp_val = 16w3;
-    action do_action() {
-        h.eth_hdr.eth_type = 16w3 + (tmp_val > 2 ? 16w3 : 16w1);
-    }
     apply {
         ig_tm_md.ucast_egress_port = 0;
-        do_action();
+        h.eth_hdr.eth_type = 1 + (h.eth_hdr.eth_type > 2 ? 16w1 : 16w2);
     }
 }
 

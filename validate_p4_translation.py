@@ -95,8 +95,10 @@ def list_passes(p4c_bin, p4_file, p4_dmp_dir):
     # p4_pass_cmd += "| sed -e 's/Writing program to //g' "
     log.debug("Grabbing passes with command %s", p4_pass_cmd)
     output = subprocess.check_output(p4_pass_cmd, shell=True)
-    passes = output.decode('ascii').strip().split('\n')
-    return passes
+    if output:
+        return output.decode('ascii').strip().split('\n')
+    # return an empty list if no pass is used
+    return []
 
 
 def gen_p4_passes(p4c_bin, p4_dmp_dir, p4_file):

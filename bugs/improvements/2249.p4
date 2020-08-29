@@ -29,7 +29,6 @@ parser p(packet_in pkt,
     }
 }
 
-
 control ingress(inout Headers hdr, inout Metadata meta,
                  inout standard_metadata_t stdmeta) {
     simple_struct test = { 128w0 };
@@ -44,7 +43,6 @@ control ingress(inout Headers hdr, inout Metadata meta,
         }
     }
 }
-
 
 control deparser(packet_out packet, in Headers hdr) {
     apply {

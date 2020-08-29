@@ -32,14 +32,9 @@ parser p(packet_in pkt,
 
 control ingress(inout Headers hdr, inout Metadata meta,
                  inout standard_metadata_t stdmeta) {
-    simple_struct test = { 128w0 };
-    bit<16> tmp_val = 16w3;
-    action do_action() {
-        hdr.eth_hdr.eth_type = 16w3 + (tmp_val > 2 ? 16w3 : 16w1);
-    }
     apply {
-        do_action();
-    }
+        hdr.eth_hdr.eth_type = (hdr.eth_hdr.eth_type > 2 ? 16w1 : 16w2) + hdr.eth_hdr.eth_type;
+   }
 }
 
 
