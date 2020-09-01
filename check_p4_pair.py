@@ -59,17 +59,25 @@ def check_equivalence(prog_before, prog_after, allow_undef):
     log.debug("Checking...")
     log.debug(z3.tactics())
     t = z3.Then(
-        z3.Tactic("qflia"),
-        z3.Tactic("propagate-values"),
-        z3.Tactic("ctx-solver-simplify"),
-        z3.Tactic("elim-and")
+        z3.Tactic("simplify"),
+        # z3.Tactic("distribute-forall"),
+        # z3.Tactic("ackermannize_bv"),
+        z3.Tactic("bvarray2uf"),
+        # z3.Tactic("card2bv"),
+        # z3.Tactic("propagate-bv-bounds-new"),
+        # z3.Tactic("reduce-bv-size"),
+        # z3.Tactic("qe_rec"),
+        z3.Tactic("smt"),
     )
+
     s = t.solver()
     log.debug(s.sexpr())
     ret = s.check(tv_equiv)
     log.debug(tv_equiv)
     log.debug(ret)
     if allow_undef and ret == z3.sat:
+        log.info("Detected difference in undefined behavior. "
+                 "Rechecking with undefined variables ignored.")
         equiv_vars = z3.z3util.get_vars(z3.simplify(prog_before))
         undefined_vars = []
         relevant_vars = []
@@ -79,8 +87,13 @@ def check_equivalence(prog_before, prog_after, allow_undef):
             else:
                 relevant_vars.append(var)
         if undefined_vars:
-            tv_equiv = z3.ForAll(undefined_vars, tv_equiv)
-            ret = s.check(tv_equiv)
+            if relevant_vars:
+                tv_equiv = z3.Exists(relevant_vars, tv_equiv)
+                ret = s.check(tv_equiv)
+            else:
+                # there are no relevant vars
+                # the difference must be because of undefined behavior
+                ret = z3.unsat
     if ret == z3.sat:
         prog_before_simpl = z3.simplify(prog_before)
         prog_after_simpl = z3.simplify(prog_after)
@@ -144,7 +157,7 @@ def main(args=None):
                         action="store_true",
                         help="Ignore changes in undefined behavior.")
     args = parser.parse_args(args)
-    return z3_check(args.progs)
+    return z3_check(args.progs, None, args.allow_undef)
 
 
 if __name__ == '__main__':

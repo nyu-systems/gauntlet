@@ -110,7 +110,7 @@ def run_violation_test(test_folder):
         py_file = test_folder.joinpath(f"{p4_file.stem}.py")
         tv_check.run_p4_to_py(p4_file, py_file)
         result = z3_check.z3_check(
-            [str(src_py_file), str(py_file)], None, True)
+            [str(src_py_file), str(py_file)], None, False)
         if result != util.EXIT_VIOLATION:
             return util.EXIT_FAILURE
     return util.EXIT_SUCCESS
