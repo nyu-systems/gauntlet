@@ -57,7 +57,7 @@ class RejectState(P4Expression):
         for member_name, _ in p4_state.members:
             member_val = p4_state.resolve_reference(member_name)
             if isinstance(member_val, StructInstance):
-                member_val.deactivate("invalid")
+                member_val.deactivate()
         p4_state.exit_states.append((cond, p4_state.get_z3_repr()))
         p4_state.restore(var_store, contexts)
         p4_state.has_exited = True

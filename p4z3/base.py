@@ -708,19 +708,19 @@ class StructInstance(P4ComplexInstance):
             self.set_or_add_var(sub_member.name, bind_var)
             bit_width -= sub_member.width
 
-    def activate(self, label="undefined"):
+    def activate(self):
         # structs may contain headers that can be deactivated
         for member_name, _ in self.members:
             member_val = self.resolve_reference(member_name)
             if isinstance(member_val, StructInstance):
                 member_val.activate()
 
-    def deactivate(self, label="undefined"):
+    def deactivate(self):
         # structs may contain headers that can be deactivated
         for member_name, _ in self.members:
             member_val = self.resolve_reference(member_name)
             if isinstance(member_val, StructInstance):
-                member_val.deactivate(label)
+                member_val.deactivate()
 
     def flatten(self):
         members = []
@@ -750,7 +750,7 @@ class HeaderInstance(StructInstance):
         self.locals["setInvalid"] = self.setInvalid
         self.union_parent = None
 
-    def activate(self, label="undefined"):
+    def activate(self):
         for member_name, _ in self.members:
             member_val = self.resolve_reference(member_name)
             if isinstance(member_val, StructInstance):
@@ -762,13 +762,13 @@ class HeaderInstance(StructInstance):
                 #     self.set_or_add_var(member_name, allocated_var)
         self.valid = z3.BoolVal(True)
 
-    def deactivate(self, label="undefined"):
+    def deactivate(self):
         for member_name, member_type in self.members:
             member_val = self.resolve_reference(member_name)
             if isinstance(member_val, StructInstance):
-                member_val.deactivate(label)
+                member_val.deactivate()
             else:
-                member_const = z3.Const(label, member_type)
+                member_const = z3.Const("undefined", member_type)
                 self.set_or_add_var(member_name, member_const)
         self.valid = z3.BoolVal(False)
 

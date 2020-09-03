@@ -37,7 +37,7 @@ def import_prog(ctrl_dir, ctrl_name, prog_name):
 def get_z3_asts(p4_module, p4_path):
 
     log.info("Loading %s ASTs...", p4_path.name)
-    z3_asts = {}
+    z3_asts = None
     try:
         z3_reg = Z3Reg([core_externs])
         p4_package = p4_module(z3_reg)
