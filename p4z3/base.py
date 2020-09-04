@@ -1124,9 +1124,12 @@ class P4Context(P4Z3Class):
 
     def __init__(self, var_buffer):
         self.var_buffer = var_buffer
-        self.return_states = deque()
         self.has_returned = False
+        # to merge the return exprs after a callable has completed
         self.return_exprs = deque()
+        # to merge all the return states after a callable has completed
+        self.return_states = deque()
+        # this can be used to perform return casts in the current context
         self.return_type = None
         self.forward_conds = deque()
         self.tmp_forward_cond = z3.BoolVal(True)

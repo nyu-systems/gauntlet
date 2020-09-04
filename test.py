@@ -21,6 +21,7 @@ TEST_DIR = FILE_DIR.joinpath("tests")
 TARGET_DIR = FILE_DIR.joinpath("generated")
 VIOLATION_DIR = TEST_DIR.joinpath("violated")
 FALSE_FRIENDS_DIR = TEST_DIR.joinpath("false_friends")
+UNDEFINED_DIR = TEST_DIR.joinpath("undefined")
 P4_DIR = FILE_DIR.joinpath("modules/p4c/testdata/p4_16_samples/")
 # p4c binaries
 P4C_BIN = FILE_DIR.joinpath("modules/p4c/build/p4test")
@@ -75,6 +76,20 @@ for test in list(FALSE_FRIENDS_DIR.glob("*")):
     false_friends.add(name)
 
 
+# ***** tests that should *NOT* trigger a violation bug when ignore_undefined
+# is enabled*****
+
+# these programs show pathological behavior and can currently not be tested
+undefined_filter = []
+
+undefined_tests = set()
+for test in list(UNDEFINED_DIR.glob("*")):
+    name = test.name
+    if name in undefined_filter:
+        continue
+    undefined_tests.add(name)
+
+
 # ***** broken tests, need fixing *****
 xfails = [
     "complex2.p4",  # runtime index, now idea how to resolve this madness
@@ -116,6 +131,16 @@ def run_violation_test(test_folder):
     return util.EXIT_SUCCESS
 
 
+def run_undef_test(p4_file, target_dir):
+    result = tv_check.validate_translation(p4_file, target_dir, P4C_BIN, True)
+    if result == util.EXIT_SKIPPED:
+        pytest.skip(f"Skipping file {p4_file}.")
+    result = tv_check.validate_translation(p4_file, target_dir, P4C_BIN, False)
+    if result != util.EXIT_VIOLATION:
+        return util.EXIT_FAILURE
+    return util.EXIT_SUCCESS
+
+
 @pytest.mark.run_default
 @pytest.mark.parametrize("test_name", sorted(p416_tests))
 def test_p4c(request, test_name):
@@ -138,6 +163,14 @@ def test_friends(request, test_name):
 @pytest.mark.parametrize("test_folder", sorted(violation_tests))
 def test_violation(test_folder):
     assert run_violation_test(test_folder) == util.EXIT_SUCCESS
+
+
+@pytest.mark.run_default
+@pytest.mark.parametrize("test_name", sorted(undefined_tests))
+def test_undefined_violation(request, test_name):
+    p4_file, target_dir = prep_test(test_name, UNDEFINED_DIR)
+    request.node.custom_err = run_undef_test(p4_file, target_dir)
+    assert request.node.custom_err == util.EXIT_SUCCESS
 
 
 @pytest.mark.xfail

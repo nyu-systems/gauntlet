@@ -86,14 +86,18 @@ def check_equivalence(prog_before, prog_after, allow_undef):
                 undefined_vars.append(var)
             else:
                 relevant_vars.append(var)
-        if undefined_vars:
-            if relevant_vars:
-                tv_equiv = z3.Exists(relevant_vars, tv_equiv)
+        if undefined_vars and relevant_vars:
+            prog_before_children = z3.simplify(prog_before).children()
+            prog_after_children = z3.simplify(prog_after).children()
+            # check each member individual
+            # make sure undefined variables do not influence the result
+            for idx, member_before in enumerate(prog_before_children):
+                member_after = prog_after_children[idx]
+                tv_equiv = z3.ForAll(
+                    undefined_vars, member_before != member_after)
                 ret = s.check(tv_equiv)
-            else:
-                # there are no relevant vars
-                # the difference must be because of undefined behavior
-                ret = z3.unsat
+                if ret == z3.sat:
+                    break
     if ret == z3.sat:
         prog_before_simpl = z3.simplify(prog_before)
         prog_after_simpl = z3.simplify(prog_after)
