@@ -70,56 +70,7 @@ struct ingress_metadata_t {
 struct egress_metadata_t {
 }
 
-action PpdmQ(inout bit<32> KqZX, inout bit<64> dlZk) {
-    {
-        dlZk = 64w1549860199;
-        KqZX = KqZX |+| 32w280517983;
-        {
-            {
-                return;
-                KqZX = ((bit<47>)dlZk)[42:11];
-                bit<128> TcVqEq = (168w647071918[153:26] << (bit<8>)-128w1945578304) |-| (bit<128>)dlZk;
-                {
-                    KqZX = (KqZX & KqZX) * (64w1736035949 | 64w1532158386 == 64w1511033246 ? KqZX : 32w258602111);
-                    TcVqEq = 128w261717261 * 128w1898057550;
-                    TcVqEq = (true ? 128w968770193 - TcVqEq : (bit<128>)1883910416) - 154w1866309609[139:12];
-                    dlZk = -82598204;
-                }
-                TcVqEq = 128w600169419 |-| 128w274274905;
-                TcVqEq = TcVqEq;
-                dlZk = 64w1561621281 | ((!!(1784004202 != 68w925170880) || !((bit<73>)dlZk != 73w270926219) ? (bit<64>)dlZk : 64w1280048227 + 64w252176864) | 64w237563021);
-                KqZX = KqZX;
-                KqZX = 32w66488042;
-            }
-            KqZX = KqZX;
-            if (false) {
-                KqZX = 1281617301;
-            } else {
-                dlZk = dlZk;
-            }
-            KqZX = (bit<32>)((true ? 128w1793831150[70:39] : 32w1135203487) + 32w364927798);
-        }
-        KqZX = (false ? KqZX : (bit<32>)1797242391) |-| 32w888030882;
-        dlZk = 64w2108977940;
-        KqZX = KqZX;
-        KqZX = 32w1930853362;
-    }
-    KqZX = 32w2121367412;
-    KqZX = 32w438672719 << (bit<8>)32w1235754302;
-    dlZk = 64w552427497;
-}
 action JBHLs(inout bit<128> vZPe) {
-    {
-        bit<32> BpqqXo = 32w1814930874;
-        bit<64> YCOQsD = 64w1796611945;
-        PpdmQ(BpqqXo, YCOQsD);
-    }
-    vZPe = 19639840;
-    if (!!!true) {
-        vZPe = vZPe;
-    } else {
-        vZPe = (bit<128>)128w643235997;
-    }
     vZPe = 345802468;
 }
 parser SwitchIngressParser(packet_in pkt, out Headers hdr, out ingress_metadata_t ig_md, out ingress_intrinsic_metadata_t ig_intr_md) {
@@ -141,23 +92,6 @@ control ingress(inout Headers h, inout ingress_metadata_t ig_md, in ingress_intr
     bit<16> fFFLTi = h.LuTo.XKtJ;
     bool XQFRYe = true;
     bool STuEtM = !!XQFRYe;
-    action Bxrvn(inout bit<8> CsIN, out bit<8> VqkN, in bit<32> ZwfT) {
-        JBHLs(AQppiR.MyIK);
-        if (90w749520734 ^ 90w489170141 != 203w1505202253[122:33] | 90w1930466787) {
-            h.LuTo.tkzA = 64w634539412 |-| (64w1192887437 | AQppiR.tkzA);
-        } else {
-            h.eth_hdr.dst_addr = 48w1202934093 % 48w2080874025;
-        }
-        {
-            bit<32> LgcZhA = 32w1906549792;
-            PpdmQ(LgcZhA, h.LuTo.tkzA);
-        }
-        JBHLs(AQppiR.MyIK);
-        VqkN = 8w124 + (h.OANB.xZeP - CsIN);
-        h.OANB.xZeP = 8w242;
-        h.LuTo.tkzA = 21w1483283 ++ 43w338682707;
-        bool jASyxD = !STuEtM;
-    }
     table cQoyjm {
         key = {
             ((bit<219>)AQppiR.MyIK)[194:67]: exact @name("cJtcpW") ;
