@@ -109,9 +109,9 @@ def check_equivalence(prog_before, prog_after, allow_undef):
                 # check if undefined variables are part of the initial program
                 has_undefined = has_undefined_behavior(z3.simplify(m_before))
                 if not has_undefined:
-                    print("Yes. Violation holds even when "
-                          "ignoring undefined behavior!")
-                    print("Proposed solution: %s" % s.model())
+                    log.error("Yes. Violation holds even when "
+                              "ignoring undefined behavior!")
+                    log.error("Proposed solution: %s", s.model())
                     break
                 ret = z3.unsat
     if ret == z3.sat:

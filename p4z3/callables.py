@@ -35,6 +35,7 @@ def merge_parameters(params, *args, **kwargs):
             arg_val = param.p4_default
             arg = P4Argument(param.mode, param.p4_type, arg_val)
         else:
+            # sometimes we get optional parameters, record the name and type
             arg = P4Argument(param.mode, param.p4_type, None)
         merged_args[param.name] = arg
     for param_name, arg_val in kwargs.items():
@@ -431,7 +432,12 @@ class P4Method(P4Callable):
         method_args = {}
         for param_name, arg in merged_args.items():
             # we need to resolve "in" too because of side-effects
-            arg_expr = p4_state.resolve_expr(arg.p4_val)
+            if arg.p4_val is None:
+                # sometimes we get optional parameters
+                # FIXME: I do not actually know how to resolve them right now
+                arg_expr = gen_instance(p4_state, "optional", arg.p4_type)
+            else:
+                arg_expr = p4_state.resolve_expr(arg.p4_val)
             method_args[param_name] = (
                 arg.mode, arg.p4_val, arg_expr, arg.p4_type)
 
