@@ -1,0 +1,17 @@
+ERROR: Slice is of IR structure not handled by ActionAnalysis
+ERROR: Slice is of IR structure not handled by ActionAnalysis
+ERROR: Slice is of IR structure not handled by ActionAnalysis
+ERROR: Slice is of IR structure not handled by ActionAnalysis
+ERROR: Slice is of IR structure not handled by ActionAnalysis
+ERROR: Slice is of IR structure not handled by ActionAnalysis
+ERROR: Slice is of IR structure not handled by ActionAnalysis
+ERROR: Slice is of IR structure not handled by ActionAnalysis
+ERROR: Slice is of IR structure not handled by ActionAnalysis
+ERROR: Slice is of IR structure not handled by ActionAnalysis
+ERROR: Slice is of IR structure not handled by ActionAnalysis
+ERROR: Slice is of IR structure not handled by ActionAnalysis
+ERROR: 1111 * ingress::hdr.eth_hdr.src_addr; does not have a PHV allocation though it is used in an action
+bug26.tofino/pipe/bug26.bfa:86: error: Syntax error, expecting identifier or operation but got 0..15
+bug26.tofino/pipe/bug26.bfa:86: error: invalid src2
+bug26.tofino/pipe/bug26.bfa:86: error: Syntax error, expecting identifier
+failed command assembler

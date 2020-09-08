@@ -1,0 +1,4 @@
+In file: /bf-sde/submodules/bf-p4c-compilers/p4c/extensions/bf-p4c/mau/action_format.cpp:2063
+[31mCompiler Bug[0m: A container operation cannot find the associated key
+
+Skipping assembler, assembly file is empty

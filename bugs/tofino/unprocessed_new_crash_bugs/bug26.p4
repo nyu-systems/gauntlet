@@ -9,59 +9,8 @@ header ethernet_t {
     bit<16> eth_type;
 }
 
-struct rzfPRC {
-    ethernet_t KJoK;
-    ethernet_t YPYg;
-    ethernet_t Wqlc;
-}
-
-struct qjgovu {
-    ethernet_t ReuQ;
-    ethernet_t minc;
-}
-
-header ZseHRV {
-    bit<8> xZeP;
-}
-
-struct DctkQo {
-    ethernet_t vGkq;
-    ethernet_t xEIN;
-    ZseHRV     dmZj;
-    ethernet_t SFdP;
-}
-
-header jGQRJs {
-    bit<64>  tkzA;
-    bit<128> MyIK;
-    bit<16>  XKtJ;
-}
-
-struct edijUo {
-    jGQRJs     aEkM;
-    jGQRJs     vhkW;
-    ethernet_t sgyS;
-}
-
-struct IwEHHa {
-    ZseHRV     uDyY;
-    ethernet_t iUdA;
-    jGQRJs     hMjh;
-    jGQRJs     stGC;
-}
-
-struct OAgCkd {
-    ZseHRV     TMIn;
-    ZseHRV     nlGc;
-    ethernet_t bFYy;
-    ethernet_t MJvw;
-    ZseHRV     pefD;
-}
-
 struct Headers {
     ethernet_t eth_hdr;
-    jGQRJs     LuTo;
-    ZseHRV     OANB;
 }
 
 struct ingress_metadata_t {
@@ -70,9 +19,7 @@ struct ingress_metadata_t {
 struct egress_metadata_t {
 }
 
-action JBHLs(inout bit<128> vZPe) {
-    vZPe = 345802468;
-}
+
 parser SwitchIngressParser(packet_in pkt, out Headers hdr, out ingress_metadata_t ig_md, out ingress_intrinsic_metadata_t ig_intr_md) {
     state start {
         pkt.extract(ig_intr_md);
@@ -81,37 +28,15 @@ parser SwitchIngressParser(packet_in pkt, out Headers hdr, out ingress_metadata_
     }
     state parse_hdrs {
         pkt.extract(hdr.eth_hdr);
-        pkt.extract(hdr.LuTo);
-        pkt.extract(hdr.OANB);
         transition accept;
     }
 }
 
 control ingress(inout Headers h, inout ingress_metadata_t ig_md, in ingress_intrinsic_metadata_t ig_intr_md, in ingress_intrinsic_metadata_from_parser_t ig_prsr_md, inout ingress_intrinsic_metadata_for_deparser_t ig_dprsr_md, inout ingress_intrinsic_metadata_for_tm_t ig_tm_md) {
-    jGQRJs AQppiR = h.LuTo;
-    bit<16> fFFLTi = h.LuTo.XKtJ;
-    bool XQFRYe = true;
-    bool STuEtM = !!XQFRYe;
-    table cQoyjm {
-        key = {
-            ((bit<219>)AQppiR.MyIK)[194:67]: exact @name("cJtcpW") ;
-            h.OANB.xZeP                    : exact @name("HOxxWr") ;
-            64w1097261752                  : exact @name("ZDVIDQ") ;
-        }
-        actions = {
-            JBHLs(h.LuTo.MyIK);
-        }
-    }
+
     apply {
         ig_tm_md.ucast_egress_port = 0;
-        h.eth_hdr.src_addr = (!XQFRYe ? 48w1022824448 : (bit<48>)1205102184);
-        h.eth_hdr.src_addr = 48w2006561951;
-        h.OANB.xZeP = 8w0;
-        JBHLs(AQppiR.MyIK);
-        h.LuTo.XKtJ = 16w42814;
-        cQoyjm.apply();
-        h.eth_hdr.dst_addr = 48w1300524750;
-        h.LuTo.tkzA = 190341637;
+        h.eth_hdr.eth_type = 16w1 |+| (48w1111 * h.eth_hdr.src_addr)[15:0];
     }
 }
 

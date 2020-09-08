@@ -9,13 +9,13 @@ header ethernet_t {
     bit<16> eth_type;
 }
 
-header UPkFeC {
-    bit<16> ZWXC;
+header H {
+    bit<128> a;
 }
 
 struct Headers {
     ethernet_t eth_hdr;
-    UPkFeC     NGDN;
+    H     h;
 }
 
 struct ingress_metadata_t {
@@ -23,7 +23,6 @@ struct ingress_metadata_t {
 
 struct egress_metadata_t {
 }
-
 
 parser SwitchIngressParser(packet_in pkt, out Headers hdr, out ingress_metadata_t ig_md, out ingress_intrinsic_metadata_t ig_intr_md) {
     state start {
@@ -33,16 +32,17 @@ parser SwitchIngressParser(packet_in pkt, out Headers hdr, out ingress_metadata_
     }
     state parse_hdrs {
         pkt.extract(hdr.eth_hdr);
-        pkt.extract(hdr.NGDN);
+        pkt.extract(hdr.h);
         transition accept;
     }
 }
 
 control ingress(inout Headers h, inout ingress_metadata_t ig_md, in ingress_intrinsic_metadata_t ig_intr_md, in ingress_intrinsic_metadata_from_parser_t ig_prsr_md, inout ingress_intrinsic_metadata_for_deparser_t ig_dprsr_md, inout ingress_intrinsic_metadata_for_tm_t ig_tm_md) {
+    ethernet_t tmp = {1, 1, 1};
 
     apply {
         ig_tm_md.ucast_egress_port = 0;
-        h.NGDN.ZWXC = 16w1 |+| (48w1111 * h.eth_hdr.src_addr)[15:0];
+        h.h.a = (1 == tmp.eth_type ? 88w732716515  : 88w1) ++ 40w968268228;
     }
 }
 

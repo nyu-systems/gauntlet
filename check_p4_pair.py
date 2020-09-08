@@ -41,6 +41,23 @@ def handle_pyz3_error(fail_dir, p4_file):
     util.copy_file(failed, fail_dir)
 
 
+def has_undefined_behavior(formula):
+
+    if z3.is_const(formula):
+        if z3.z3util.is_expr_val(formula):
+            return False
+        else:  # variable
+            return str(formula) == "undefined"
+
+    else:
+        for child in formula.children():
+            result = has_undefined_behavior(child)
+            if result:
+                return result
+
+        return False
+
+
 def check_equivalence(prog_before, prog_after, allow_undef):
     # The equivalence check of the solver
     # For all input packets and possible table matches the programs should
@@ -78,26 +95,25 @@ def check_equivalence(prog_before, prog_after, allow_undef):
     if allow_undef and ret == z3.sat:
         log.info("Detected difference in undefined behavior. "
                  "Rechecking with undefined variables ignored.")
-        equiv_vars = z3.z3util.get_vars(z3.simplify(prog_before))
-        undefined_vars = []
-        relevant_vars = []
-        for var in equiv_vars:
-            if str(var) == "undefined":
-                undefined_vars.append(var)
-            else:
-                relevant_vars.append(var)
-        if undefined_vars and relevant_vars:
-            prog_before_children = z3.simplify(prog_before).children()
-            prog_after_children = z3.simplify(prog_after).children()
-            # check each member individual
-            # make sure undefined variables do not influence the result
-            for idx, member_before in enumerate(prog_before_children):
-                member_after = prog_after_children[idx]
-                tv_equiv = z3.ForAll(
-                    undefined_vars, member_before != member_after)
-                ret = s.check(tv_equiv)
-                if ret == z3.sat:
+        prog_before_children = z3.simplify(prog_before).children()
+        prog_after_children = z3.simplify(prog_after).children()
+        # check each member individually
+        # make sure undefined variables do not influence the result
+        for idx, m_before in enumerate(prog_before_children):
+            m_after = prog_after_children[idx]
+            tv_equiv = m_before != m_after
+            # check equivalence of the sub clause
+            ret = s.check(tv_equiv)
+            if ret == z3.sat:
+                # there is a difference
+                # check if undefined variables are part of the initial program
+                has_undefined = has_undefined_behavior(z3.simplify(m_before))
+                if not has_undefined:
+                    print("Yes. Violation holds even when "
+                          "ignoring undefined behavior!")
+                    print("Proposed solution: %s" % s.model())
                     break
+                ret = z3.unsat
     if ret == z3.sat:
         prog_before_simpl = z3.simplify(prog_before)
         prog_after_simpl = z3.simplify(prog_after)

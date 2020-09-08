@@ -1,0 +1,6 @@
+In file: /bf-sde/submodules/bf-p4c-compilers/p4c/extensions/bf-p4c/mau/instruction_selection.cpp:739
+[31mCompiler Bug[0m: bugs/tofino/unprocessed_new_crash_bugs/bug35.p4(35): : Hash Dist object on concat ++ not correctly converted
+    bool decision = (8w1 ^ (bit<4>)h.eth_hdr.dst_addr ++ (bit<4>)h.eth_hdr.src_addr != 8w2);
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Skipping assembler, assembly file is empty

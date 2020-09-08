@@ -1,0 +1,5 @@
+In file: /bf-sde/submodules/bf-p4c-compilers/p4c/frontends/p4/def_use.h:448
+[31mCompiler Bug[0m: bugs/tofino/unprocessed_new_crash_bugs/bug27.p4(50): No location set known for dummy_tbl_0/dummy_tbl.apply().hit;
+        h.eth_hdr.eth_type = dummy_fun(dummy_tbl.apply().hit ? 8w1 : 8w2);
+                                       ^^^^^^^^^^^^^^^^^^^^^
+

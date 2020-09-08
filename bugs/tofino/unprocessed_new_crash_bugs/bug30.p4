@@ -9,13 +9,8 @@ header ethernet_t {
     bit<16> eth_type;
 }
 
-header QBYCjW {
-    bit<128> zTbY;
-}
-
 struct Headers {
     ethernet_t eth_hdr;
-    QBYCjW     nsQo;
 }
 
 struct ingress_metadata_t {
@@ -32,17 +27,21 @@ parser SwitchIngressParser(packet_in pkt, out Headers hdr, out ingress_metadata_
     }
     state parse_hdrs {
         pkt.extract(hdr.eth_hdr);
-        pkt.extract(hdr.nsQo);
         transition accept;
     }
 }
 
 control ingress(inout Headers h, inout ingress_metadata_t ig_md, in ingress_intrinsic_metadata_t ig_intr_md, in ingress_intrinsic_metadata_from_parser_t ig_prsr_md, inout ingress_intrinsic_metadata_for_deparser_t ig_dprsr_md, inout ingress_intrinsic_metadata_for_tm_t ig_tm_md) {
-    ethernet_t tmp = {1, 1, 1};
-
+    table dummy_table {
+        key = {
+            ((bit<256>)h.eth_hdr.src_addr)[128:0]: exact @name("key") ;
+        }
+        actions = {
+        }
+    }
     apply {
         ig_tm_md.ucast_egress_port = 0;
-        h.nsQo.zTbY = (1 == tmp.eth_type ? 88w732716515  : 88w1) ++ 40w968268228;
+        dummy_table.apply();
     }
 }
 

@@ -1,0 +1,5 @@
+In file: /bf-sde/submodules/bf-p4c-compilers/p4c/frontends/p4/simplifyDefUse.cpp:603
+[31mCompiler Bug[0m: bugs/tofino/unprocessed_new_crash_bugs/bug34.p4(43): return_one(return_true() ? 1 : 2);: too many side-effect in one expression
+        h.eth_hdr.dst_addr = return_one((return_true() ? 16w1 : 16w2));
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
