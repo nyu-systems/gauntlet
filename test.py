@@ -21,7 +21,7 @@ TEST_DIR = FILE_DIR.joinpath("tests")
 TARGET_DIR = FILE_DIR.joinpath("generated")
 VIOLATION_DIR = TEST_DIR.joinpath("violated")
 FALSE_FRIENDS_DIR = TEST_DIR.joinpath("false_friends")
-UNDEFINED_DIR = TEST_DIR.joinpath("undefined")
+UNDEFINED_DIR = TEST_DIR.joinpath("undef_violated")
 P4_DIR = FILE_DIR.joinpath("modules/p4c/testdata/p4_16_samples/")
 # p4c binaries
 P4C_BIN = FILE_DIR.joinpath("modules/p4c/build/p4test")
@@ -75,7 +75,7 @@ for test in list(FALSE_FRIENDS_DIR.glob("*")):
     false_friends.add(name)
 
 
-# ***** tests that should *NOT* trigger a violation bug when ignore_undefined
+# ***** tests that should *NOT* trigger a violation bug when allow_undefined
 # is enabled*****
 
 # these programs show pathological behavior and can currently not be tested
@@ -115,8 +115,7 @@ def run_z3p4_test(p4_file, target_dir):
     return result
 
 
-def run_violation_test(test_folder):
-    test_folder = VIOLATION_DIR.joinpath(test_folder)
+def run_violation_test(test_folder, allow_undefined=True):
     src_p4_file = test_folder.joinpath("orig.p4")
     src_py_file = test_folder.joinpath(f"{src_p4_file.stem}.py")
     tv_check.run_p4_to_py(src_p4_file, src_py_file)
@@ -124,7 +123,7 @@ def run_violation_test(test_folder):
         py_file = test_folder.joinpath(f"{p4_file.stem}.py")
         tv_check.run_p4_to_py(p4_file, py_file)
         result = z3_check.z3_check(
-            [str(src_py_file), str(py_file)], None, True)
+            [str(src_py_file), str(py_file)], None, allow_undefined)
         if result != util.EXIT_VIOLATION:
             return util.EXIT_FAILURE
     return util.EXIT_SUCCESS
@@ -134,6 +133,8 @@ def run_undef_test(p4_file, target_dir):
     result = tv_check.validate_translation(p4_file, target_dir, P4C_BIN, True)
     if result == util.EXIT_SKIPPED:
         pytest.skip(f"Skipping file {p4_file}.")
+    elif result == util.EXIT_VIOLATION:
+        return util.EXIT_FAILURE
     result = tv_check.validate_translation(p4_file, target_dir, P4C_BIN, False)
     if result != util.EXIT_VIOLATION:
         return util.EXIT_FAILURE
@@ -161,15 +162,16 @@ def test_friends(request, test_name):
 @pytest.mark.run_default
 @pytest.mark.parametrize("test_folder", sorted(violation_tests))
 def test_violation(test_folder):
-    assert run_violation_test(test_folder) == util.EXIT_SUCCESS
+    test_folder = VIOLATION_DIR.joinpath(test_folder)
+    assert run_violation_test(test_folder, True) == util.EXIT_SUCCESS
 
 
 @pytest.mark.run_default
-@pytest.mark.parametrize("test_name", sorted(undefined_tests))
-def test_undefined_violation(request, test_name):
-    p4_file, target_dir = prep_test(test_name, UNDEFINED_DIR)
-    request.node.custom_err = run_undef_test(p4_file, target_dir)
-    assert request.node.custom_err == util.EXIT_SUCCESS
+@pytest.mark.parametrize("test_folder", sorted(undefined_tests))
+def test_undef_violation(test_folder):
+    test_folder = UNDEFINED_DIR.joinpath(test_folder)
+    assert run_violation_test(test_folder, False) == util.EXIT_SUCCESS
+    assert run_violation_test(test_folder, True) == util.EXIT_FAILURE
 
 
 @pytest.mark.xfail
