@@ -64,7 +64,6 @@ false_friends_filter = [
     "extern_arguments_2.p4",  # exit return value name
     "extern_arguments_3.p4",  # exit return value name
     "infinite_loop.p4",  # how to evaluate the output of an infinite loop?
-    "exit_combination_23.p4",  # z3 seems to get stuck?
     "parser_test4.p4",  # bug in the parser semantics
 ]
 
@@ -125,7 +124,7 @@ def run_violation_test(test_folder):
         py_file = test_folder.joinpath(f"{p4_file.stem}.py")
         tv_check.run_p4_to_py(p4_file, py_file)
         result = z3_check.z3_check(
-            [str(src_py_file), str(py_file)], None, False)
+            [str(src_py_file), str(py_file)], None, True)
         if result != util.EXIT_VIOLATION:
             return util.EXIT_FAILURE
     return util.EXIT_SUCCESS

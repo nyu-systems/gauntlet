@@ -41,21 +41,75 @@ def handle_pyz3_error(fail_dir, p4_file):
     util.copy_file(failed, fail_dir)
 
 
-def has_undefined_behavior(formula):
+def has_undefined_behavior(z3_formula):
 
-    if z3.is_const(formula):
-        if z3.z3util.is_expr_val(formula):
+    if z3.is_const(z3_formula):
+        if z3.z3util.is_expr_val(z3_formula):
             return False
         else:  # variable
-            return str(formula) == "undefined"
+            return str(z3_formula) == "undefined"
 
     else:
-        for child in formula.children():
+        for child in z3_formula.children():
             result = has_undefined_behavior(child)
             if result:
                 return result
 
         return False
+
+
+nondets = []
+
+
+def substitute_undefined(z3_formula):
+    if z3_formula.decl().kind() == z3.Z3_OP_ITE:
+        cond_expr = z3_formula.children()[0]
+        then_expr = z3_formula.children()[1]
+        else_expr = z3_formula.children()[2]
+        cond_expr, cond_has_undefined = substitute_undefined(cond_expr)
+        then_expr, then_has_undefined = substitute_undefined(then_expr)
+        else_expr, else_has_undefined = substitute_undefined(else_expr)
+        if then_has_undefined and else_has_undefined:
+            nondet = z3.FreshConst(then_expr.sort(), "nondet")
+            nondets.append(nondet)
+            return nondet, True
+        return z3.If(cond_expr, then_expr, else_expr), False
+
+    if isinstance(z3_formula, z3.DatatypeRef):
+        decl = z3_formula.decl()
+        child_list = z3_formula.children()
+        for idx, child in enumerate(child_list):
+            child, has_undefined = substitute_undefined(child)
+            if has_undefined:
+                child = z3.FreshConst(child.sort(), "nondet")
+                nondets.append(child)
+            child_list[idx] = child
+        return decl(*child_list), False
+
+    if z3.is_const(z3_formula):
+        # variable
+        if not z3.z3util.is_expr_val(z3_formula):
+            if str(z3_formula) == "undefined":
+                nondet = z3.FreshConst(z3_formula.sort(), "nondet")
+                nondets.append(nondet)
+                return nondet, True
+
+    decl = z3_formula.decl()
+    child_list = z3_formula.children()
+    for idx, child in enumerate(child_list):
+        child, has_undefined = substitute_undefined(child)
+        if has_undefined:
+            nondet = z3.FreshConst(z3_formula.sort(), "nondet")
+            nondets.append(nondet)
+            return nondet, has_undefined
+        child_list[idx] = child
+    if child_list:
+        if decl.kind() == z3.Z3_OP_AND:
+            return z3.And(*child_list), False
+        if decl.kind() == z3.Z3_OP_OR:
+            return z3.Or(*child_list), False
+        return decl(*child_list), False
+    return z3_formula, False
 
 
 def check_equivalence(prog_before, prog_after, allow_undef):
@@ -79,7 +133,7 @@ def check_equivalence(prog_before, prog_after, allow_undef):
         z3.Tactic("simplify"),
         # z3.Tactic("distribute-forall"),
         # z3.Tactic("ackermannize_bv"),
-        z3.Tactic("bvarray2uf"),
+        # z3.Tactic("bvarray2uf"),
         # z3.Tactic("card2bv"),
         # z3.Tactic("propagate-bv-bounds-new"),
         # z3.Tactic("reduce-bv-size"),
@@ -95,25 +149,16 @@ def check_equivalence(prog_before, prog_after, allow_undef):
     if allow_undef and ret == z3.sat:
         log.info("Detected difference in undefined behavior. "
                  "Rechecking with undefined variables ignored.")
-        prog_before_children = z3.simplify(prog_before).children()
-        prog_after_children = z3.simplify(prog_after).children()
-        # check each member individually
-        # make sure undefined variables do not influence the result
-        for idx, m_before in enumerate(prog_before_children):
-            m_after = prog_after_children[idx]
-            tv_equiv = m_before != m_after
-            # check equivalence of the sub clause
-            ret = s.check(tv_equiv)
-            if ret == z3.sat:
-                # there is a difference
-                # check if undefined variables are part of the initial program
-                has_undefined = has_undefined_behavior(z3.simplify(m_before))
-                if not has_undefined:
-                    log.error("Yes. Violation holds even when "
-                              "ignoring undefined behavior!")
-                    log.error("Proposed solution: %s", s.model())
-                    break
-                ret = z3.unsat
+        prog_before = z3.simplify(prog_before)
+        prog_after = z3.simplify(prog_after)
+        prog_before, _ = substitute_undefined(prog_before)
+        if not nondets:
+            tv_equiv = prog_before != prog_after
+        else:
+            tv_equiv = z3.ForAll(nondets, prog_before != prog_after)
+        # check equivalence of the sub clause
+        ret = s.check(tv_equiv)
+
     if ret == z3.sat:
         prog_before_simpl = z3.simplify(prog_before)
         prog_after_simpl = z3.simplify(prog_after)
