@@ -41,75 +41,63 @@ def handle_pyz3_error(fail_dir, p4_file):
     util.copy_file(failed, fail_dir)
 
 
-def has_undefined_behavior(z3_formula):
-
-    if z3.is_const(z3_formula):
-        if z3.z3util.is_expr_val(z3_formula):
-            return False
-        else:  # variable
-            return str(z3_formula) == "undefined"
-
-    else:
-        for child in z3_formula.children():
-            result = has_undefined_behavior(child)
-            if result:
-                return result
-
-        return False
-
-
-nondets = []
-
-
-def substitute_undefined(z3_formula):
-    if z3_formula.decl().kind() == z3.Z3_OP_ITE:
-        cond_expr = z3_formula.children()[0]
-        then_expr = z3_formula.children()[1]
-        else_expr = z3_formula.children()[2]
-        cond_expr, cond_has_undefined = substitute_undefined(cond_expr)
-        then_expr, then_has_undefined = substitute_undefined(then_expr)
-        else_expr, else_has_undefined = substitute_undefined(else_expr)
+def substitute_taint(z3_expr, taints):
+    decl = z3_expr.decl()
+    if decl.kind() == z3.Z3_OP_ITE:
+        # we need to differentiate in the case of ite statements
+        cond_expr = z3_expr.children()[0]
+        then_expr = z3_expr.children()[1]
+        else_expr = z3_expr.children()[2]
+        cond_expr, _ = substitute_taint(cond_expr, taints)
+        then_expr, then_has_undefined = substitute_taint(then_expr, taints)
+        else_expr, else_has_undefined = substitute_taint(else_expr, taints)
         if then_has_undefined and else_has_undefined:
-            nondet = z3.FreshConst(then_expr.sort(), "nondet")
-            nondets.append(nondet)
-            return nondet, True
+            # both possibilities are tainted, replace
+            taint = z3.FreshConst(then_expr.sort(), "taint")
+            taints.append(taint)
+            return taint, True
+        # return the updated ite statement
         return z3.If(cond_expr, then_expr, else_expr), False
 
-    if isinstance(z3_formula, z3.DatatypeRef):
-        decl = z3_formula.decl()
-        child_list = z3_formula.children()
+    if decl.kind() == z3.Z3_OP_DT_CONSTRUCTOR:
+        # datatyperefs are not fully replaced, only their members
+        child_list = z3_expr.children()
         for idx, child in enumerate(child_list):
-            child, has_undefined = substitute_undefined(child)
+            child, has_undefined = substitute_taint(child, taints)
             if has_undefined:
-                child = z3.FreshConst(child.sort(), "nondet")
-                nondets.append(child)
+                # variabled is tainted, replace
+                child = z3.FreshConst(child.sort(), "taint")
+                taints.add(child)
+            # members might also have changed, so update
             child_list[idx] = child
         return decl(*child_list), False
 
-    if z3.is_const(z3_formula):
-        # variable
-        if not z3.z3util.is_expr_val(z3_formula):
-            if str(z3_formula) == "undefined":
-                nondet = z3.FreshConst(z3_formula.sort(), "nondet")
-                nondets.append(nondet)
-                return nondet, True
+    if z3.is_const(z3_expr):
+        # check if variable
+        if not z3.z3util.is_expr_val(z3_expr) and str(z3_expr) == "undefined":
+            # the expression is tainted replace it
+            taint = z3.FreshConst(z3_expr.sort(), "taint")
+            taints.add(taint)
+            return taint, True
+        return z3_expr, False
 
-    decl = z3_formula.decl()
-    child_list = z3_formula.children()
+    child_list = z3_expr.children()
     for idx, child in enumerate(child_list):
-        child, has_undefined = substitute_undefined(child)
+        # iterate through members of the expr
+        # replace entire expression if one member is tainted
+        child, has_undefined = substitute_taint(child, taints)
         if has_undefined:
-            nondet = z3.FreshConst(z3_formula.sort(), "nondet")
-            nondets.append(nondet)
-            return nondet, has_undefined
+            # the expression is tainted replace it
+            taint = z3.FreshConst(z3_expr.sort(), "taint")
+            taints.add(taint)
+            return taint, has_undefined
+        # members might also have changed, so update
         child_list[idx] = child
-    if child_list:
-        if decl.kind() == z3.Z3_OP_AND:
-            return z3.And(*child_list), False
-        if decl.kind() == z3.Z3_OP_OR:
-            return z3.Or(*child_list), False
-        return decl(*child_list), False
-    return z3_formula, False
+    if decl.kind() == z3.Z3_OP_AND:
+        return z3.And(*child_list), False
+    if decl.kind() == z3.Z3_OP_OR:
+        return z3.Or(*child_list), False
+    return decl(*child_list), False
 
 
 def check_equivalence(prog_before, prog_after, allow_undef):
@@ -151,11 +139,11 @@ def check_equivalence(prog_before, prog_after, allow_undef):
                  "Rechecking with undefined variables ignored.")
         prog_before = z3.simplify(prog_before)
         prog_after = z3.simplify(prog_after)
-        prog_before, _ = substitute_undefined(prog_before)
-        if not nondets:
-            tv_equiv = prog_before != prog_after
-        else:
-            tv_equiv = z3.ForAll(nondets, prog_before != prog_after)
+        taints = set()
+        prog_before, _ = substitute_taint(prog_before, taints)
+        tv_equiv = prog_before != prog_after
+        if taints:
+            tv_equiv = z3.ForAll(list(taints), tv_equiv)
         # check equivalence of the sub clause
         ret = s.check(tv_equiv)
 

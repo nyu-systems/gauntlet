@@ -1,5 +1,5 @@
 
-[![Build Status](https://travis-ci.com/p4gauntlet/p4_tv.svg?branch=master)](https://travis-ci.com/p4gauntlet/p4_tv)
+[![Build Status](https://travis-ci.com/p4gauntlet/gauntlet.svg?branch=master)](https://travis-ci.com/p4gauntlet/gauntlet)
 
 # The Gauntlet Tool Suite
 
