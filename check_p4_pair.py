@@ -135,16 +135,18 @@ def check_equivalence(prog_before, prog_after, allow_undef):
     log.debug(tv_equiv)
     log.debug(ret)
     if allow_undef and ret == z3.sat:
-        log.info("Detected difference in undefined behavior. "
-                 "Rechecking with undefined variables ignored.")
         prog_before = z3.simplify(prog_before)
         prog_after = z3.simplify(prog_after)
+        log.info("Detected difference in undefined behavior. "
+                 "Rechecking with undefined variables ignored.")
         taints = set()
+        log.info("Preprocessing...")
         prog_before, _ = substitute_taint(prog_before, taints)
+        log.info("Checking...")
         tv_equiv = prog_before != prog_after
         if taints:
             tv_equiv = z3.ForAll(list(taints), tv_equiv)
-        # check equivalence of the sub clause
+        # check equivalence of the modified clause
         ret = s.check(tv_equiv)
 
     if ret == z3.sat:
@@ -155,6 +157,11 @@ def check_equivalence(prog_before, prog_after, allow_undef):
         log.error("PROGRAM AFTER\n%s", prog_after_simpl)
         log.error("Proposed solution:")
         log.error(s.model())
+        return util.EXIT_VIOLATION
+    elif ret == z3.unknown:
+        prog_before_simpl = z3.simplify(prog_before)
+        prog_after_simpl = z3.simplify(prog_after)
+        log.error("Solution unknown! There might be a problem...")
         return util.EXIT_VIOLATION
     else:
         return util.EXIT_SUCCESS
