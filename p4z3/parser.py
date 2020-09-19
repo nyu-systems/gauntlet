@@ -8,6 +8,9 @@ from p4z3.callables import P4Control
 class P4Parser(P4Control):
 
     def collect_stack_sizes(self, p4_type, sizes):
+        # FIXME: This is flawed it will not account for many header stacks
+        # This should probably be an addition
+        # The assumption is that every loop advances at least one stack
         if isinstance(p4_type, HeaderStack):
             sizes.append(len(p4_type.z3_args))
         if isinstance(p4_type, StructType):
@@ -69,6 +72,7 @@ class AcceptState(P4Expression):
 
     def eval(self, p4_state):
         pass
+
 
 class ParserNode():
     def __init__(self, parser_tree, parser_state, match=None):
@@ -216,8 +220,6 @@ class ParserTree(P4Expression):
         return node
 
     def eval(self, p4_state):
-        # node_str = "\n" + print_tree(node, 0)
-        # log.info(node_str)
         self.start_node.eval(p4_state)
         counter = 0
         while counter < self.max_loop:

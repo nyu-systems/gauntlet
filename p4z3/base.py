@@ -888,7 +888,7 @@ class ListType(StructType):
 
     def __init__(self, name, z3_reg, z3_args):
         for idx, arg in enumerate(z3_args):
-            z3_args[idx] = (f"{idx}", arg)
+            z3_args[idx] = (f"f{idx}", arg)
             # some little hack to automatically infer a random type name
             name += str(arg)
         super(ListType, self).__init__(name, z3_reg, z3_args)
