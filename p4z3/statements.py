@@ -229,7 +229,7 @@ class P4Exit(P4Statement):
         cond = z3.simplify(z3.And(z3.Not(z3.Or(*forward_conds)),
                                   z3.And(*tmp_forward_conds)))
         if not cond == z3.BoolVal(False):
-            p4_state.exit_states.append((cond, p4_state.get_z3_repr()))
+            p4_state.exit_states.append((cond, p4_state.get_members()))
             p4_state.has_exited = True
         p4_state.restore(var_store, contexts)
         context.forward_conds.append(context.tmp_forward_cond)

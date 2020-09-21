@@ -49,6 +49,7 @@ for test in list(P4_DIR.glob("*.p4")):
 # these programs show pathological behavior and can currently not be tested
 violation_filter = [
     "parser_loop",  # needs some work around undefined behavior
+    "2314_regression",  # needs some work around undefined behavior
 ]
 violation_tests = set()
 for test in list(VIOLATION_DIR.glob("*")):

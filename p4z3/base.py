@@ -545,7 +545,7 @@ class P4ComplexInstance():
         self.p4z3_type = p4z3_type
         self.member_id = member_id
         self.members = p4z3_type.z3_args
-        self.valid = z3.BoolVal(False)
+        self.valid = z3.BoolVal(True)
 
     def resolve_reference(self, var):
         if isinstance(var, P4Member):
@@ -722,14 +722,23 @@ class StructInstance(P4ComplexInstance):
             if isinstance(member_val, StructInstance):
                 member_val.deactivate()
 
-    def flatten(self):
+    def flatten(self, valid=None):
+        if valid is None and isinstance(self, HeaderInstance):
+            valid = self.valid
         members = []
-        for member_name, _ in self.members:
+        for member_name, member_type in self.members:
             member = self.resolve_reference(member_name)
-            if isinstance(member, StructInstance):
-                sub_members = member.flatten()
+            if isinstance(member, HeaderInstance):
+                sub_members = member.flatten(member.valid)
+                members.extend(sub_members)
+            elif isinstance(member, StructInstance):
+                sub_members = member.flatten(valid)
                 members.extend(sub_members)
             else:
+                if valid is not None:
+                    member = z3.If(valid, member, z3.Const(
+                        "invalid", member_type))
+                    member = z3.simplify(member)
                 members.append(member)
         return members
 
@@ -852,7 +861,7 @@ class HeaderUnionInstance(StructInstance):
             member_hdr.bind_to_union(self)
         self.locals["isValid"] = self.isValid
 
-    @property
+    @ property
     def valid(self):
         valid_list = []
         for member_name, _ in self.members:
@@ -1352,19 +1361,21 @@ class P4State():
             return
         context.locals[lval] = rval
 
-    def get_z3_repr(self):
+    def get_members(self):
         ''' This method returns the current representation of the object in z3
-        logic.'''
+        logic. This function has a side-effect, validity may be modified.'''
         members = []
         for member_name, _ in self.members:
             member_val = self.resolve_reference(member_name)
             if isinstance(member_val, StructInstance):
                 # first we need to make sure that validity is correct
-                check_validity(member_val)
                 members.extend(member_val.flatten())
             else:
                 members.append(member_val)
-        return self.z3_type.constructor(0)(*members)
+        return members
+
+    def get_z3_repr(self):
+        return self.z3_type.constructor(0)(*self.get_members())
 
     def get_attrs(self):
         attr_dict = {}

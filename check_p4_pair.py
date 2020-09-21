@@ -41,63 +41,60 @@ def handle_pyz3_error(fail_dir, p4_file):
     util.copy_file(failed, fail_dir)
 
 
-def substitute_taint(z3_expr, taints):
+def substitute_taint(z3_expr):
     decl = z3_expr.decl()
+    taint_vars = set()
     if decl.kind() == z3.Z3_OP_ITE:
         # we need to differentiate in the case of ite statements
         cond_expr = z3_expr.children()[0]
         then_expr = z3_expr.children()[1]
         else_expr = z3_expr.children()[2]
-        cond_expr, _ = substitute_taint(cond_expr, taints)
-        then_expr, then_has_undefined = substitute_taint(then_expr, taints)
-        else_expr, else_has_undefined = substitute_taint(else_expr, taints)
-        if then_has_undefined and else_has_undefined:
-            # both possibilities are tainted, replace
+        cond_expr, cond_taint_vars = substitute_taint(cond_expr)
+        # if the condition is tainted, do not even bother to evaluate the rest
+        if cond_expr.decl().kind() != z3.Z3_OP_ITE and cond_taint_vars:
+            z3_expr = z3.FreshConst(then_expr.sort(), "taint")
+            taint_vars.add(z3_expr)
+            return z3_expr, taint_vars
+        # evaluate the branches
+        then_expr, then_taint_vars = substitute_taint(then_expr)
+        else_expr, else_taint_vars = substitute_taint(else_expr)
+        if then_taint_vars and else_taint_vars:
+            # both branches are tainted, replace and return
             taint = z3.FreshConst(then_expr.sort(), "taint")
-            taints.append(taint)
-            return taint, True
-        # return the updated ite statement
-        return z3.If(cond_expr, then_expr, else_expr), False
+            taint_vars.add(taint)
+            return taint, taint_vars
 
-    if decl.kind() == z3.Z3_OP_DT_CONSTRUCTOR:
-        # datatyperefs are not fully replaced, only their members
-        child_list = z3_expr.children()
-        for idx, child in enumerate(child_list):
-            child, has_undefined = substitute_taint(child, taints)
-            if has_undefined:
-                # variabled is tainted, replace
-                child = z3.FreshConst(child.sort(), "taint")
-                taints.add(child)
-            # members might also have changed, so update
-            child_list[idx] = child
-        return decl(*child_list), False
+        # merge taints and create a new ite statement
+        taint_vars |= then_taint_vars
+        taint_vars |= else_taint_vars
+        return z3.If(cond_expr, then_expr, else_expr), taint_vars
 
     if z3.is_const(z3_expr):
         # check if variable
         if not z3.z3util.is_expr_val(z3_expr) and str(z3_expr) == "undefined":
             # the expression is tainted replace it
             taint = z3.FreshConst(z3_expr.sort(), "taint")
-            taints.add(taint)
-            return taint, True
-        return z3_expr, False
+            taint_vars.add(taint)
+            return taint, taint_vars
+        return z3_expr, taint_vars
 
     child_list = z3_expr.children()
     for idx, child in enumerate(child_list):
         # iterate through members of the expr
         # replace entire expression if one member is tainted
-        child, has_undefined = substitute_taint(child, taints)
+        child, has_undefined = substitute_taint(child)
         if has_undefined:
             # the expression is tainted replace it
             taint = z3.FreshConst(z3_expr.sort(), "taint")
-            taints.add(taint)
-            return taint, has_undefined
+            taint_vars.add(taint)
+            return taint, taint_vars
         # members might also have changed, so update
         child_list[idx] = child
     if decl.kind() == z3.Z3_OP_AND:
-        return z3.And(*child_list), False
+        return z3.And(*child_list), taint_vars
     if decl.kind() == z3.Z3_OP_OR:
-        return z3.Or(*child_list), False
-    return decl(*child_list), False
+        return z3.Or(*child_list), taint_vars
+    return decl(*child_list), taint_vars
 
 
 def check_equivalence(prog_before, prog_after, allow_undef):
@@ -135,19 +132,38 @@ def check_equivalence(prog_before, prog_after, allow_undef):
     log.debug(tv_equiv)
     log.debug(ret)
     if allow_undef and ret == z3.sat:
-        prog_before = z3.simplify(prog_before)
-        prog_after = z3.simplify(prog_after)
+        prog_before_children = z3.simplify(prog_before).children()
+        prog_after_children = z3.simplify(prog_after).children()
         log.info("Detected difference in undefined behavior. "
                  "Rechecking with undefined variables ignored.")
-        taints = set()
-        log.info("Preprocessing...")
-        prog_before, _ = substitute_taint(prog_before, taints)
-        log.info("Checking...")
-        tv_equiv = prog_before != prog_after
-        if taints:
-            tv_equiv = z3.ForAll(list(taints), tv_equiv)
-        # check equivalence of the modified clause
-        ret = s.check(tv_equiv)
+        for idx, m_before in enumerate(prog_before_children):
+            log.info("Preprocessing member %s...", idx)
+            taints = set()
+            m_after = prog_after_children[idx]
+            m_before, taints = substitute_taint(m_before)
+            m_after, _ = substitute_taint(m_after)
+            tv_equiv = m_before != m_after
+            for taint in taints:
+                if m_before.sort() == taint.sort():
+                    tv_equiv = z3.And(tv_equiv, m_before != taint)
+
+            # check equivalence of the modified clause
+            log.info("Checking member %s...", idx)
+            ret = s.check(tv_equiv)
+            if ret == z3.sat:
+                m_before_simpl = z3.simplify(m_before)
+                m_after_simpl = z3.simplify(m_after)
+                log.error("Detected an equivalence violation!")
+                log.error("MEMBER BEFORE\n%s", m_before_simpl)
+                log.error("MEMBER AFTER\n%s", m_after_simpl)
+                log.error("Proposed solution:")
+                log.error(s.model())
+                return util.EXIT_VIOLATION
+            elif ret == z3.unknown:
+                m_before_simpl = z3.simplify(m_before)
+                m_after_simpl = z3.simplify(m_after)
+                log.error("Solution unknown! There might be a problem...")
+                return util.EXIT_VIOLATION
 
     if ret == z3.sat:
         prog_before_simpl = z3.simplify(prog_before)
