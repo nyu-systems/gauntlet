@@ -3,12 +3,27 @@ import pytest
 import p4z3.util as util
 
 
-def pytest_report_teststatus(report):
+def pytest_addoption(parser):
+    parser.addoption(
+        '--suppress-crashes',
+        action='store_true',
+        default=False,
+        help="Do not fail if a test crashes."
+    )
+
+
+def pytest_report_teststatus(report, config):
     if report.when == "call" and report.custom_err == util.EXIT_VIOLATION:
         category = report.outcome
         short = 'v'
         verbose = ('VIOLATION', {"purple": True})
         return category, short, verbose
+    if config.getoption('--suppress-crashes'):
+        if report.when == "call" and report.custom_err != util.EXIT_SUCCESS:
+            category = report.outcome
+            short = 'v'
+            verbose = ('CRASH', {"red": True})
+            return category, short, verbose
 
 
 @pytest.hookimpl(hookwrapper=True)

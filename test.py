@@ -144,12 +144,15 @@ def run_undef_test(p4_file, target_dir):
 
 @pytest.mark.run_default
 @pytest.mark.parametrize("test_name", sorted(p416_tests))
-def test_p4c(request, test_name):
+def test_p4c(request, test_name, pytestconfig):
     p4_file, target_dir = prep_test(test_name)
     request.node.custom_err = run_z3p4_test(p4_file, target_dir)
     if p4_file.name in xfails and request.node.custom_err != util.EXIT_SUCCESS:
         pytest.xfail(f"Expecting {p4_file} to fail.")
-    assert request.node.custom_err == util.EXIT_SUCCESS
+    if pytestconfig.getoption('--suppress-crashes'):
+        assert request.node.custom_err != util.EXIT_VIOLATION
+    else:
+        assert request.node.custom_err == util.EXIT_SUCCESS
 
 
 @pytest.mark.run_default
