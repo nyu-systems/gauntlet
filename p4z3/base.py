@@ -722,22 +722,22 @@ class StructInstance(P4ComplexInstance):
             if isinstance(member_val, StructInstance):
                 member_val.deactivate()
 
-    def flatten(self, valid=None):
+    def flatten(self, valid):
         if valid is None and isinstance(self, HeaderInstance):
             valid = self.valid
         members = []
         for member_name, member_type in self.members:
             member = self.resolve_reference(member_name)
-            if isinstance(member, HeaderInstance):
-                sub_members = member.flatten(member.valid)
-                members.extend(sub_members)
-            elif isinstance(member, StructInstance):
-                sub_members = member.flatten(valid)
+            if isinstance(member, StructInstance):
+                if isinstance(member, HeaderInstance):
+                    sub_members = member.flatten(member.valid)
+                else:
+                    sub_members = member.flatten(valid)
                 members.extend(sub_members)
             else:
                 if valid is not None:
-                    member = z3.If(valid, member, z3.Const(
-                        "invalid", member_type))
+                    invalid_const = z3.Const("invalid", member_type)
+                    member = z3.If(valid, member, invalid_const)
                     member = z3.simplify(member)
                 members.append(member)
         return members
@@ -827,8 +827,8 @@ class HeaderInstance(StructInstance):
             # when both headers are valid compare the values
             check_valid = z3.And(self.isValid(), other.isValid())
 
-            self_const = self.flatten()
-            other_const = other.flatten()
+            self_const = self.flatten(z3.BoolVal(True))
+            other_const = other.flatten(z3.BoolVal(True))
             comps = []
             for idx, self_val in enumerate(self_const):
                 comps.append(self_val == other_const[idx])
@@ -1369,7 +1369,7 @@ class P4State():
             member_val = self.resolve_reference(member_name)
             if isinstance(member_val, StructInstance):
                 # first we need to make sure that validity is correct
-                members.extend(member_val.flatten())
+                members.extend(member_val.flatten(None))
             else:
                 members.append(member_val)
         return members

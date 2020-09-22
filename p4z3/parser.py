@@ -258,7 +258,7 @@ def build_select_cond(p4_state, case_expr, match_list):
     select_cond = []
     # these casts are kind of silly but simplify the code a lot
     if isinstance(case_expr, StructInstance):
-        case_expr = case_expr.flatten()
+        case_expr = case_expr.flatten(z3.BoolVal(True))
     elif not isinstance(case_expr, list):
         case_expr = [case_expr]
 
