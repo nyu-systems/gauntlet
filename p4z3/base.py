@@ -197,26 +197,6 @@ def propagate_validity_bit(target, parent_valid=None):
             propagate_validity_bit(member_val, parent_valid)
 
 
-def check_validity(target, parent_validity=None):
-    if parent_validity is None:
-        if isinstance(target, HeaderInstance):
-            parent_validity = target.valid
-    for member_name, member_type in target.members:
-        # retrieve the member we are accessing
-        member = target.resolve_reference(member_name)
-        if isinstance(member, StructInstance):
-            # it is a complex type
-            # propagate the validity to all children
-            check_validity(member, parent_validity)
-        else:
-            if parent_validity is None:
-                continue
-            # if the header is invalid set the variable to "undefined"
-            cond = z3.simplify(z3.If(parent_validity, member,
-                                     z3.Const("invalid", member_type)))
-            target.set_or_add_var(member_name, cond)
-
-
 def resolve_type(context, p4_type):
     if isinstance(p4_type, str):
         try:
