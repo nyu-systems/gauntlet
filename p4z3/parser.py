@@ -61,7 +61,7 @@ class RejectState(P4Expression):
             member_val = p4_state.resolve_reference(member_name)
             if isinstance(member_val, StructInstance):
                 member_val.deactivate()
-        p4_state.exit_states.append((cond, p4_state.get_z3_repr()))
+        p4_state.exit_states.append((cond, p4_state.get_members()))
         p4_state.restore(var_store, contexts)
         p4_state.has_exited = True
         context.forward_conds.append(context.tmp_forward_cond)
@@ -258,7 +258,7 @@ def build_select_cond(p4_state, case_expr, match_list):
     select_cond = []
     # these casts are kind of silly but simplify the code a lot
     if isinstance(case_expr, StructInstance):
-        case_expr = case_expr.flatten()
+        case_expr = case_expr.flatten(z3.BoolVal(True))
     elif not isinstance(case_expr, list):
         case_expr = [case_expr]
 

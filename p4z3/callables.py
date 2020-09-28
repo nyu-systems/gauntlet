@@ -189,6 +189,14 @@ class P4Package(P4Callable):
             init_package.type_context[t_param] = arg
         return init_package
 
+    def create_z3_represenation(self, p4_state):
+        members = p4_state.get_members()
+        # and also merge back all the exit states we collected
+        for exit_cond, exit_state in reversed(p4_state.exit_states):
+            for idx, exit_member in enumerate(exit_state):
+                members[idx] = z3.If(exit_cond, exit_member, members[idx])
+        return p4_state.z3_type.constructor(0)(*members)
+
     def initialize(self, context, *args, **kwargs):
         merged_args = merge_parameters(self.params, *args, **kwargs)
         for pipe_name, pipe_arg in merged_args.items():
@@ -223,10 +231,7 @@ class P4Package(P4Callable):
                 # this is essentially the input packet
                 pipe_val.apply(p4_state, *args)
                 # after executing the pipeline get its z3 representation
-                state = p4_state.get_z3_repr()
-                # and also merge back all the exit states we collected
-                for exit_cond, exit_state in reversed(p4_state.exit_states):
-                    state = z3.If(exit_cond, exit_state, state)
+                state = self.create_z3_represenation(p4_state)
                 # all done, that is our P4 representation!
                 self.pipes[pipe_name] = (state, p4_state.members, pipe_val)
             elif isinstance(pipe_val, P4Extern):
@@ -676,7 +681,7 @@ class P4Table(P4Callable):
             # this generates the match expression for a specific constant entry
             # this is a little inefficient, fix.
             # TODO: Figure out if key type matters here?
-            for index, (key_expr, key_type) in enumerate(self.keys):
+            for index, (key_expr, _) in enumerate(self.keys):
                 c_key_expr = c_keys[index]
                 # default implies don't care, do not add
                 # TODO: Verify that this assumption is right...

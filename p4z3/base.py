@@ -197,26 +197,6 @@ def propagate_validity_bit(target, parent_valid=None):
             propagate_validity_bit(member_val, parent_valid)
 
 
-def check_validity(target, parent_validity=None):
-    if parent_validity is None:
-        if isinstance(target, HeaderInstance):
-            parent_validity = target.valid
-    for member_name, member_type in target.members:
-        # retrieve the member we are accessing
-        member = target.resolve_reference(member_name)
-        if isinstance(member, StructInstance):
-            # it is a complex type
-            # propagate the validity to all children
-            check_validity(member, parent_validity)
-        else:
-            if parent_validity is None:
-                continue
-            # if the header is invalid set the variable to "undefined"
-            cond = z3.simplify(z3.If(parent_validity, member,
-                                     z3.Const("invalid", member_type)))
-            target.set_or_add_var(member_name, cond)
-
-
 def resolve_type(context, p4_type):
     if isinstance(p4_type, str):
         try:
@@ -545,7 +525,7 @@ class P4ComplexInstance():
         self.p4z3_type = p4z3_type
         self.member_id = member_id
         self.members = p4z3_type.z3_args
-        self.valid = z3.BoolVal(False)
+        self.valid = z3.BoolVal(True)
 
     def resolve_reference(self, var):
         if isinstance(var, P4Member):
@@ -722,14 +702,23 @@ class StructInstance(P4ComplexInstance):
             if isinstance(member_val, StructInstance):
                 member_val.deactivate()
 
-    def flatten(self):
+    def flatten(self, valid):
+        if valid is None and isinstance(self, HeaderInstance):
+            valid = self.valid
         members = []
-        for member_name, _ in self.members:
+        for member_name, member_type in self.members:
             member = self.resolve_reference(member_name)
             if isinstance(member, StructInstance):
-                sub_members = member.flatten()
+                if isinstance(member, HeaderInstance):
+                    sub_members = member.flatten(member.valid)
+                else:
+                    sub_members = member.flatten(valid)
                 members.extend(sub_members)
             else:
+                if valid is not None:
+                    invalid_const = z3.Const("invalid", member_type)
+                    member = z3.If(valid, member, invalid_const)
+                    member = z3.simplify(member)
                 members.append(member)
         return members
 
@@ -818,8 +807,8 @@ class HeaderInstance(StructInstance):
             # when both headers are valid compare the values
             check_valid = z3.And(self.isValid(), other.isValid())
 
-            self_const = self.flatten()
-            other_const = other.flatten()
+            self_const = self.flatten(z3.BoolVal(True))
+            other_const = other.flatten(z3.BoolVal(True))
             comps = []
             for idx, self_val in enumerate(self_const):
                 comps.append(self_val == other_const[idx])
@@ -852,7 +841,7 @@ class HeaderUnionInstance(StructInstance):
             member_hdr.bind_to_union(self)
         self.locals["isValid"] = self.isValid
 
-    @property
+    @ property
     def valid(self):
         valid_list = []
         for member_name, _ in self.members:
@@ -1352,19 +1341,21 @@ class P4State():
             return
         context.locals[lval] = rval
 
-    def get_z3_repr(self):
+    def get_members(self):
         ''' This method returns the current representation of the object in z3
-        logic.'''
+        logic. This function has a side-effect, validity may be modified.'''
         members = []
         for member_name, _ in self.members:
             member_val = self.resolve_reference(member_name)
             if isinstance(member_val, StructInstance):
                 # first we need to make sure that validity is correct
-                check_validity(member_val)
-                members.extend(member_val.flatten())
+                members.extend(member_val.flatten(None))
             else:
                 members.append(member_val)
-        return self.z3_type.constructor(0)(*members)
+        return members
+
+    def get_z3_repr(self):
+        return self.z3_type.constructor(0)(*self.get_members())
 
     def get_attrs(self):
         attr_dict = {}
