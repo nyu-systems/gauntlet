@@ -121,6 +121,7 @@ mkdir -p ${MODULE_DIR}/p4c/extensions
 # only install bludgeon if we are not running in travis
 if test -z $TRAVIS; then
      ln -sf ${MODULE_DIR}/bludgeon ${MODULE_DIR}/p4c/extensions/bludgeon
+     ln -sf ${MODULE_DIR}/pruner ${MODULE_DIR}/p4c/extensions/pruner
 fi
 ln -sf ${MODULE_DIR}/toz3 ${MODULE_DIR}/p4c/extensions/toz3
 

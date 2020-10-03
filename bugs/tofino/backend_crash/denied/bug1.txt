@@ -1,0 +1,5 @@
+In file: /bf-sde/submodules/bf-p4c-compilers/p4c/frontends/p4/functionsInlining.cpp:120
+[31mCompiler Bug[0m: bugs/tofino/bug1.p4(22): (bit<16>)return_one();: expected a method call
+        h.eth_hdr.eth_type = (bit<16>)return_one();
+                             ^^^^^^^^^^^^^^^^^^^^^
+
