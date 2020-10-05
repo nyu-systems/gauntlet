@@ -549,6 +549,10 @@ class P4Table(P4Callable):
         self.add_default(properties)
         self.add_actions(properties)
         self.add_const_entries(properties)
+
+        # check if the table is immutable
+        self.immutable = properties["immutable"]
+
         # set the rest
         self.properties = properties
 
@@ -744,7 +748,9 @@ class P4Table(P4Callable):
             # first evaluate all the constant entries
             self.eval_const_entries(p4_state, action_exprs, action_matches)
             # then append dynamic table entries to the constant entries
-            self.eval_table_entries(p4_state, action_exprs, action_matches)
+            # only do this if the table can actually be manipulated
+            if not self.immutable:
+                self.eval_table_entries(p4_state, action_exprs, action_matches)
         # finally start evaluating the default entry
         var_store, contexts = p4_state.checkpoint()
         # this hits when the table is either missed, or no action matches
