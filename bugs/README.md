@@ -1,3 +1,26 @@
+# Bug Breakdown
+
+This folder is an archive of all the bugs we have found and file while using Gauntlet. The following folder structure explains the meaning of the individual categories. Every folder also contains a `fixed` and `denied` folders. Bugs that have been fixed or denied by the maintainers are filed there. Bugs in the top-level directory are confirmed and open.
+
+```
+bugs
+├── crash                   -- Crash bugs found in P4C. File numbers correspond to issues filed in https://github.com/p4lang/p4c/issues.
+├── improvements            -- Issues that were considered "enhancements" by the compiler maintainers.  File numbers correspond to issues filed in https://github.com/p4lang/p4c/issues.
+├── invalid_transformation  -- These are IR transformation that did not lead to a compiler bug but violated the invariant that the compiler IR must be valid at all times during compilation.
+├── simple_switch           -- Bugs found in the simple switch software when running an stf test. File numbers correspond to issues filed in https://github.com/p4lang/behavioral-model/issues.
+├── spec                    -- Specification issues that were uncovered when asking questions or filing bug reports. Numbers correspond to issues raised at https://github.com/p4lang/p4-spec/issues.
+├── tofino                  -- Bugs found in the compiler for the Tofino chip. More precisely for the tna.p4 package. We can only discuss the bugs we found and the type of the bug.
+│   ├── crash               -- Simple compiler crashes.
+│   ├── missing_pass        -- Crashes found in bf-p4c that were caused by the P4C front end not transforming passes correctly.
+│   └── semantic            -- Semantic bugs that were uncovered using model-based testing using PTF and test packets.
+└── validation              -- Semantics bugs that were uncovered in P4C using translation validation. The majority of bugs were also reproduced using model-based testing and an STF file is supplied with the bug.
+```
+
+
+### Bug Tables
+The bug tables provide the latest, detailed breakdown of all the issues we have filed in the open-source repositories.
+Last Updated: 2020-10-05
+
 #### P4C Crash Bugs
 
 | Issue                                                        | Location                    | Compiler Stage | Status    |
@@ -11,9 +34,9 @@
 | [2151](https://github.com/p4lang/p4c/issues/2151)            | [crash/fixed/2151.p4](crash/fixed/2151.p4)         | Front end      | FIXED     |
 | [2190](https://github.com/p4lang/p4c/issues/2190)            | [crash/fixed/2190.p4](crash/fixed/2190.p4)         | Front end      | FIXED     |
 | [2206](https://github.com/p4lang/p4c/issues/2206)            | [crash/fixed/2206.p4](crash/fixed/2206.p4)         | Front end      | FIXED     |
-| [2207](https://github.com/p4lang/p4c/issues/2207)            | [crash/denied/2207.p4](crash/denied/2207.p4)         | Front end      | DENIED    |
+| [2207](https://github.com/p4lang/p4c/issues/2207)            | [crash/denied/2207.p4](crash/denied/2207.p4)       | Front end      | DENIED    |
 | [2248c](https://github.com/p4lang/p4c/issues/2248)           | [crash/fixed/2248c.p4](crash/fixed/2248c.p4)       | Mid end        | FIXED     |
-| [2258a](https://github.com/p4lang/p4c/issues/2258)            | [crash/2258a.p4](crash/2258a.p4)         | Front end      | CONFIRMED |
+| [2258a](https://github.com/p4lang/p4c/issues/2258)            | [crash/2258a.p4](crash/2258a.p4)                  | Front end      | CONFIRMED |
 | [2261](https://github.com/p4lang/p4c/issues/2261)            | [crash/fixed/2261.p4](crash/fixed/2261.p4)         | Front end      | FIXED     |
 | [2266](https://github.com/p4lang/p4c/issues/2266)            | [crash/2266.p4](crash/2266.p4)                     | Front end      | CONFIRMED |
 | [2289](https://github.com/p4lang/p4c/issues/2289)            | [crash/fixed/2289.p4](crash/fixed/2289.p4)         | Mid end        | FIXED     |
@@ -30,7 +53,7 @@
 | [2373](https://github.com/p4lang/p4c/issues/2373)            | [crash/fixed/2373.p4](crash/fixed/2373.p4)         | Front end      | FIXED     |
 | [2375](https://github.com/p4lang/p4c/issues/2375)            | [crash/fixed/2375.p4](crash/fixed/2375.p4)         | Back end       | FIXED     |
 | [2393](https://github.com/p4lang/p4c/issues/2393)            | [crash/2393.p4](crash/2393.p4)                     | Front end      | CONFIRMED |
-| [2435a](https://github.com/p4lang/p4c/issues/2435)            | [crash/fixed/2435a.p4](crash/fixed/2435a.p4)         | Mid end        | FIXED     |
+| [2435a](https://github.com/p4lang/p4c/issues/2435)            | [crash/fixed/2435a.p4](crash/fixed/2435a.p4)      | Mid end        | FIXED     |
 | [2485](https://github.com/p4lang/p4c/issues/2485)            | [crash/fixed/2485.p4](crash/fixed/2485.p4)         | Mid end        | FIXED     |
 | [2486](https://github.com/p4lang/p4c/issues/2486)            | [crash/denied/2486.p4](crash/denied/2486.p4)       | Mid end        | DENIED    |
 | [2487](https://github.com/p4lang/p4c/issues/2487)            | [crash/fixed/2487.p4](crash/fixed/2487.p4)         | Mid end        | FIXED     |
@@ -41,7 +64,7 @@
 | [2544](https://github.com/p4lang/p4c/issues/2544)            | [crash/2544.p4](crash/2544.p4)                     | Front End      | CONFIRMED |
 | [2545](https://github.com/p4lang/p4c/issues/2545)            | [crash/fixed/2545.p4](crash/fixed/2545.p4)         | Mid end        | FIXED     |
 | [2546b](https://github.com/p4lang/p4c/issues/2546)           | [crash/2546b.p4](crash/2546b.p4)                   | Front End      | CONFIRMED |
-| [887](https://github.com/p4lang/behavioral-model/issues/887) | [simple_switch/fixed/887.p4](simple_switch/fixed/887.p4) | Back end       | FIXED     |
+| [887](https://github.com/p4lang/behavioral-model/issues/887) | [simple_switch/fixed/887.p4](simple_switch/fixed/887.p4) | Back end | FIXED     |
 
 #### P4C Semantic Bugs
 
@@ -54,7 +77,7 @@
 | [2170](https://github.com/p4lang/p4c/issues/2170)            | [validation/fixed/2170.p4](validation/fixed/2170.p4)    | Mid end        | FIXED     |
 | [2175](https://github.com/p4lang/p4c/issues/2175)            | [validation/fixed/2175.p4](validation/fixed/2175.p4)    | Front end      | FIXED     |
 | [2176](https://github.com/p4lang/p4c/issues/2176)            | [validation/fixed/2176.p4](validation/fixed/2176.p4)    | Front end      | FIXED     |
-| [2190](https://github.com/p4lang/p4c/issues/2190)            | [validation/fixed/2190a.p4](validation/fixed/2190a.p4)    | Front end      | FIXED     |
+| [2190](https://github.com/p4lang/p4c/issues/2190)            | [validation/fixed/2190a.p4](validation/fixed/2190a.p4)  | Front end      | FIXED     |
 | [2205](https://github.com/p4lang/p4c/issues/2205)            | [validation/fixed/2205.p4](validation/fixed/2205.p4)    | Front end      | FIXED     |
 | [2212](https://github.com/p4lang/p4c/issues/2212)            | [validation/denied/2212.p4](validation/denied/2212.p4)  | Front end      | DENIED    |
 | [2221](https://github.com/p4lang/p4c/issues/2221)            | [validation/fixed/2221.p4](validation/fixed/2221.p4)    | Front end      | FIXED     |
@@ -68,18 +91,18 @@
 | [2330](https://github.com/p4lang/p4c/issues/2330)            | [validation/fixed/2330.p4](validation/fixed/2330.p4)    | Mid end        | FIXED     |
 | [2343](https://github.com/p4lang/p4c/issues/2343)            | [validation/fixed/2343.p4](validation/fixed/2343.p4)    | Front end      | FIXED     |
 | [2344](https://github.com/p4lang/p4c/issues/2344)            | [validation/2344.p4](validation/2344.p4)                | Mid end        | CONFIRMED |
+| [2345b](https://github.com/p4lang/p4c/issues/2345)           | [validation/fixed/2345b.p4](validation/fixed/2345b.p4)  | Mid end        | FIXED     |
 | [2358a](https://github.com/p4lang/p4c/issues/2358)           | [validation/2358a.p4](validation/2358a.p4)              | Front end      | CONFIRMED |
+| [2358b](https://github.com/p4lang/p4c/issues/2358)           | [validation/2358b.p4](validation/2358b.p4)              | Front end      |           |
 | [2374](https://github.com/p4lang/p4c/issues/2374)            | [validation/denied/2374.p4](validation/denied/2374.p4)  | Front end      | DENIED    |
 | [2382](https://github.com/p4lang/p4c/issues/2382)            | [validation/denied/2382.p4](validation/denied/2382.p4)  | Front end      | DENIED    |
 | [2383](https://github.com/p4lang/p4c/issues/2383)            | [validation/fixed/2383.p4](validation/fixed/2383.p4)    | Mid end        | FIXED     |
 | [2392](https://github.com/p4lang/p4c/issues/2392)            | [validation/fixed/2392.p4](validation/fixed/2392.p4)    | Front End      | FIXED     |
 | [2470](https://github.com/p4lang/p4c/issues/2470)            | [validation/denied/2470.p4](validation/denied/2470.p4)  | Front End      | DENIED    |
-| [2345b](https://github.com/p4lang/p4c/issues/2345)           | [validation/fixed/2345b.p4](validation/fixed/2345b.p4)  | Mid end        | FIXED     |
-| [2358b](https://github.com/p4lang/p4c/issues/2358)           | [validation/2358b.p4](validation/2358b.p4)              | Front end      |           |
 | [2488](https://github.com/p4lang/p4c/issues/2488)            | [validation/fixed/2488.p4](validation/fixed/2488.p4)    | Front end      | FIXED     |
 | [2498](https://github.com/p4lang/p4c/issues/2498)            | [validation/2498.p4](validation/2498.p4)                | Front end      | CONFIRMED |
 | [2546b](https://github.com/p4lang/p4c/issues/2546)           | [validation/2546b.p4](validation/2546b.p4)              | Mid end        | CONFIRMED |
-| [2564](https://github.com/p4lang/p4c/pull/2564)              | [validation/fixed/2564a.p4](validation/fixed/2564a.p4)    | Mid end        | FIXED     |
+| [2564](https://github.com/p4lang/p4c/pull/2564)              | [validation/fixed/2564a.p4](validation/fixed/2564a.p4)  | Mid end        | FIXED     |
 
 #### Tofino Crash Bugs
 
@@ -87,7 +110,7 @@
 | ------------------------------------------------------------ | --------------------------- | -------------- | --------- |
 | 1                                                            | [tofino/crash/bug1.p4](tofino/crash/denied/bug1.p4)       | Front end      | DENIED    |
 | 2                                                            | [tofino/crash/bug2.p4](tofino/crash/denied/bug2.p4)       | Front end      | DENIED    |
-| 3                                                            | [tofino/crash/bug3.p4](tofino/missing_pass/bug3.p4)       | Back end       | FRONT END    |
+| 3                                                            | [tofino/crash/bug3.p4](tofino/missing_pass/bug3.p4)       | Back end       | FRONT END |
 | 4                                                            | [tofino/crash/bug4.p4](tofino/crash/denied/bug4.p4)       | Front end      | DENIED    |
 | 5                                                            | [tofino/crash/bug5.p4](tofino/crash/bug5.p4)              | Back end       | CONFIRMED |
 | 6                                                            | [tofino/crash/bug6.p4](tofino/crash/bug6.p4)              | Back end       | CONFIRMED |
@@ -97,7 +120,7 @@
 | 10                                                           | [tofino/crash/bug10.p4](tofino/crash/bug10.p4)            | Back end       | CONFIRMED |
 | 11                                                           | [tofino/crash/bug11.p4](tofino/crash/bug11.p4)            | Back end       | CONFIRMED |
 | 12                                                           | [tofino/crash/bug12.p4](tofino/crash/bug12.p4)            | Back end       | CONFIRMED |
-| 13                                                           | [tofino/crash/bug13.p4](tofino/missing_pass/bug13.p4)     | Back end       | FRONT END    |
+| 13                                                           | [tofino/crash/bug13.p4](tofino/missing_pass/bug13.p4)     | Back end       | FRONT END |
 | 14                                                           | [tofino/crash/bug14.p4](tofino/crash/bug14.p4)            | Back end       | CONFIRMED |
 | 15                                                           | [tofino/crash/bug15.p4](tofino/crash/bug15.p4)            | Back end       | CONFIRMED |
 | 16                                                           | [tofino/crash/bug16.p4](tofino/crash/bug16.p4)            | Back end       | CONFIRMED |
@@ -111,14 +134,14 @@
 | 24                                                           | [tofino/crash/bug24.p4](tofino/crash/bug24.p4)            | Back end       | CONFIRMED |
 | 25                                                           | [tofino/crash/bug25.p4](tofino/crash/bug25.p4)            | Back end       | CONFIRMED |
 | 26                                                           | [tofino/crash/bug26.p4](tofino/crash/bug26.p4)            | Back end       | CONFIRMED |
-| 27                                                           | [tofino/crash/bug27.p4](tofino/missing_pass/bug27.p4)     | Back end       | FRONT END    |
+| 27                                                           | [tofino/crash/bug27.p4](tofino/missing_pass/bug27.p4)     | Back end       | FRONT END |
 | 28                                                           | [tofino/crash/bug28.p4](tofino/crash/denied/bug28.p4)     | Back end       | DENIED    |
-| 29                                                           | [tofino/crash/bug29.p4](tofino/missing_pass/bug29.p4)     | Back end       | FRONT END    |
+| 29                                                           | [tofino/crash/bug29.p4](tofino/missing_pass/bug29.p4)     | Back end       | FRONT END |
 | 30                                                           | [tofino/crash/bug30.p4](tofino/crash/bug30.p4)            | Back end       | CONFIRMED |
 | 31                                                           | [tofino/crash/bug31.p4](tofino/crash/bug31.p4)            | Back end       | CONFIRMED |
 | 32                                                           | [tofino/crash/bug32.p4](tofino/crash/denied/bug32.p4)     | Back end       | DENIED    |
 | 33                                                           | [tofino/crash/bug33.p4](tofino/crash/bug33.p4)            | Back end       | CONFIRMED |
-| 34                                                           | [tofino/crash/bug34.p4](tofino/missing_pass/bug34.p4)     | Back end       | FRONTEND    |
+| 34                                                           | [tofino/crash/bug34.p4](tofino/missing_pass/bug34.p4)     | Back end       | FRONTEND  |
 | 35                                                           | [tofino/crash/bug35.p4](tofino/crash/bug35.p4)            | Back end       | CONFIRMED |
 
 #### Tofino Semantic Bugs
