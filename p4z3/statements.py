@@ -116,15 +116,18 @@ class SwitchStatement(P4Statement):
         forward_cond_copy = context.tmp_forward_cond
         fall_through_matches = []
         for case_match, case_block in cases.values():
+            # there is no block for the switch
+            # this expressions falls through to the next switch case
             if not case_block:
                 fall_through_matches.append(case_match)
                 continue
+            # matches the condition OR all the other fall-through switches
             case_match = z3.Or(case_match, *fall_through_matches)
+            fall_through_matches.clear()
             var_store, contexts = p4_state.checkpoint()
             context.tmp_forward_cond = z3.And(
                 forward_cond_copy, case_match)
             case_block.eval(p4_state)
-            fall_through_matches.clear()
             if not (context.has_returned or p4_state.has_exited):
                 then_vars = p4_state.get_attrs()
                 case_exprs.append((case_match, then_vars))
@@ -133,6 +136,7 @@ class SwitchStatement(P4Statement):
             p4_state.restore(var_store, contexts)
             case_matches.append(case_match)
         var_store, contexts = p4_state.checkpoint()
+        # process the default expression
         cond = z3.Not(z3.Or(*case_matches))
         context.tmp_forward_cond = z3.And(forward_cond_copy, cond)
         self.default_case.eval(p4_state)
@@ -141,16 +145,22 @@ class SwitchStatement(P4Statement):
         context.has_returned = False
         p4_state.has_exited = False
         context.tmp_forward_cond = forward_cond_copy
+        # merge all the expressions in reverse order
         for cond, then_vars in reversed(case_exprs):
             merge_attrs(p4_state, cond, then_vars)
 
     def eval_switch_table_matches(self, p4_state, table):
         cases = {}
         if table.immutable:
+            # if the table is immutable we can only match on const entries
             for c_keys, (action_name, _) in table.const_entries:
                 const_matches = []
+                # check if the action of the entry is even present
                 if action_name not in self.case_blocks:
                     continue
+                # compute the match key
+                # FIXME: Deal with side effects here
+                # Maybe just checkpoint and restore? Ugh. So expensive...
                 match_cond = table.get_const_matches(p4_state, c_keys)
                 action = table.actions[action_name][0]
                 if action_name in cases:
@@ -160,6 +170,8 @@ class SwitchStatement(P4Statement):
                 cases[action_name] = (
                     match_cond, self.case_blocks[action_name])
 
+            # we also need to process the default action separately
+            # this basically hits only if no other case matches
             _, action_name, _ = table.default_action
             match_cond = z3.Not(z3.Or(*const_matches))
             if action_name in cases:
@@ -168,6 +180,8 @@ class SwitchStatement(P4Statement):
             const_matches.append(match_cond)
             cases[action_name] = (match_cond, self.case_blocks[action_name])
         else:
+            # otherwise we are dealing with a normal table
+            # just insert the match entries combined with the hit expression
             for case_name, case_block in self.case_blocks.items():
                 match_var = table.tbl_action
                 action = table.actions[case_name][0]
@@ -185,13 +199,12 @@ class SwitchStatement(P4Statement):
         return cases
 
     def eval(self, p4_state):
-        # FIXME: Check if table call actually works
-        switch_expr = p4_state.resolve_reference(self.switch_expr)
+        switch_expr = p4_state.resolve_expr(self.switch_expr)
         if isinstance(switch_expr, P4Table):
-            switch_expr.apply(p4_state)
+            # check whether we are dealing with a table switch case
             cases = self.eval_switch_table_matches(p4_state, table=switch_expr)
         else:
-            switch_expr = p4_state.resolve_expr(switch_expr)
+            # or just a general switch case on an expression
             cases = self.eval_switch_expr_matches(p4_state, switch_expr)
         self.eval_cases(p4_state, cases)
 
