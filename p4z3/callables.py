@@ -549,6 +549,10 @@ class P4Table(P4Callable):
         self.add_default(properties)
         self.add_actions(properties)
         self.add_const_entries(properties)
+
+        # check if the table is immutable
+        self.immutable = properties["immutable"]
+
         # set the rest
         self.properties = properties
 
@@ -672,37 +676,42 @@ class P4Table(P4Callable):
         log.debug("Evaluating default action...")
         return self.eval_action(p4_state, action_name, action_args)
 
+    def get_const_matches(self, p4_state, c_keys):
+        matches = []
+        # match the constant keys with the normal table keys
+        # this generates the match expression for a specific constant entry
+        # this is a little inefficient, FIXME.
+        for index, (key_expr, _) in enumerate(self.keys):
+            c_key_expr = c_keys[index]
+            # default implies don't care, do not add
+            # TODO: Verify that this assumption is right...
+            if isinstance(c_key_expr, DefaultExpression):
+                continue
+            # TODO: Unclear about the role of side-effects here
+            key_eval = p4_state.resolve_expr(key_expr)
+            if isinstance(c_key_expr, P4Range):
+                x = c_key_expr.min
+                y = c_key_expr.max
+                c_key_eval = z3.And(z3.ULE(x, key_eval),
+                                    z3.UGE(y, key_eval))
+                matches.append(c_key_eval)
+            elif isinstance(c_key_expr, P4Mask):
+                # TODO: Unclear about the role of side-effects here
+                val = p4_state.resolve_expr(c_key_expr.mask)
+                mask = c_key_expr.mask
+                c_key_eval = (val & mask) == (key_eval & mask)
+                matches.append(c_key_eval)
+            else:
+                c_key_eval = p4_state.resolve_expr(c_key_expr)
+                matches.append(key_eval == c_key_eval)
+        return z3.And(*matches)
+
     def eval_const_entries(self, p4_state, action_exprs, action_matches):
         context = p4_state.current_context()
         forward_cond_copy = context.tmp_forward_cond
         for c_keys, (action_name, action_args) in reversed(self.const_entries):
-            matches = []
-            # match the constant keys with the normal table keys
-            # this generates the match expression for a specific constant entry
-            # this is a little inefficient, fix.
-            # TODO: Figure out if key type matters here?
-            for index, (key_expr, _) in enumerate(self.keys):
-                c_key_expr = c_keys[index]
-                # default implies don't care, do not add
-                # TODO: Verify that this assumption is right...
-                if isinstance(c_key_expr, DefaultExpression):
-                    continue
-                key_eval = p4_state.resolve_expr(key_expr)
-                if isinstance(c_key_expr, P4Range):
-                    x = c_key_expr.min
-                    y = c_key_expr.max
-                    c_key_eval = z3.And(z3.ULE(x, key_eval),
-                                        z3.UGE(y, key_eval))
-                    matches.append(c_key_eval)
-                elif isinstance(c_key_expr, P4Mask):
-                    val = p4_state.resolve_expr(c_key_expr.mask)
-                    mask = c_key_expr.mask
-                    c_key_eval = (val & mask) == (key_eval & mask)
-                    matches.append(c_key_eval)
-                else:
-                    c_key_eval = p4_state.resolve_expr(c_key_expr)
-                    matches.append(key_eval == c_key_eval)
-            action_match = z3.And(*matches)
+
+            action_match = self.get_const_matches(p4_state, c_keys)
             log.debug("Evaluating constant action %s...", action_name)
             # state forks here
             var_store, contexts = p4_state.checkpoint()
@@ -744,7 +753,9 @@ class P4Table(P4Callable):
             # first evaluate all the constant entries
             self.eval_const_entries(p4_state, action_exprs, action_matches)
             # then append dynamic table entries to the constant entries
-            self.eval_table_entries(p4_state, action_exprs, action_matches)
+            # only do this if the table can actually be manipulated
+            if not self.immutable:
+                self.eval_table_entries(p4_state, action_exprs, action_matches)
         # finally start evaluating the default entry
         var_store, contexts = p4_state.checkpoint()
         # this hits when the table is either missed, or no action matches
