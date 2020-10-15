@@ -3,7 +3,7 @@
 
 # The Gauntlet Tool Suite
 
-Gauntlet is a set of tools design to find bugs in programmable data-plane compilers. More precisely, Gauntlet targets the
+Gauntlet is a set of tools designed to find bugs in programmable data-plane compilers. More precisely, Gauntlet targets the
 [P4 language](https://p4.org/) ecosystem and  the P4-16 reference compiler ([p4c](https://github.com/p4lang/p4c/)).
 
 The goal is to ensure that a P4 compiler correctly translates a given input P4 program to its target-specific binary. The compiler must not crash and preserve the semantics of the program as originally written. The suite has three major components:
