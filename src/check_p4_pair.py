@@ -1,6 +1,5 @@
 import argparse
 from pathlib import Path
-import os
 import sys
 import logging
 import z3
@@ -9,7 +8,7 @@ import p4z3.util as util
 sys.setrecursionlimit(15000)
 
 
-FILE_DIR = os.path.dirname(os.path.abspath(__file__))
+FILE_DIR = Path(__file__).parent.resolve()
 log = logging.getLogger(__name__)
 
 # We maintain a list of passes to skip for convenience

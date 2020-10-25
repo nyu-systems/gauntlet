@@ -4,7 +4,7 @@ import types
 import copy
 import logging
 import z3
-from z3int import Z3Int
+from p4z3.z3int import Z3Int
 
 log = logging.getLogger(__name__)
 

@@ -3,6 +3,18 @@
 
 # The Gauntlet Tool Suite
 
+- [Requirements](#requirements)
+  * [Frameworks for model-based testing](#frameworks-for-model-based-testing)
+- [Instructions](#instructions)
+  * [Generating a random program](#generating-a-random-program)
+  * [Retrieving Gauntlet semantics for a P4 program](#retrieving-gauntlet-semantics-for-a-p4-program)
+  * [Validating a P4C program](#validating-a-p4c-program)
+  * [Model-based Testing](#model-based-testing)
+  * [Fuzz-testing at Scale](#fuzz-testing-at-scale)
+- [Fuzz-testing Support Matrix](#fuzz-testing-support-matrix)
+- [Bugs Found in P4 Compilers](#bugs-found-in-p4-compilers)
+- [Citation](#citing-this-project)
+
 Gauntlet is a set of tools designed to find bugs in programmable data-plane compilers. More precisely, Gauntlet targets the
 [P4 language](https://p4.org/) ecosystem and  the P4-16 reference compiler ([p4c](https://github.com/p4lang/p4c/)).
 
@@ -23,66 +35,66 @@ All tools require `p4c` to be installed. The fuzz tester and P4-to-Z3 converter 
 
 To check whether everything has been installed correctly you can run `python3 -m pytest test.py -vrf`. This will take about 30 minutes.
 
-###  Frameworks for model-based testing
+###  Frameworks for Model-based Testing
 Model-based testing requires a full test harness. Gauntlet currently supports the [bmv2 simple-switch](https://github.com/p4lang/behavioral-model) and the Tofino packet test framework. The behavioral model can be installed running the installation script with the option `./do_install.sh INSTALL_BMV2=ON`.
 
 The Tofino test framework requires access to the SDK and a manual setup. Gauntlet's scripts assume that the folder is installed under `tofino/bf_src`. We typically run the installation script as `./tofino/bf_src/p4studio_build/p4studio_build.py --use-profile p416_examples_profile`.
 
 
 ## Instructions
-### Generating a random program
+### Generating a Random Program
 After successful installation, you can generate a random P4 program via the `modules/p4c/build/p4bludgeon out.p4 --arch top`  command. To generate Tofino code, the flag needs to be set to  `modules/p4c/build/p4bludgeon --output out.p4 --arch tna`.
 A typical crash checking workflow might be:
 
     modules/p4c/build/p4bludgeon --output out.p4 --arch top && modules/p4c/build/p4c-bm2-ss out.p4
 
-### Retrieving Gauntlet semantics for a P4 program
+### Retrieving Gauntlet Semantics for a P4 Program
 For debugging purposes, you can run
 
-    python3 get_semantics.py -i out.p4
+    bin/get_p4_semantics -i out.p4
 
 to retrieve the semantic representation of a particular P4 program. This will print the Z3 formula of each pipe in the package. These semantics can be used for equality comparison or test-case inference.
 
-### Validating a P4C program
+### Validating a P4C Program
 To validate that a program is compiled correctly by `p4c`, you can run
 
-     modules/p4c/build/p4bludgeon --output out.p4 --arch top && python3 validate_p4_translation.py -i out.p4
+     modules/p4c/build/p4bludgeon --output out.p4 --arch top && bin/validate_p4_translation -i out.p4
 `check_p4_compilation.py` checks if a sequence of P4 programs are all equivalent to each other using the `check_p4_pair.py` program as a sub routine. This sequence is produced by running p4c on an input P4 program. When p4c is run on an input P4 program, it produces a sequence of P4 programs, where each P4 program corresponds to the version of the input P4 program after a p4c optimization pass. This allows us to validate whether compilation/translation is working correctly and to pinpoint the faulty optimization pass if it isn't
 working correctly.
 
-### Model-based Testing
+### Model-Based Testing
 
 Model-based testing requires the behavioral model or the Tofino compiler to be installed. The correct binaries and include files need to be instrumented in the `generate_p4_test.py` file. An example command is
 
-     modules/p4c/build/p4bludgeon --output out.p4 --arch v1model && python3 generate_p4_test.py -i out.p4 -r
+     modules/p4c/build/p4bludgeon --output out.p4 --arch v1model && bin/generate_test_case -i out.p4 -r
 This sequence of commands will first generate a random program, infer expected input and output values, convert them to a test file (in this case, they are stf files) and finally run a full test. If the observed output differs from the expected output, the tool will throw  an error. The `-r` flag denotes randomization of the input, it is optional.
 To run model-based testing for the Tofino backend, `sudo` will have to be used.
 
-     modules/p4c/build/p4bludgeon --output out.p4 --arch tna && sudo -E python3 generate_p4_test.py -i out.p4 -r -t
+     modules/p4c/build/p4bludgeon --output out.p4 --arch tna && sudo -E bin/generate_test_case -i out.p4 -r --arch tna
 
-### Fuzz-testing at Scale
+### Fuzz-Testing at Scale
 We also include facilities to fuzz test the compilers at scale.
 
-    python3 check_random_progs.py -i 1000
+    bin/test_random_progs -i 1000
  To generate and compile a thousand programs using P4C's `p4test`.
 
-    sudo -E python3 check_random_progs.py -i 1000 --arch tna
+    sudo -E bin/test_random_progs -i 1000 --arch tna
 
  To generate and compile a thousand programs using the Tofino compiler.
 
-     python3 check_random_progs.py -i 1000 -v
+     bin/test_random_progs -i 1000 -v
 
  To compile and validate a thousand programs using P4C's `p4test`.
 
-     python3 check_random_progs.py -i 1000 --arch v1model -b
+     bin/test_random_progs -i 1000 --arch v1model -b
 
  To generate and fuzz test a thousand programs on the simple switch.
 
-     python3 check_random_progs.py -i 1000 --arch tna -b
+     sudo -E bin/test_random_progs -i 1000 --arch tna -b
 
  To generate and fuzz test a thousand programs on the Tofino compiler.
 
-#### Fuzz-testing Support Matrix
+## Fuzz-Testing Support Matrix
 
 | Architecture | Compiler | Bludgeon Support | Validation Testing | Model-based Testing |
 | ------------- | ------------- | ------------- | ------------- | ------------- |
@@ -91,11 +103,11 @@ We also include facilities to fuzz test the compilers at scale.
 | top | `p4test` | :heavy_check_mark: | :heavy_check_mark: | :x: |
 | v1model | `p4c-bm2-ss` | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
 
-#### Bugs
+## Bugs Found in P4 Compilers
 
 We also track the bugs we have found. A detailed breakdown can be found in the [bugs](bugs) folder.
 
-#### Citation
+## Citing This Project
 
 To cite our work please refer to our paper:
 

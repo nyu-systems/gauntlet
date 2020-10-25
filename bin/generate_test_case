@@ -1,0 +1,11 @@
+#!/usr/bin/env python3
+from pathlib import Path
+import subprocess
+import sys
+
+FILE_DIR = Path.resolve(Path(__file__)).parent
+
+args = sys.argv[1:]
+cmd = ["python3"] + \
+    [str(FILE_DIR.joinpath("../src/generate_p4_test.py"))] + args
+subprocess.call(cmd)

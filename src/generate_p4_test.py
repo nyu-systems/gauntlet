@@ -17,11 +17,12 @@ from get_semantics import get_z3_formulization
 log = logging.getLogger(__name__)
 
 FILE_DIR = Path(__file__).parent.resolve()
-P4Z3_BIN = FILE_DIR.joinpath("modules/p4c/build/p4toz3")
-P4RANDOM_BIN = FILE_DIR.joinpath("modules/p4c/build/p4bludgeon")
-OUT_DIR = FILE_DIR.joinpath("validated")
-P4C_DIR = FILE_DIR.joinpath("modules/p4c")
-TOFINO_DIR = FILE_DIR.joinpath("tofino/bf_src")
+ROOT_DIR = FILE_DIR.parent
+P4Z3_BIN = ROOT_DIR.joinpath("modules/p4c/build/p4toz3")
+P4RANDOM_BIN = ROOT_DIR.joinpath("modules/p4c/build/p4bludgeon")
+OUT_DIR = ROOT_DIR.joinpath("validated")
+P4C_DIR = ROOT_DIR.joinpath("modules/p4c")
+TOFINO_DIR = ROOT_DIR.joinpath("tofino/bf_src")
 
 # signifies an invalid header
 INVALID_VAR = "invalid"
@@ -242,7 +243,8 @@ def run_tofino_test(out_dir, p4_input, stf_file_name):
     os_env = os.environ.copy()
     os_env["SDE"] = f"{TOFINO_DIR}"
     os_env["SDE_INSTALL"] = f"{TOFINO_DIR}/install"
-    os_env["PYTHONPATH"] = f"${{PYTHONPATH}}:{FILE_DIR}"
+    # inserting this path is necessary for the tofino_test_template.py
+    os_env["PYTHONPATH"] = f"${{PYTHONPATH}}:{ROOT_DIR}"
     test_proc = util.start_process(test_cmd, env=os_env, cwd=out_dir)
 
     def signal_handler(sig, frame):

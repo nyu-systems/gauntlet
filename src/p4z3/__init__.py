@@ -1,9 +1,10 @@
-import os
+from pathlib import Path
 import sys
-FILE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+FILE_DIR = Path.resolve(Path(__file__)).parent
 
 # avoid annoying import errors...
-sys.path.append(FILE_DIR)
+sys.path.append(str(FILE_DIR) + "/..")
 
 from p4z3.base import *
 from p4z3.expressions import *

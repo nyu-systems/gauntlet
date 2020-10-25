@@ -17,14 +17,15 @@ import p4z3.util as util
 log = logging.getLogger(__name__)
 
 FILE_DIR = Path(__file__).parent.resolve()
-P4TEST_BIN = FILE_DIR.joinpath("modules/p4c/build/p4test")
-SS_BIN = FILE_DIR.joinpath("modules/p4c/build/p4c-bm2-ss")
-PSA_BIN = FILE_DIR.joinpath("modules/p4c/build/p4c-bm2-psa")
-TNA_BIN = FILE_DIR.joinpath("tofino/bf_src/install/bin/bf-p4c")
-P4Z3_BIN = FILE_DIR.joinpath("modules/p4c/build/p4toz3")
-P4RANDOM_BIN = FILE_DIR.joinpath("modules/p4c/build/p4bludgeon")
+ROOT_DIR = FILE_DIR.parent
+P4TEST_BIN = ROOT_DIR.joinpath("modules/p4c/build/p4test")
+SS_BIN = ROOT_DIR.joinpath("modules/p4c/build/p4c-bm2-ss")
+PSA_BIN = ROOT_DIR.joinpath("modules/p4c/build/p4c-bm2-psa")
+TNA_BIN = ROOT_DIR.joinpath("tofino/bf_src/install/bin/bf-p4c")
+P4Z3_BIN = ROOT_DIR.joinpath("modules/p4c/build/p4toz3")
+P4RANDOM_BIN = ROOT_DIR.joinpath("modules/p4c/build/p4bludgeon")
 
-OUTPUT_DIR = FILE_DIR.joinpath("random")
+OUTPUT_DIR = ROOT_DIR.joinpath("random")
 GENERATOR_BUG_DIR = OUTPUT_DIR.joinpath("generator_bugs")
 CRASH_BUG_DIR = OUTPUT_DIR.joinpath("crash_bugs")
 VALIDATION_BUG_DIR = OUTPUT_DIR.joinpath("validation_bugs")
@@ -151,7 +152,8 @@ def is_known_bug(result):
 
 @timeout(seconds=600)
 def validate_p4(p4_file, target_dir, p4c_bin, log_file):
-    p4z3_cmd = "python3 validate_p4_translation.py "
+    p4z3_cmd = "python3 "
+    p4z3_cmd += f"{FILE_DIR.joinpath('validate_p4_translation.py')} "
     p4z3_cmd += f"-i {p4_file} "
     p4z3_cmd += f"-o {target_dir} "
     p4z3_cmd += f"-p {p4c_bin} "
@@ -162,7 +164,8 @@ def validate_p4(p4_file, target_dir, p4c_bin, log_file):
 
 @timeout(seconds=600)
 def validate_p4_blackbox(p4_file, target_dir, log_file, config):
-    p4z3_cmd = "python3 generate_p4_test.py "
+    p4z3_cmd = "python3 "
+    p4z3_cmd += f"{FILE_DIR.joinpath('generate_p4_test.py')} "
     p4z3_cmd += f"-i {p4_file} "
     p4z3_cmd += f"-o {target_dir} "
     p4z3_cmd += f"-l {log_file} "
@@ -188,7 +191,7 @@ def validate(dump_dir, p4_file, log_file, config):
         log.error("Failed to validate the P4 code!")
         log.error("Rerun the example with:")
         out_file = VALIDATION_BUG_DIR.joinpath(p4_file.name)
-        log.error("python3 validate_p4_translation.py -i %s", out_file)
+        log.error("python3 bin/validate_p4_translation -i %s", out_file)
         dump_file(VALIDATION_BUG_DIR, log_file)
         dump_file(VALIDATION_BUG_DIR, p4_file)
     return result
@@ -210,7 +213,7 @@ def run_p4_test(dump_dir, p4_file, log_file, config):
         if config["arch"] == "tna":
             err_log = dump_dir.joinpath(Path(p4_file.stem + "_ptf_err.log"))
             dump_file(VALIDATION_BUG_DIR, err_log)
-        log.error("python3 generate_p4_test.py -i %s", out_file)
+        log.error("python3 bin/generate_test_case -i %s", out_file)
         stf_name = dump_dir.joinpath(Path(p4_file.stem + ".stf"))
         dump_file(VALIDATION_BUG_DIR, stf_name)
         dump_file(VALIDATION_BUG_DIR, log_file)

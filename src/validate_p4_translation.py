@@ -15,9 +15,9 @@ import check_p4_pair as z3check
 log = logging.getLogger(__name__)
 
 FILE_DIR = Path(__file__).parent.resolve()
-P4C_BIN = FILE_DIR.joinpath("modules/p4c/build/p4test")
-P4Z3_BIN = FILE_DIR.joinpath("modules/p4c/build/p4toz3")
-PASS_DIR = FILE_DIR.joinpath("validated")
+P4C_BIN = FILE_DIR.joinpath("../modules/p4c/build/p4test")
+P4Z3_BIN = FILE_DIR.joinpath("../modules/p4c/build/p4toz3")
+PASS_DIR = FILE_DIR.joinpath("../validated")
 
 PASSES = "--top4 "
 PASSES += "FrontEnd,MidEnd,PassManager "
@@ -140,7 +140,7 @@ def prune_passes(p4_passes):
 
 
 def validate_translation(p4_file, target_dir, p4c_bin, allow_undef=False):
-    log.info("\n\n" + "-" * 70)
+    log.info("\n" + "-" * 70)
     log.info("Analysing %s", p4_file)
     start_time = datetime.now()
     util.check_dir(target_dir)
@@ -180,7 +180,7 @@ def validate_translation(p4_file, target_dir, p4c_bin, allow_undef=False):
 
 def main(args):
 
-    p4_input = Path(args.p4_input)
+    p4_input = Path(args.p4_input).resolve()
     pass_dir = Path(args.pass_dir)
     p4c_bin = args.p4c_bin
     allow_undef = args.allow_undef
@@ -189,14 +189,18 @@ def main(args):
         util.del_dir(pass_dir)
         result = validate_translation(p4_input, pass_dir, p4c_bin, allow_undef)
         sys.exit(result)
-    else:
+    elif os.path.isdir(p4_input):
         util.check_dir(pass_dir)
         for p4_file in list(p4_input.glob("**/*.p4")):
             output_dir = pass_dir.joinpath(p4_file.stem)
             util.del_dir(output_dir)
-            result = validate_translation(
+            validate_translation(
                 p4_file, output_dir, p4c_bin, allow_undef)
-    sys.exit(util.EXIT_SUCCESS)
+        result = util.EXIT_SUCCESS
+    else:
+        log.error("Input file \"%s\" does not exist!", p4_input)
+        result = util.EXIT_SUCCESS
+    sys.exit(result)
 
 
 if __name__ == '__main__':

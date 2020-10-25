@@ -2,12 +2,12 @@ import logging
 from pathlib import Path
 
 import pytest
-import p4z3.util as util
-import validate_p4_translation as tv_check
-import check_p4_pair as z3_check
+import src.p4z3.util as util
+import src.validate_p4_translation as tv_check
+import src.check_p4_pair as z3_check
 
 # configure logging
-logging.basicConfig(filename="analysis.log",
+logging.basicConfig(filename="test.log",
                     format="%(levelname)s:%(message)s",
                     level=logging.INFO,
                     filemode="w")
