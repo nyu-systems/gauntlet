@@ -94,7 +94,7 @@ xfails = [
     "complex2.p4",  # runtime index, now idea how to resolve this madness
     "issue1334.p4",  # overloading, this test should normally not be skipped
     "shadow-after-use.p4",  # very specific shadowing
-    "switch-expression.p4",  # new type of switch statement
+    "generic-struct.p4",  # new type of switch statement
 ]
 
 

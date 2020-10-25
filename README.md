@@ -14,7 +14,7 @@ The goal is to ensure that a P4 compiler correctly translates a given input P4 p
 
 3. **Model-based Testing**, which infers input and and corresponding output for a particular P4 program and generates end-to-end test packets. We have currently implemented model-based testing for the [bmv2 simple-switch](https://github.com/p4lang/behavioral-model) and the Tofino hardware switch.
 
-For more details and a broad overview of the concepts in Gauntlet, refer to our [preprint](https://arxiv.org/abs/2006.01074).
+For more details and a broad overview of the concepts in Gauntlet, refer to our [OSDI paper](https://www.usenix.org/conference/osdi20/presentation/ruffy).
 
 ##  Requirements
 This repository run best with a recent version of Ubuntu (18.04+). The minimum required Python version is 3.6 ([f-strings](https://www.python.org/dev/peps/pep-0498/)).
@@ -90,3 +90,22 @@ We also include facilities to fuzz test the compilers at scale.
 | tna | `p4c-bf` | :heavy_check_mark: | :x: | :heavy_check_mark: |
 | top | `p4test` | :heavy_check_mark: | :heavy_check_mark: | :x: |
 | v1model | `p4c-bm2-ss` | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
+
+#### Bugs
+
+We also track the bugs we have found. A detailed breakdown can be found in the [bugs](bugs) folder.
+
+#### Citation
+
+To cite our work please refer to our paper:
+
+```tex
+@inproceedings {258854,
+title = {Gauntlet: Finding Bugs in Compilers for Programmable Packet Processing},
+booktitle = {14th {USENIX} Symposium on Operating Systems Design and Implementation ({OSDI} 20)},
+year = {2020},
+url = {https://www.usenix.org/conference/osdi20/presentation/ruffy},
+publisher = {{USENIX} Association},
+month = nov,
+}
+```
