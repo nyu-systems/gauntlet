@@ -5,10 +5,11 @@ import importlib
 import logging
 import time
 from datetime import datetime
+import z3
 
 
 from p4z3.contrib.tabulate import tabulate
-from p4z3 import z3, Z3Reg, P4ComplexType, P4Extern
+from p4z3.base import Z3Reg, P4ComplexType, P4Extern
 
 import p4z3.util as util
 from p4z3.core import core_externs

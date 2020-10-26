@@ -124,17 +124,13 @@ class P4Callable(P4Z3Class):
         for param_name, arg in merged_args.items():
             # Sometimes expressions are passed, resolve those first
             arg_expr = p4_state.resolve_expr(arg.p4_val)
-            # for now use the param name, not the arg_name constructed here
-            # FIXME: there are some passes that rename causing issues
-            arg_name = "undefined"  # f"{self.name}_{param_name}"
             # it can happen that we receive a list
             # infer the type, generate, and set
             p4_type = resolve_type(p4_state, arg.p4_type)
             if isinstance(arg_expr, list):
                 # if the type is undefined, do nothing
                 if isinstance(p4_type, P4ComplexType):
-                    arg_instance = gen_instance(
-                        p4_state, arg_name, p4_type)
+                    arg_instance = gen_instance(p4_state, "undefined", p4_type)
                     arg_instance.set_list(arg_expr)
                     arg_expr = arg_instance
             # it is possible to pass an int as value, we need to cast it
@@ -151,7 +147,7 @@ class P4Callable(P4Z3Class):
                 # In the case that the instance is a complex type make sure
                 # to propagate the variable through all its members
                 log.debug("Resetting %s to %s", arg_expr, param_name)
-                arg_expr = gen_instance(p4_state, arg_name, p4_type)
+                arg_expr = gen_instance(p4_state, "undefined", p4_type)
 
             log.debug("Copy-in: %s to %s", arg_expr, param_name)
             # buffer the value, do NOT set it yet

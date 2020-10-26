@@ -231,8 +231,8 @@ class P4Return(P4Statement):
                 expr = z3_cast(expr, context.return_type)
             # we return a complex typed expression list, instantiate
             if isinstance(expr, list):
-                instance = gen_instance(p4_state, "undefined",
-                                        context.return_type)
+                # name is meaningless here so keep it empty
+                instance = gen_instance(p4_state, "", context.return_type)
                 instance.set_list(expr)
                 expr = instance
 

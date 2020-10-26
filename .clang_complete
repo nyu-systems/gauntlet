@@ -1,0 +1,17 @@
+-Imodules/p4c/frontends
+-Imodules/p4c/backends
+-Imodules/p4c/extensions
+-Imodules/p4c
+-Imodules/p4c/test/frameworks/gtest/googletest/include
+-Imodules/p4c/build
+-DBOOST_ALL_NO_LIB
+-DBOOST_NO_ARGUMENT_DEPENDENT_LOOKUP
+-DCONFIG_PKGDATADIR="/usr/local/share/p4c"
+-DCONFIG_PREFIX="/usr/local"
+-DMAX_LOGGING_LEVEL=10
+-DNDEBUG
+-Wall
+-Wextra
+-Wno-overloaded-virtual
+-Wno-deprecated
+-std=gnu++11

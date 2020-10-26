@@ -13,3 +13,4 @@ BasedOnStyle: LLVM
 IndentWidth: 4
 FixNamespaceComments: true
 SpacesBeforeTrailingComments: 1
+AccessModifierOffset: -3

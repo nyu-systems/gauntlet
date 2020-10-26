@@ -1,0 +1,13 @@
+name: pytest
+on: [push, pull_request]
+jobs:
+  cpplint:
+    runs-on: ubuntu-bionic
+    steps:
+    - uses: actions/checkout@v1
+    - name: Install
+      run: |
+        ./do_install.sh
+    - name: Test with pytest
+      run: |
+        python3 -m pytest test.py -vrf
