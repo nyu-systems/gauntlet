@@ -3,8 +3,12 @@ from pathlib import Path
 import sys
 import logging
 import z3
+
+from p4z3.contrib.tabulate import tabulate
 from get_semantics import get_z3_formulization
 import p4z3.util as util
+from p4z3 import P4ComplexType
+
 sys.setrecursionlimit(15000)
 
 
@@ -32,6 +36,27 @@ def debug_msg(p4_files):
         p4_file_dir = p4_file.parent
         debug_string += f" {p4_file_dir}/failed/{p4_file_name} "
     log.error(debug_string)
+
+
+def print_validation_error(prog_before, prog_after, model):
+    z3_prog_before, input_names_before, _ = prog_before
+    z3_prog_after, input_names_after, _ = prog_after
+    error_string = "Detected an equivalence violation!\n"
+    error_string += "\nPROGRAM BEFORE\n"
+    error_string += get_hdr_table(z3_prog_before, input_names_before)
+    error_string += "\n\nPROGRAM AFTER\n"
+    error_string += get_hdr_table(z3_prog_after, input_names_after)
+    error_string += "\n\nPROPOSED INPUT BEGIN\n"
+    for decl in model.decls():
+        value = model[decl]
+        if isinstance(value, z3.DatatypeRef):
+            error_string += "HEADER %s =\n" % decl
+            error_string += get_hdr_table(value, input_names_before)
+        else:
+            error_string += "%s = %s" % (decl, value)
+        error_string += "\n--\n"
+    error_string += "PROPOSED INPUT END\n"
+    log.error(error_string)
 
 
 def handle_pyz3_error(fail_dir, p4_file):
@@ -121,11 +146,9 @@ def undef_check(solver, prog_before, prog_after):
         ret = solver.check(tv_equiv)
 
         if ret == z3.sat:
-            log.error("Detected an equivalence violation!")
+            log.error("Validation holds despite undefined behavior!")
             log.error("MEMBER BEFORE\n%s", m_before)
             log.error("MEMBER AFTER\n%s", m_after)
-            log.error("Proposed solution:")
-            log.error(solver.model())
             return ret
         elif ret == z3.unknown:
             log.error("Solution unknown! There might be a problem...")
@@ -133,20 +156,43 @@ def undef_check(solver, prog_before, prog_after):
     return ret
 
 
+def get_hdr_table(z3_datatype, p4_z3_objs):
+    z3_datatype = z3.simplify(z3_datatype)
+    flat_members = []
+    for name, p4z3_obj in p4_z3_objs:
+        if isinstance(p4z3_obj, P4ComplexType):
+            for sub_member in p4z3_obj.flat_names:
+                flat_members.append(f"{name}.{sub_member.name}")
+        else:
+            flat_members.append(name)
+    outputs = z3_datatype.children()
+    zipped_list = zip(flat_members, outputs)
+    table = tabulate(zipped_list, headers=["NAME", "OUTPUT"])
+    return table
+
+
 def check_equivalence(prog_before, prog_after, allow_undef):
     # The equivalence check of the solver
     # For all input packets and possible table matches the programs should
     # be the same
+    z3_prog_before, input_names_before, _ = prog_before
+    z3_prog_after, input_names_after, _ = prog_after
+
     try:
-        prog_before = z3.simplify(prog_before)
-        prog_after = z3.simplify(prog_after)
+        z3_prog_before = z3.simplify(z3_prog_before)
+        z3_prog_after = z3.simplify(z3_prog_after)
         # the equivalence equation
         log.debug("Simplifying equation...")
-        tv_equiv = z3.simplify(prog_before != prog_after)
+        tv_equiv = z3.simplify(z3_prog_before != z3_prog_after)
     except z3.Z3Exception as e:
-        log.error("Failed to compare z3 formulas!\nReason: %s", e)
-        log.error("PROGRAM BEFORE\n%s", prog_before)
-        log.error("PROGRAM AFTER\n%s", prog_after)
+        # Encountered an exception when trying to compare the formulas
+        # There might be many reasons for this
+        error_string = "Failed to compare Z3 formulas!\nReason: %s" % e
+        error_string += "\nPROGRAM BEFORE\n"
+        error_string += get_hdr_table(z3_prog_before, input_names_before)
+        error_string += "\n\nPROGRAM AFTER\n"
+        error_string += get_hdr_table(z3_prog_after, input_names_after)
+        log.error(error_string)
         return util.EXIT_VIOLATION
     log.debug("Checking...")
     log.debug(z3.tactics())
@@ -171,17 +217,10 @@ def check_equivalence(prog_before, prog_after, allow_undef):
         # if we allow undefined changes we need to explicitly recheck
         log.info("Detected difference in undefined behavior. "
                  "Rechecking while substituting undefined variables.")
-        ret = undef_check(solver, prog_before, prog_after)
-        if ret == z3.sat:
-            # the check still fails, so return a violation
-            return util.EXIT_VIOLATION
+        ret = undef_check(solver, z3_prog_before, z3_prog_after)
 
     if ret == z3.sat:
-        log.error("Detected an equivalence violation!")
-        log.error("PROGRAM BEFORE\n%s", prog_before)
-        log.error("PROGRAM AFTER\n%s", prog_after)
-        log.error("Proposed solution:")
-        log.error(solver.model())
+        print_validation_error(prog_before, prog_after, solver.model())
         return util.EXIT_VIOLATION
     elif ret == z3.unknown:
         log.error("Solution unknown! There might be a problem...")
@@ -217,8 +256,8 @@ def z3_check(prog_paths, fail_dir=None, allow_undef=False):
             log.warning("Pre and post model differ in size!")
             return util.EXIT_SKIPPED
         for pipe_name in pipes_pre:
-            pipe_pre = pipes_pre[pipe_name][0]
-            pipe_post = pipes_post[pipe_name][0]
+            pipe_pre = pipes_pre[pipe_name]
+            pipe_post = pipes_post[pipe_name]
             log.info("Checking z3 equivalence for pipe %s...", pipe_name)
             ret = check_equivalence(pipe_pre, pipe_post, allow_undef)
             if ret != util.EXIT_SUCCESS:

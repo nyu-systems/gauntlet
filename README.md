@@ -4,16 +4,16 @@
 # The Gauntlet Tool Suite
 
 - [Requirements](#requirements)
-  * [Frameworks for model-based testing](#frameworks-for-model-based-testing)
+  * [Frameworks for Model-Based Testing](#frameworks-for-model-based-testing)
 - [Instructions](#instructions)
-  * [Generating a random program](#generating-a-random-program)
-  * [Retrieving Gauntlet semantics for a P4 program](#retrieving-gauntlet-semantics-for-a-p4-program)
-  * [Validating a P4C program](#validating-a-p4c-program)
-  * [Model-based Testing](#model-based-testing)
-  * [Fuzz-testing at Scale](#fuzz-testing-at-scale)
-- [Fuzz-testing Support Matrix](#fuzz-testing-support-matrix)
+  * [Generating a Random Program](#generating-a-random-program)
+  * [Retrieving Gauntlet Semantics for a P4 Program](#retrieving-gauntlet-semantics-for-a-p4-program)
+  * [Validating a P4C Program](#validating-a-p4c-program)
+  * [Model-Based Testing](#model-based-testing)
+  * [Fuzz-Testing at Scale](#fuzz-testing-at-scale)
+- [Fuzz-Testing Support Matrix](#fuzz-testing-support-matrix)
 - [Bugs Found in P4 Compilers](#bugs-found-in-p4-compilers)
-- [Citation](#citing-this-project)
+- [Citing This Project](#citing-this-project)
 
 Gauntlet is a set of tools designed to find bugs in programmable data-plane compilers. More precisely, Gauntlet targets the
 [P4 language](https://p4.org/) ecosystem and  the P4-16 reference compiler ([p4c](https://github.com/p4lang/p4c/)).
@@ -59,12 +59,12 @@ to retrieve the semantic representation of a particular P4 program. This will pr
 To validate that a program is compiled correctly by `p4c`, you can run
 
      modules/p4c/build/p4bludgeon --output out.p4 --arch top && bin/validate_p4_translation -i out.p4
-`check_p4_compilation.py` checks if a sequence of P4 programs are all equivalent to each other using the `check_p4_pair.py` program as a sub routine. This sequence is produced by running p4c on an input P4 program. When p4c is run on an input P4 program, it produces a sequence of P4 programs, where each P4 program corresponds to the version of the input P4 program after a p4c optimization pass. This allows us to validate whether compilation/translation is working correctly and to pinpoint the faulty optimization pass if it isn't
+`src/validate_p4_translation.py` checks if a sequence of P4 programs are all equivalent to each other using the `src/check_p4_pair.py` program as a sub routine. This sequence is produced by running p4c on an input P4 program. When p4c is run on an input P4 program, it produces a sequence of P4 programs, where each P4 program corresponds to the version of the input P4 program after a p4c optimization pass. This allows us to validate whether compilation/translation is working correctly and to pinpoint the faulty optimization pass if it isn't
 working correctly.
 
 ### Model-Based Testing
 
-Model-based testing requires the behavioral model or the Tofino compiler to be installed. The correct binaries and include files need to be instrumented in the `generate_p4_test.py` file. An example command is
+Model-based testing requires the behavioral model or the Tofino compiler to be installed. The correct binaries and include files need to be instrumented in the `src/generate_p4_test.py` file. An example command is
 
      modules/p4c/build/p4bludgeon --output out.p4 --arch v1model && bin/generate_test_case -i out.p4 -r
 This sequence of commands will first generate a random program, infer expected input and output values, convert them to a test file (in this case, they are stf files) and finally run a full test. If the observed output differs from the expected output, the tool will throw  an error. The `-r` flag denotes randomization of the input, it is optional.
