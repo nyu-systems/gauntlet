@@ -2,7 +2,7 @@ name: pytest
 on: [push, pull_request]
 jobs:
   cpplint:
-    runs-on: ubuntu-bionic
+    runs-on: ubuntu-18.04
     steps:
     - uses: actions/checkout@v1
     - name: Install
