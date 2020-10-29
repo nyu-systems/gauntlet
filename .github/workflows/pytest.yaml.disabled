@@ -1,7 +1,7 @@
 name: pytest
 on: [push, pull_request]
 jobs:
-  cpplint:
+  pytest:
     runs-on: ubuntu-18.04
     steps:
     - uses: actions/checkout@v1

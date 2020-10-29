@@ -1,0 +1,10 @@
+# Travis CI integration for p4_tv using Docker.
+
+dist: bionic
+language: minimal
+
+install:
+  - ./do_install.sh
+
+script:
+  - python3 -m pytest test.py -vrf

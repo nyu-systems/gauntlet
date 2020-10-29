@@ -34,10 +34,13 @@ ITERATIONS = 100
 NUM_PROCESSES = 4
 
 KNOWN_BUGS = [
+    # these are temporary bugs in p4c
     "functionsInlining.cpp:41: Null stat",
     ": no definitions",
-    "Value too large for int",
-    "Shifts with negative amounts are not permitted",
+    # these are temporary bugs in our code generator we encounter
+    "Conditional execution in actions unsupported on this target",
+    "non-directional parameters must be substitued with the same value in all invocations",
+    "extern functions with 'out' nested struct argument",
     # bf
     "PHV allocation was not successful",
     "Unsupported action spanning multiple stages",
@@ -117,6 +120,7 @@ def generate_p4_prog(p4c_bin, p4_file, config, seed):
 def compile_p4_prog(p4c_bin, p4_file, p4_dump_dir):
     p4_cmd = f"{p4c_bin} "
     # p4_cmd += f"-vvvv "
+    p4_cmd += f"--Wdisable "
     p4_cmd += f"{p4_file} "
     # p4test does not have the -o flag
     if p4c_bin != P4TEST_BIN:
