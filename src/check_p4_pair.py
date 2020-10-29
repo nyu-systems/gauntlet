@@ -177,6 +177,7 @@ def check_equivalence(prog_before, prog_after, allow_undef):
     # be the same
     z3_prog_before, input_names_before, _ = prog_before
     z3_prog_after, input_names_after, _ = prog_after
+    undef_violation = False
 
     try:
         z3_prog_before = z3.simplify(z3_prog_before)
@@ -214,6 +215,7 @@ def check_equivalence(prog_before, prog_after, allow_undef):
     log.debug(tv_equiv)
     log.debug(ret)
     if allow_undef and ret == z3.sat:
+        undef_violation = True
         # if we allow undefined changes we need to explicitly recheck
         log.info("Detected difference in undefined behavior. "
                  "Rechecking while substituting undefined variables.")
@@ -226,6 +228,8 @@ def check_equivalence(prog_before, prog_after, allow_undef):
         log.error("Solution unknown! There might be a problem...")
         return util.EXIT_VIOLATION
     else:
+        if undef_violation:
+            return util.EXIT_UNDEF
         return util.EXIT_SUCCESS
 
 
@@ -244,6 +248,7 @@ def z3_check(prog_paths, fail_dir=None, allow_undef=False):
             return result
         pipes = package.get_pipes()
         z3_progs.append((p4_path, pipes))
+    has_undef = False
     for idx in range(1, len(z3_progs)):
         p4_pre_path, pipes_pre = z3_progs[idx - 1]
         p4_post_path, pipes_post = z3_progs[idx]
@@ -265,8 +270,13 @@ def z3_check(prog_paths, fail_dir=None, allow_undef=False):
                     handle_pyz3_error(fail_dir, p4_pre_path)
                     handle_pyz3_error(fail_dir, p4_post_path)
                     debug_msg([p4_pre_path, p4_post_path])
+                if ret == util.EXIT_UNDEF:
+                    has_undef = True
+                    continue
                 return ret
     log.info("Passed all checks!")
+    if has_undef:
+        return util.EXIT_UNDEF
     return util.EXIT_SUCCESS
 
 
