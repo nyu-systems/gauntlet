@@ -8,4 +8,4 @@ FILE_DIR = Path.resolve(Path(__file__)).parent
 args = sys.argv[1:]
 cmd = ["python3"] + \
     [str(FILE_DIR.joinpath("../src/generate_p4_test.py"))] + args
-subprocess.call(cmd)
+sys.exit(subprocess.call(cmd))

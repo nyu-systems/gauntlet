@@ -220,7 +220,7 @@ def run_p4_test(dump_dir, p4_file, log_file, config):
         # reset the dump directory
         return util.EXIT_FAILURE
     if result != util.EXIT_SUCCESS:
-        log.error("Failed to validate the P4 code!")
+        log.error("Generated test case failed!")
         log.error("Rerun the example with:")
         out_file = VALIDATION_BUG_DIR.joinpath(p4_file.name)
         if config["arch"] == "tna":

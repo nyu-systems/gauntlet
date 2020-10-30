@@ -8,4 +8,4 @@ FILE_DIR = Path.resolve(Path(__file__)).parent
 args = sys.argv[1:]
 cmd = ["python3"] + \
     [str(FILE_DIR.joinpath("../src/validate_p4_translation.py"))] + args
-subprocess.call(cmd)
+sys.exit(subprocess.call(cmd))

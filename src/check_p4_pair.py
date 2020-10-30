@@ -274,9 +274,10 @@ def z3_check(prog_paths, fail_dir=None, allow_undef=False):
                     has_undef = True
                     continue
                 return ret
-    log.info("Passed all checks!")
     if has_undef:
+        log.info("Passed all checks but encountered unstable code.")
         return util.EXIT_UNDEF
+    log.info("Passed all checks!")
     return util.EXIT_SUCCESS
 
 

@@ -5,10 +5,10 @@ import logging as log
 from pathlib import Path
 
 EXIT_SUCCESS = 0
-EXIT_FAILURE = -1
-EXIT_SKIPPED = -10
-EXIT_VIOLATION = -20
-EXIT_UNDEF = -30
+EXIT_FAILURE = 1
+EXIT_SKIPPED = 10
+EXIT_VIOLATION = 20
+EXIT_UNDEF = 30
 
 
 def is_valid_file(parser, arg):
