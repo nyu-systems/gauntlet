@@ -72,7 +72,7 @@ def merge_dicts(target_dict, cond, then_attrs):
     for then_name, then_val in then_attrs.items():
         try:
             attr_val = target_dict[then_name]
-        except RuntimeError:
+        except KeyError:
             # if the attribute does not exist it is not relevant
             # this is because of scoping
             # FIXME: Make sure this is actually the case...
@@ -91,7 +91,7 @@ def merge_attrs(target_cls, cond, then_attrs):
     for then_name, then_val in then_attrs.items():
         try:
             attr_val = target_cls.resolve_reference(then_name)
-        except RuntimeError:
+        except KeyError:
             # if the attribute does not exist it is not relevant
             # this is because of scoping
             # FIXME: Make sure this is actually the case...

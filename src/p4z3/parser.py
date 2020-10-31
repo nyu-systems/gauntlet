@@ -71,7 +71,13 @@ class AcceptState(P4Expression):
     name = "accept"
 
     def eval(self, p4_state):
-        pass
+        context = p4_state.current_context()
+        cond = z3.simplify(z3.And(z3.Not(z3.Or(*context.forward_conds)),
+                                  context.tmp_forward_cond))
+        if not cond == z3.BoolVal(False):
+            context.return_states.append((cond, p4_state.copy_attrs()))
+            context.has_returned = True
+        context.forward_conds.append(context.tmp_forward_cond)
 
 
 class ParserNode():
@@ -98,7 +104,7 @@ class ParserNode():
         context = p4_state.current_context()
         forward_cond_copy = context.tmp_forward_cond
         match_list = p4_state.resolve_expr(self.match)
-        for parser_cond, parser_node in reversed(self.child):
+        for parser_cond, parser_node in self.child:
             case_expr = p4_state.resolve_expr(parser_cond)
             cond = build_select_cond(p4_state, case_expr, match_list)
             # state forks here
@@ -113,14 +119,14 @@ class ParserNode():
             context.has_returned = False
             p4_state.restore(var_store, contexts)
 
-        # this hits when the table is either missed, or no action matches
+        # this hits when no select matches
         cond = z3.Not(z3.Or(*select_conds))
         context.tmp_forward_cond = z3.And(forward_cond_copy, cond)
         self.default.eval(p4_state)
         p4_state.has_exited = False
         context.has_returned = False
         context.tmp_forward_cond = forward_cond_copy
-        for cond, then_vars in switches:
+        for cond, then_vars in reversed(switches):
             merge_attrs(p4_state, cond, then_vars)
 
     def eval(self, p4_state):
@@ -276,7 +282,7 @@ def build_select_cond(p4_state, case_expr, match_list):
         elif isinstance(case_match, P4Mask):
             val = p4_state.resolve_expr(case_match.value)
             mask = case_match.mask
-            match_key = (val | ~mask) == (match_list[idx] | ~mask)
+            match_key = (val & mask) == (match_list[idx] & mask)
             select_cond.append(match_key)
         else:
             select_cond.append(case_match == match_list[idx])
