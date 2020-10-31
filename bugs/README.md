@@ -18,7 +18,7 @@ bugs
 
 
 ### Bug Tables
-Last Updated: 2020-10-25
+Last Updated: 2020-10-31
 
 The bug tables provide the latest, detailed breakdown of all the issues we have filed in the open-source repositories.
 
@@ -70,6 +70,7 @@ Fixed: :heavy_check_mark:&nbsp;&nbsp;&nbsp;&nbsp;Confirmed: :exclamation:&nbsp;&
 | [Compiler Bug: Could not find type of <Declaration_Variable> for declaration of same name (2544)](https://github.com/p4lang/p4c/issues/2544)            | [2544.p4](crash/2544.p4)                     | Front end | :exclamation: |
 | [Calling an extern with a local variable: read-only error (2545)](https://github.com/p4lang/p4c/issues/2545)            | [2545.p4](crash/fixed/2545.p4)         | Mid end | :heavy_check_mark: |
 | [Side-effect function call in table key (2546b)](https://github.com/p4lang/p4c/issues/2546)           | [2546b.p4](crash/2546b.p4)                   | Front end | :exclamation: |
+| [Compiler Bug : Null firstCall (2597)](https://github.com/p4lang/p4c/issues/2597)           | [2597.p4](crash/fixed/2597.p4)                   | Front end | :heavy_check_mark: |
 | [simple_switch died with return code -6 (887)](https://github.com/p4lang/behavioral-model/issues/887) | [887.p4](simple_switch/fixed/887.p4) | Back end | :heavy_check_mark: |
 
 #### P4C Semantic Bugs
