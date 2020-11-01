@@ -744,7 +744,7 @@ class P4Table(P4Callable):
         forward_cond_copy = context.tmp_forward_cond
 
         # only bother to evaluate if the table can actually hit
-        if not self.locals["hit"] == z3.BoolVal(False):
+        if not z3.is_false(self.locals["hit"]):
             # note: the action lists are pass by reference here
             # first evaluate all the constant entries
             self.eval_const_entries(p4_state, action_exprs, action_matches)

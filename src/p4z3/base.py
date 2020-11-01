@@ -963,7 +963,7 @@ class HeaderStackInstance(StructInstance):
                 hdr = self.locals[f"{hdr_idx}"]
                 hdr.setInvalid(p4_state)
         self.locals["nextIndex"] += count
-        if z3.simplify(self.locals["nextIndex"] > self.locals["size"]) == z3.BoolVal(True):
+        if z3.is_true(z3.simplify(self.locals["nextIndex"] > self.locals["size"])):
             self.locals["nextIndex"] = z3.BitVecVal(self.locals["size"], 32)
         self.locals["lastIndex"] = self.locals["nextIndex"]
 
@@ -978,7 +978,7 @@ class HeaderStackInstance(StructInstance):
 
         self.locals["nextIndex"] -= count
         self.locals["lastIndex"] = self.locals["nextIndex"]
-        if z3.simplify(self.locals["nextIndex"] < 0) == z3.BoolVal(True):
+        if z3.is_true(z3.simplify(self.locals["nextIndex"] < 0)):
             self.locals["nextIndex"] = z3.BitVecVal(0, 32)
             self.locals["lastIndex"] = z3.BitVecVal(0, 32)
 

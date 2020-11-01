@@ -1,7 +1,7 @@
 #include <core.p4>
 
 header Hdr {
-    bit<8> x;
+    bit<1> x;
 }
 
 struct Headers {
@@ -12,7 +12,7 @@ struct Headers {
 parser P(packet_in p, out Headers h) {
     state start {
         p.extract(h.h1.next);
-        if (h.h1[1].x == 1) {
+        if (h.h1[0].x == 1) {
             p.extract(h.h1.next);
         }
         transition select(h.h1.lastIndex) {

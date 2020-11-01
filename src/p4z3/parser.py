@@ -74,7 +74,7 @@ class AcceptState(P4Expression):
         context = p4_state.current_context()
         cond = z3.simplify(z3.And(z3.Not(z3.Or(*context.forward_conds)),
                                   context.tmp_forward_cond))
-        if not cond == z3.BoolVal(False):
+        if not z3.is_false(cond):
             context.return_states.append((cond, p4_state.copy_attrs()))
             context.has_returned = True
         context.forward_conds.append(context.tmp_forward_cond)
@@ -112,7 +112,7 @@ class ParserNode():
             context.tmp_forward_cond = z3.And(forward_cond_copy, cond)
             parser_node.eval(p4_state)
             select_conds.append(cond)
-            if not p4_state.has_exited:
+            if not (p4_state.has_exited or z3.is_false(cond)):
                 switches.append(
                     (context.tmp_forward_cond, p4_state.get_attrs()))
             p4_state.has_exited = False
@@ -130,6 +130,14 @@ class ParserNode():
             merge_attrs(p4_state, cond, then_vars)
 
     def eval(self, p4_state):
+
+        parser_state = self.parser_state
+        try:
+            parser_state.eval(p4_state)
+        except ParserException:
+            RejectState().eval(p4_state)
+            return
+
         if self.is_terminal:
             context = p4_state.current_context()
             key = self.parser_state.name
@@ -143,22 +151,17 @@ class ParserNode():
                 orig_cond = self.parser_tree.terminal_nodes[key][0]
                 orig_dict = self.parser_tree.terminal_nodes[key][1]
                 merge_dicts(orig_dict, cond, attrs)
-                cond = z3.And(orig_cond, cond)
+                cond = z3.Or(orig_cond, cond)
                 attrs = orig_dict
             self.parser_tree.terminal_nodes[key] = (cond, attrs)
             return
 
-        parser_state = self.parser_state
-        try:
-            parser_state.eval(p4_state)
-            if isinstance(self.child, list):
-                # there is a switch case try to untangle it.
-                self.handle_select(p4_state)
-            elif isinstance(self.child, ParserNode):
-                # direct descendant, continue the evaluation
-                self.child.eval(p4_state)
-        except ParserException:
-            RejectState().eval(p4_state)
+        if isinstance(self.child, list):
+            # there is a switch case try to untangle it.
+            self.handle_select(p4_state)
+        elif isinstance(self.child, ParserNode):
+            # direct descendant, continue the evaluation
+            self.child.eval(p4_state)
 
 
 def print_tree(start_node, indent=0):

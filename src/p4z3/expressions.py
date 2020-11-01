@@ -353,7 +353,7 @@ class P4lt(P4BinaryOp):
             # if x and y are ints we might deal with a signed value
             # we need to use the normal operator in this case
             if isinstance(x, int) and isinstance(y, int):
-                return z3.BoolVal(op.lt(x, y))
+                return op.lt(x, y) == z3.BoolVal(True)
             return z3.ULT(x, y)
         P4BinaryOp.__init__(self, lval, rval, operator)
 
@@ -364,7 +364,7 @@ class P4le(P4BinaryOp):
             # if x and y are ints we might deal with a signed value
             # we need to use the normal operator in this case
             if isinstance(x, int) and isinstance(y, int):
-                return z3.BoolVal(op.le(x, y))
+                return op.le(x, y) == z3.BoolVal(True)
             return z3.ULE(x, y)
         P4BinaryOp.__init__(self, lval, rval, operator)
 
@@ -375,7 +375,7 @@ class P4ge(P4BinaryOp):
             # if x and y are ints we might deal with a signed value
             # we need to use the normal operator in this case
             if isinstance(x, int) and isinstance(y, int):
-                return z3.BoolVal(op.ge(x, y))
+                return op.ge(x, y) == z3.BoolVal(True)
             return z3.UGE(x, y)
         P4BinaryOp.__init__(self, lval, rval, operator)
 
@@ -386,25 +386,9 @@ class P4gt(P4BinaryOp):
             # if x and y are ints we might deal with a signed value
             # we need to use the normal operator in this case
             if isinstance(x, int) and isinstance(y, int):
-                return z3.BoolVal(op.gt(x, y))
+                return op.gt(x, y) == z3.BoolVal(True)
             return z3.UGT(x, y)
         P4BinaryOp.__init__(self, lval, rval, operator)
-
-
-# class P4Mask(P4BinaryOp):
-#     # FIXME: Do not really know how to implement a mask in z3 yet...
-#     def __init__(self, lval, rval):
-#         operator = op.and_
-#         P4BinaryOp.__init__(self, lval, rval, operator)
-
-
-# class P4Range(P4BinaryOp):
-#     # FIXME: Check if this range operator is right
-#     # we only generate on variable, this is not right
-#     def __init__(self, lval, rval):
-#         def operator(x, y):
-#             raise RuntimeError("P4Range needs context to be evaluated!")
-#         P4BinaryOp.__init__(self, lval, rval, operator)
 
 
 class P4Concat(P4Expression):
@@ -458,10 +442,10 @@ class P4Mux(P4Expression):
         cond = z3.simplify(p4_state.resolve_expr(self.cond))
 
         # handle side effects for function and table calls
-        if cond == z3.BoolVal(False):
-            return p4_state.resolve_expr(self.else_val)
-        if cond == z3.BoolVal(True):
+        if z3.is_true(cond):
             return p4_state.resolve_expr(self.then_val)
+        if z3.is_false(cond):
+            return p4_state.resolve_expr(self.else_val)
 
         var_store, chain_copy = p4_state.checkpoint()
         context = p4_state.current_context()

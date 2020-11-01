@@ -64,7 +64,7 @@ false_friends_filter = [
     "extern_arguments_2.p4",  # exit return value name
     "extern_arguments_3.p4",  # exit return value name
     "infinite_loop.p4",  # how to evaluate the output of an infinite loop?
-    "parser_test4.p4",  # bug in the parser semantics
+    "bounded_loop.p4",  # how to handle this difference in undef behavior?
 ]
 
 false_friends = set()

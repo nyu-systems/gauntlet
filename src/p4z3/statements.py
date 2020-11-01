@@ -1,6 +1,6 @@
 from collections import OrderedDict
 from p4z3.base import log, DefaultExpression, copy, z3_cast, merge_attrs, z3
-from p4z3.base import StructInstance, P4Statement, P4Z3Class, gen_instance
+from p4z3.base import StructInstance, P4Statement, gen_instance
 from p4z3.base import ParserException
 from p4z3.callables import P4Table
 from p4z3.parser import RejectState
@@ -63,7 +63,7 @@ class IfStatement(P4Statement):
         cond = z3.simplify(p4_state.resolve_expr(self.cond))
         forward_cond_copy = context.tmp_forward_cond
         then_vars = None
-        if not cond == z3.BoolVal(False):
+        if not z3.is_false(cond):
             var_store, contexts = p4_state.checkpoint()
             context.tmp_forward_cond = z3.And(forward_cond_copy, cond)
             try:
@@ -76,7 +76,7 @@ class IfStatement(P4Statement):
             context.has_returned = False
             p4_state.restore(var_store, contexts)
 
-        if not cond == z3.BoolVal(True):
+        if not z3.is_true(cond):
             var_store, contexts = p4_state.checkpoint()
             context.tmp_forward_cond = z3.And(forward_cond_copy, z3.Not(cond))
             try:
@@ -238,7 +238,7 @@ class P4Return(P4Statement):
 
         cond = z3.simplify(z3.And(z3.Not(z3.Or(*context.forward_conds)),
                                   context.tmp_forward_cond))
-        if not cond == z3.BoolVal(False):
+        if not z3.is_false(cond):
             context.return_states.append((cond, p4_state.copy_attrs()))
             if expr is not None:
                 context.return_exprs.append((cond, expr))
@@ -262,7 +262,7 @@ class P4Exit(P4Statement):
 
         cond = z3.simplify(z3.And(z3.Not(z3.Or(*forward_conds)),
                                   z3.And(*tmp_forward_conds)))
-        if not cond == z3.BoolVal(False):
+        if not z3.is_false(cond):
             p4_state.exit_states.append((cond, p4_state.get_members()))
             p4_state.has_exited = True
         p4_state.restore(var_store, contexts)
