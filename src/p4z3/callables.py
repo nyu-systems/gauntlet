@@ -1,6 +1,8 @@
-from p4z3.base import OrderedDict, z3, log, copy, merge_attrs
+from collections import OrderedDict
+from p4z3.state import P4Context
+from p4z3.base import z3, log, copy, merge_attrs
 from p4z3.base import gen_instance, z3_cast, handle_mux, StructInstance
-from p4z3.base import P4Z3Class, P4Mask, P4ComplexType, P4Context
+from p4z3.base import P4Z3Class, P4Mask, P4ComplexType, UNDEF_LABEL
 from p4z3.base import DefaultExpression, P4Extern, propagate_validity_bit
 from p4z3.base import P4Expression, P4Argument, P4Range, resolve_type, ListType
 
@@ -130,7 +132,7 @@ class P4Callable(P4Z3Class):
             if isinstance(arg_expr, list):
                 # if the type is undefined, do nothing
                 if isinstance(p4_type, P4ComplexType):
-                    arg_instance = gen_instance(p4_state, "undefined", p4_type)
+                    arg_instance = gen_instance(p4_state, UNDEF_LABEL, p4_type)
                     arg_instance.set_list(arg_expr)
                     arg_expr = arg_instance
             # it is possible to pass an int as value, we need to cast it
@@ -147,7 +149,7 @@ class P4Callable(P4Z3Class):
                 # In the case that the instance is a complex type make sure
                 # to propagate the variable through all its members
                 log.debug("Resetting %s to %s", arg_expr, param_name)
-                arg_expr = gen_instance(p4_state, "undefined", p4_type)
+                arg_expr = gen_instance(p4_state, UNDEF_LABEL, p4_type)
 
             log.debug("Copy-in: %s to %s", arg_expr, param_name)
             # buffer the value, do NOT set it yet

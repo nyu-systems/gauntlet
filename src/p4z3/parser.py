@@ -1,7 +1,8 @@
+from collections import OrderedDict
+from p4z3.state import P4Context
 from p4z3.base import log, z3, P4Range, merge_attrs, P4Mask, DefaultExpression
-from p4z3.base import P4Expression, StructInstance, OrderedDict, resolve_type
+from p4z3.base import P4Expression, StructInstance, resolve_type
 from p4z3.base import ParserException, StructType, HeaderStack, merge_dicts
-from p4z3.base import P4Context
 from p4z3.callables import P4Control
 
 
@@ -44,7 +45,6 @@ class RejectState(P4Expression):
     name = "reject"
 
     def eval(self, p4_state):
-
         # FIXME: This checkpointing should not be necessary
         # Figure out what is going on
         forward_conds = []

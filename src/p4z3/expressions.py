@@ -1,7 +1,7 @@
 import operator as op
 from p4z3.base import log, z3_cast, z3, copy, gen_instance, handle_mux
 from p4z3.base import StructInstance, P4Expression, P4ComplexType
-from p4z3.base import merge_attrs, resolve_type
+from p4z3.base import merge_attrs, resolve_type, UNDEF_LABEL
 
 
 class P4Initializer(P4Expression):
@@ -15,7 +15,7 @@ class P4Initializer(P4Expression):
             # no type defined, return just the value
             return val
         else:
-            instance = gen_instance(p4_state, "None", self.instance_type)
+            instance = gen_instance(p4_state, UNDEF_LABEL, self.instance_type)
 
         if isinstance(val, StructInstance):
             # copy the reference if we initialize with another complex type
@@ -57,6 +57,7 @@ class P4BinaryOp(P4Op):
     def get_value(self):
         # TODO: This is a kind of hacky function to work around bitvectors
         # There must be a better way to implement this
+        # FIXME: Resolve this with state, actually...
         lval = self.lval
         rval = self.rval
         if isinstance(lval, P4Op):
