@@ -110,7 +110,8 @@ def run_z3p4_test(p4_file, target_dir):
     if p4_file.name in bad_tests:
         pytest.skip(f"Skipping slow test {p4_file}.")
         return util.EXIT_SKIPPED
-    result = tv_check.validate_translation(p4_file, target_dir, P4C_BIN, True)
+    result = tv_check.validate_translation(
+        p4_file, target_dir, P4C_BIN, True, False)
     if result == util.EXIT_SKIPPED:
         pytest.skip(f"Skipping file {p4_file}.")
     return result
@@ -123,7 +124,7 @@ def run_violation_test(test_folder, allow_undefined=True):
     for p4_file in list(test_folder.glob("**/[0-9]*.p4")):
         py_file = test_folder.joinpath(f"{p4_file.stem}.py")
         tv_check.run_p4_to_py(p4_file, py_file)
-        result = z3_check.z3_check(
+        result, _ = z3_check.z3_check(
             [str(src_py_file), str(py_file)], None, allow_undefined)
         if result != util.EXIT_VIOLATION:
             return util.EXIT_FAILURE
@@ -131,12 +132,14 @@ def run_violation_test(test_folder, allow_undefined=True):
 
 
 def run_undef_test(p4_file, target_dir):
-    result = tv_check.validate_translation(p4_file, target_dir, P4C_BIN, True)
+    result = tv_check.validate_translation(
+        p4_file, target_dir, P4C_BIN, True, False)
     if result == util.EXIT_SKIPPED:
         pytest.skip(f"Skipping file {p4_file}.")
     elif result == util.EXIT_VIOLATION:
         return util.EXIT_FAILURE
-    result = tv_check.validate_translation(p4_file, target_dir, P4C_BIN, False)
+    result = tv_check.validate_translation(
+        p4_file, target_dir, P4C_BIN, False, False)
     if result != util.EXIT_VIOLATION:
         return util.EXIT_FAILURE
     return util.EXIT_SUCCESS
