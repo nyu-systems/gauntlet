@@ -159,16 +159,7 @@ def print_z3_data(pipe_name, pipe_val, package):
     #     log.info(row)
 
 
-def main(args=None):
-    parser = argparse.ArgumentParser()
-    parser.add_argument("-i", "--p4_input", dest="p4_input", default=None,
-                        type=lambda x: util.is_valid_file(parser, x),
-                        help="The main input p4 file. This can either be a P4"
-                        " program or the Python ToZ3 IR.")
-    parser.add_argument("-o", "--out_dir", dest="out_dir",
-                        default=OUT_DIR,
-                        help="Where intermediate output is stored.")
-    args = parser.parse_args(args)
+def main(args):
     start_time = datetime.now()
     package, result = get_z3_formulization(args.p4_input, Path(args.out_dir))
     done_time = datetime.now()
@@ -185,12 +176,27 @@ def main(args=None):
 
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-i", "--p4_input", dest="p4_input", default=None,
+                        type=lambda x: util.is_valid_file(parser, x),
+                        help="The main input p4 file. This can either be a P4"
+                        " program or the Python ToZ3 IR.")
+    parser.add_argument("-o", "--out_dir", dest="out_dir",
+                        default=OUT_DIR,
+                        help="Where intermediate output is stored.")
+    parser.add_argument("-ll", "--log_level", dest="log_level",
+                        default="INFO",
+                        choices=["CRITICAL", "ERROR", "WARNING",
+                                 "INFO", "DEBUG", "NOTSET"],
+                        help="The log level to choose.")
+    # Parse options and process argv
+    arguments = parser.parse_args()
     # configure logging
-    logging.basicConfig(filename="semantics.log",
+    logging.basicConfig(filename=arguments.log_file,
                         format="%(levelname)s:%(message)s",
-                        level=logging.INFO,
+                        level=getattr(logging, arguments.log_level),
                         filemode='w')
     stderr_log = logging.StreamHandler()
     stderr_log.setFormatter(logging.Formatter("%(levelname)s:%(message)s"))
     logging.getLogger().addHandler(stderr_log)
-    main()
+    main(arguments)

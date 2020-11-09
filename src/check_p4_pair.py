@@ -288,7 +288,12 @@ def z3_check(prog_paths, fail_dir=None, allow_undef=False):
     return util.EXIT_SUCCESS, info
 
 
-def main(args=None):
+def main(args):
+    result, _ = z3_check(args.progs, None, args.allow_undef)
+    return result
+
+
+if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("--progs", "-p", dest="progs",
                         type=str, nargs='+', required=True,
@@ -296,18 +301,19 @@ def main(args=None):
     parser.add_argument("-u", "--allow_undefined", dest="allow_undef",
                         action="store_true",
                         help="Ignore changes in undefined behavior.")
-    args = parser.parse_args(args)
-    result, _ = z3_check(args.progs, None, args.allow_undef)
-    return result
-
-
-if __name__ == '__main__':
+    parser.add_argument("-ll", "--log_level", dest="log_level",
+                        default="INFO",
+                        choices=["CRITICAL", "ERROR", "WARNING",
+                                 "INFO", "DEBUG", "NOTSET"],
+                        help="The log level to choose.")
+    # Parse options and process argv
+    arguments = parser.parse_args()
     # configure logging
-    logging.basicConfig(filename="analysis.log",
+    logging.basicConfig(filename=arguments.log_file,
                         format="%(levelname)s:%(message)s",
-                        level=logging.INFO,
+                        level=getattr(logging, arguments.log_level),
                         filemode='w')
     stderr_log = logging.StreamHandler()
     stderr_log.setFormatter(logging.Formatter("%(levelname)s:%(message)s"))
     logging.getLogger().addHandler(stderr_log)
-    main()
+    main(arguments)

@@ -517,14 +517,6 @@ def perform_blackbox_test(config):
 
 
 def main(args):
-    # configure logging
-    logging.basicConfig(filename=args.log_file,
-                        format="%(levelname)s:%(message)s",
-                        level=logging.INFO,
-                        filemode='w')
-    stderr_log = logging.StreamHandler()
-    stderr_log.setFormatter(logging.Formatter("%(levelname)s:%(message)s"))
-    logging.getLogger().addHandler(stderr_log)
 
     if args.randomize_input:
         seed = int.from_bytes(os.getrandom(8), "big")
@@ -589,6 +581,19 @@ if __name__ == '__main__':
     parser.add_argument("-r", "--randomize-input", dest="randomize_input",
                         action='store_true',
                         help="Whether to randomize the z3 input variables.")
+    parser.add_argument("-ll", "--log_level", dest="log_level",
+                        default="INFO",
+                        choices=["CRITICAL", "ERROR", "WARNING",
+                                 "INFO", "DEBUG", "NOTSET"],
+                        help="The log level to choose.")
     # Parse options and process argv
-    args = parser.parse_args()
-    main(args)
+    arguments = parser.parse_args()
+    # configure logging
+    logging.basicConfig(filename=arguments.log_file,
+                        format="%(levelname)s:%(message)s",
+                        level=getattr(logging, arguments.log_level),
+                        filemode='w')
+    stderr_log = logging.StreamHandler()
+    stderr_log.setFormatter(logging.Formatter("%(levelname)s:%(message)s"))
+    logging.getLogger().addHandler(stderr_log)
+    main(arguments)

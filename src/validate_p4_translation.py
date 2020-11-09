@@ -250,13 +250,17 @@ if __name__ == '__main__':
                         action="store_true",
                         help="Dump an informative JSON file in"
                              " the output directory.")
+    parser.add_argument("-ll", "--log_level", dest="log_level",
+                        default="INFO",
+                        choices=["CRITICAL", "ERROR", "WARNING",
+                                 "INFO", "DEBUG", "NOTSET"],
+                        help="The log level to choose.")
     # Parse options and process argv
     arguments = parser.parse_args()
-
     # configure logging
     logging.basicConfig(filename=arguments.log_file,
                         format="%(levelname)s:%(message)s",
-                        level=logging.INFO,
+                        level=getattr(logging, arguments.log_level),
                         filemode='w')
     stderr_log = logging.StreamHandler()
     stderr_log.setFormatter(logging.Formatter("%(levelname)s:%(message)s"))

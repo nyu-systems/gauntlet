@@ -330,17 +330,8 @@ def validate_choice(args):
 
     return util.EXIT_SUCCESS, config
 
+
 def main(args):
-
-    # configure logging
-    logging.basicConfig(filename=args.log_file,
-                        format="%(levelname)s:%(message)s",
-                        level=logging.INFO,
-                        filemode='w')
-    stderr_log = logging.StreamHandler()
-    stderr_log.setFormatter(logging.Formatter("%(levelname)s:%(message)s"))
-    log.addHandler(stderr_log)
-
     result, config = validate_choice(args)
     if result != util.EXIT_SUCCESS:
         return result
@@ -354,11 +345,11 @@ def main(args):
         # the tofino tests only support single threaded mode for now
         for idx in range(args.iterations):
             launch(idx)
-        return
+        return util.EXIT_SUCCESS
     # this sometimes deadlocks, no idea why....
     with Pool(args.num_processes) as p:
         p.map(launch, range(args.iterations))
-    return
+    return util.EXIT_SUCCESS
 
 
 if __name__ == '__main__':
@@ -390,6 +381,19 @@ if __name__ == '__main__':
     parser.add_argument("-r", "--do-prune", dest="do_prune",
                         action='store_true',
                         help="Turn on to try to prune errors.")
+    parser.add_argument("-ll", "--log_level", dest="log_level",
+                        default="INFO",
+                        choices=["CRITICAL", "ERROR", "WARNING",
+                                 "INFO", "DEBUG", "NOTSET"],
+                        help="The log level to choose.")
     # Parse options and process argv
-    args = parser.parse_args()
-    main(args)
+    arguments = parser.parse_args()
+    # configure logging
+    logging.basicConfig(filename=arguments.log_file,
+                        format="%(levelname)s:%(message)s",
+                        level=getattr(logging, arguments.log_level),
+                        filemode='w')
+    stderr_log = logging.StreamHandler()
+    stderr_log.setFormatter(logging.Formatter("%(levelname)s:%(message)s"))
+    logging.getLogger().addHandler(stderr_log)
+    main(arguments)
