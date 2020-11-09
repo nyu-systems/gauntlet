@@ -1,5 +1,6 @@
 import os
 import sys
+import json
 import argparse
 import subprocess
 import logging
@@ -18,6 +19,7 @@ FILE_DIR = Path(__file__).parent.resolve()
 P4C_BIN = FILE_DIR.joinpath("../modules/p4c/build/p4test")
 P4Z3_BIN = FILE_DIR.joinpath("../modules/p4c/build/p4toz3")
 PASS_DIR = FILE_DIR.joinpath("../validated")
+
 
 PASSES = "--top4 "
 PASSES += "FrontEnd,MidEnd,PassManager "
@@ -139,7 +141,19 @@ def prune_passes(p4_passes):
     return pruned_passes
 
 
-def validate_translation(p4_file, target_dir, p4c_bin, allow_undef=False):
+def validate_translation(p4_file, target_dir, p4c_bin,
+                         allow_undef=False, dump_info=False):
+    info = {"compiler": str(p4c_bin),
+            "exit_code": util.EXIT_SUCCESS,
+            "prog_before": None,
+            "prog_after": None,
+            "p4z3_bin": str(P4Z3_BIN),
+            "out_dir": str(target_dir),
+            "input_file": str(p4_file),
+            "ignore_undefined": allow_undef,
+            "validation_bin": f"python3 {__file__}",
+            }
+
     log.info("\n" + "-" * 70)
     log.info("Analysing %s", p4_file)
     start_time = datetime.now()
@@ -167,7 +181,10 @@ def validate_translation(p4_file, target_dir, p4c_bin, allow_undef=False):
         log.warning("P4 file did not generate enough passes!")
         return util.EXIT_SKIPPED
     # perform the actual comparison
-    result = z3check.z3_check(p4_py_files, fail_dir, allow_undef)
+    result, check_info = z3check.z3_check(p4_py_files, fail_dir, allow_undef)
+    # merge the two info dicts
+    info["exit_code"] = result
+    info = {**info, **check_info}
     done_time = datetime.now()
     elapsed = done_time - start_time
     time_str = time.strftime("%H hours %M minutes %S seconds",
@@ -175,6 +192,11 @@ def validate_translation(p4_file, target_dir, p4c_bin, allow_undef=False):
     ms = elapsed.microseconds / 1000
     log.info("Translation validation took %s %s milliseconds.",
              time_str, ms)
+    if dump_info:
+        json_name = target_dir.joinpath(f"{p4_file.stem}_info.json")
+        log.info("Dumping configuration to %s.", json_name)
+        with open(json_name, 'w') as json_file:
+            json.dump(info, json_file, indent=2, sort_keys=True)
     return result
 
 
@@ -184,10 +206,12 @@ def main(args):
     pass_dir = Path(args.pass_dir)
     p4c_bin = args.p4c_bin
     allow_undef = args.allow_undef
+    dunp_info = args.dunp_info
     if os.path.isfile(p4_input):
         pass_dir = pass_dir.joinpath(p4_input.stem)
         util.del_dir(pass_dir)
-        result = validate_translation(p4_input, pass_dir, p4c_bin, allow_undef)
+        result = validate_translation(
+            p4_input, pass_dir, p4c_bin, allow_undef, dunp_info)
         sys.exit(result)
     elif os.path.isdir(p4_input):
         util.check_dir(pass_dir)
@@ -209,7 +233,7 @@ if __name__ == '__main__':
                         default="p4c/testdata/p4_16_samples",
                         required=True,
                         help="A P4 file or path to a "
-                        "directory which contains P4 files.")
+                             "directory which contains P4 files.")
     parser.add_argument("-o", "--out_dir", dest="pass_dir",
                         default=PASS_DIR,
                         help="The output folder where all passes are dumped.")
@@ -222,6 +246,10 @@ if __name__ == '__main__':
     parser.add_argument("-l", "--log_file", dest="log_file",
                         default="analysis.log",
                         help="Specifies name of the log file.")
+    parser.add_argument("-d", "--dump_info", dest="dunp_info",
+                        action="store_true",
+                        help="Dump an informative JSON file in"
+                             " the output directory.")
     # Parse options and process argv
     arguments = parser.parse_args()
 

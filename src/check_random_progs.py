@@ -21,9 +21,10 @@ ROOT_DIR = FILE_DIR.parent
 P4TEST_BIN = ROOT_DIR.joinpath("modules/p4c/build/p4test")
 SS_BIN = ROOT_DIR.joinpath("modules/p4c/build/p4c-bm2-ss")
 PSA_BIN = ROOT_DIR.joinpath("modules/p4c/build/p4c-bm2-psa")
-TNA_BIN = ROOT_DIR.joinpath("tofino/bf_src/install/bin/bf-p4c")
 P4Z3_BIN = ROOT_DIR.joinpath("modules/p4c/build/p4toz3")
 P4RANDOM_BIN = ROOT_DIR.joinpath("modules/p4c/build/p4bludgeon")
+PRUNER_BIN = ROOT_DIR.joinpath("modules/p4c/build/p4pruner")
+TNA_BIN = ROOT_DIR.joinpath("tofino/bf_src/install/bin/bf-p4c")
 
 OUTPUT_DIR = ROOT_DIR.joinpath("random")
 GENERATOR_BUG_DIR = OUTPUT_DIR.joinpath("generator_bugs")
@@ -165,6 +166,8 @@ def validate_p4(p4_file, target_dir, p4c_bin, log_file):
     p4z3_cmd += f"-l {log_file} "
     # distinguish between well-defined and undefined validation errors
     p4z3_cmd += "-u "
+    # also dump info which we can reuse for various purposes
+    p4z3_cmd += "-d "
     result = util.exec_process(p4z3_cmd)
     return result.returncode
 
@@ -195,6 +198,8 @@ def validate(dump_dir, p4_file, log_file, config):
         # reset the dump directory
         return util.EXIT_FAILURE
     if result != util.EXIT_SUCCESS:
+        info_file = p4_file.with_suffix(
+            "").joinpath(f"{p4_file.stem}_info.json")
         bug_dir = None
         if result == util.EXIT_UNDEF:
             log.error("Found instance of unstable code!")
@@ -207,6 +212,13 @@ def validate(dump_dir, p4_file, log_file, config):
         log.error("python3 bin/validate_p4_translation -u -i %s", out_file)
         dump_file(bug_dir, log_file)
         dump_file(bug_dir, p4_file)
+        dump_file(bug_dir, info_file)
+        if config["do_prune"]:
+            info_file = bug_dir.joinpath(f"{p4_file.stem}_info.json")
+            p4_cmd = f"{PRUNER_BIN} "
+            p4_cmd += f"--config {info_file} "
+            log.debug("Pruning P4 file with command %s ", p4_cmd)
+            util.start_process(p4_cmd)
     return result
 
 
@@ -311,6 +323,7 @@ def validate_choice(args):
 
     config["arch"] = args.arch
     config["do_validate"] = args.do_validate
+    config["do_prune"] = args.do_prune
     config["use_blackbox"] = args.use_blackbox
     config["randomize_input"] = args.randomize_input
     config["compiler_bin"] = SUPPORT_MATRIX[config["arch"]]["compiler"]
@@ -374,6 +387,9 @@ if __name__ == '__main__':
     parser.add_argument("-r", "--randomize-input", dest="randomize_input",
                         action='store_true',
                         help="Whether to randomize the z3 input variables.")
+    parser.add_argument("-r", "--do-prune", dest="do_prune",
+                        action='store_true',
+                        help="Turn on to try to prune errors.")
     # Parse options and process argv
     args = parser.parse_args()
     main(args)

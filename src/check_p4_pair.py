@@ -234,18 +234,23 @@ def check_equivalence(prog_before, prog_after, allow_undef):
 
 
 def z3_check(prog_paths, fail_dir=None, allow_undef=False):
+    # useful information to track
+    info = {}
+
     if len(prog_paths) < 2:
         log.error("Equivalence checks require at least two input programs!")
-        return util.EXIT_FAILURE
+        return util.EXIT_FAILURE, info
     z3_progs = []
     for p4_prog in prog_paths:
         p4_path = Path(p4_prog)
         package, result = get_z3_formulization(p4_path)
         if result != util.EXIT_SUCCESS:
             if fail_dir and result != util.EXIT_SKIPPED:
+                info["prog_before"] = str(p4_path)
+                info["prog_after"] = str(p4_path)
                 handle_pyz3_error(fail_dir, p4_path)
                 debug_msg([p4_path, p4_path])
-            return result
+            return result, info
         pipes = package.get_pipes()
         z3_progs.append((p4_path, pipes))
     has_undef = False
@@ -259,13 +264,15 @@ def z3_check(prog_paths, fail_dir=None, allow_undef=False):
             continue
         if len(pipes_pre) != len(pipes_post):
             log.warning("Pre and post model differ in size!")
-            return util.EXIT_SKIPPED
+            return util.EXIT_SKIPPED, info
         for pipe_name in pipes_pre:
             pipe_pre = pipes_pre[pipe_name]
             pipe_post = pipes_post[pipe_name]
             log.info("Checking z3 equivalence for pipe %s...", pipe_name)
             ret = check_equivalence(pipe_pre, pipe_post, allow_undef)
             if ret != util.EXIT_SUCCESS:
+                info["prog_before"] = str(p4_pre_path)
+                info["prog_after"] = str(p4_post_path)
                 if fail_dir:
                     handle_pyz3_error(fail_dir, p4_pre_path)
                     handle_pyz3_error(fail_dir, p4_post_path)
@@ -273,12 +280,12 @@ def z3_check(prog_paths, fail_dir=None, allow_undef=False):
                 if ret == util.EXIT_UNDEF:
                     has_undef = True
                     continue
-                return ret
+                return ret, info
     if has_undef:
         log.info("Passed all checks but encountered unstable code.")
-        return util.EXIT_UNDEF
+        return util.EXIT_UNDEF, info
     log.info("Passed all checks!")
-    return util.EXIT_SUCCESS
+    return util.EXIT_SUCCESS, info
 
 
 def main(args=None):
@@ -290,7 +297,8 @@ def main(args=None):
                         action="store_true",
                         help="Ignore changes in undefined behavior.")
     args = parser.parse_args(args)
-    return z3_check(args.progs, None, args.allow_undef)
+    result, _ = z3_check(args.progs, None, args.allow_undef)
+    return result
 
 
 if __name__ == '__main__':
