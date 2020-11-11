@@ -184,6 +184,9 @@ if __name__ == '__main__':
     parser.add_argument("-o", "--out_dir", dest="out_dir",
                         default=OUT_DIR,
                         help="Where intermediate output is stored.")
+    parser.add_argument("-l", "--log_file", dest="log_file",
+                        default="semantics.log",
+                        help="Specifies name of the log file.")
     parser.add_argument("-ll", "--log_level", dest="log_level",
                         default="INFO",
                         choices=["CRITICAL", "ERROR", "WARNING",

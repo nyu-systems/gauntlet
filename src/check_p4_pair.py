@@ -301,6 +301,9 @@ if __name__ == '__main__':
     parser.add_argument("-u", "--allow_undefined", dest="allow_undef",
                         action="store_true",
                         help="Ignore changes in undefined behavior.")
+    parser.add_argument("-l", "--log_file", dest="log_file",
+                        default="check.log",
+                        help="Specifies name of the log file.")
     parser.add_argument("-ll", "--log_level", dest="log_level",
                         default="INFO",
                         choices=["CRITICAL", "ERROR", "WARNING",

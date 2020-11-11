@@ -695,7 +695,7 @@ class P4Table(P4Callable):
                 matches.append(c_key_eval)
             elif isinstance(c_key_expr, P4Mask):
                 # TODO: Unclear about the role of side-effects here
-                val = p4_state.resolve_expr(c_key_expr.mask)
+                val = p4_state.resolve_expr(c_key_expr.value)
                 mask = c_key_expr.mask
                 c_key_eval = (val & mask) == (key_eval & mask)
                 matches.append(c_key_eval)
