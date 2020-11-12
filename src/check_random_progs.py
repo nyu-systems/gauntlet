@@ -116,7 +116,7 @@ def generate_p4_prog(p4c_bin, p4_file, config, seed):
     p4_cmd += f"--seed {seed} "
     p4_cmd += f"--arch {arch} "
     log.debug("Generating random p4 code with command %s ", p4_cmd)
-    return util.exec_process(p4_cmd), p4_file
+    return util.exec_process(p4_cmd, silent=True), p4_file
 
 
 def compile_p4_prog(p4c_bin, p4_file, p4_dump_dir):
@@ -129,13 +129,13 @@ def compile_p4_prog(p4c_bin, p4_file, p4_dump_dir):
         out_file = p4_file.with_suffix(".out").name
         p4_cmd += f"-o  {p4_dump_dir}/{out_file}"
     log.debug("Checking compilation with command %s ", p4_cmd)
-    return util.exec_process(p4_cmd)
+    return util.exec_process(p4_cmd, silent=True)
 
 
 def dump_result(result, target_dir, p4_file):
     util.check_dir(target_dir)
     test_id = target_dir.joinpath(p4_file.stem)
-    with open(f"{test_id}.err", 'w+') as err_file:
+    with open(f"{test_id}.err", "w+") as err_file:
         err_file.write(result.stderr.decode("utf-8"))
 
 
@@ -168,7 +168,7 @@ def validate_p4(p4_file, target_dir, p4c_bin, log_file):
     p4z3_cmd += "-u "
     # also dump info which we can reuse for various purposes
     p4z3_cmd += "-d "
-    result = util.exec_process(p4z3_cmd)
+    result = util.exec_process(p4z3_cmd, silent=True)
     return result.returncode
 
 
@@ -182,7 +182,7 @@ def validate_p4_blackbox(p4_file, target_dir, log_file, config):
     p4z3_cmd += f"-a {config['arch']} "
     if config["randomize_input"]:
         p4z3_cmd += "-r "
-    result = util.exec_process(p4z3_cmd)
+    result = util.exec_process(p4z3_cmd, silent=True)
     time.sleep(3)
     return result.returncode
 
@@ -352,16 +352,16 @@ def main(args):
     return util.EXIT_SUCCESS
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-a", "--arch", dest="arch", default="top",
                         type=str, help="Specify the back end to test.")
     parser.add_argument("-b", "--use-blackbox", dest="use_blackbox",
-                        action='store_true',
+                        action="store_true",
                         help="Use the blackbox technique instead of"
                         "translation validation.")
     parser.add_argument("-v", "--validate", dest="do_validate",
-                        action='store_true',
+                        action="store_true",
                         help="Also perform validation on programs.")
     parser.add_argument("-l", "--log_file", dest="log_file",
                         default="random.log",
@@ -376,10 +376,10 @@ if __name__ == '__main__':
                         default=OUTPUT_DIR,
                         help="The output folder where all tests are dumped.")
     parser.add_argument("-r", "--randomize-input", dest="randomize_input",
-                        action='store_true',
+                        action="store_true",
                         help="Whether to randomize the z3 input variables.")
-    parser.add_argument("-r", "--do-prune", dest="do_prune",
-                        action='store_true',
+    parser.add_argument("-d", "--do-prune", dest="do_prune",
+                        action="store_true",
                         help="Turn on to try to prune errors.")
     parser.add_argument("-ll", "--log_level", dest="log_level",
                         default="INFO",
@@ -392,7 +392,7 @@ if __name__ == '__main__':
     logging.basicConfig(filename=arguments.log_file,
                         format="%(levelname)s:%(message)s",
                         level=getattr(logging, arguments.log_level),
-                        filemode='w')
+                        filemode="w")
     stderr_log = logging.StreamHandler()
     stderr_log.setFormatter(logging.Formatter("%(levelname)s:%(message)s"))
     logging.getLogger().addHandler(stderr_log)

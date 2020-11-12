@@ -71,13 +71,13 @@ def start_process(cmd, *args, out_file=subprocess.PIPE, **kwargs):
     return proc
 
 
-def exec_process(cmd, *args, **kwargs):
+def exec_process(cmd, *args, silent=False, **kwargs):
     log.debug("Executing %s ", cmd)
     result = subprocess.run(cmd.split(), stdout=subprocess.PIPE,
                             stderr=subprocess.PIPE, *args, **kwargs)
     if result.stdout:
         log.debug("Process output: %s", result.stdout.decode("utf-8"))
-    if result.returncode != 0:
+    if result.returncode != EXIT_SUCCESS and not silent:
         log.error("BEGIN %s", 40 * "#")
         log.error("Failed while executing:\n%s\n", cmd)
         log.error("Output:\n%s", result.stderr.decode("utf-8"))
