@@ -295,11 +295,11 @@ def build_select_cond(p4_state, case_expr, match_list):
 
 
 class ParserSelect(P4Expression):
-    def __init__(self, match, *cases):
+    def __init__(self, match, case_list):
         self.match = match
         self.cases = []
         self.default = "reject"
-        for case_key, case_name in cases:
+        for case_key, case_name in case_list:
             if isinstance(case_key, DefaultExpression):
                 self.default = case_name
                 # anything after default is considered unreachable
