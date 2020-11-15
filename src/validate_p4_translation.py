@@ -150,7 +150,7 @@ def validate_translation(p4_file, target_dir, p4c_bin,
             "p4z3_bin": str(P4Z3_BIN),
             "out_dir": str(target_dir),
             "input_file": str(p4_file),
-            "ignore_undefined": allow_undef,
+            "allow_undef": allow_undef,
             "validation_bin": f"python3 {__file__}",
             }
 

@@ -122,7 +122,9 @@ def generate_p4_prog(p4c_bin, p4_file, config, seed):
 def compile_p4_prog(p4c_bin, p4_file, p4_dump_dir):
     p4_cmd = f"{p4c_bin} "
     # p4_cmd += f"-vvvv "
-    p4_cmd += f"--Wdisable "
+    # the Tofino compiler is not great with warnings
+    if p4c_bin != TNA_BIN:
+        p4_cmd += "--Wdisable "
     p4_cmd += f"{p4_file} "
     # p4test does not have the -o flag
     if p4c_bin != P4TEST_BIN:
@@ -217,7 +219,8 @@ def validate(dump_dir, p4_file, log_file, config):
             info_file = bug_dir.joinpath(f"{p4_file.stem}_info.json")
             p4_cmd = f"{PRUNER_BIN} "
             p4_cmd += f"--config {info_file} "
-            log.debug("Pruning P4 file with command %s ", p4_cmd)
+            p4_cmd += f" {bug_dir.joinpath(f'{p4_file.stem}.p4')} "
+            log.info("Pruning P4 file with command %s ", p4_cmd)
             util.start_process(p4_cmd)
     return result
 

@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 from pathlib import Path
 FILE_DIR = Path(__file__).parent.resolve()
 FILE_NAME = Path(__file__).stem
