@@ -277,14 +277,14 @@ def build_select_cond(p4_state, case_expr, match_list):
         if isinstance(case_match, DefaultExpression):
             select_cond.append(z3.BoolVal(True))
         elif isinstance(case_match, P4Range):
-            x = case_match.min
-            y = case_match.max
+            x = p4_state.resolve_expr(case_match.min)
+            y = p4_state.resolve_expr(case_match.max)
             match_key = z3.And(
                 z3.ULE(x, match_list[idx]), z3.UGE(y, match_list[idx]))
             select_cond.append(match_key)
         elif isinstance(case_match, P4Mask):
             val = p4_state.resolve_expr(case_match.value)
-            mask = case_match.mask
+            mask = p4_state.resolve_expr(case_match.mask)
             match_key = (val & mask) == (match_list[idx] & mask)
             select_cond.append(match_key)
         else:

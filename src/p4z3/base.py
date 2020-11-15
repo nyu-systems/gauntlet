@@ -7,6 +7,7 @@ log = logging.getLogger(__name__)
 
 UNDEF_LABEL = "undefined"
 
+
 def gen_instance(context, var_name, p4z3_type):
     p4z3_type = resolve_type(context, p4z3_type)
     if isinstance(p4z3_type, P4ComplexType):
@@ -283,11 +284,11 @@ class P4Declaration(P4Statement):
         self.lval = lval
         self.rval = rval
 
-    def compute_rval(self, p4_state):
+    def compute_rval(self, _p4_state):
         return self.rval
 
-    def eval(self, p4_state):
-        p4_state.set_or_add_var(self.lval, self.compute_rval(p4_state), True)
+    def eval(self, context):
+        context.set_or_add_var(self.lval, self.compute_rval(context), True)
 
 
 class ValueDeclaration(P4Declaration):
@@ -295,17 +296,17 @@ class ValueDeclaration(P4Declaration):
         super(ValueDeclaration, self).__init__(lval, rval)
         self.z3_type = z3_type
 
-    def compute_rval(self, p4_state):
+    def compute_rval(self, context):
         # this will only resolve expressions no other classes
         # FIXME: Untangle this a bit
-        z3_type = resolve_type(p4_state, self.z3_type)
+        z3_type = resolve_type(context, self.z3_type)
         if self.rval is not None:
-            rval = p4_state.resolve_expr(self.rval)
+            rval = context.resolve_expr(self.rval)
             if isinstance(rval, int):
                 if isinstance(z3_type, (z3.BitVecSortRef)):
                     rval = z3_cast(rval, z3_type)
             elif isinstance(rval, list):
-                instance = gen_instance(p4_state, UNDEF_LABEL, z3_type)
+                instance = gen_instance(context, UNDEF_LABEL, z3_type)
                 instance.set_list(rval)
                 rval = instance
             elif z3_type != rval.sort():
@@ -314,7 +315,7 @@ class ValueDeclaration(P4Declaration):
                     f"does not match with input type {rval.sort()}"
                 raise RuntimeError(msg)
         else:
-            rval = gen_instance(p4_state, UNDEF_LABEL, z3_type)
+            rval = gen_instance(context, UNDEF_LABEL, z3_type)
         return rval
 
 
@@ -384,7 +385,7 @@ class P4Member(P4Expression):
 
 
 class P4Index(P4Member):
-    # FIXME: This class is an absolute nightmare.
+    # FIXME: This class is an absolute nightmare. Completely broken
     __slots__ = ["lval", "member"]
 
     def resolve_runtime_index(self, lval, target_member, index):
@@ -460,6 +461,9 @@ class P4Index(P4Member):
             hdr.set_or_add_var(target_member, rval)
         else:
             lval.set_or_add_var(index, rval)
+
+    def __repr__(self):
+        return f"{self.lval}.[{self.member}]"
 
 
 class P4Slice(P4Expression):
@@ -676,12 +680,17 @@ class StructInstance(P4ComplexInstance):
         bit_width = self.width
         # set the members of this class
         for sub_member in self.p4z3_type.flat_names:
-            # we bind by extracting the respective bit range
-            bind_var = z3.Extract(bit_width - 1,
-                                  bit_width - sub_member.width, bind_const)
-            if isinstance(sub_member.p4_type, z3.BoolSortRef):
-                # unfortunately bools still exit, we need to cast them
-                bind_var = z3_cast(bind_var, sub_member.p4_type)
+            # TODO: Find a better way to handle undefined initialization
+            # This is very coarse
+            if str(bind_const) == UNDEF_LABEL:
+                bind_var = z3.Const(UNDEF_LABEL, sub_member.p4_type)
+            else:
+                # we bind by extracting the respective bit range
+                bind_var = z3.Extract(bit_width - 1,
+                                      bit_width - sub_member.width, bind_const)
+                if isinstance(sub_member.p4_type, z3.BoolSortRef):
+                    # unfortunately bools still exit, we need to cast them
+                    bind_var = z3_cast(bind_var, sub_member.p4_type)
             # set the new bind value
             self.set_or_add_var(sub_member.name, bind_var)
             bit_width -= sub_member.width
@@ -880,7 +889,6 @@ class ListType(StructType):
             name += str(arg)
         super(ListType, self).__init__(name, z3_reg, z3_args)
 
-    # TODO: Implement this class correctly...
     def instantiate(self, name, member_id=0):
         return ListInstance(name, self, member_id)
 
@@ -1063,7 +1071,7 @@ class P4Extern(StaticType):
                 method.extern_context = init_extern.type_context
         return init_extern
 
-    def initialize(self, context, *args, **kwargs):
+    def initialize(self, _context, *args, **kwargs):
         # FIXME: Try to understand constructor args and what they mean
         # Example: psa-hash.p4
         return self
