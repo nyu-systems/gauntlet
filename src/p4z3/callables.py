@@ -101,7 +101,7 @@ class P4Callable(P4Z3Class):
         var_buffer = save_variables(p4_state, merged_args)
         param_buffer = self.copy_in(p4_state, merged_args)
         # only add the context after all the arguments have been resolved
-        context = P4Context(var_buffer)
+        context = P4Context(p4_state.current_context(), var_buffer)
         p4_state.contexts.append(context)
         # now we can set the arguments without influencing subsequent variables
         for param_name, param_val in param_buffer.items():
@@ -173,10 +173,9 @@ class ConstCallExpr(P4Expression):
 
 class P4Package(P4Callable):
 
-    def __init__(self, p4_state, name, params, type_params):
+    def __init__(self, name, params, type_params):
         super(P4Package, self).__init__(name, params)
         self.pipes = OrderedDict()
-        self.prog_state = p4_state
         self.type_params = type_params
         self.type_context = {}
 
@@ -195,7 +194,7 @@ class P4Package(P4Callable):
                 members[idx] = z3.If(exit_cond, exit_member, members[idx])
         return p4_state.z3_type.constructor(0)(*members)
 
-    def initialize(self, context, *args, **kwargs):
+    def initialize(self, p4_state, *args, **kwargs):
         merged_args = merge_parameters(self.params, *args, **kwargs)
         for pipe_name, pipe_arg in merged_args.items():
             if pipe_arg.p4_val is None:
@@ -203,27 +202,30 @@ class P4Package(P4Callable):
                 # FIXME: This should not happen. Why?
                 continue
             log.info("Loading %s pipe...", pipe_name)
-            pipe_val = context.resolve_expr(pipe_arg.p4_val)
+            pipe_val = p4_state.resolve_expr(pipe_arg.p4_val)
             if isinstance(pipe_val, P4Control):
                 # This boilerplate is all necessary to initialize state...
                 # FIXME: Ideally, this should be handled by the control...
-                context.type_contexts.append(self.type_context)
-                ctrl_type = resolve_type(context, pipe_arg.p4_type)
-                pipe_val = pipe_val.bind_to_ctrl_type(context, ctrl_type)
-                context.type_contexts.append(ctrl_type.type_context)
+                sub_ctx = P4Context(p4_state.current_context(), {})
+                p4_state.contexts.append(sub_ctx)
+                for type_name, p4_type in self.type_context.items():
+                    sub_ctx.add_type(
+                        type_name, resolve_type(p4_state, p4_type))
+                ctrl_type = resolve_type(p4_state, pipe_arg.p4_type)
+                pipe_val = pipe_val.bind_to_ctrl_type(p4_state, ctrl_type)
+                for type_name, p4_type in ctrl_type.type_context.items():
+                    sub_ctx.add_type(
+                        type_name, resolve_type(p4_state, p4_type))
                 args = []
                 for idx, param in enumerate(pipe_val.params):
                     ctrl_type_param_type = ctrl_type.params[idx].p4_type
-                    generic_type = resolve_type(context, ctrl_type_param_type)
+                    generic_type = resolve_type(p4_state, ctrl_type_param_type)
                     if generic_type is None:
-                        param_type = resolve_type(context, param.p4_type)
+                        param_type = resolve_type(p4_state, param.p4_type)
                         self.type_context[ctrl_type_param_type] = param_type
                     args.append(param.name)
                 # create the z3 representation of this control state
-                p4_state = self.prog_state.set_context(pipe_name, pipe_val.params)
-                # dp not need the types for now
-                context.type_contexts.pop()
-                context.type_contexts.pop()
+                p4_state.set_context(pipe_name, pipe_val.params)
 
                 # initialize the call with its own params we collected
                 # this is essentially the input packet
@@ -237,7 +239,7 @@ class P4Package(P4Callable):
                 self.pipes[pipe_name] = (var, [], pipe_val)
             elif isinstance(pipe_val, P4Package):
                 # execute the package by calling its initializer
-                pipe_val.initialize(context)
+                pipe_val.initialize(p4_state)
                 # resolve all the sub_pipes
                 for sub_pipe_name, sub_pipe_val in pipe_val.pipes.items():
                     sub_pipe_name = f"{pipe_name}_{sub_pipe_name}"
@@ -343,12 +345,10 @@ class P4Control(P4Callable):
         return ctrl_copy
 
     def apply(self, p4_state, *args, **kwargs):
-        local_context = {}
+        context = p4_state.current_context()
         for type_name, p4_type in self.type_context.items():
-            local_context[type_name] = resolve_type(p4_state, p4_type)
-        p4_state.type_contexts.append(self.type_context)
+            context.add_type(type_name, resolve_type(p4_state, p4_type))
         self.eval(p4_state, *args, **kwargs)
-        p4_state.type_contexts.pop()
 
     def eval_callable(self, p4_state, merged_args, var_buffer):
         # initialize the local context of the function for execution
@@ -397,6 +397,7 @@ class P4Method(P4Callable):
         for param_name, arg in method_args.items():
             arg_mode, arg_ref, arg_expr, p4_src_type = arg
             # infer the type
+            context = p4_state.current_context()
             p4_type = resolve_type(p4_state, p4_src_type)
             # This is dynamic type inference based on arguments
             # FIXME Check this hack.
@@ -408,7 +409,7 @@ class P4Method(P4Callable):
                     p4_type = ListType("tuple", p4_state, arg_expr)
                 else:
                     p4_type = arg_expr.sort()
-                p4_state.type_contexts[-1][p4_src_type] = p4_type
+                context.add_type(p4_src_type, p4_type)
 
             if arg_mode not in ("out", "inout"):
                 # this value is read-only so we do not care
@@ -430,7 +431,8 @@ class P4Method(P4Callable):
 
     def __call__(self, p4_state, *args, **kwargs):
         merged_args = merge_parameters(self.params, *args, **kwargs)
-
+        context = P4Context(p4_state.current_context(), {})
+        p4_state.contexts.append(context)
         # resolve the inputs *before* we bind types
         method_args = {}
         for param_name, arg in merged_args.items():
@@ -445,21 +447,18 @@ class P4Method(P4Callable):
                 arg.mode, arg.p4_val, arg_expr, arg.p4_type)
 
         # apply the local and parent extern type contexts
-        local_context = {}
+        context = p4_state.current_context()
         for type_name, p4_type in self.extern_context.items():
-            local_context[type_name] = resolve_type(p4_state, p4_type)
+            context.add_type(type_name, resolve_type(p4_state, p4_type))
         for type_name, p4_type in self.type_context.items():
-            local_context[type_name] = resolve_type(p4_state, p4_type)
-        p4_state.type_contexts.append(local_context)
+            context.add_type(type_name, resolve_type(p4_state, p4_type))
 
         # assign symbolic values to the inputs that are inout and out
         self.assign_values(p4_state, method_args)
 
         # execute the return expression within the new type environment
         expr = self.eval_callable(p4_state, merged_args, {})
-
-        # cleanup and return the value
-        p4_state.type_contexts.pop()
+        p4_state.contexts.pop()
         self.call_counter += 1
         return expr
 

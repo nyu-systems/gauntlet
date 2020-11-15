@@ -16,7 +16,8 @@ from p4z3.z3int import Z3Int
 
 class P4Context(P4Z3Class):
 
-    def __init__(self, var_buffer):
+    def __init__(self, parent_context, var_buffer):
+        self.parent_context = parent_context
         self.var_buffer = var_buffer
         self.has_returned = False
         # to merge the return exprs after a callable has completed
@@ -28,6 +29,7 @@ class P4Context(P4Z3Class):
         self.forward_conds = deque()
         self.tmp_forward_cond = z3.BoolVal(True)
         self.locals = {}
+        self.type_map = {}
 
     def add_to_buffer(self, var_dict):
         self.var_buffer = {**self.var_buffer, **var_dict}
@@ -61,6 +63,141 @@ class P4Context(P4Z3Class):
                 # this assumes an lvalue as input
                 p4_state.set_or_add_var(par_ref, val)
 
+    def resolve_expr(self, p4_state, expr):
+        # Resolves to z3 and z3p4 expressions
+        # ints, lists, and dicts are also okay
+
+        # resolve potential string references first
+        log.debug("Resolving %s", expr)
+        if isinstance(expr, str):
+            expr = p4_state.resolve_reference(expr)
+        if isinstance(expr, P4Expression):
+            # We got a P4 expression, recurse and resolve...
+            expr = expr.eval(p4_state)
+            return p4_state.resolve_expr(expr)
+        if isinstance(expr, (z3.AstRef, int)):
+            # These are z3 types and can be returned
+            # Unfortunately int is part of it because z3 is very inconsistent
+            # about var handling...
+            return expr
+        if isinstance(expr, (StaticType, P4ComplexInstance, P4Z3Class, types.MethodType)):
+            # In a similar manner, just return any remaining class types
+            # Methods can be class attributes and need to be returned as is
+            return expr
+        if isinstance(expr, list):
+            # For lists, resolve each value individually and return a new list
+            list_expr = []
+            for val_expr in expr:
+                rval_expr = p4_state.resolve_expr(val_expr)
+                list_expr.append(rval_expr)
+            return list_expr
+        raise TypeError(f"Expression of type {type(expr)} cannot be resolved!")
+
+    def find_nested_slice(self, lval, slice_l, slice_r):
+        # gradually reduce the scope until we have calculated the right slice
+        # also retrieve the string lvalue in the mean time
+        if isinstance(lval, P4Slice):
+            lval, _, outer_slice_r = self.find_nested_slice(
+                lval.val, lval.slice_l, lval.slice_r)
+            slice_l = outer_slice_r + slice_l
+            slice_r = outer_slice_r + slice_r
+        return lval, slice_l, slice_r
+
+    def set_slice(self, p4_state, lval, rval):
+        slice_l = p4_state.resolve_expr(lval.slice_l)
+        slice_r = p4_state.resolve_expr(lval.slice_r)
+        lval = lval.val
+        lval, slice_l, slice_r = self.find_nested_slice(lval, slice_l, slice_r)
+
+        # need to resolve everything first, these can be members
+        lval_expr = p4_state.resolve_expr(lval)
+
+        # z3 requires the extract value to be a bitvector, so we must cast ints
+        # actually not sure where this could happen...
+        if isinstance(lval_expr, int):
+            lval_expr = lval_expr.as_bitvec
+
+        rval_expr = p4_state.resolve_expr(rval)
+
+        lval_expr_max = lval_expr.size() - 1
+        if slice_l == lval_expr_max and slice_r == 0:
+            # slice is full lval, nothing to do
+            p4_state.set_or_add_var(lval, rval_expr)
+            return
+        assemble = []
+        if slice_l < lval_expr_max:
+            # left slice is smaller than the max, leave that chunk unchanged
+            assemble.append(z3.Extract(lval_expr_max, slice_l + 1, lval_expr))
+        # fill the rval_expr into the slice
+        # this cast is necessary to match the margins and to handle integers
+        rval_expr = z3_cast(rval_expr, slice_l + 1 - slice_r)
+        assemble.append(rval_expr)
+        if slice_r > 0:
+            # right slice is larger than zero, leave that chunk unchanged
+            assemble.append(z3.Extract(slice_r - 1, 0, lval_expr))
+        rval_expr = z3.Concat(*assemble)
+        p4_state.set_or_add_var(lval, rval_expr)
+        return
+
+    def find_context(self, var):
+        context = self
+        while context is not None:
+            try:
+                return context, context.locals[var]
+            except KeyError:
+                context = context.parent_context
+                continue
+        # nothing found, empty result
+        return None, None
+
+    def set_or_add_var(self, p4_state, lval, rval, new_decl=False):
+        if isinstance(lval, P4Slice):
+            self.set_slice(p4_state, lval, rval)
+            return
+        if isinstance(lval, P4Member):
+            lval.set_value(p4_state, rval)
+            return
+        # now that all the preprocessing is done we can assign the value
+        log.debug("Setting %s(%s) to %s(%s) ",
+                  lval, type(lval), rval, type(rval))
+        context, lval_val = self.find_context(lval)
+        if not context or new_decl:
+            context = self
+
+        # rvals could be a list, unroll the assignment
+        if isinstance(rval, list) and lval_val is not None:
+            if isinstance(lval_val, StructInstance):
+                lval_val.set_list(rval)
+            else:
+                raise TypeError(
+                    f"set_list {type(lval)} not supported!")
+            return
+        context.locals[lval] = rval
+
+    def resolve_reference(self, p4_state, var):
+        if isinstance(var, P4Member):
+            return var.eval(p4_state)
+        if isinstance(var, str):
+            context, val = self.find_context(var)
+            if not context:
+                raise RuntimeError(f"Variable {var} not found!")
+            return val
+        return var
+
+    def get_type(self, type_name):
+        context = self
+        while context is not None:
+            try:
+                return context.type_map[type_name]
+            except KeyError:
+                context = context.parent_context
+                continue
+        # nothing found, empty result
+        raise KeyError
+
+    def add_type(self, type_name, type_val):
+        self.type_map[type_name] = type_val
+
 
 class P4State():
     """
@@ -73,12 +210,10 @@ class P4State():
     def __init__(self, extern_extensions):
         self.extern_extensions = extern_extensions
         self.name = "init_state"
-        self.static_context = P4Context({})
+        self.static_context = P4Context(None, {})
         # deques allow for much more efficient pop and append operations
         # this is all we do so this works well
         self.contexts = deque()
-        self.global_type_map = {}
-        self.type_contexts = deque()
         self.exit_states = deque()
         self.has_exited = False
         self.flat_names = []
@@ -98,11 +233,11 @@ class P4State():
         self.reset()
         self.name = name
         self.members = z3_args
-        state_context = P4Context({})
+        state_context = P4Context(self.current_context(), {})
         self.contexts.append(state_context)
 
         for instance_name, instance_val in instances.items():
-            self.set_or_add_var(instance_name, instance_val)
+            state_context.set_or_add_var(self, instance_name, instance_val)
 
         flat_args = []
         idx = 0
@@ -117,7 +252,8 @@ class P4State():
                         P4Member(z3_arg_name, sub_member.name))
                     idx += 1
                 # this is a complex datatype, create a P4ComplexType
-                self.set_or_add_var(z3_arg_name, member_cls, True)
+                state_context.set_or_add_var(
+                    self, z3_arg_name, member_cls, True)
             else:
                 flat_args.append((str(idx), z3_arg_type))
                 self.flat_names.append(z3_arg_name)
@@ -130,92 +266,12 @@ class P4State():
 
         for type_idx, arg_name in enumerate(self.flat_names):
             member_constructor = self.z3_type.accessor(0, type_idx)
-            self.set_or_add_var(arg_name, member_constructor(self.const), True)
+            state_context.set_or_add_var(
+                self, arg_name, member_constructor(self.const), True)
 
-    def resolve_expr(self, expr):
-        # Resolves to z3 and z3p4 expressions
-        # ints, lists, and dicts are also okay
-
-        # resolve potential string references first
-        log.debug("Resolving %s", expr)
-        if isinstance(expr, str):
-            expr = self.resolve_reference(expr)
-        if isinstance(expr, P4Expression):
-            # We got a P4 expression, recurse and resolve...
-            expr = expr.eval(self)
-            return self.resolve_expr(expr)
-        if isinstance(expr, (z3.AstRef, int)):
-            # These are z3 types and can be returned
-            # Unfortunately int is part of it because z3 is very inconsistent
-            # about var handling...
-            return expr
-        if isinstance(expr, (StaticType, P4ComplexInstance, P4Z3Class, types.MethodType)):
-            # In a similar manner, just return any remaining class types
-            # Methods can be class attributes and need to be returned as is
-            return expr
-        if isinstance(expr, list):
-            # For lists, resolve each value individually and return a new list
-            list_expr = []
-            for val_expr in expr:
-                rval_expr = self.resolve_expr(val_expr)
-                list_expr.append(rval_expr)
-            return list_expr
-        raise TypeError(f"Expression of type {type(expr)} cannot be resolved!")
-
-    def find_nested_slice(self, lval, slice_l, slice_r):
-        # gradually reduce the scope until we have calculated the right slice
-        # also retrieve the string lvalue in the mean time
-        if isinstance(lval, P4Slice):
-            lval, _, outer_slice_r = self.find_nested_slice(
-                lval.val, lval.slice_l, lval.slice_r)
-            slice_l = outer_slice_r + slice_l
-            slice_r = outer_slice_r + slice_r
-        return lval, slice_l, slice_r
-
-    def set_slice(self, lval, rval):
-        slice_l = self.resolve_expr(lval.slice_l)
-        slice_r = self.resolve_expr(lval.slice_r)
-        lval = lval.val
-        lval, slice_l, slice_r = self.find_nested_slice(lval, slice_l, slice_r)
-
-        # need to resolve everything first, these can be members
-        lval_expr = self.resolve_expr(lval)
-
-        # z3 requires the extract value to be a bitvector, so we must cast ints
-        # actually not sure where this could happen...
-        if isinstance(lval_expr, int):
-            lval_expr = lval_expr.as_bitvec
-
-        rval_expr = self.resolve_expr(rval)
-
-        lval_expr_max = lval_expr.size() - 1
-        if slice_l == lval_expr_max and slice_r == 0:
-            # slice is full lval, nothing to do
-            self.set_or_add_var(lval, rval_expr)
-            return
-        assemble = []
-        if slice_l < lval_expr_max:
-            # left slice is smaller than the max, leave that chunk unchanged
-            assemble.append(z3.Extract(lval_expr_max, slice_l + 1, lval_expr))
-        # fill the rval_expr into the slice
-        # this cast is necessary to match the margins and to handle integers
-        rval_expr = z3_cast(rval_expr, slice_l + 1 - slice_r)
-        assemble.append(rval_expr)
-        if slice_r > 0:
-            # right slice is larger than zero, leave that chunk unchanged
-            assemble.append(z3.Extract(slice_r - 1, 0, lval_expr))
-        rval_expr = z3.Concat(*assemble)
-        self.set_or_add_var(lval, rval_expr)
-        return
-
-    def find_context(self, var):
-        for context in reversed(self.contexts):
-            try:
-                return context, context.locals[var]
-            except KeyError:
-                continue
-        # nothing found, empty result
-        return None, None
+    def get_type(self, type_name):
+        context = self.current_context()
+        return context.get_type(type_name)
 
     def current_context(self):
         if self.contexts:
@@ -223,29 +279,17 @@ class P4State():
         else:
             return self.static_context
 
-    def set_or_add_var(self, lval, rval, new_decl=False):
-        if isinstance(lval, P4Slice):
-            self.set_slice(lval, rval)
-            return
-        if isinstance(lval, P4Member):
-            lval.set_value(self, rval)
-            return
-        # now that all the preprocessing is done we can assign the value
-        log.debug("Setting %s(%s) to %s(%s) ",
-                  lval, type(lval), rval, type(rval))
-        context, lval_val = self.find_context(lval)
-        if not context or new_decl:
-            context = self.contexts[-1]
+    def resolve_reference(self, ref_name):
+        context = self.current_context()
+        return context.resolve_reference(self, ref_name)
 
-        # rvals could be a list, unroll the assignment
-        if isinstance(rval, list) and lval_val is not None:
-            if isinstance(lval_val, StructInstance):
-                lval_val.set_list(rval)
-            else:
-                raise TypeError(
-                    f"set_list {type(lval)} not supported!")
-            return
-        context.locals[lval] = rval
+    def resolve_expr(self, ref_name):
+        context = self.current_context()
+        return context.resolve_expr(self, ref_name)
+
+    def set_or_add_var(self, lval, rval, new_decl=False):
+        context = self.current_context()
+        return context.set_or_add_var(self, lval, rval, new_decl)
 
     def get_members(self):
         ''' This method returns the current representation of the object in z3
@@ -279,27 +323,6 @@ class P4State():
                     attr_val = copy.copy(attr_val)
                 attr_copy[attr_name] = attr_val
         return attr_copy
-
-    def resolve_reference(self, var):
-        if isinstance(var, P4Member):
-            return var.eval(self)
-        if isinstance(var, str):
-            context, val = self.find_context(var)
-            if not context:
-                try:
-                    return self.static_context.locals[var]
-                except KeyError:
-                    raise RuntimeError(f"Variable {var} not found!")
-            return val
-        return var
-
-    def get_type(self, type_name):
-        for context in reversed(self.type_contexts):
-            try:
-                return context[type_name]
-            except KeyError:
-                continue
-        return self.global_type_map[type_name]
 
     def checkpoint(self):
         var_store = self.copy_attrs()
@@ -342,7 +365,7 @@ class P4State():
         self.static_context.locals[lval] = rval
 
     def declare_type(self, lval, rval):
-        self.global_type_map[lval] = rval
+        self.static_context.add_type(lval, rval)
 
     def set_context(self, name, p4_params):
         stripped_args = []

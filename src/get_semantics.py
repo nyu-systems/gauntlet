@@ -109,7 +109,7 @@ def reconstruct_input(pipe_name, package, pipe_cls):
     if isinstance(pipe_cls, P4Extern):
         initial_state = z3.Const(f"{pipe_name}", pipe_cls.z3_type)
     else:
-        p4_state = package.prog_state.set_p4_state(pipe_name, pipe_cls.params)
+        p4_state = package.prog_state.set_context(pipe_name, pipe_cls.params)
         initial_state = p4_state.get_z3_repr()
 
     inital_inputs = initial_state.children()

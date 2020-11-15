@@ -56,14 +56,12 @@ class packet_in(P4Extern):
 
             def extract_hdr(self, p4_state, merged_args):
                 hdr = merged_args[self.hdr_param_name].p4_val
-
+                context = p4_state.current_context()
                 # apply the local and parent extern type contexts
-                local_context = {}
                 for type_name, p4_type in self.extern_context.items():
-                    local_context[type_name] = resolve_type(p4_state, p4_type)
+                    context.add_type(type_name, resolve_type(p4_state, p4_type))
                 for type_name, p4_type in self.type_context.items():
-                    local_context[type_name] = resolve_type(p4_state, p4_type)
-                p4_state.type_contexts.append(local_context)
+                    context.add_type(type_name, resolve_type(p4_state, p4_type))
 
                 # advance the header index if a next field has been accessed
                 hdr_stack = detect_hdr_stack_next(p4_state, hdr)
@@ -84,8 +82,6 @@ class packet_in(P4Extern):
                 if hdr_stack:
                     hdr_stack.locals["lastIndex"] = hdr_stack.locals["nextIndex"]
                     hdr_stack.locals["nextIndex"] += 1
-                # cleanup
-                p4_state.type_contexts.pop()
                 self.call_counter += 1
 
             def __call__(self, p4_state, *args, **kwargs):

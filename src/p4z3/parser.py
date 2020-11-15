@@ -30,15 +30,13 @@ class P4Parser(P4Control):
         return max_size
 
     def apply(self, p4_state, *args, **kwargs):
-        local_context = {}
+        context = p4_state.current_context()
         for type_name, p4_type in self.type_context.items():
-            local_context[type_name] = resolve_type(p4_state, p4_type)
-        p4_state.type_contexts.append(self.type_context)
+            context.add_type(type_name, resolve_type(p4_state, p4_type))
         # disable unrolling for now, we do not really need it for validation
         # and with it, tests take unpleasantly long
         # self.statements.max_loop = self.compute_loop_bound(p4_state)
         self.eval(p4_state, *args, **kwargs)
-        p4_state.type_contexts.pop()
 
 
 class RejectState(P4Expression):
@@ -238,7 +236,7 @@ class ParserTree(P4Expression):
             for parser_state, (cond, state) in terminal_nodes.items():
                 sub_node = self.nodes[parser_state]
                 # state forks here
-                dummy_context = P4Context({})
+                dummy_context = P4Context(p4_state.current_context(), {})
                 dummy_context.locals = state
                 dummy_context.tmp_forward_cond = cond
                 p4_state.contexts.append(dummy_context)
