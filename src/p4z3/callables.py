@@ -688,15 +688,15 @@ class P4Table(P4Callable):
             # TODO: Unclear about the role of side-effects here
             key_eval = p4_state.resolve_expr(key_expr)
             if isinstance(c_key_expr, P4Range):
-                x = c_key_expr.min
-                y = c_key_expr.max
+                x = p4_state.resolve_expr(c_key_expr.min)
+                y = p4_state.resolve_expr(c_key_expr.max)
                 c_key_eval = z3.And(z3.ULE(x, key_eval),
                                     z3.UGE(y, key_eval))
                 matches.append(c_key_eval)
             elif isinstance(c_key_expr, P4Mask):
                 # TODO: Unclear about the role of side-effects here
                 val = p4_state.resolve_expr(c_key_expr.value)
-                mask = c_key_expr.mask
+                mask = p4_state.resolve_expr(c_key_expr.mask)
                 c_key_eval = (val & mask) == (key_eval & mask)
                 matches.append(c_key_eval)
             else:

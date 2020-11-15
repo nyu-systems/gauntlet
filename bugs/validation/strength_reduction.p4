@@ -7,9 +7,13 @@ header ethernet_t {
     bit<16> eth_type;
 }
 
+header H {
+    bit<8> a;
+}
+
 struct Headers {
     ethernet_t eth_hdr;
-
+    H     h;
 }
 
 struct Meta {
@@ -21,27 +25,17 @@ parser p(packet_in pkt, out Headers hdr, inout Meta m, inout standard_metadata_t
     }
     state parse_hdrs {
         pkt.extract(hdr.eth_hdr);
+        pkt.extract(hdr.h);
         transition accept;
     }
 }
 
-
-action assign_addrs(inout Headers h, bool check_1, bool check_2) {
-    if (check_1) {
-        h.eth_hdr.dst_addr = 2;
-        if (check_2) {
-            // note that this is not dst_addr
-            h.eth_hdr.src_addr = 3;
-        } else {
-            h.eth_hdr.dst_addr = 1;
-        }
-    }
-}
-
 control ingress(inout Headers h, inout Meta m, inout standard_metadata_t sm) {
+    bit<8> tmp1 = 8w1;
     apply {
-        assign_addrs(h, true, true);
+        h.h.a = ((bit<9>)tmp1 << 8w8)[8:1];
     }
+
 }
 
 control vrfy(inout Headers h, inout Meta m) { apply {} }
