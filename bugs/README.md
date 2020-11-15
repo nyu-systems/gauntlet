@@ -67,7 +67,7 @@ Fixed: :heavy_check_mark:&nbsp;&nbsp;&nbsp;&nbsp;Confirmed: :exclamation:&nbsp;&
 | [Control Inlining: Key declaration not found (2542)](https://github.com/p4lang/p4c/issues/2542)            | [2542.p4](crash/denied/2542.p4)       | Front end | :x:    |
 | [Some problems with function calls in struct initialization (2543a)](https://github.com/p4lang/p4c/issues/2543)           | [2543a.p4](crash/fixed/2543a.p4)       | Mid end | :heavy_check_mark: |
 | [Some problems with function calls in struct initialization (2543b)](https://github.com/p4lang/p4c/issues/2543)           | [2543b.p4](crash/fixed/2543b.p4)       | Front end | :heavy_check_mark: |
-| [Compiler Bug: Could not find type of <Declaration_Variable> for declaration of same name (2544)](https://github.com/p4lang/p4c/issues/2544)            | [2544.p4](crash/2544.p4)                     | Front end | :exclamation: |
+| [Compiler Bug: Could not find type of <Declaration_Variable> for declaration of same name (2544)](https://github.com/p4lang/p4c/issues/2544)            | [2544.p4](crash/fixed/2544.p4)                     | Front end | :heavy_check_mark: |
 | [Calling an extern with a local variable: read-only error (2545)](https://github.com/p4lang/p4c/issues/2545)            | [2545.p4](crash/fixed/2545.p4)         | Mid end | :heavy_check_mark: |
 | [Side-effect function call in table key (2546b)](https://github.com/p4lang/p4c/issues/2546)           | [2546b.p4](crash/2546b.p4)                   | Front end | :exclamation: |
 | [Compiler Bug : Null firstCall (2597)](https://github.com/p4lang/p4c/issues/2597)           | [2597.p4](crash/fixed/2597.p4)                   | Front end | :heavy_check_mark: |
@@ -109,59 +109,59 @@ Fixed: :heavy_check_mark:&nbsp;&nbsp;&nbsp;&nbsp;Confirmed: :exclamation:&nbsp;&
 | [Side effects in StructInitializers (2488)](https://github.com/p4lang/p4c/issues/2488)            | [2488.p4](validation/fixed/2488.p4)    | Front end | :heavy_check_mark: |
 | [Follow-up on slice arguments (2498)](https://github.com/p4lang/p4c/issues/2498)            | [2498.p4](validation/fixed/2498.p4)                | Front end | :heavy_check_mark: |
 | [Side-effect function call in table key (2546b)](https://github.com/p4lang/p4c/issues/2546)           | [2546b.p4](validation/2546b.p4)              | Mid end | :exclamation: |
-| [Fix: Predication issue (2564)](https://github.com/p4lang/p4c/pull/2564)              | [2564a.p4](validation/fixed/2564a.p4)  | Mid end | :heavy_check_mark: |
+| [Fix: Predication issue (2564)](https://github.com/p4lang/p4c/pull/2564)              | [2564.p4](validation/fixed/2564.p4)  | Mid end | :heavy_check_mark: |
 
-#### Tofino Crash Bugs
+#### Tofino Crash Bugs (P4Studio 9.3.0)
 
-| Issue                                                        | Location                    | Compiler Stage | Status    |
+| Issue                                                        | Name                    | Compiler Stage | Status    |
 | ------------------------------------------------------------ | --------------------------- | -------------- | --------- |
-| 1                                                            | [tofino/crash/bug1.p4](tofino/crash/denied/bug1.p4)       | Front end | :x:    |
-| 2                                                            | [tofino/crash/bug2.p4](tofino/crash/denied/bug2.p4)       | Front end | :x:    |
-| 3                                                            | [tofino/crash/bug3.p4](tofino/missing_pass/bug3.p4)       | Back end | Front end issue |
-| 4                                                            | [tofino/crash/bug4.p4](tofino/crash/denied/bug4.p4)       | Front end | :x:    |
-| 5                                                            | [tofino/crash/bug5.p4](tofino/crash/bug5.p4)              | Back end | :exclamation: |
-| 6                                                            | [tofino/crash/bug6.p4](tofino/crash/bug6.p4)              | Back end | :exclamation: |
-| 7                                                            | [tofino/crash/bug7.p4](tofino/crash/bug7.p4)              | Back end | :exclamation: |
-| 8                                                            | [tofino/crash/bug8.p4](tofino/crash/bug8.p4)              | Back end | :exclamation: |
-| 9                                                            | [tofino/crash/bug9.p4](tofino/crash/bug9.p4)              | Back end | :exclamation: |
-| 10                                                           | [tofino/crash/bug10.p4](tofino/crash/bug10.p4)            | Back end | :exclamation: |
-| 11                                                           | [tofino/crash/bug11.p4](tofino/crash/bug11.p4)            | Back end | :exclamation: |
-| 12                                                           | [tofino/crash/bug12.p4](tofino/crash/bug12.p4)            | Back end | :exclamation: |
-| 13                                                           | [tofino/crash/bug13.p4](tofino/missing_pass/bug13.p4)     | Back end | Front end issue |
-| 14                                                           | [tofino/crash/bug14.p4](tofino/crash/bug14.p4)            | Back end | :exclamation: |
-| 15                                                           | [tofino/crash/bug15.p4](tofino/crash/bug15.p4)            | Back end | :exclamation: |
-| 16                                                           | [tofino/crash/bug16.p4](tofino/crash/bug16.p4)            | Back end | :exclamation: |
-| 17                                                           | [tofino/crash/bug17.p4](tofino/crash/bug17.p4)            | Back end | :exclamation: |
-| 18                                                           | [tofino/crash/bug18.p4](tofino/crash/bug18.p4)            | Back end | :exclamation: |
-| 19                                                           | [tofino/crash/bug19.p4](tofino/crash/bug19.p4)            | Back end | :exclamation: |
-| 20                                                           | [tofino/crash/bug20.p4](tofino/crash/bug20.p4)            | Back end | :exclamation: |
-| 21                                                           | [tofino/crash/bug21.p4](tofino/crash/bug21.p4)            | Back end | :exclamation: |
-| 22                                                           | [tofino/crash/bug22.p4](tofino/crash/bug22.p4)            | Back end | :exclamation: |
-| 23                                                           | [tofino/crash/bug23.p4](tofino/crash/bug23.p4)            | Back end | :exclamation: |
-| 24                                                           | [tofino/crash/bug24.p4](tofino/crash/bug24.p4)            | Back end | :exclamation: |
-| 25                                                           | [tofino/crash/bug25.p4](tofino/crash/bug25.p4)            | Back end | :exclamation: |
-| 26                                                           | [tofino/crash/bug26.p4](tofino/crash/bug26.p4)            | Back end | :exclamation: |
-| 27                                                           | [tofino/crash/bug27.p4](tofino/missing_pass/bug27.p4)     | Back end | Front end issue |
-| 28                                                           | [tofino/crash/bug28.p4](tofino/crash/denied/bug28.p4)     | Back end | :x:    |
-| 29                                                           | [tofino/crash/bug29.p4](tofino/missing_pass/bug29.p4)     | Back end | Front end issue |
-| 30                                                           | [tofino/crash/bug30.p4](tofino/crash/bug30.p4)            | Back end | :exclamation: |
-| 31                                                           | [tofino/crash/bug31.p4](tofino/crash/bug31.p4)            | Back end | :exclamation: |
-| 32                                                           | [tofino/crash/bug32.p4](tofino/crash/denied/bug32.p4)     | Back end | :x:    |
-| 33                                                           | [tofino/crash/bug33.p4](tofino/crash/bug33.p4)            | Back end | :exclamation: |
-| 34                                                           | [tofino/crash/bug34.p4](tofino/missing_pass/bug34.p4)     | Back end | Front end issue  |
-| 35                                                           | [tofino/crash/bug35.p4](tofino/crash/bug35.p4)            | Back end | :exclamation: |
+| 1                                                            | [bug1.p4](tofino/crash/denied/bug1.p4)       | Front end | :x:    |
+| 2                                                            | [bug2.p4](tofino/crash/denied/bug2.p4)       | Front end | :x:    |
+| 3                                                            | [bug3.p4](tofino/missing_pass/bug3.p4)       | Back end | Front end issue |
+| 4                                                            | [bug4.p4](tofino/crash/denied/bug4.p4)       | Front end | :x:    |
+| 5                                                            | [bug5.p4](tofino/crash/bug5.p4)              | Back end | :exclamation: |
+| 6                                                            | [bug6.p4](tofino/crash/bug6.p4)              | Back end | :heavy_check_mark: |
+| 7                                                            | [bug7.p4](tofino/crash/bug7.p4)              | Back end | :heavy_check_mark: |
+| 8                                                            | [bug8.p4](tofino/crash/bug8.p4)              | Back end | :exclamation: |
+| 9                                                            | [bug9.p4](tofino/crash/bug9.p4)              | Back end | :heavy_check_mark: |
+| 10                                                           | [bug10.p4](tofino/crash/bug10.p4)            | Back end | :exclamation: |
+| 11                                                           | [bug11.p4](tofino/crash/bug11.p4)            | Back end | :exclamation: |
+| 12                                                           | [bug12.p4](tofino/crash/bug12.p4)            | Back end | :exclamation: |
+| 13                                                           | [bug13.p4](tofino/missing_pass/bug13.p4)     | Back end | Front end issue |
+| 14                                                           | [bug14.p4](tofino/crash/bug14.p4)            | Back end | :heavy_check_mark: |
+| 15                                                           | [bug15.p4](tofino/crash/bug15.p4)            | Back end | :heavy_check_mark: |
+| 16                                                           | [bug16.p4](tofino/crash/bug16.p4)            | Back end | :heavy_check_mark: |
+| 17                                                           | [bug17.p4](tofino/crash/bug17.p4)            | Back end | :exclamation: |
+| 18                                                           | [bug18.p4](tofino/crash/bug18.p4)            | Back end | :heavy_check_mark: |
+| 19                                                           | [bug19.p4](tofino/crash/bug19.p4)            | Back end | :exclamation: |
+| 20                                                           | [bug20.p4](tofino/crash/bug20.p4)            | Back end | :heavy_check_mark: |
+| 21                                                           | [bug21.p4](tofino/crash/bug21.p4)            | Back end | :heavy_check_mark: |
+| 22                                                           | [bug22.p4](tofino/crash/bug22.p4)            | Back end | :exclamation: |
+| 23                                                           | [bug23.p4](tofino/crash/bug23.p4)            | Back end | :exclamation: |
+| 24                                                           | [bug24.p4](tofino/crash/bug24.p4)            | Back end | :heavy_check_mark: |
+| 25                                                           | [bug25.p4](tofino/crash/bug25.p4)            | Back end | :exclamation: |
+| 26                                                           | [bug26.p4](tofino/crash/bug26.p4)            | Back end | :exclamation: |
+| 27                                                           | [bug27.p4](tofino/missing_pass/bug27.p4)     | Back end | Front end issue |
+| 28                                                           | [bug28.p4](tofino/crash/denied/bug28.p4)     | Back end | :x:    |
+| 29                                                           | [bug29.p4](tofino/missing_pass/bug29.p4)     | Back end | Front end issue |
+| 30                                                           | [bug30.p4](tofino/crash/bug30.p4)            | Back end | :exclamation: |
+| 31                                                           | [bug31.p4](tofino/crash/bug31.p4)            | Back end | :exclamation: |
+| 32                                                           | [bug32.p4](tofino/crash/denied/bug32.p4)     | Back end | :x:    |
+| 33                                                           | [bug33.p4](tofino/crash/bug33.p4)            | Back end | :exclamation: |
+| 34                                                           | [bug34.p4](tofino/missing_pass/bug34.p4)     | Back end | Front end issue  |
+| 35                                                           | [bug35.p4](tofino/crash/bug35.p4)            | Back end | :exclamation: |
 
-#### Tofino Semantic Bugs
+#### Tofino Semantic Bugs (P4Studio 9.3.0)
 
-| Issue                                                        | Location                    | Compiler Stage | Status    |
+| Issue                                                        | Name                    | Compiler Stage | Status    |
 | ------------------------------------------------------------ | --------------------------- | -------------- | --------- |
-| 1                                                            | [tofino/semantic/semantic_bug1.p4](tofino/semantic/semantic_bug1.p4)           | Back end | :exclamation: |
-| 2                                                            | [tofino/semantic/semantic_bug2.p4](tofino/semantic/semantic_bug2.p4)           | Back end | :exclamation: |
-| 3                                                            | [tofino/semantic/semantic_bug3.p4](tofino/semantic/semantic_bug3.p4)           | Back end | :exclamation: |
-| 4                                                            | [tofino/semantic/semantic_bug4.p4](tofino/semantic/semantic_bug4.p4)           | Back end | :exclamation: |
-| 5                                                            | [tofino/semantic/semantic_bug5.p4](tofino/semantic/semantic_bug5.p4)           | Back end | :exclamation: |
-| 6                                                            | [tofino/semantic/semantic_bug6.p4](tofino/semantic/denied/semantic_bug6.p4)    | Back end | :x:    |
-| 7                                                            | [tofino/semantic/semantic_bug7.p4](tofino/semantic/semantic_bug7.p4)           | Back end | :exclamation: |
-| 8                                                            | [tofino/semantic/semantic_bug8.p4](tofino/semantic/semantic_bug8.p4)           | Back end | :exclamation: |
-| 9                                                            | [tofino/semantic/semantic_bug9.p4](tofino/semantic/denied/semantic_bug9.p4)    | Back end | :x:    |
-| 10                                                           | [tofino/semantic/semantic_bug10.p4](tofino/semantic/denied/semantic_bug10.p4)  | Back end | :x:    |
+| 1                                                            | [semantic_bug1.p4](tofino/semantic/semantic_bug1.p4)           | Back end | :exclamation: |
+| 2                                                            | [semantic_bug2.p4](tofino/semantic/fixed/semantic_bug2.p4)           | Back end | :heavy_check_mark: |
+| 3                                                            | [semantic_bug3.p4](tofino/semantic/semantic_bug3.p4)           | Back end | :exclamation: |
+| 4                                                            | [semantic_bug4.p4](tofino/semantic/fixed/semantic_bug4.p4)           | Back end | :heavy_check_mark: |
+| 5                                                            | [semantic_bug5.p4](tofino/semantic/fixed/semantic_bug5.p4)           | Back end | :heavy_check_mark: |
+| 6                                                            | [semantic_bug6.p4](tofino/semantic/denied/semantic_bug6.p4)    | Back end | :x:    |
+| 7                                                            | [semantic_bug7.p4](tofino/semantic/fixed/semantic_bug7.p4)           | Back end | :heavy_check_mark: |
+| 8                                                            | [semantic_bug8.p4](tofino/semantic/fixed/semantic_bug8.p4)           | Back end | :heavy_check_mark: |
+| 9                                                            | [semantic_bug9.p4](tofino/semantic/denied/semantic_bug9.p4)    | Back end | :x:    |
+| 10                                                           | [semantic_bug10.p4](tofino/semantic/denied/semantic_bug10.p4)  | Back end | :x:    |
