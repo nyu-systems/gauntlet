@@ -173,10 +173,10 @@ class ConstCallExpr(P4Expression):
 
 class P4Package(P4Callable):
 
-    def __init__(self, z3_reg, name, params, type_params):
+    def __init__(self, p4_state, name, params, type_params):
         super(P4Package, self).__init__(name, params)
         self.pipes = OrderedDict()
-        self.z3_reg = z3_reg
+        self.prog_state = p4_state
         self.type_params = type_params
         self.type_context = {}
 
@@ -220,7 +220,7 @@ class P4Package(P4Callable):
                         self.type_context[ctrl_type_param_type] = param_type
                     args.append(param.name)
                 # create the z3 representation of this control state
-                p4_state = self.z3_reg.set_p4_state(pipe_name, pipe_val.params)
+                p4_state = self.prog_state.set_context(pipe_name, pipe_val.params)
                 # dp not need the types for now
                 context.type_contexts.pop()
                 context.type_contexts.pop()
@@ -646,7 +646,7 @@ class P4Table(P4Callable):
                 # FIXME: Implement
                 # will intentionally fail if no implementation is present
                 # impl = self.properties["implementation"]
-                # impl_extern = self.p4_state.resolve_reference(impl)
+                # impl_extern = self.prog_state.resolve_reference(impl)
                 key_pairs.append(z3.BoolVal(True))
             else:
                 # weird key, might be some specific specification

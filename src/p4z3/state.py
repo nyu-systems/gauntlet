@@ -70,9 +70,10 @@ class P4State():
     values. It also manages the execution chain of the program.
     """
 
-    def __init__(self):
+    def __init__(self, extern_extensions):
+        self.extern_extensions = extern_extensions
         self.name = "init_state"
-        self.global_context = P4Context({})
+        self.static_context = P4Context({})
         # deques allow for much more efficient pop and append operations
         # this is all we do so this works well
         self.contexts = deque()
@@ -220,7 +221,7 @@ class P4State():
         if self.contexts:
             return self.contexts[-1]
         else:
-            return self.global_context
+            return self.static_context
 
     def set_or_add_var(self, lval, rval, new_decl=False):
         if isinstance(lval, P4Slice):
@@ -286,7 +287,7 @@ class P4State():
             context, val = self.find_context(var)
             if not context:
                 try:
-                    return self.global_context.locals[var]
+                    return self.static_context.locals[var]
                 except KeyError:
                     raise RuntimeError(f"Variable {var} not found!")
             return val
@@ -311,12 +312,6 @@ class P4State():
         if contexts:
             self.contexts = contexts
 
-
-class Z3Reg():
-    def __init__(self, extern_extensions):
-        self.p4_state = P4State()
-        self.extern_extensions = extern_extensions
-
     def declare_global(self, p4_class):
         if isinstance(p4_class, (P4ComplexType, P4Extern)):
             name = p4_class.name
@@ -337,32 +332,26 @@ class Z3Reg():
             self.declare_type(name, p4_type)
         elif isinstance(p4_class, P4Declaration):
             name = p4_class.lval
-            rval = p4_class.compute_rval(self.p4_state)
+            rval = p4_class.compute_rval(self)
             self.declare_var(name, rval)
         else:
             raise RuntimeError(
                 "Unsupported global declaration %s" % type(p4_class))
 
-    def resolve_reference(self, var):
-        return self.p4_state.resolve_reference(var)
-
-    def resolve_expr(self, var):
-        return self.p4_state.resolve_expr(var)
-
     def declare_var(self, lval, rval):
-        self.p4_state.global_context.locals[lval] = rval
+        self.static_context.locals[lval] = rval
 
     def declare_type(self, lval, rval):
-        self.p4_state.global_type_map[lval] = rval
+        self.global_type_map[lval] = rval
 
-    def set_p4_state(self, name, p4_params):
+    def set_context(self, name, p4_params):
         stripped_args = []
         instances = {}
         for extern_set in self.extern_extensions:
             for extern_name, extern in extern_set.items():
                 self.declare_type(extern_name, extern)
         for param in p4_params:
-            p4_type = resolve_type(self.p4_state, param.p4_type)
+            p4_type = resolve_type(self, param.p4_type)
             if param.mode in ("inout", "out"):
                 # only inouts or outs matter as output
                 stripped_args.append((param.name, p4_type))
@@ -370,11 +359,8 @@ class Z3Reg():
                 # for other inputs we can instantiate something
                 instance = gen_instance(self, param.name, p4_type)
                 instances[param.name] = instance
-        self.p4_state.set_datatype(name, stripped_args, instances)
-        return self.p4_state
-
-    def get_type(self, type_name):
-        return self.p4_state.global_type_map[type_name]
+        self.set_datatype(name, stripped_args, instances)
+        return self
 
     def stack(self, z3_type, num):
         # Header stacks are a bit special because they are basically arrays
@@ -393,6 +379,6 @@ class Z3Reg():
         return val
 
     def get_main_function(self):
-        if "main" in self.p4_state.global_context.locals:
-            return self.p4_state.global_context.locals["main"]
+        if "main" in self.static_context.locals:
+            return self.static_context.locals["main"]
         return None
