@@ -15,16 +15,16 @@ class AssignmentStatement(P4Statement):
         self.lval = lval
         self.rval = rval
 
-    def eval(self, p4_state):
+    def eval(self, context):
         log.debug("Assigning %s to %s ", self.rval, self.lval)
-        rval_expr = p4_state.resolve_expr(self.rval)
+        rval_expr = context.resolve_expr(self.rval)
         # in assignments all complex types values are copied
         if isinstance(rval_expr, StructInstance):
             rval_expr = copy.copy(rval_expr)
         if isinstance(rval_expr, int):
-            lval = p4_state.resolve_expr(self.lval)
+            lval = context.resolve_expr(self.lval)
             rval_expr = z3_cast(rval_expr, lval.sort())
-        p4_state.set_or_add_var(self.lval, rval_expr)
+        context.set_or_add_var(self.lval, rval_expr)
 
 
 class MethodCallStmt(P4Statement):
@@ -32,8 +32,8 @@ class MethodCallStmt(P4Statement):
     def __init__(self, method_expr):
         self.method_expr = method_expr
 
-    def eval(self, p4_state):
-        self.method_expr.eval(p4_state)
+    def eval(self, context):
+        self.method_expr.eval(context)
 
 
 class BlockStatement(P4Statement):
@@ -41,10 +41,10 @@ class BlockStatement(P4Statement):
     def __init__(self, exprs):
         self.exprs = exprs
 
-    def eval(self, p4_state):
+    def eval(self, context):
         for expr in self.exprs:
-            expr.eval(p4_state)
-            if p4_state.has_exited or p4_state.current_context().has_returned:
+            expr.eval(context)
+            if context.p4_state.has_exited or context.has_returned:
                 break
 
 
@@ -58,40 +58,39 @@ class IfStatement(P4Statement):
         else:
             self.else_block = else_block
 
-    def eval(self, p4_state):
-        context = p4_state.current_context()
-        cond = z3.simplify(p4_state.resolve_expr(self.cond))
+    def eval(self, context):
+        cond = z3.simplify(context.resolve_expr(self.cond))
         forward_cond_copy = context.tmp_forward_cond
         then_vars = None
         if not z3.is_false(cond):
-            var_store, contexts = p4_state.checkpoint()
+            var_store, contexts = context.checkpoint()
             context.tmp_forward_cond = z3.And(forward_cond_copy, cond)
             try:
-                self.then_block.eval(p4_state)
+                self.then_block.eval(context)
             except ParserException:
-                RejectState().eval(p4_state)
-            if not(context.has_returned or p4_state.has_exited):
-                then_vars = p4_state.get_attrs()
-            p4_state.has_exited = False
+                RejectState().eval(context)
+            if not(context.has_returned or context.p4_state.has_exited):
+                then_vars = context.get_attrs()
+            context.p4_state.has_exited = False
             context.has_returned = False
-            p4_state.restore(var_store, contexts)
+            context.restore(var_store, contexts)
 
         if not z3.is_true(cond):
-            var_store, contexts = p4_state.checkpoint()
+            var_store, contexts = context.checkpoint()
             context.tmp_forward_cond = z3.And(forward_cond_copy, z3.Not(cond))
             try:
-                self.else_block.eval(p4_state)
+                self.else_block.eval(context)
             except ParserException:
-                RejectState().eval(p4_state)
-            if p4_state.has_exited or context.has_returned:
-                p4_state.restore(var_store, contexts)
-            p4_state.has_exited = False
+                RejectState().eval(context)
+            if context.p4_state.has_exited or context.has_returned:
+                context.restore(var_store, contexts)
+            context.p4_state.has_exited = False
             context.has_returned = False
 
         context.tmp_forward_cond = forward_cond_copy
 
         if then_vars:
-            merge_attrs(p4_state, cond, then_vars)
+            merge_attrs(context, cond, then_vars)
 
 
 class SwitchStatement(P4Statement):
@@ -109,10 +108,9 @@ class SwitchStatement(P4Statement):
             return
         self.case_blocks[action_str] = case_stmt
 
-    def eval_cases(self, p4_state, cases):
+    def eval_cases(self, context, cases):
         case_exprs = []
         case_matches = []
-        context = p4_state.current_context()
         forward_cond_copy = context.tmp_forward_cond
         fall_through_matches = []
         for case_match, case_block in cases.values():
@@ -124,32 +122,32 @@ class SwitchStatement(P4Statement):
             # matches the condition OR all the other fall-through switches
             case_match = z3.Or(case_match, *fall_through_matches)
             fall_through_matches.clear()
-            var_store, contexts = p4_state.checkpoint()
+            var_store, contexts = context.checkpoint()
             context.tmp_forward_cond = z3.And(
                 forward_cond_copy, case_match)
-            case_block.eval(p4_state)
-            if not (context.has_returned or p4_state.has_exited):
-                then_vars = p4_state.get_attrs()
+            case_block.eval(context)
+            if not (context.has_returned or context.p4_state.has_exited):
+                then_vars = context.get_attrs()
                 case_exprs.append((case_match, then_vars))
             context.has_returned = False
-            p4_state.has_exited = False
-            p4_state.restore(var_store, contexts)
+            context.p4_state.has_exited = False
+            context.restore(var_store, contexts)
             case_matches.append(case_match)
-        var_store, contexts = p4_state.checkpoint()
+        var_store, contexts = context.checkpoint()
         # process the default expression
         cond = z3.Not(z3.Or(*case_matches))
         context.tmp_forward_cond = z3.And(forward_cond_copy, cond)
-        self.default_case.eval(p4_state)
-        if context.has_returned or p4_state.has_exited:
-            p4_state.restore(var_store, contexts)
+        self.default_case.eval(context)
+        if context.has_returned or context.p4_state.has_exited:
+            context.restore(var_store, contexts)
         context.has_returned = False
-        p4_state.has_exited = False
+        context.p4_state.has_exited = False
         context.tmp_forward_cond = forward_cond_copy
         # merge all the expressions in reverse order
         for cond, then_vars in reversed(case_exprs):
-            merge_attrs(p4_state, cond, then_vars)
+            merge_attrs(context, cond, then_vars)
 
-    def eval_switch_table_matches(self, p4_state, table):
+    def eval_switch_table_matches(self, context, table):
         cases = {}
         if table.immutable:
             # if the table is immutable we can only match on const entries
@@ -161,7 +159,7 @@ class SwitchStatement(P4Statement):
                 # compute the match key
                 # FIXME: Deal with side effects here
                 # Maybe just checkpoint and restore? Ugh. So expensive...
-                match_cond = table.get_const_matches(p4_state, c_keys)
+                match_cond = table.get_const_matches(context, c_keys)
                 action = table.actions[action_name][0]
                 if action_name in cases:
                     prev_match, _ = cases[action_name]
@@ -189,29 +187,29 @@ class SwitchStatement(P4Statement):
                 cases[case_name] = (match_cond, case_block)
         return cases
 
-    def eval_switch_expr_matches(self, p4_state, switch_expr):
+    def eval_switch_expr_matches(self, context, switch_expr):
         cases = {}
         for case_val, case_block in self.case_blocks.items():
             # assume the value has no side-effects
-            case_val = p4_state.resolve_expr(case_val)
+            case_val = context.resolve_expr(case_val)
             match_cond = switch_expr == case_val
             cases[case_val] = (match_cond, case_block)
         return cases
 
-    def eval(self, p4_state):
-        switch_expr = p4_state.resolve_expr(self.switch_expr)
+    def eval(self, context):
+        switch_expr = context.resolve_expr(self.switch_expr)
         if isinstance(switch_expr, P4Table):
             # check whether we are dealing with a table switch case
-            cases = self.eval_switch_table_matches(p4_state, table=switch_expr)
+            cases = self.eval_switch_table_matches(context, table=switch_expr)
         else:
             # or just a general switch case on an expression
-            cases = self.eval_switch_expr_matches(p4_state, switch_expr)
-        self.eval_cases(p4_state, cases)
+            cases = self.eval_switch_expr_matches(context, switch_expr)
+        self.eval_cases(context, cases)
 
 
 class P4Noop(P4Statement):
 
-    def eval(self, p4_state):
+    def eval(self, context):
         pass
 
 
@@ -219,27 +217,26 @@ class P4Return(P4Statement):
     def __init__(self, expr=None):
         self.expr = expr
 
-    def eval(self, p4_state):
-        context = p4_state.current_context()
+    def eval(self, context):
 
         if self.expr is None:
             expr = None
         else:
             # resolve the expr before restoring the state
-            expr = p4_state.resolve_expr(self.expr)
+            expr = context.resolve_expr(self.expr)
             if isinstance(context.return_type, z3.BitVecSortRef):
                 expr = z3_cast(expr, context.return_type)
             # we return a complex typed expression list, instantiate
             if isinstance(expr, list):
                 # name is meaningless here so keep it empty
-                instance = gen_instance(p4_state, "", context.return_type)
+                instance = gen_instance(context, "", context.return_type)
                 instance.set_list(expr)
                 expr = instance
 
         cond = z3.simplify(z3.And(z3.Not(z3.Or(*context.forward_conds)),
                                   context.tmp_forward_cond))
         if not z3.is_false(cond):
-            context.return_states.append((cond, p4_state.copy_attrs()))
+            context.return_states.append((cond, context.copy_attrs()))
             if expr is not None:
                 context.return_exprs.append((cond, expr))
             context.has_returned = True
@@ -248,22 +245,23 @@ class P4Return(P4Statement):
 
 class P4Exit(P4Statement):
 
-    def eval(self, p4_state):
+    def eval(self, context):
         # FIXME: This checkpointing should not be necessary
         # Figure out what is going on
-        var_store, contexts = p4_state.checkpoint()
+        var_store, contexts = context.checkpoint()
         forward_conds = []
         tmp_forward_conds = []
-        for context in reversed(p4_state.contexts):
-            context.copy_out(p4_state)
-            forward_conds.extend(context.forward_conds)
-            tmp_forward_conds.append(context.tmp_forward_cond)
-        context = p4_state.current_context()
+        sub_ctx = context
+        while sub_ctx is not None:
+            sub_ctx.copy_out(context)
+            forward_conds.extend(sub_ctx.forward_conds)
+            tmp_forward_conds.append(sub_ctx.tmp_forward_cond)
+            sub_ctx = sub_ctx.parent_context
 
         cond = z3.simplify(z3.And(z3.Not(z3.Or(*forward_conds)),
                                   z3.And(*tmp_forward_conds)))
         if not z3.is_false(cond):
-            p4_state.exit_states.append((cond, p4_state.get_members()))
-            p4_state.has_exited = True
-        p4_state.restore(var_store, contexts)
+            context.p4_state.exit_states.append((cond, context.p4_state.get_members(context)))
+            context.p4_state.has_exited = True
+        context.restore(var_store, contexts)
         context.forward_conds.append(context.tmp_forward_cond)

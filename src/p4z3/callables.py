@@ -7,12 +7,12 @@ from p4z3.base import DefaultExpression, P4Extern, propagate_validity_bit
 from p4z3.base import P4Expression, P4Argument, P4Range, resolve_type, ListType
 
 
-def save_variables(p4_state, merged_args):
+def save_variables(context, merged_args):
     var_buffer = OrderedDict()
     # save all the variables that may be overridden
     for param_name, arg in merged_args.items():
         try:
-            param_val = p4_state.resolve_reference(param_name)
+            param_val = context.resolve_reference(param_name)
             var_buffer[param_name] = (arg.mode, arg.p4_val, param_val)
         except RuntimeError:
             # if the variable name does not exist, set the value to None
@@ -69,11 +69,11 @@ class MethodCallExpr(P4Expression):
         # this happens because of default values, no idea how to resolve yet
         return method_list[-1]
 
-    def eval(self, p4_state):
+    def eval(self, context):
         p4_method = self.p4_method
         # if we get a reference just try to find the method in the state
         if not callable(p4_method):
-            p4_method = p4_state.resolve_expr(p4_method)
+            p4_method = context.resolve_expr(p4_method)
         # methods may be overloaded
         # we use a dumb method where we match the number of parameters
         if isinstance(p4_method, list):
@@ -81,8 +81,8 @@ class MethodCallExpr(P4Expression):
         # Method calls might sometimes have type arguments
         # bind the method
         if isinstance(p4_method, P4Method) and self.type_args:
-            p4_method = p4_method.init_type_params(p4_state, *self.type_args)
-        return p4_method(p4_state, *self.args, **self.kwargs)
+            p4_method = p4_method.init_type_params(context, *self.type_args)
+        return p4_method(context, *self.args, **self.kwargs)
 
 
 class P4Callable(P4Z3Class):
@@ -93,46 +93,44 @@ class P4Callable(P4Z3Class):
         self.call_counter = 0
         self.locals = {}
 
-    def eval_callable(self, p4_state, merged_args, var_buffer):
+    def eval_callable(self, context, merged_args, var_buffer):
         raise NotImplementedError("Method eval_callable not implemented!")
 
-    def eval(self, p4_state, *args, **kwargs):
+    def eval(self, context, *args, **kwargs):
         merged_args = merge_parameters(self.params, *args, **kwargs)
-        var_buffer = save_variables(p4_state, merged_args)
-        param_buffer = self.copy_in(p4_state, merged_args)
+        var_buffer = save_variables(context, merged_args)
+        param_buffer = self.copy_in(context, merged_args)
         # only add the context after all the arguments have been resolved
-        context = P4Context(p4_state.current_context(), var_buffer)
-        p4_state.contexts.append(context)
+        sub_ctx = P4Context(context, var_buffer)
         # now we can set the arguments without influencing subsequent variables
         for param_name, param_val in param_buffer.items():
-            p4_state.set_or_add_var(param_name, param_val)
+            sub_ctx.set_or_add_var(param_name, param_val)
 
         # execute the action expression with the new environment
-        expr = self.eval_callable(p4_state, merged_args, var_buffer)
+        expr = self.eval_callable(sub_ctx, merged_args, var_buffer)
         self.call_counter += 1
 
-        while context.return_states:
-            cond, return_attrs = context.return_states.pop()
-            merge_attrs(p4_state, cond, return_attrs)
-        context.copy_out(p4_state)
-        p4_state.contexts.pop()
+        while sub_ctx.return_states:
+            cond, return_attrs = sub_ctx.return_states.pop()
+            merge_attrs(sub_ctx, cond, return_attrs)
+        sub_ctx.copy_out(context)
         return expr
 
-    def __call__(self, p4_state, *args, **kwargs):
+    def __call__(self, context, *args, **kwargs):
         raise NotImplementedError("Method __call__ not implemented!")
 
-    def copy_in(self, p4_state, merged_args):
+    def copy_in(self, context, merged_args):
         param_buffer = OrderedDict()
         for param_name, arg in merged_args.items():
             # Sometimes expressions are passed, resolve those first
-            arg_expr = p4_state.resolve_expr(arg.p4_val)
+            arg_expr = context.resolve_expr(arg.p4_val)
             # it can happen that we receive a list
             # infer the type, generate, and set
-            p4_type = resolve_type(p4_state, arg.p4_type)
+            p4_type = resolve_type(context, arg.p4_type)
             if isinstance(arg_expr, list):
                 # if the type is undefined, do nothing
                 if isinstance(p4_type, P4ComplexType):
-                    arg_instance = gen_instance(p4_state, UNDEF_LABEL, p4_type)
+                    arg_instance = gen_instance(context, UNDEF_LABEL, p4_type)
                     arg_instance.set_list(arg_expr)
                     arg_expr = arg_instance
             # it is possible to pass an int as value, we need to cast it
@@ -149,7 +147,7 @@ class P4Callable(P4Z3Class):
                 # In the case that the instance is a complex type make sure
                 # to propagate the variable through all its members
                 log.debug("Resetting %s to %s", arg_expr, param_name)
-                arg_expr = gen_instance(p4_state, UNDEF_LABEL, p4_type)
+                arg_expr = gen_instance(context, UNDEF_LABEL, p4_type)
 
             log.debug("Copy-in: %s to %s", arg_expr, param_name)
             # buffer the value, do NOT set it yet
@@ -171,13 +169,15 @@ class ConstCallExpr(P4Expression):
         p4_method = resolve_type(context, self.p4_method)
         return p4_method.initialize(context, *self.args, **self.kwargs)
 
+
 class P4Package(P4Callable):
 
-    def __init__(self, name, params, type_params):
+    def __init__(self, name, p4_state, params, type_params):
         super(P4Package, self).__init__(name, params)
         self.pipes = OrderedDict()
         self.type_params = type_params
         self.type_context = {}
+        self.p4_state = p4_state
 
     def init_type_params(self, context, *args, **kwargs):
         init_package = copy.copy(self)
@@ -186,15 +186,15 @@ class P4Package(P4Callable):
             init_package.type_context[t_param] = arg
         return init_package
 
-    def create_z3_represenation(self, p4_state):
-        members = p4_state.get_members()
+    def create_z3_representation(self, context):
+        members = self.p4_state.get_members(context)
         # and also merge back all the exit states we collected
-        for exit_cond, exit_state in reversed(p4_state.exit_states):
+        for exit_cond, exit_state in reversed(self.p4_state.exit_states):
             for idx, exit_member in enumerate(exit_state):
                 members[idx] = z3.If(exit_cond, exit_member, members[idx])
-        return p4_state.z3_type.constructor(0)(*members)
+        return self.p4_state.z3_type.constructor(0)(*members)
 
-    def initialize(self, p4_state, *args, **kwargs):
+    def initialize(self, context, *args, **kwargs):
         merged_args = merge_parameters(self.params, *args, **kwargs)
         for pipe_name, pipe_arg in merged_args.items():
             if pipe_arg.p4_val is None:
@@ -202,44 +202,45 @@ class P4Package(P4Callable):
                 # FIXME: This should not happen. Why?
                 continue
             log.info("Loading %s pipe...", pipe_name)
-            pipe_val = p4_state.resolve_expr(pipe_arg.p4_val)
+            pipe_val = context.resolve_expr(pipe_arg.p4_val)
             if isinstance(pipe_val, P4Control):
                 # This boilerplate is all necessary to initialize state...
                 # FIXME: Ideally, this should be handled by the control...
-                sub_ctx = P4Context(p4_state.current_context(), {})
-                p4_state.contexts.append(sub_ctx)
+                sub_ctx = P4Context(context, {})
+                self.p4_state.contexts.append(sub_ctx)
                 for type_name, p4_type in self.type_context.items():
                     sub_ctx.add_type(
-                        type_name, resolve_type(p4_state, p4_type))
-                ctrl_type = resolve_type(p4_state, pipe_arg.p4_type)
-                pipe_val = pipe_val.bind_to_ctrl_type(p4_state, ctrl_type)
+                        type_name, resolve_type(sub_ctx, p4_type))
+                ctrl_type = resolve_type(sub_ctx, pipe_arg.p4_type)
+                pipe_val = pipe_val.bind_to_ctrl_type(sub_ctx, ctrl_type)
                 for type_name, p4_type in ctrl_type.type_context.items():
                     sub_ctx.add_type(
-                        type_name, resolve_type(p4_state, p4_type))
+                        type_name, resolve_type(sub_ctx, p4_type))
                 args = []
                 for idx, param in enumerate(pipe_val.params):
                     ctrl_type_param_type = ctrl_type.params[idx].p4_type
-                    generic_type = resolve_type(p4_state, ctrl_type_param_type)
+                    generic_type = resolve_type(sub_ctx, ctrl_type_param_type)
                     if generic_type is None:
-                        param_type = resolve_type(p4_state, param.p4_type)
+                        param_type = resolve_type(sub_ctx, param.p4_type)
                         self.type_context[ctrl_type_param_type] = param_type
                     args.append(param.name)
                 # create the z3 representation of this control state
-                p4_state.set_context(pipe_name, pipe_val.params)
-
+                self.p4_state.set_context(pipe_name, pipe_val.params)
                 # initialize the call with its own params we collected
                 # this is essentially the input packet
-                pipe_val.apply(p4_state, *args)
+                pipe_val.apply(self.p4_state.current_context(), *args)
                 # after executing the pipeline get its z3 representation
-                state = self.create_z3_represenation(p4_state)
+                state = self.create_z3_representation(
+                    self.p4_state.current_context())
                 # all done, that is our P4 representation!
-                self.pipes[pipe_name] = (state, p4_state.members, pipe_val)
+                self.pipes[pipe_name] = (
+                    state, self.p4_state.members, pipe_val)
             elif isinstance(pipe_val, P4Extern):
                 var = z3.Const(f"{pipe_name}{pipe_val.name}", pipe_val.z3_type)
                 self.pipes[pipe_name] = (var, [], pipe_val)
             elif isinstance(pipe_val, P4Package):
                 # execute the package by calling its initializer
-                pipe_val.initialize(p4_state)
+                pipe_val.initialize(context)
                 # resolve all the sub_pipes
                 for sub_pipe_name, sub_pipe_val in pipe_val.pipes.items():
                     sub_pipe_name = f"{pipe_name}_{sub_pipe_name}"
@@ -256,16 +257,15 @@ class P4Package(P4Callable):
     def get_pipes(self):
         return self.pipes
 
-
 class P4Action(P4Callable):
 
-    def eval_callable(self, p4_state, merged_args, var_buffer):
+    def eval_callable(self, context, merged_args, var_buffer):
         # actions can modify global variables so do not save the p4 state
         # the only variables that do need to be restored are copy-ins/outs
-        self.statements.eval(p4_state)
+        self.statements.eval(context)
 
-    def __call__(self, p4_state, *args, **kwargs):
-        return self.eval(p4_state, *args, **kwargs)
+    def __call__(self, context, *args, **kwargs):
+        return self.eval(context, *args, **kwargs)
 
 class P4Function(P4Action):
 
@@ -273,11 +273,10 @@ class P4Function(P4Action):
         super(P4Function, self).__init__(name, params, body)
         self.return_type = return_type
 
-    def eval_callable(self, p4_state, merged_args, var_buffer):
+    def eval_callable(self, context, merged_args, var_buffer):
         # execute the action expression with the new environment
-        context = p4_state.current_context()
         context.return_type = self.return_type
-        self.statements.eval(p4_state)
+        self.statements.eval(context)
         return_expr = None
         if len(context.return_exprs) == 1:
             _, return_expr = context.return_exprs.pop()
@@ -344,28 +343,26 @@ class P4Control(P4Callable):
                 ctrl_copy.type_context[const_param.p4_type] = args[idx].sort()
         return ctrl_copy
 
-    def apply(self, p4_state, *args, **kwargs):
-        context = p4_state.current_context()
+    def apply(self, context, *args, **kwargs):
         for type_name, p4_type in self.type_context.items():
-            context.add_type(type_name, resolve_type(p4_state, p4_type))
-        self.eval(p4_state, *args, **kwargs)
+            context.add_type(type_name, resolve_type(context, p4_type))
+        self.eval(context, *args, **kwargs)
 
-    def eval_callable(self, p4_state, merged_args, var_buffer):
+    def eval_callable(self, context, merged_args, var_buffer):
         # initialize the local context of the function for execution
-        context = p4_state.current_context()
 
-        merged_vars = save_variables(p4_state, self.merged_consts)
+        merged_vars = save_variables(context, self.merged_consts)
         context.prepend_to_buffer(merged_vars)
 
         for const_param_name, const_arg in self.merged_consts.items():
             const_val = const_arg.p4_val
-            const_val = p4_state.resolve_expr(const_val)
-            p4_state.set_or_add_var(const_param_name, const_val)
+            const_val = context.resolve_expr(const_val)
+            context.set_or_add_var(const_param_name, const_val)
         for expr in self.local_decls:
-            expr.eval(p4_state)
-            if p4_state.has_exited or context.has_returned:
+            expr.eval(context)
+            if context.p4_state.has_exited or context.has_returned:
                 break
-        self.statements.eval(p4_state)
+        self.statements.eval(context)
 
     def __copy__(self):
         cls = self.__class__
@@ -393,12 +390,11 @@ class P4Method(P4Callable):
         self.type_context = {}
         self.extern_context = {}
 
-    def assign_values(self, p4_state, method_args):
+    def assign_values(self, context, method_args):
         for param_name, arg in method_args.items():
             arg_mode, arg_ref, arg_expr, p4_src_type = arg
             # infer the type
-            context = p4_state.current_context()
-            p4_type = resolve_type(p4_state, p4_src_type)
+            p4_type = resolve_type(context, p4_src_type)
             # This is dynamic type inference based on arguments
             # FIXME Check this hack.
             if p4_type is None:
@@ -406,7 +402,7 @@ class P4Method(P4Callable):
                     # synthesize a list type from the input list
                     # this mostly just a dummy
                     # FIXME: Need to get the actual sub-types
-                    p4_type = ListType("tuple", p4_state, arg_expr)
+                    p4_type = ListType("tuple", context, arg_expr)
                 else:
                     p4_type = arg_expr.sort()
                 context.add_type(p4_src_type, p4_type)
@@ -417,7 +413,7 @@ class P4Method(P4Callable):
                 continue
 
             arg_name = f"{self.name}_{param_name}"
-            arg_expr = gen_instance(p4_state, arg_name, p4_type)
+            arg_expr = gen_instance(context, arg_name, p4_type)
 
             if isinstance(arg_expr, StructInstance):
                 # # In the case that the instance is a complex type make sure
@@ -427,12 +423,11 @@ class P4Method(P4Callable):
                 # we do not know whether the expression is valid afterwards
                 propagate_validity_bit(arg_expr)
             # (in)outs are left-values so the arg_ref must be a string
-            p4_state.set_or_add_var(arg_ref, arg_expr)
+            context.set_or_add_var(arg_ref, arg_expr)
 
-    def __call__(self, p4_state, *args, **kwargs):
+    def __call__(self, context, *args, **kwargs):
         merged_args = merge_parameters(self.params, *args, **kwargs)
-        context = P4Context(p4_state.current_context(), {})
-        p4_state.contexts.append(context)
+        sub_ctx = P4Context(context, {})
         # resolve the inputs *before* we bind types
         method_args = {}
         for param_name, arg in merged_args.items():
@@ -440,25 +435,23 @@ class P4Method(P4Callable):
             if arg.p4_val is None:
                 # sometimes we get optional parameters
                 # FIXME: I do not actually know how to resolve them right now
-                arg_expr = gen_instance(p4_state, "optional", arg.p4_type)
+                arg_expr = gen_instance(sub_ctx, "optional", arg.p4_type)
             else:
-                arg_expr = p4_state.resolve_expr(arg.p4_val)
+                arg_expr = sub_ctx.resolve_expr(arg.p4_val)
             method_args[param_name] = (
                 arg.mode, arg.p4_val, arg_expr, arg.p4_type)
 
         # apply the local and parent extern type contexts
-        context = p4_state.current_context()
         for type_name, p4_type in self.extern_context.items():
-            context.add_type(type_name, resolve_type(p4_state, p4_type))
+            sub_ctx.add_type(type_name, resolve_type(sub_ctx, p4_type))
         for type_name, p4_type in self.type_context.items():
-            context.add_type(type_name, resolve_type(p4_state, p4_type))
+            sub_ctx.add_type(type_name, resolve_type(sub_ctx, p4_type))
 
         # assign symbolic values to the inputs that are inout and out
-        self.assign_values(p4_state, method_args)
+        self.assign_values(sub_ctx, method_args)
 
         # execute the return expression within the new type environment
-        expr = self.eval_callable(p4_state, merged_args, {})
-        p4_state.contexts.pop()
+        expr = self.eval_callable(sub_ctx, merged_args, {})
         self.call_counter += 1
         return expr
 
@@ -479,7 +472,7 @@ class P4Method(P4Callable):
             init_method.type_context[t_param] = arg
         return init_method
 
-    def eval_callable(self, p4_state, merged_args, var_buffer):
+    def eval_callable(self, context, merged_args, var_buffer):
         # initialize the local context of the function for execution
         if self.return_type is None:
             return None
@@ -487,7 +480,7 @@ class P4Method(P4Callable):
         # we generate the name based on the input arguments
         # var_name = ""
         # for arg in merged_args.values():
-        #     arg = p4_state.resolve_expr(arg.p4_val)
+        #     arg = context.resolve_expr(arg.p4_val)
         #     # fold runtime-known values
         #     if isinstance(arg, z3.AstRef):
         #         arg = z3.simplify(arg)
@@ -505,7 +498,7 @@ class P4Method(P4Callable):
         # we merge the name
         # FIXME: We do not consider call order
         # and assume that externs are stateless
-        return_instance = gen_instance(p4_state, self.name, self.return_type)
+        return_instance = gen_instance(context, self.name, self.return_type)
         # a returned header may or may not be valid
         if isinstance(return_instance, StructInstance):
             propagate_validity_bit(return_instance)
@@ -587,17 +580,17 @@ class P4Table(P4Callable):
             action_name, action_args = resolve_action(action_expr)
             self.const_entries.append((const_keys, (action_name, action_args)))
 
-    def apply(self, p4_state):
-        self.eval(p4_state)
+    def apply(self, context):
+        self.eval(context)
         return self
 
-    def eval_keys(self, p4_state):
+    def eval_keys(self, context):
         key_pairs = []
         if not self.keys:
             # there is nothing to match with...
             return z3.BoolVal(False)
         for index, (key_expr, key_type) in enumerate(self.keys):
-            key_eval = p4_state.resolve_expr(key_expr)
+            key_eval = context.resolve_expr(key_expr)
             key_sort = key_eval.sort()
             key_match = z3.Const(f"{self.name}_table_key_{index}", key_sort)
             if key_type == "exact":
@@ -652,8 +645,8 @@ class P4Table(P4Callable):
                 raise RuntimeError(f"Key type {key_type} not supported!")
         return z3.And(key_pairs)
 
-    def eval_action(self, p4_state, action_name, action_args):
-        p4_action = p4_state.resolve_reference(action_name)
+    def eval_action(self, context, action_name, action_args):
+        p4_action = context.resolve_reference(action_name)
         if not isinstance(p4_action, P4Action):
             raise TypeError(f"Expected a P4Action got {type(p4_action)}!")
         merged_action_args = []
@@ -661,19 +654,19 @@ class P4Table(P4Callable):
         for idx, param in enumerate(p4_action.params):
             if idx > action_args_len:
                 # this is a ctrl argument, generate an input
-                ctrl_arg = gen_instance(p4_state, f"{self.name}{param.name}",
+                ctrl_arg = gen_instance(context, f"{self.name}{param.name}",
                                         param.p4_type)
                 merged_action_args.append(ctrl_arg)
             else:
                 merged_action_args.append(action_args[idx])
-        return p4_action(p4_state, *merged_action_args)
+        return p4_action(context, *merged_action_args)
 
-    def eval_default(self, p4_state):
+    def eval_default(self, context):
         _, action_name, action_args = self.default_action
         log.debug("Evaluating default action...")
-        return self.eval_action(p4_state, action_name, action_args)
+        return self.eval_action(context, action_name, action_args)
 
-    def get_const_matches(self, p4_state, c_keys):
+    def get_const_matches(self, context, c_keys):
         matches = []
         # match the constant keys with the normal table keys
         # this generates the match expression for a specific constant entry
@@ -685,93 +678,90 @@ class P4Table(P4Callable):
             if isinstance(c_key_expr, DefaultExpression):
                 continue
             # TODO: Unclear about the role of side-effects here
-            key_eval = p4_state.resolve_expr(key_expr)
+            key_eval = context.resolve_expr(key_expr)
             if isinstance(c_key_expr, P4Range):
-                x = p4_state.resolve_expr(c_key_expr.min)
-                y = p4_state.resolve_expr(c_key_expr.max)
+                x = context.resolve_expr(c_key_expr.min)
+                y = context.resolve_expr(c_key_expr.max)
                 c_key_eval = z3.And(z3.ULE(x, key_eval),
                                     z3.UGE(y, key_eval))
                 matches.append(c_key_eval)
             elif isinstance(c_key_expr, P4Mask):
                 # TODO: Unclear about the role of side-effects here
-                val = p4_state.resolve_expr(c_key_expr.value)
-                mask = p4_state.resolve_expr(c_key_expr.mask)
+                val = context.resolve_expr(c_key_expr.value)
+                mask = context.resolve_expr(c_key_expr.mask)
                 c_key_eval = (val & mask) == (key_eval & mask)
                 matches.append(c_key_eval)
             else:
-                c_key_eval = p4_state.resolve_expr(c_key_expr)
+                c_key_eval = context.resolve_expr(c_key_expr)
                 matches.append(key_eval == c_key_eval)
         return z3.And(*matches)
 
-    def eval_const_entries(self, p4_state, action_exprs, action_matches):
-        context = p4_state.current_context()
+    def eval_const_entries(self, context, action_exprs, action_matches):
         forward_cond_copy = context.tmp_forward_cond
         for c_keys, (action_name, action_args) in reversed(self.const_entries):
 
-            action_match = self.get_const_matches(p4_state, c_keys)
+            action_match = self.get_const_matches(context, c_keys)
             log.debug("Evaluating constant action %s...", action_name)
             # state forks here
-            var_store, contexts = p4_state.checkpoint()
+            var_store, contexts = context.checkpoint()
             cond = z3.And(self.locals["hit"], action_match)
             context.tmp_forward_cond = z3.And(forward_cond_copy, cond)
-            self.eval_action(p4_state, action_name, action_args)
-            if not p4_state.has_exited:
-                action_exprs.append((cond, p4_state.get_attrs()))
-            p4_state.has_exited = False
+            self.eval_action(context, action_name, action_args)
+            if not context.p4_state.has_exited:
+                action_exprs.append((cond, context.get_attrs()))
+            context.p4_state.has_exited = False
             action_matches.append(action_match)
-            p4_state.restore(var_store, contexts)
+            context.restore(var_store, contexts)
 
-    def eval_table_entries(self, p4_state, action_exprs, action_matches):
-        context = p4_state.current_context()
+    def eval_table_entries(self, context, action_exprs, action_matches):
         forward_cond_copy = context.tmp_forward_cond
         for act_id, act_name, act_args in reversed(self.actions.values()):
             action_match = (self.tbl_action == z3.IntVal(act_id))
             log.debug("Evaluating action %s...", act_name)
             # state forks here
-            var_store, contexts = p4_state.checkpoint()
+            var_store, contexts = context.checkpoint()
             cond = z3.And(self.locals["hit"], action_match)
             context.tmp_forward_cond = z3.And(forward_cond_copy, cond)
-            self.eval_action(p4_state, act_name, act_args)
-            if not p4_state.has_exited:
-                action_exprs.append((cond, p4_state.get_attrs()))
-            p4_state.has_exited = False
+            self.eval_action(context, act_name, act_args)
+            if not context.p4_state.has_exited:
+                action_exprs.append((cond, context.get_attrs()))
+            context.p4_state.has_exited = False
             action_matches.append(action_match)
-            p4_state.restore(var_store, contexts)
+            context.restore(var_store, contexts)
 
-    def eval_table(self, p4_state):
+    def eval_table(self, context):
         action_exprs = []
         action_matches = []
-        context = p4_state.current_context()
         forward_cond_copy = context.tmp_forward_cond
 
         # only bother to evaluate if the table can actually hit
         if not z3.is_false(self.locals["hit"]):
             # note: the action lists are pass by reference here
             # first evaluate all the constant entries
-            self.eval_const_entries(p4_state, action_exprs, action_matches)
+            self.eval_const_entries(context, action_exprs, action_matches)
             # then append dynamic table entries to the constant entries
             # only do this if the table can actually be manipulated
             if not self.immutable:
-                self.eval_table_entries(p4_state, action_exprs, action_matches)
+                self.eval_table_entries(context, action_exprs, action_matches)
         # finally start evaluating the default entry
-        var_store, contexts = p4_state.checkpoint()
+        var_store, contexts = context.checkpoint()
         # this hits when the table is either missed, or no action matches
         cond = z3.Or(self.locals["miss"], z3.Not(z3.Or(*action_matches)))
         context.tmp_forward_cond = z3.And(forward_cond_copy, cond)
-        self.eval_default(p4_state)
-        if p4_state.has_exited:
-            p4_state.restore(var_store, contexts)
-        p4_state.has_exited = False
+        self.eval_default(context)
+        if context.p4_state.has_exited:
+            context.restore(var_store, contexts)
+        context.p4_state.has_exited = False
         context.tmp_forward_cond = forward_cond_copy
         # generate a nested set of if expressions per available action
         for cond, then_vars in action_exprs:
-            merge_attrs(p4_state, cond, then_vars)
+            merge_attrs(context, cond, then_vars)
 
-    def eval_callable(self, p4_state, merged_args, var_buffer):
+    def eval_callable(self, context, merged_args, var_buffer):
         # tables are a little bit special since they also have attributes
         # so what we do here is first initialize the key
-        hit = self.eval_keys(p4_state)
+        hit = self.eval_keys(context)
         self.locals["hit"] = z3.simplify(hit)
         self.locals["miss"] = z3.Not(hit)
         # then execute the table as the next expression in the chain
-        self.eval_table(p4_state)
+        self.eval_table(context)
