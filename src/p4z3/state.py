@@ -7,8 +7,8 @@ from p4z3.base import log
 from p4z3.base import StaticType, P4Z3Class, P4Expression
 from p4z3.base import P4Slice, P4ComplexType, P4Member
 from p4z3.base import StructInstance, P4ComplexInstance, HeaderStack
-from p4z3.base import propagate_validity_bit, resolve_type, z3_cast
-from p4z3.base import gen_instance, TypeDeclaration, Enum
+from p4z3.base import resolve_type, z3_cast
+from p4z3.base import TypeDeclaration, Enum
 from p4z3.base import P4Extern, P4Declaration, ControlDeclaration
 
 from p4z3.z3int import Z3Int
@@ -17,9 +17,9 @@ from p4z3.z3int import Z3Int
 class P4Context():
 
     def __init__(self, parent_context, var_buffer):
+        self.master_context = parent_context.master_context
         self.parent_context = parent_context
-        if parent_context:
-            self.p4_state = parent_context.p4_state
+
         self.var_buffer = var_buffer
         self.has_returned = False
         # to merge the return exprs after a callable has completed
@@ -65,8 +65,17 @@ class P4Context():
                 # this assumes an lvalue as input
                 context.set_or_add_var(par_ref, val)
 
-    def set_p4_state(self, p4_state):
-        self.p4_state = p4_state
+    def set_exited(self, exit_state):
+        self.master_context.p4_state.has_exited = exit_state
+
+    def get_exited(self):
+        return self.master_context.p4_state.has_exited
+
+    def add_exit_state(self, cond, exit_state):
+        self.master_context.p4_state.exit_states.append((cond, exit_state))
+
+    def get_exit_states(self):
+        return self.master_context.p4_state.exit_states
 
     def resolve_expr(self, expr):
         # Resolves to z3 and z3p4 expressions
@@ -173,6 +182,10 @@ class P4Context():
         if isinstance(rval, list) and lval_val is not None:
             if isinstance(lval_val, StructInstance):
                 lval_val.set_list(rval)
+            elif isinstance(lval_val, list):
+                # TODO: Decide whether this makes sense
+                for idx, sub_rval in enumerate(rval):
+                    self.set_or_add_var(sub_rval, lval_val[idx])
             else:
                 raise TypeError(
                     f"set_list {type(lval)} not supported!")
@@ -230,9 +243,74 @@ class P4Context():
         var_store = self.copy_attrs()
         return var_store, []
 
-    def restore(self, var_store, contexts=None):
+    def restore(self, var_store, context=None):
         for attr_name, attr_val in var_store.items():
             self.set_or_add_var(attr_name, attr_val)
+
+    def get_p4_state(self):
+        return self.master_context.p4_state
+
+    def set_p4_state(self, p4_state):
+        self.master_context.p4_state = p4_state
+
+
+class StaticContext(P4Context):
+    def __init__(self, parent_context):
+        self.master_context = self
+        self.p4_state = None
+        super(StaticContext, self).__init__(self, {})
+        self.parent_context = None
+
+    def declare_global(self, p4_class):
+        if isinstance(p4_class, (P4ComplexType, P4Extern)):
+            name = p4_class.name
+            self.add_type(name, p4_class)
+        elif isinstance(p4_class, TypeDeclaration):
+            p4_type = resolve_type(self, p4_class.p4_type)
+            self.add_type(p4_class.name, p4_type)
+        elif isinstance(p4_class, ControlDeclaration):
+            self.set_or_add_var(p4_class.ctrl.name, p4_class.ctrl)
+            self.add_type(p4_class.ctrl.name, p4_class.ctrl)
+        elif isinstance(p4_class, Enum):
+            # enums are special static types
+            # we need to add them to the list of accessible variables
+            # and their type is actually the z3 type, not the class type
+            name = p4_class.name
+            self.set_or_add_var(name, p4_class)
+            p4_type = resolve_type(self, p4_class.z3_type)
+            self.add_type(name, p4_type)
+        elif isinstance(p4_class, P4Declaration):
+            name = p4_class.lval
+            rval = p4_class.compute_rval(self)
+            self.set_or_add_var(name, rval)
+        else:
+            raise RuntimeError(
+                "Unsupported global declaration %s" % type(p4_class))
+
+    def stack(self, z3_type, num):
+        # Header stacks are a bit special because they are basically arrays
+        # with specific features
+        # We need to declare a new z3 type and add a new complex class
+        name = f"{z3_type}{num}"
+        p4_stack = HeaderStack(name, self, [z3_type] * num)
+        self.declare_global(p4_stack)
+        return self.get_type(name)
+
+    def get_value(self, expr):
+        val = self.resolve_expr(expr)
+        if isinstance(val, z3.BitVecNumRef):
+            # unfortunately, we need to get the real int value here
+            val = Z3Int(val.as_long(), val.size())
+        return val
+
+    def get_main_function(self):
+        if "main" in self.locals:
+            return self.locals["main"]
+        return None
+
+
+class LocalContext(P4Context):
+    pass
 
 
 class P4State():
@@ -246,74 +324,20 @@ class P4State():
     def __init__(self, extern_extensions):
         self.extern_extensions = extern_extensions
         self.name = "init_state"
-        self.static_context = P4Context(None, {})
-        self.static_context.p4_state = self # HACK: FIXME
         # deques allow for much more efficient pop and append operations
         # this is all we do so this works well
-        self.contexts = deque()
-        self.exit_states = deque()
-        self.has_exited = False
         self.flat_names = []
         self.members = {}
         self.z3_type = None
         self.const = None
-
-    def reset(self):
         self.exit_states = deque()
         self.has_exited = False
+
+    def reset(self):
         self.contexts = deque()
         self.flat_names = []
         self.z3_type = None
         self.const = None
-
-    def set_datatype(self, name, z3_args, instances):
-        self.reset()
-        self.name = name
-        self.members = z3_args
-        state_context = P4Context(self.current_context(), {})
-        self.contexts.append(state_context)
-
-        for instance_name, instance_val in instances.items():
-            state_context.set_or_add_var(instance_name, instance_val)
-
-        flat_args = []
-        idx = 0
-        for z3_arg_name, z3_arg_type in z3_args:
-            z3_arg_type = resolve_type(self, z3_arg_type)
-            if isinstance(z3_arg_type, P4ComplexType):
-                member_cls = z3_arg_type.instantiate(f"{name}.{idx}")
-                propagate_validity_bit(member_cls)
-                for sub_member in z3_arg_type.flat_names:
-                    flat_args.append((str(idx), sub_member.p4_type))
-                    self.flat_names.append(
-                        P4Member(z3_arg_name, sub_member.name))
-                    idx += 1
-                # this is a complex datatype, create a P4ComplexType
-                state_context.set_or_add_var(z3_arg_name, member_cls, True)
-            else:
-                flat_args.append((str(idx), z3_arg_type))
-                self.flat_names.append(z3_arg_name)
-                idx += 1
-        z3_type = z3.Datatype(name)
-        z3_type.declare(f"mk_{name}", *flat_args)
-        self.z3_type = z3_type.create()
-
-        self.const = z3.Const(name, self.z3_type)
-
-        for type_idx, arg_name in enumerate(self.flat_names):
-            member_constructor = self.z3_type.accessor(0, type_idx)
-            state_context.set_or_add_var(
-                arg_name, member_constructor(self.const), True)
-
-    def get_type(self, type_name):
-        context = self.current_context()
-        return context.get_type(type_name)
-
-    def current_context(self):
-        if self.contexts:
-            return self.contexts[-1]
-        else:
-            return self.static_context
 
     def get_members(self, context):
         ''' This method returns the current representation of the object in z3
@@ -328,76 +352,5 @@ class P4State():
                 members.append(member_val)
         return members
 
-    def get_z3_repr(self):
-        return self.z3_type.constructor(0)(*self.get_members(self.current_context()))
-
-    def declare_global(self, p4_class):
-        if isinstance(p4_class, (P4ComplexType, P4Extern)):
-            name = p4_class.name
-            self.declare_type(name, p4_class)
-        elif isinstance(p4_class, TypeDeclaration):
-            p4_type = resolve_type(self, p4_class.p4_type)
-            self.declare_type(p4_class.name, p4_type)
-        elif isinstance(p4_class, ControlDeclaration):
-            self.declare_var(p4_class.ctrl.name, p4_class.ctrl)
-            self.declare_type(p4_class.ctrl.name, p4_class.ctrl)
-        elif isinstance(p4_class, Enum):
-            # enums are special static types
-            # we need to add them to the list of accessible variables
-            # and their type is actually the z3 type, not the class type
-            name = p4_class.name
-            self.declare_var(name, p4_class)
-            p4_type = resolve_type(self, p4_class.z3_type)
-            self.declare_type(name, p4_type)
-        elif isinstance(p4_class, P4Declaration):
-            name = p4_class.lval
-            rval = p4_class.compute_rval(self.current_context())
-            self.declare_var(name, rval)
-        else:
-            raise RuntimeError(
-                "Unsupported global declaration %s" % type(p4_class))
-
-    def declare_var(self, lval, rval):
-        self.static_context.locals[lval] = rval
-
-    def declare_type(self, lval, rval):
-        self.static_context.add_type(lval, rval)
-
-    def set_context(self, name, p4_params):
-        stripped_args = []
-        instances = {}
-        for extern_set in self.extern_extensions:
-            for extern_name, extern in extern_set.items():
-                self.declare_type(extern_name, extern)
-        for param in p4_params:
-            p4_type = resolve_type(self, param.p4_type)
-            if param.mode in ("inout", "out"):
-                # only inouts or outs matter as output
-                stripped_args.append((param.name, p4_type))
-            else:
-                # for other inputs we can instantiate something
-                instance = gen_instance(self, param.name, p4_type)
-                instances[param.name] = instance
-        self.set_datatype(name, stripped_args, instances)
-        return self
-
-    def stack(self, z3_type, num):
-        # Header stacks are a bit special because they are basically arrays
-        # with specific features
-        # We need to declare a new z3 type and add a new complex class
-        name = f"{z3_type}{num}"
-        p4_stack = HeaderStack(name, self, [z3_type] * num)
-        self.declare_global(p4_stack)
-        return self.get_type(name)
-
-    def get_value(self, expr):
-        val = self.current_context().resolve_expr(expr)
-        if isinstance(val, z3.BitVecNumRef):
-            # unfortunately, we need to get the real int value here
-            val = Z3Int(val.as_long(), val.size())
-        return val
-
-    def get_main_function(self):
-        if "main" in self.static_context.locals:
-            return self.static_context.locals["main"]
-        return None
+    def get_z3_repr(self, context):
+        return self.z3_type.constructor(0)(*self.get_members(context))

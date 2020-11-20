@@ -3,7 +3,7 @@ from p4z3.state import P4Context
 from p4z3.base import z3, log, copy, merge_attrs
 from p4z3.base import gen_instance, z3_cast, handle_mux, StructInstance
 from p4z3.base import P4Z3Class, P4Mask, P4ComplexType, UNDEF_LABEL
-from p4z3.base import DefaultExpression, P4Extern, propagate_validity_bit
+from p4z3.base import DefaultExpression, propagate_validity_bit
 from p4z3.base import P4Expression, P4Argument, P4Range, resolve_type, ListType
 
 
@@ -170,92 +170,6 @@ class ConstCallExpr(P4Expression):
         return p4_method.initialize(context, *self.args, **self.kwargs)
 
 
-class P4Package(P4Callable):
-
-    def __init__(self, name, p4_state, params, type_params):
-        super(P4Package, self).__init__(name, params)
-        self.pipes = OrderedDict()
-        self.type_params = type_params
-        self.type_context = {}
-        self.p4_state = p4_state
-
-    def init_type_params(self, context, *args, **kwargs):
-        init_package = copy.copy(self)
-        for idx, t_param in enumerate(init_package.type_params):
-            arg = resolve_type(context, args[idx])
-            init_package.type_context[t_param] = arg
-        return init_package
-
-    def create_z3_representation(self, context):
-        members = self.p4_state.get_members(context)
-        # and also merge back all the exit states we collected
-        for exit_cond, exit_state in reversed(self.p4_state.exit_states):
-            for idx, exit_member in enumerate(exit_state):
-                members[idx] = z3.If(exit_cond, exit_member, members[idx])
-        return self.p4_state.z3_type.constructor(0)(*members)
-
-    def initialize(self, context, *args, **kwargs):
-        merged_args = merge_parameters(self.params, *args, **kwargs)
-        for pipe_name, pipe_arg in merged_args.items():
-            if pipe_arg.p4_val is None:
-                # for some reason, the argument is uninitialized.
-                # FIXME: This should not happen. Why?
-                continue
-            log.info("Loading %s pipe...", pipe_name)
-            pipe_val = context.resolve_expr(pipe_arg.p4_val)
-            if isinstance(pipe_val, P4Control):
-                # This boilerplate is all necessary to initialize state...
-                # FIXME: Ideally, this should be handled by the control...
-                sub_ctx = P4Context(context, {})
-                self.p4_state.contexts.append(sub_ctx)
-                for type_name, p4_type in self.type_context.items():
-                    sub_ctx.add_type(
-                        type_name, resolve_type(sub_ctx, p4_type))
-                ctrl_type = resolve_type(sub_ctx, pipe_arg.p4_type)
-                pipe_val = pipe_val.bind_to_ctrl_type(sub_ctx, ctrl_type)
-                for type_name, p4_type in ctrl_type.type_context.items():
-                    sub_ctx.add_type(
-                        type_name, resolve_type(sub_ctx, p4_type))
-                args = []
-                for idx, param in enumerate(pipe_val.params):
-                    ctrl_type_param_type = ctrl_type.params[idx].p4_type
-                    generic_type = resolve_type(sub_ctx, ctrl_type_param_type)
-                    if generic_type is None:
-                        param_type = resolve_type(sub_ctx, param.p4_type)
-                        self.type_context[ctrl_type_param_type] = param_type
-                    args.append(param.name)
-                # create the z3 representation of this control state
-                self.p4_state.set_context(pipe_name, pipe_val.params)
-                # initialize the call with its own params we collected
-                # this is essentially the input packet
-                pipe_val.apply(self.p4_state.current_context(), *args)
-                # after executing the pipeline get its z3 representation
-                state = self.create_z3_representation(
-                    self.p4_state.current_context())
-                # all done, that is our P4 representation!
-                self.pipes[pipe_name] = (
-                    state, self.p4_state.members, pipe_val)
-            elif isinstance(pipe_val, P4Extern):
-                var = z3.Const(f"{pipe_name}{pipe_val.name}", pipe_val.z3_type)
-                self.pipes[pipe_name] = (var, [], pipe_val)
-            elif isinstance(pipe_val, P4Package):
-                # execute the package by calling its initializer
-                pipe_val.initialize(context)
-                # resolve all the sub_pipes
-                for sub_pipe_name, sub_pipe_val in pipe_val.pipes.items():
-                    sub_pipe_name = f"{pipe_name}_{sub_pipe_name}"
-                    self.pipes[sub_pipe_name] = sub_pipe_val
-            elif isinstance(pipe_val, z3.ExprRef):
-                # for some reason simple expressions are also possible.
-                self.pipes[pipe_name] = (pipe_val, [], pipe_val)
-            else:
-                raise RuntimeError(
-                    f"Unsupported value {pipe_val}, type {type(pipe_val)}."
-                    " It does not make sense as a P4 pipeline.")
-        return self
-
-    def get_pipes(self):
-        return self.pipes
 
 class P4Action(P4Callable):
 
@@ -360,7 +274,7 @@ class P4Control(P4Callable):
             context.set_or_add_var(const_param_name, const_val)
         for expr in self.local_decls:
             expr.eval(context)
-            if context.p4_state.has_exited or context.has_returned:
+            if context.get_exited() or context.has_returned:
                 break
         self.statements.eval(context)
 
@@ -707,9 +621,9 @@ class P4Table(P4Callable):
             cond = z3.And(self.locals["hit"], action_match)
             context.tmp_forward_cond = z3.And(forward_cond_copy, cond)
             self.eval_action(context, action_name, action_args)
-            if not context.p4_state.has_exited:
+            if not context.get_exited():
                 action_exprs.append((cond, context.get_attrs()))
-            context.p4_state.has_exited = False
+            context.set_exited(False)
             action_matches.append(action_match)
             context.restore(var_store, contexts)
 
@@ -723,9 +637,9 @@ class P4Table(P4Callable):
             cond = z3.And(self.locals["hit"], action_match)
             context.tmp_forward_cond = z3.And(forward_cond_copy, cond)
             self.eval_action(context, act_name, act_args)
-            if not context.p4_state.has_exited:
+            if not context.get_exited():
                 action_exprs.append((cond, context.get_attrs()))
-            context.p4_state.has_exited = False
+            context.set_exited(False)
             action_matches.append(action_match)
             context.restore(var_store, contexts)
 
@@ -749,9 +663,9 @@ class P4Table(P4Callable):
         cond = z3.Or(self.locals["miss"], z3.Not(z3.Or(*action_matches)))
         context.tmp_forward_cond = z3.And(forward_cond_copy, cond)
         self.eval_default(context)
-        if context.p4_state.has_exited:
+        if context.get_exited():
             context.restore(var_store, contexts)
-        context.p4_state.has_exited = False
+        context.set_exited(False)
         context.tmp_forward_cond = forward_cond_copy
         # generate a nested set of if expressions per available action
         for cond, then_vars in action_exprs:

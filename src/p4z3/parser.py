@@ -55,14 +55,14 @@ class RejectState(P4Expression):
         cond = z3.And(z3.Not(z3.Or(*forward_conds)),
                       z3.And(*tmp_forward_conds))
         var_store, contexts = context.checkpoint()
-        for member_name, _ in context.p4_state.members:
+        for member_name, _ in context.get_p4_state().members:
             member_val = context.resolve_reference(member_name)
             if isinstance(member_val, StructInstance):
                 member_val.deactivate()
-        context.p4_state.exit_states.append(
-            (cond, context.p4_state.get_members(context)))
+            context.add_exit_state(
+                cond, context.get_p4_state().get_members(context))
         context.restore(var_store, contexts)
-        context.p4_state.has_exited = True
+        context.set_exited(True)
         context.forward_conds.append(context.tmp_forward_cond)
 
 
@@ -109,10 +109,10 @@ class ParserNode():
             context.tmp_forward_cond = z3.And(forward_cond_copy, cond)
             parser_node.eval(context)
             select_conds.append(cond)
-            if not (context.p4_state.has_exited or z3.is_false(cond)):
+            if not (context.get_exited() or z3.is_false(cond)):
                 switches.append(
                     (context.tmp_forward_cond, context.get_attrs()))
-            context.p4_state.has_exited = False
+            context.set_exited(False)
             context.has_returned = False
             context.restore(var_store, contexts)
 
@@ -120,7 +120,7 @@ class ParserNode():
         cond = z3.Not(z3.Or(*select_conds))
         context.tmp_forward_cond = z3.And(forward_cond_copy, cond)
         self.default.eval(context)
-        context.p4_state.has_exited = False
+        context.set_exited(False)
         context.has_returned = False
         context.tmp_forward_cond = forward_cond_copy
         for cond, then_vars in reversed(switches):
@@ -238,7 +238,7 @@ class ParserTree(P4Expression):
                 sub_node = self.nodes[parser_state]
                 # state forks here
                 # FIXME
-                dummy_context = P4Context(context.p4_state.static_context, {})
+                dummy_context = P4Context(context.master_context, {})
                 dummy_context.locals = copy.deepcopy(state)
                 dummy_context.tmp_forward_cond = cond
                 sub_node.eval(dummy_context)

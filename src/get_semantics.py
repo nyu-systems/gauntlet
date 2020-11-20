@@ -9,7 +9,7 @@ import z3
 
 
 from p4z3.contrib.tabulate import tabulate
-from p4z3.state import P4State, P4ComplexType, P4Extern
+from p4z3.state import StaticContext, P4ComplexType, P4Extern
 
 import p4z3.util as util
 from p4z3.externs.core import core_externs
@@ -40,7 +40,7 @@ def get_z3_asts(p4_module, p4_path):
     log.info("Loading %s ASTs...", p4_path.name)
     z3_asts = None
     try:
-        prog_state = P4State([core_externs])
+        prog_state = StaticContext(None)
         p4_package = p4_module(prog_state)
         if not p4_package:
             log.warning("No main module, nothing to evaluate!")

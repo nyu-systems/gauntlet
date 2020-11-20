@@ -44,7 +44,7 @@ class BlockStatement(P4Statement):
     def eval(self, context):
         for expr in self.exprs:
             expr.eval(context)
-            if context.p4_state.has_exited or context.has_returned:
+            if context.get_exited() or context.has_returned:
                 break
 
 
@@ -69,9 +69,9 @@ class IfStatement(P4Statement):
                 self.then_block.eval(context)
             except ParserException:
                 RejectState().eval(context)
-            if not(context.has_returned or context.p4_state.has_exited):
+            if not(context.has_returned or context.get_exited()):
                 then_vars = context.get_attrs()
-            context.p4_state.has_exited = False
+            context.set_exited(False)
             context.has_returned = False
             context.restore(var_store, contexts)
 
@@ -82,9 +82,9 @@ class IfStatement(P4Statement):
                 self.else_block.eval(context)
             except ParserException:
                 RejectState().eval(context)
-            if context.p4_state.has_exited or context.has_returned:
+            if context.get_exited() or context.has_returned:
                 context.restore(var_store, contexts)
-            context.p4_state.has_exited = False
+            context.set_exited(False)
             context.has_returned = False
 
         context.tmp_forward_cond = forward_cond_copy
@@ -126,11 +126,11 @@ class SwitchStatement(P4Statement):
             context.tmp_forward_cond = z3.And(
                 forward_cond_copy, case_match)
             case_block.eval(context)
-            if not (context.has_returned or context.p4_state.has_exited):
+            if not (context.has_returned or context.get_exited()):
                 then_vars = context.get_attrs()
                 case_exprs.append((case_match, then_vars))
             context.has_returned = False
-            context.p4_state.has_exited = False
+            context.set_exited(False)
             context.restore(var_store, contexts)
             case_matches.append(case_match)
         var_store, contexts = context.checkpoint()
@@ -138,10 +138,10 @@ class SwitchStatement(P4Statement):
         cond = z3.Not(z3.Or(*case_matches))
         context.tmp_forward_cond = z3.And(forward_cond_copy, cond)
         self.default_case.eval(context)
-        if context.has_returned or context.p4_state.has_exited:
+        if context.has_returned or context.get_exited():
             context.restore(var_store, contexts)
         context.has_returned = False
-        context.p4_state.has_exited = False
+        context.set_exited(False)
         context.tmp_forward_cond = forward_cond_copy
         # merge all the expressions in reverse order
         for cond, then_vars in reversed(case_exprs):
@@ -261,7 +261,8 @@ class P4Exit(P4Statement):
         cond = z3.simplify(z3.And(z3.Not(z3.Or(*forward_conds)),
                                   z3.And(*tmp_forward_conds)))
         if not z3.is_false(cond):
-            context.p4_state.exit_states.append((cond, context.p4_state.get_members(context)))
-            context.p4_state.has_exited = True
+            context.add_exit_state(
+                cond, context.get_p4_state().get_members(context))
+            context.set_exited(True)
         context.restore(var_store, contexts)
         context.forward_conds.append(context.tmp_forward_cond)
