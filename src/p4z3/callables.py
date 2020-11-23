@@ -1,5 +1,5 @@
 from collections import OrderedDict
-from p4z3.state import P4Context
+from p4z3.state import LocalContext
 from p4z3.base import z3, log, copy, merge_attrs
 from p4z3.base import gen_instance, z3_cast, handle_mux, StructInstance
 from p4z3.base import P4Z3Class, P4Mask, P4ComplexType, UNDEF_LABEL
@@ -101,7 +101,7 @@ class P4Callable(P4Z3Class):
         var_buffer = save_variables(context, merged_args)
         param_buffer = self.copy_in(context, merged_args)
         # only add the context after all the arguments have been resolved
-        sub_ctx = P4Context(context, var_buffer)
+        sub_ctx = LocalContext(context, var_buffer)
         # now we can set the arguments without influencing subsequent variables
         for param_name, param_val in param_buffer.items():
             sub_ctx.set_or_add_var(param_name, param_val)
@@ -341,7 +341,7 @@ class P4Method(P4Callable):
 
     def __call__(self, context, *args, **kwargs):
         merged_args = merge_parameters(self.params, *args, **kwargs)
-        sub_ctx = P4Context(context, {})
+        sub_ctx = LocalContext(context, {})
         # resolve the inputs *before* we bind types
         method_args = {}
         for param_name, arg in merged_args.items():

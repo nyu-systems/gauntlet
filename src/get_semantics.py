@@ -40,8 +40,9 @@ def get_z3_asts(p4_module, p4_path):
     log.info("Loading %s ASTs...", p4_path.name)
     z3_asts = None
     try:
-        prog_state = StaticContext(None)
-        p4_package = p4_module(prog_state)
+        prog_ctx = StaticContext()
+        prog_ctx.add_extern_extensions(core_externs)
+        p4_package = p4_module(prog_ctx)
         if not p4_package:
             log.warning("No main module, nothing to evaluate!")
             return z3_asts, util.EXIT_SKIPPED

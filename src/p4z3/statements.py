@@ -4,6 +4,7 @@ from p4z3.base import StructInstance, P4Statement, gen_instance
 from p4z3.base import ParserException
 from p4z3.callables import P4Table
 from p4z3.parser import RejectState
+from p4z3.state import StaticContext
 
 
 class AssignmentStatement(P4Statement):
@@ -252,7 +253,7 @@ class P4Exit(P4Statement):
         forward_conds = []
         tmp_forward_conds = []
         sub_ctx = context
-        while sub_ctx is not None:
+        while not isinstance(sub_ctx, StaticContext):
             sub_ctx.copy_out(context)
             forward_conds.extend(sub_ctx.forward_conds)
             tmp_forward_conds.append(sub_ctx.tmp_forward_cond)

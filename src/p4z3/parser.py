@@ -1,5 +1,5 @@
 from collections import OrderedDict
-from p4z3.state import P4Context
+from p4z3.state import LocalContext, StaticContext
 from p4z3.base import log, z3, P4Range, merge_attrs, P4Mask, DefaultExpression
 from p4z3.base import P4Expression, StructInstance, resolve_type
 from p4z3.base import ParserException, StructType, HeaderStack, merge_dicts
@@ -47,7 +47,7 @@ class RejectState(P4Expression):
         forward_conds = []
         tmp_forward_conds = []
         sub_ctx = context
-        while sub_ctx is not None:
+        while not isinstance(sub_ctx, StaticContext):
             forward_conds.extend(sub_ctx.forward_conds)
             tmp_forward_conds.append(sub_ctx.tmp_forward_cond)
             sub_ctx = sub_ctx.parent_context
@@ -139,7 +139,7 @@ class ParserNode():
             key = self.parser_state.name
             tmp_forward_conds = []
             sub_ctx = context
-            while sub_ctx is not None:
+            while not isinstance(sub_ctx, StaticContext):
                 tmp_forward_conds.append(sub_ctx.tmp_forward_cond)
                 sub_ctx = sub_ctx.parent_context
 
@@ -238,7 +238,7 @@ class ParserTree(P4Expression):
                 sub_node = self.nodes[parser_state]
                 # state forks here
                 # FIXME
-                dummy_context = P4Context(context.master_context, {})
+                dummy_context = LocalContext(context.master_context, {})
                 dummy_context.locals = copy.deepcopy(state)
                 dummy_context.tmp_forward_cond = cond
                 sub_node.eval(dummy_context)
