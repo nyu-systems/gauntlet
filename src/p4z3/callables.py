@@ -126,7 +126,12 @@ class P4Callable(P4Z3Class):
             arg_expr = context.resolve_expr(arg.p4_val)
             # it can happen that we receive a list
             # infer the type, generate, and set
-            p4_type = resolve_type(context, arg.p4_type)
+            try:
+                p4_type = resolve_type(context, arg.p4_type)
+            except KeyError:
+                # this is a generic type, we need to bind for this scope
+                # FIXME: Clean this up
+                context.add_type(arg.p4_type, arg_expr.sort())
             if isinstance(arg_expr, list):
                 # if the type is undefined, do nothing
                 if isinstance(p4_type, P4ComplexType):
