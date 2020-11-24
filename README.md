@@ -112,12 +112,12 @@ We also track the bugs we have found. A detailed breakdown can be found in the [
 To cite our work please refer to our paper:
 
 ```tex
-@inproceedings {258854,
-title = {Gauntlet: Finding Bugs in Compilers for Programmable Packet Processing},
-booktitle = {14th {USENIX} Symposium on Operating Systems Design and Implementation ({OSDI} 20)},
-year = {2020},
-url = {https://www.usenix.org/conference/osdi20/presentation/ruffy},
-publisher = {{USENIX} Association},
-month = nov,
+@inproceedings {gauntlet,
+  title = {Gauntlet: Finding Bugs in Compilers for Programmable Packet Processing},
+  booktitle = {14th {USENIX} Symposium on Operating Systems Design and Implementation ({OSDI} 20)},
+  year = {2020},
+  url = {https://www.usenix.org/conference/osdi20/presentation/ruffy},
+  publisher = {{USENIX} Association},
+  month = nov,
 }
 ```

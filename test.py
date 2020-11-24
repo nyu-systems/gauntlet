@@ -5,12 +5,14 @@ import pytest
 import src.p4z3.util as util
 import src.validate_p4_translation as tv_check
 import src.check_p4_pair as z3_check
+import warnings
 
 # configure logging
+log = logging.getLogger(__name__)
 logging.basicConfig(filename="test.log",
                     format="%(levelname)s:%(message)s",
                     level=logging.INFO,
-                    filemode="w")
+                    filemode='w')
 stderr_log = logging.StreamHandler()
 stderr_log.setFormatter(logging.Formatter("%(levelname)s:%(message)s"))
 logging.getLogger().addHandler(stderr_log)
@@ -114,7 +116,11 @@ def run_z3p4_test(p4_file, target_dir):
         pytest.skip(f"Skipping slow test {p4_file}.")
         return util.EXIT_SKIPPED
     result = tv_check.validate_translation(
-        p4_file, target_dir, P4C_BIN, True, False)
+        p4_file, target_dir, P4C_BIN, allow_undef=True, dump_info=False)
+    if result == util.EXIT_UNDEF:
+        msg = "Ignored undefined behavior in %s" % p4_file
+        warnings.warn(msg)
+        return util.EXIT_SUCCESS
     if result == util.EXIT_SKIPPED:
         pytest.skip(f"Skipping file {p4_file}.")
     return result

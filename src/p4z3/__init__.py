@@ -12,3 +12,4 @@ from p4z3.expressions import *
 from p4z3.statements import *
 from p4z3.callables import *
 from p4z3.parser import *
+from p4z3.package import *

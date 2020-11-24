@@ -9,7 +9,7 @@ import z3
 
 
 from p4z3.contrib.tabulate import tabulate
-from p4z3.state import Z3Reg, P4ComplexType, P4Extern
+from p4z3.state import StaticContext, P4ComplexType, P4Extern
 
 import p4z3.util as util
 from p4z3.externs.core import core_externs
@@ -40,8 +40,9 @@ def get_z3_asts(p4_module, p4_path):
     log.info("Loading %s ASTs...", p4_path.name)
     z3_asts = None
     try:
-        z3_reg = Z3Reg([core_externs])
-        p4_package = p4_module(z3_reg)
+        prog_ctx = StaticContext()
+        prog_ctx.add_extern_extensions(core_externs)
+        p4_package = p4_module(prog_ctx)
         if not p4_package:
             log.warning("No main module, nothing to evaluate!")
             return z3_asts, util.EXIT_SKIPPED
@@ -109,7 +110,7 @@ def reconstruct_input(pipe_name, package, pipe_cls):
     if isinstance(pipe_cls, P4Extern):
         initial_state = z3.Const(f"{pipe_name}", pipe_cls.z3_type)
     else:
-        p4_state = package.z3_reg.set_p4_state(pipe_name, pipe_cls.params)
+        p4_state = package.p4_state.set_context(pipe_name, pipe_cls.params)
         initial_state = p4_state.get_z3_repr()
 
     inital_inputs = initial_state.children()
