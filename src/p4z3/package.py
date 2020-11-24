@@ -36,55 +36,54 @@ class P4Package(P4Callable):
     def init_type_params(self, context, *args, **kwargs):
         init_package = copy.copy(self)
         for idx, t_param in enumerate(init_package.type_params):
-            arg = resolve_type(context, args[idx])
-            init_package.type_context[t_param] = arg
+            init_package.type_context[t_param] = args[idx]
         return init_package
 
     def type_inference(self, type_ctx, pipe_val, pipe_arg):
         # This boilerplate is all necessary to initialize state...
         # FIXME: Ideally, this should be handled by the control...
         for type_name, p4_type in self.type_context.items():
-            type_ctx.add_type(type_name, p4_type)
+            type_ctx.add_type(type_name, resolve_type(type_ctx, p4_type))
         ctrl_type = resolve_type(type_ctx, pipe_arg.p4_type)
-        pipe_val = pipe_val.bind_to_ctrl_type(type_ctx, ctrl_type)
         for type_name, p4_type in ctrl_type.type_context.items():
-            type_ctx.add_type(
-                type_name, resolve_type(type_ctx, p4_type))
-        return pipe_val
-
-    def bind_params(self, type_ctx, params, ctrl_type):
-        args = []
-        for idx, param in enumerate(params):
-            ctrl_type_param_type = ctrl_type.params[idx].p4_type
-            if resolve_type(type_ctx, ctrl_type_param_type) is None:
-                # we are dealing with an unbound type for the control type
-                # so we use the type of the parameter and update the type ctx
-                param_type = resolve_type(type_ctx, param.p4_type)
-                self.type_context[ctrl_type_param_type] = param_type
-            args.append(param.name)
-        return args
+            try:
+                type_ctx.add_type(type_name, resolve_type(type_ctx, p4_type))
+            except KeyError:
+                pass
+        for idx, param in enumerate(pipe_val.params):
+            ctrl_type_par_type = ctrl_type.params[idx].p4_type
+            try:
+                resolve_type(type_ctx, ctrl_type_par_type)
+            except KeyError:
+                par_type = resolve_type(type_ctx, param.p4_type)
+                type_ctx.add_type(ctrl_type_par_type, par_type)
+                self.type_context[ctrl_type_par_type] = par_type
+        pipe_val = pipe_val.bind_to_ctrl_type(type_ctx, ctrl_type)
+        return pipe_val, ctrl_type
 
     def initialize(self, context, *args, **kwargs):
         merged_args = merge_parameters(self.params, *args, **kwargs)
         for pipe_name, pipe_arg in merged_args.items():
+            log.info("Loading %s pipe...", pipe_name)
             if pipe_arg.p4_val is None:
+                log.warning("Skipping %s pipe...", pipe_name)
                 # for some reason, the argument is uninitialized.
                 # FIXME: This should not happen. Why?
                 continue
-            log.info("Loading %s pipe...", pipe_name)
             pipe_val = context.resolve_expr(pipe_arg.p4_val)
             if isinstance(pipe_val, P4Control):
                 # create the z3 representation of this control state
                 type_ctx = LocalContext(context, {})
-                pipe_val = self.type_inference(type_ctx, pipe_val, pipe_arg)
-                ctrl_type = resolve_type(type_ctx, pipe_arg.p4_type)
-                args = self.bind_params(type_ctx, pipe_val.params, ctrl_type)
+                pipe_val, ctrl_type = self.type_inference(type_ctx, pipe_val, pipe_arg)
                 ctx = LocalContext(context, {})
                 p4_state = create_p4_state(
                     ctx, type_ctx, pipe_name, pipe_val.params)
                 ctx.set_p4_state(p4_state)
                 # initialize the call with its own params we collected
                 # this is essentially the input packet
+                args = []
+                for param in pipe_val.params:
+                    args.append(param.name)
                 pipe_val.apply(ctx, *args)
                 # after executing the pipeline get its z3 representation
                 z3_function = p4_state.create_z3_representation(ctx)

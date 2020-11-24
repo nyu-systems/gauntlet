@@ -240,8 +240,7 @@ class P4Control(P4Callable):
         # the type params sometimes include the return type also
         # it is typically the first value, but is bound somewhere else
         for idx, t_param in enumerate(init_ctrl.type_params):
-            arg = resolve_type(context, args[idx])
-            init_ctrl.type_context[t_param] = arg
+            init_ctrl.type_context[t_param] = args[idx]
         return init_ctrl
 
     def initialize(self, context, *args, **kwargs):
@@ -251,8 +250,9 @@ class P4Control(P4Callable):
         # also bind types, because for reasons you can bind types everywhere...
         for idx, const_param in enumerate(ctrl_copy.const_params):
             # this means the type is generic
-            p4_type = resolve_type(context, const_param.p4_type)
-            if p4_type is None:
+            try:
+                resolve_type(context, const_param.p4_type)
+            except KeyError:
                 # grab the type of the input arguments
                 ctrl_copy.type_context[const_param.p4_type] = args[idx].sort()
         return ctrl_copy
@@ -308,10 +308,11 @@ class P4Method(P4Callable):
         for param_name, arg in method_args.items():
             arg_mode, arg_ref, arg_expr, p4_src_type = arg
             # infer the type
-            p4_type = resolve_type(context, p4_src_type)
-            # This is dynamic type inference based on arguments
-            # FIXME Check this hack.
-            if p4_type is None:
+            try:
+                p4_type = resolve_type(context, p4_src_type)
+            except KeyError:
+                # This is dynamic type inference based on arguments
+                # FIXME Check this hack.
                 if isinstance(arg_expr, list):
                     # synthesize a list type from the input list
                     # this mostly just a dummy
@@ -360,7 +361,6 @@ class P4Method(P4Callable):
             sub_ctx.add_type(type_name, resolve_type(sub_ctx, p4_type))
         for type_name, p4_type in self.type_context.items():
             sub_ctx.add_type(type_name, resolve_type(sub_ctx, p4_type))
-
         # assign symbolic values to the inputs that are inout and out
         self.assign_values(sub_ctx, method_args)
 

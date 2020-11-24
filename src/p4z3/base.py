@@ -2,7 +2,6 @@ from dataclasses import dataclass
 import copy
 import logging
 import z3
-
 log = logging.getLogger(__name__)
 
 UNDEF_LABEL = "undefined"
@@ -198,12 +197,8 @@ def propagate_validity_bit(target, parent_valid=None):
 
 def resolve_type(context, p4_type):
     if isinstance(p4_type, str):
-        try:
-            p4_type = context.get_type(p4_type)
-        except KeyError:
-            p4_type = None
-
-    if isinstance(p4_type, TypeSpecializer):
+        p4_type = context.get_type(p4_type)
+    elif isinstance(p4_type, TypeSpecializer):
         p4_type = p4_type.eval(context)
     return p4_type
 
@@ -605,15 +600,24 @@ class P4ComplexInstance():
 
 class StructType(P4ComplexType):
 
-    def __init__(self, name, z3_reg, z3_args):
+    def __init__(self, name, ctx, members, type_params):
         super(StructType, self).__init__(name)
-        flat_names = []
         self.width = 0
-        self.z3_reg = z3_reg
-        self.z3_args = z3_args
+        self.z3_reg = ctx
+        self.z3_args = members
+        self.flat_names = []
+        self.type_params = type_params
+        self.initialize(ctx)
 
-        for idx, (member_name, member_type) in enumerate(z3_args):
-            member_type = resolve_type(z3_reg, member_type)
+    def initialize(self, ctx):
+        flat_names = []
+        for idx, (member_name, member_type) in enumerate(self.z3_args):
+            try:
+                member_type = resolve_type(ctx, member_type)
+            except KeyError:
+                # A generic type, just use the string for now
+                pass
+
             if isinstance(member_type, P4ComplexType):
                 # the member is a complex type
                 # retrieve it is flat list of members
@@ -641,8 +645,8 @@ class StructType(P4ComplexType):
 
         if self.width == 0:
             # we are dealing with an empty struct, create a dummy datatype
-            z3_type = z3.Datatype(name)
-            z3_type.declare(f"mk_{name}")
+            z3_type = z3.Datatype(self.name)
+            z3_type.declare(f"mk_{self.name}")
             self.z3_type = z3_type.create()
         else:
             # use the flat bit width of the struct as datatype
@@ -652,6 +656,63 @@ class StructType(P4ComplexType):
     def instantiate(self, name, member_id=0):
         return StructInstance(name, self, member_id)
 
+    def init_type_params(self, ctx, *args, **kwargs):
+        from p4z3.state import LocalContext
+        init_struct = copy.copy(self)
+        # bind the types and set the type ctx
+        type_ctx = LocalContext(ctx, {})
+        for idx, t_param in enumerate(init_struct.type_params):
+            arg = resolve_type(ctx, args[idx])
+            type_ctx.add_type(t_param, arg)
+        flat_names = []
+        for idx, (member_name, member_type) in enumerate(init_struct.z3_args):
+            member_type = resolve_type(type_ctx, member_type)
+            if isinstance(member_type, P4ComplexType):
+                # the member is a complex type
+                # retrieve it is flat list of members
+                # append it to the member list
+                member_type = member_type.init_type_params(
+                    type_ctx, *args, **kwargs)
+                for sub_member in member_type.flat_names:
+                    member = Member(P4Member(member_name, sub_member.name),
+                                    sub_member.p4_type,
+                                    sub_member.width)
+                    flat_names.append(member)
+                init_struct.width += member_type.width
+            else:
+                if isinstance(member_type, z3.BoolSortRef):
+                    # bools do not have a size attribute unfortunately
+                    member_width = 1
+                elif isinstance(member_type, z3.BitVecSortRef):
+                    member_width = member_type.size()
+                else:
+                    # a kind of strange sub-type, unclear what its width is
+                    # example: generics
+                    member_width = 0
+                init_struct.width += member_width
+                member = Member(member_name, member_type, member_width)
+                flat_names.append(member)
+            init_struct.z3_args[idx] = (member_name, member_type)
+
+        if init_struct.width == 0:
+            # we are dealing with an empty struct, create a dummy datatype
+            z3_type = z3.Datatype(init_struct.name)
+            z3_type.declare(f"mk_{init_struct.name}")
+            init_struct.z3_type = z3_type.create()
+        else:
+            # use the flat bit width of the struct as datatype
+            init_struct.z3_type = z3.BitVecSort(init_struct.width)
+        init_struct.flat_names = flat_names
+        return init_struct
+
+    def __copy__(self):
+        cls = self.__class__
+        result = cls.__new__(cls)
+        result.__dict__.update(self.__dict__)
+        result.type_params = copy.copy(self.type_params)
+        result.z3_args = copy.copy(self.z3_args)
+        result.flat_names = []
+        return result
 
 class StructInstance(P4ComplexInstance):
 
@@ -887,7 +948,7 @@ class ListType(StructType):
             z3_args[idx] = (f"f{idx}", arg)
             # some little hack to automatically infer a random type name
             name += str(arg)
-        super(ListType, self).__init__(name, z3_reg, z3_args)
+        super(ListType, self).__init__(name, z3_reg, z3_args, [])
 
     def instantiate(self, name, member_id=0):
         return ListInstance(name, self, member_id)
@@ -906,7 +967,7 @@ class HeaderStack(StructType):
     def __init__(self, name, z3_reg, z3_args):
         for idx, arg in enumerate(z3_args):
             z3_args[idx] = (f"{idx}", arg)
-        super(HeaderStack, self).__init__(name, z3_reg, z3_args)
+        super(HeaderStack, self).__init__(name, z3_reg, z3_args, [])
 
     def instantiate(self, name, member_id=0):
         return HeaderStackInstance(name, self, member_id)
@@ -1106,8 +1167,8 @@ class P4ControlType(P4Extern):
         init_ctrl_type = copy.copy(self)
         # bind the types and set the type context
         for idx, t_param in enumerate(init_ctrl_type.type_params):
-            arg = resolve_type(context, args[idx])
-            init_ctrl_type.type_context[t_param] = arg
+            # arg = resolve_type(context, args[idx])
+            init_ctrl_type.type_context[t_param] = args[idx]
         return init_ctrl_type
 
 
