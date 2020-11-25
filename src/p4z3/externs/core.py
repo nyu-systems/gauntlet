@@ -1,7 +1,7 @@
 from p4z3.callables import P4Method
 from p4z3.base import P4Extern, P4Parameter, z3
 from p4z3.base import log, P4Member, HeaderStackInstance
-from p4z3.callables import merge_parameters, resolve_type
+from p4z3.callables import merge_parameters
 from p4z3.parser import ParserException
 
 '''
@@ -58,9 +58,9 @@ class packet_in(P4Extern):
                 hdr = merged_args[self.hdr_param_name].p4_val
                 # apply the local and parent extern type contexts
                 for type_name, p4_type in self.extern_context.items():
-                    context.add_type(type_name, resolve_type(context, p4_type))
+                    context.add_type(type_name, context.get_type(p4_type))
                 for type_name, p4_type in self.type_context.items():
-                    context.add_type(type_name, resolve_type(context, p4_type))
+                    context.add_type(type_name, context.get_type(p4_type))
 
                 # advance the header index if a next field has been accessed
                 hdr_stack = detect_hdr_stack_next(context, hdr)

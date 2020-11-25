@@ -7,11 +7,21 @@ from p4z3.base import log
 from p4z3.base import StaticType, P4Z3Class, P4Expression
 from p4z3.base import P4Slice, P4ComplexType, P4Member
 from p4z3.base import StructInstance, P4ComplexInstance, HeaderStack
-from p4z3.base import resolve_type, z3_cast, propagate_validity_bit
+from p4z3.base import z3_cast, propagate_validity_bit
 from p4z3.base import TypeDeclaration, Enum
 from p4z3.base import P4Extern, P4Declaration, ControlDeclaration
 
 from p4z3.z3int import Z3Int
+
+class TypeSpecializer():
+    def __init__(self, p4z3_type, *args):
+        self.p4z3_type = p4z3_type
+        self.args = args
+
+    def eval(self, ctx):
+        p4z3_type = ctx.get_type(self.p4z3_type)
+        type_ctx = LocalContext(ctx, {})
+        return p4z3_type.init_type_params(type_ctx, *self.args)
 
 
 class P4Context():
@@ -161,7 +171,7 @@ class StaticContext(P4Context):
             name = p4_class.name
             self.add_type(name, p4_class)
         elif isinstance(p4_class, TypeDeclaration):
-            p4_type = resolve_type(self, p4_class.p4_type)
+            p4_type = self.get_type(p4_class.p4_type)
             self.add_type(p4_class.name, p4_type)
         elif isinstance(p4_class, ControlDeclaration):
             self.set_or_add_var(p4_class.ctrl.name, p4_class.ctrl)
@@ -172,7 +182,7 @@ class StaticContext(P4Context):
             # and their type is actually the z3 type, not the class type
             name = p4_class.name
             self.set_or_add_var(name, p4_class)
-            p4_type = resolve_type(self, p4_class.z3_type)
+            p4_type = self.get_type(p4_class.z3_type)
             self.add_type(name, p4_type)
         elif isinstance(p4_class, P4Declaration):
             name = p4_class.lval
@@ -204,7 +214,11 @@ class StaticContext(P4Context):
         return None
 
     def get_type(self, type_name):
-        return self.type_map[type_name]
+        if isinstance(type_name, str):
+            return self.type_map[type_name]
+        if isinstance(type_name, TypeSpecializer):
+            return type_name.eval(self)
+        return type_name
 
     def find_context(self, var):
         context = self
@@ -319,14 +333,18 @@ class LocalContext(P4Context):
 
     def get_type(self, type_name):
         context = self
-        while not isinstance(context, StaticContext):
-            try:
-                return context.type_map[type_name]
-            except KeyError:
-                context = context.parent_context
-                continue
-        # try the static context
-        return context.type_map[type_name]
+        if isinstance(type_name, TypeSpecializer):
+            return type_name.eval(context)
+        if isinstance(type_name, str):
+            while not isinstance(context, StaticContext):
+                try:
+                    return context.type_map[type_name]
+                except KeyError:
+                    context = context.parent_context
+                    continue
+            # try the static context
+            return context.type_map[type_name]
+        return type_name
 
     def find_context(self, var):
         context = self
@@ -362,7 +380,7 @@ class P4State():
         flat_args = []
         idx = 0
         for z3_arg_name, z3_arg_type in self.members:
-            z3_arg_type = resolve_type(ctx, z3_arg_type)
+            z3_arg_type = ctx.get_type(z3_arg_type)
             if isinstance(z3_arg_type, P4ComplexType):
                 member_cls = z3_arg_type.instantiate(f"{self.name}.{idx}")
                 propagate_validity_bit(member_cls)

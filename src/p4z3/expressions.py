@@ -1,7 +1,7 @@
 import operator as op
 from p4z3.base import log, z3_cast, z3, copy, gen_instance, handle_mux
 from p4z3.base import StructInstance, P4Expression, P4ComplexType
-from p4z3.base import merge_attrs, resolve_type, UNDEF_LABEL
+from p4z3.base import merge_attrs, UNDEF_LABEL
 
 
 class P4Initializer(P4Expression):
@@ -421,7 +421,7 @@ class P4Cast(P4BinaryOp):
     def eval(self, context):
         lval_expr = context.resolve_expr(self.lval)
 
-        rval_expr = resolve_type(context, self.rval)
+        rval_expr = context.get_type(self.rval)
 
         # it can happen that we cast to a complex type...
         if isinstance(rval_expr, P4ComplexType):

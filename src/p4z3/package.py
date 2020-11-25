@@ -1,5 +1,5 @@
 from collections import OrderedDict
-from p4z3.base import z3, log, copy, resolve_type, gen_instance
+from p4z3.base import z3, log, copy, gen_instance
 from p4z3.base import P4Extern
 from p4z3.state import LocalContext, P4State
 from p4z3.callables import P4Callable, P4Control, merge_parameters
@@ -11,7 +11,7 @@ def create_p4_state(ctx, type_ctx, name, p4_params):
     for extern_name, extern in ctx.get_extern_extensions().items():
         ctx.add_type(extern_name, extern)
     for param in p4_params:
-        p4_type = resolve_type(type_ctx, param.p4_type)
+        p4_type = type_ctx.get_type(param.p4_type)
         if param.mode in ("inout", "out"):
             # only inouts or outs matter as output
             stripped_args.append((param.name, p4_type))
@@ -31,33 +31,33 @@ class P4Package(P4Callable):
         super(P4Package, self).__init__(name, params)
         self.pipes = OrderedDict()
         self.type_params = type_params
-        self.type_context = {}
+        self.type_ctx = {}
 
     def init_type_params(self, context, *args, **kwargs):
         init_package = copy.copy(self)
         for idx, t_param in enumerate(init_package.type_params):
-            init_package.type_context[t_param] = args[idx]
+            init_package.type_ctx[t_param] = args[idx]
         return init_package
 
     def type_inference(self, type_ctx, pipe_val, pipe_arg):
         # This boilerplate is all necessary to initialize state...
         # FIXME: Ideally, this should be handled by the control...
-        for type_name, p4_type in self.type_context.items():
-            type_ctx.add_type(type_name, resolve_type(type_ctx, p4_type))
-        ctrl_type = resolve_type(type_ctx, pipe_arg.p4_type)
-        for type_name, p4_type in ctrl_type.type_context.items():
+        for type_name, p4_type in self.type_ctx.items():
+            type_ctx.add_type(type_name, type_ctx.get_type(p4_type))
+        ctrl_type = type_ctx.get_type(pipe_arg.p4_type)
+        for type_name, p4_type in ctrl_type.type_ctx.items():
             try:
-                type_ctx.add_type(type_name, resolve_type(type_ctx, p4_type))
+                type_ctx.add_type(type_name, type_ctx.get_type(p4_type))
             except KeyError:
                 pass
         for idx, param in enumerate(pipe_val.params):
             ctrl_type_par_type = ctrl_type.params[idx].p4_type
             try:
-                resolve_type(type_ctx, ctrl_type_par_type)
+                type_ctx.get_type(ctrl_type_par_type)
             except KeyError:
-                par_type = resolve_type(type_ctx, param.p4_type)
+                par_type = type_ctx.get_type(param.p4_type)
                 type_ctx.add_type(ctrl_type_par_type, par_type)
-                self.type_context[ctrl_type_par_type] = par_type
+                self.type_ctx[ctrl_type_par_type] = par_type
         pipe_val = pipe_val.bind_to_ctrl_type(type_ctx, ctrl_type)
         return pipe_val, ctrl_type
 

@@ -4,7 +4,7 @@ from p4z3.base import z3, log, copy, merge_attrs
 from p4z3.base import gen_instance, z3_cast, handle_mux, StructInstance
 from p4z3.base import P4Z3Class, P4Mask, P4ComplexType, UNDEF_LABEL
 from p4z3.base import DefaultExpression, propagate_validity_bit
-from p4z3.base import P4Expression, P4Argument, P4Range, resolve_type, ListType
+from p4z3.base import P4Expression, P4Argument, P4Range, ListType
 
 
 def save_variables(context, merged_args):
@@ -127,11 +127,12 @@ class P4Callable(P4Z3Class):
             # it can happen that we receive a list
             # infer the type, generate, and set
             try:
-                p4_type = resolve_type(context, arg.p4_type)
+                p4_type = context.get_type(arg.p4_type)
             except KeyError:
                 # this is a generic type, we need to bind for this scope
                 # FIXME: Clean this up
-                context.add_type(arg.p4_type, arg_expr.sort())
+                p4_type = arg_expr.sort()
+                context.add_type(arg.p4_type, p4_type)
             if isinstance(arg_expr, list):
                 # if the type is undefined, do nothing
                 if isinstance(p4_type, P4ComplexType):
@@ -171,9 +172,8 @@ class ConstCallExpr(P4Expression):
         self.kwargs = kwargs
 
     def eval(self, context):
-        p4_method = resolve_type(context, self.p4_method)
+        p4_method = context.get_type(self.p4_method)
         return p4_method.initialize(context, *self.args, **self.kwargs)
-
 
 
 class P4Action(P4Callable):
@@ -232,7 +232,7 @@ class P4Control(P4Callable):
         # the type params sometimes include the return type also
         # it is typically the first value, but is bound somewhere else
         for idx, t_param in enumerate(init_ctrl.type_params):
-            sub_type = resolve_type(context, ctrl_type.params[idx].p4_type)
+            sub_type = context.get_type(ctrl_type.params[idx].p4_type)
             init_ctrl.type_context[t_param] = sub_type
             for param_idx, param in enumerate(init_ctrl.params):
                 if isinstance(param.p4_type, str) and param.p4_type == t_param:
@@ -256,7 +256,7 @@ class P4Control(P4Callable):
         for idx, const_param in enumerate(ctrl_copy.const_params):
             # this means the type is generic
             try:
-                resolve_type(context, const_param.p4_type)
+                context.get_type(const_param.p4_type)
             except KeyError:
                 # grab the type of the input arguments
                 ctrl_copy.type_context[const_param.p4_type] = args[idx].sort()
@@ -264,7 +264,7 @@ class P4Control(P4Callable):
 
     def apply(self, context, *args, **kwargs):
         for type_name, p4_type in self.type_context.items():
-            context.add_type(type_name, resolve_type(context, p4_type))
+            context.add_type(type_name, context.get_type(p4_type))
         self.eval(context, *args, **kwargs)
 
     def eval_callable(self, context, merged_args, var_buffer):
@@ -314,7 +314,7 @@ class P4Method(P4Callable):
             arg_mode, arg_ref, arg_expr, p4_src_type = arg
             # infer the type
             try:
-                p4_type = resolve_type(context, p4_src_type)
+                p4_type = context.get_type(p4_src_type)
             except KeyError:
                 # This is dynamic type inference based on arguments
                 # FIXME Check this hack.
@@ -363,9 +363,9 @@ class P4Method(P4Callable):
 
         # apply the local and parent extern type contexts
         for type_name, p4_type in self.extern_context.items():
-            sub_ctx.add_type(type_name, resolve_type(sub_ctx, p4_type))
+            sub_ctx.add_type(type_name, sub_ctx.get_type(p4_type))
         for type_name, p4_type in self.type_context.items():
-            sub_ctx.add_type(type_name, resolve_type(sub_ctx, p4_type))
+            sub_ctx.add_type(type_name, sub_ctx.get_type(p4_type))
         # assign symbolic values to the inputs that are inout and out
         self.assign_values(sub_ctx, method_args)
 
@@ -387,7 +387,7 @@ class P4Method(P4Callable):
     def init_type_params(self, context, *args, **kwargs):
         init_method = copy.copy(self)
         for idx, t_param in enumerate(init_method.type_params):
-            arg = resolve_type(context, args[idx])
+            arg = context.get_type(args[idx])
             init_method.type_context[t_param] = arg
         return init_method
 

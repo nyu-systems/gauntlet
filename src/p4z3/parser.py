@@ -1,7 +1,7 @@
 from collections import OrderedDict
 from p4z3.state import LocalContext, StaticContext
 from p4z3.base import log, z3, P4Range, merge_attrs, P4Mask, DefaultExpression
-from p4z3.base import P4Expression, StructInstance, resolve_type
+from p4z3.base import P4Expression, StructInstance
 from p4z3.base import ParserException, StructType, HeaderStack, merge_dicts
 from p4z3.callables import P4Control
 import copy
@@ -21,7 +21,7 @@ class P4Parser(P4Control):
     def compute_loop_bound(self, context):
         sizes = []
         for param in self.params:
-            p4_type = resolve_type(context, param.p4_type)
+            p4_type = context.get_type(param.p4_type)
             self.collect_stack_sizes(p4_type, sizes)
         if sizes:
             max_size = max(sizes)
@@ -31,7 +31,7 @@ class P4Parser(P4Control):
 
     def apply(self, context, *args, **kwargs):
         for type_name, p4_type in self.type_context.items():
-            context.add_type(type_name, resolve_type(context, p4_type))
+            context.add_type(type_name, context.get_type(p4_type))
         # disable unrolling for now, we do not really need it for validation
         # and with it, tests take unpleasantly long
         # self.statements.max_loop = self.compute_loop_bound(context)
