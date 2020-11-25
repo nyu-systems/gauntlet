@@ -9,13 +9,13 @@ class P4Initializer(P4Expression):
         self.val = val
         self.instance_type = instance_type
 
-    def eval(self, context):
-        val = context.resolve_expr(self.val)
+    def eval(self, ctx):
+        val = ctx.resolve_expr(self.val)
         if self.instance_type is None:
             # no type defined, return just the value
             return val
         else:
-            instance = gen_instance(context, UNDEF_LABEL, self.instance_type)
+            instance = gen_instance(ctx, UNDEF_LABEL, self.instance_type)
 
         if isinstance(val, StructInstance):
             # copy the reference if we initialize with another complex type
@@ -24,7 +24,7 @@ class P4Initializer(P4Expression):
             if isinstance(val, dict):
                 instance.setValid()
                 for name, val in val.items():
-                    val_expr = context.resolve_expr(val)
+                    val_expr = ctx.resolve_expr(val)
                     instance.set_or_add_var(name, val_expr)
             elif isinstance(val, list):
                 instance.set_list(val)
@@ -44,7 +44,7 @@ class P4Op(P4Expression):
     def get_value(self):
         raise NotImplementedError("get_value")
 
-    def eval(self, context):
+    def eval(self, ctx):
         raise NotImplementedError("eval")
 
 
@@ -70,9 +70,9 @@ class P4BinaryOp(P4Op):
             raise RuntimeError(
                 f"Operations on {lval} or {rval} not supported!")
 
-    def eval(self, context):
-        lval_expr = context.resolve_expr(self.lval)
-        rval_expr = context.resolve_expr(self.rval)
+    def eval(self, ctx):
+        lval_expr = ctx.resolve_expr(self.lval)
+        rval_expr = ctx.resolve_expr(self.rval)
         # align the bitvectors to allow operations
         lval_is_bitvec = isinstance(lval_expr, (z3.BitVecRef, z3.BitVecNumRef))
         rval_is_bitvec = isinstance(rval_expr, (z3.BitVecRef, z3.BitVecNumRef))
@@ -100,8 +100,8 @@ class P4UnaryOp(P4Op):
         else:
             raise RuntimeError(f"Operations on {val}not supported!")
 
-    def eval(self, context):
-        expr = context.resolve_expr(self.val)
+    def eval(self, ctx):
+        expr = ctx.resolve_expr(self.val)
         return self.operator(expr)
 
 
@@ -220,18 +220,18 @@ class P4land(P4BinaryOp):
         operator = z3.And
         P4BinaryOp.__init__(self, lval, rval, operator)
 
-    def eval(self, context):
+    def eval(self, ctx):
         # boolean expressions can short-circuit
         # so we save the result of the right-hand expression and merge
-        lval_expr = context.resolve_expr(self.lval)
-        var_store, chain_copy = context.checkpoint()
-        forward_cond_copy = context.tmp_forward_cond
-        context.tmp_forward_cond = z3.And(forward_cond_copy, lval_expr)
-        rval_expr = context.resolve_expr(self.rval)
-        else_vars = context.get_attrs()
-        context.restore(var_store, chain_copy)
-        context.tmp_forward_cond = forward_cond_copy
-        merge_attrs(context, lval_expr, else_vars)
+        lval_expr = ctx.resolve_expr(self.lval)
+        var_store, chain_copy = ctx.checkpoint()
+        forward_cond_copy = ctx.tmp_forward_cond
+        ctx.tmp_forward_cond = z3.And(forward_cond_copy, lval_expr)
+        rval_expr = ctx.resolve_expr(self.rval)
+        else_vars = ctx.get_attrs()
+        ctx.restore(var_store, chain_copy)
+        ctx.tmp_forward_cond = forward_cond_copy
+        merge_attrs(ctx, lval_expr, else_vars)
         return self.operator(lval_expr, rval_expr)
 
 
@@ -240,18 +240,18 @@ class P4lor(P4BinaryOp):
         operator = z3.Or
         P4BinaryOp.__init__(self, lval, rval, operator)
 
-    def eval(self, context):
+    def eval(self, ctx):
         # boolean expressions can short-circuit
         # so we save the result of the right-hand expression and merge
-        lval_expr = context.resolve_expr(self.lval)
-        var_store, chain_copy = context.checkpoint()
-        forward_cond_copy = context.tmp_forward_cond
-        context.tmp_forward_cond = z3.And(forward_cond_copy, z3.Not(lval_expr))
-        rval_expr = context.resolve_expr(self.rval)
-        else_vars = context.get_attrs()
-        context.restore(var_store, chain_copy)
-        context.tmp_forward_cond = forward_cond_copy
-        merge_attrs(context, z3.Not(lval_expr), else_vars)
+        lval_expr = ctx.resolve_expr(self.lval)
+        var_store, chain_copy = ctx.checkpoint()
+        forward_cond_copy = ctx.tmp_forward_cond
+        ctx.tmp_forward_cond = z3.And(forward_cond_copy, z3.Not(lval_expr))
+        rval_expr = ctx.resolve_expr(self.rval)
+        else_vars = ctx.get_attrs()
+        ctx.restore(var_store, chain_copy)
+        ctx.tmp_forward_cond = forward_cond_copy
+        merge_attrs(ctx, z3.Not(lval_expr), else_vars)
 
         return self.operator(lval_expr, rval_expr)
 
@@ -276,12 +276,12 @@ class P4lshift(P4BinaryOp):
     def __init__(self, lval, rval):
         P4BinaryOp.__init__(self, lval, rval, None)
 
-    def eval(self, context):
+    def eval(self, ctx):
         # z3 does not like to shift operators of different size
         # but casting both values could lead to missing an overflow
         # so after the operation cast the lvalue down to its original size
-        lval_expr = context.resolve_expr(self.lval)
-        rval_expr = context.resolve_expr(self.rval)
+        lval_expr = ctx.resolve_expr(self.lval)
+        rval_expr = ctx.resolve_expr(self.rval)
         if isinstance(lval_expr, int):
             # if lval_expr is an int we might get a signed value
             # the only size adjustment is to make the rval expr large enough
@@ -308,12 +308,12 @@ class P4rshift(P4BinaryOp):
     def __init__(self, lval, rval):
         P4BinaryOp.__init__(self, lval, rval, None)
 
-    def eval(self, context):
+    def eval(self, ctx):
         # z3 does not like to shift operators of different size
         # but casting both values could lead to missing an overflow
         # so after the operation cast the lvalue down to its original size
-        lval_expr = context.resolve_expr(self.lval)
-        rval_expr = context.resolve_expr(self.rval)
+        lval_expr = ctx.resolve_expr(self.lval)
+        rval_expr = ctx.resolve_expr(self.rval)
         if isinstance(lval_expr, int):
             # if x is an int we might get a signed value
             # we need to use the arithmetic right shift in this case
@@ -395,10 +395,10 @@ class P4Concat(P4Expression):
         self.lval = lval
         self.rval = rval
 
-    def eval(self, context):
+    def eval(self, ctx):
         # for concat we do not align the size of the operators
-        lval = context.resolve_expr(self.lval)
-        rval = context.resolve_expr(self.rval)
+        lval = ctx.resolve_expr(self.lval)
+        rval = ctx.resolve_expr(self.rval)
         # all values must be bitvectors... so cast them
         # this is necessary because int<*> values can be concatenated
         if isinstance(lval, int):
@@ -418,16 +418,16 @@ class P4Cast(P4BinaryOp):
         operator = z3_cast
         P4BinaryOp.__init__(self, val, to_size, operator)
 
-    def eval(self, context):
-        lval_expr = context.resolve_expr(self.lval)
+    def eval(self, ctx):
+        lval_expr = ctx.resolve_expr(self.lval)
 
-        rval_expr = context.get_type(self.rval)
+        rval_expr = ctx.get_type(self.rval)
 
         # it can happen that we cast to a complex type...
         if isinstance(rval_expr, P4ComplexType):
             # we produce an initializer that takes care of the details
             initializer = P4Initializer(lval_expr, rval_expr)
-            return initializer.eval(context)
+            return initializer.eval(ctx)
         return self.operator(lval_expr, rval_expr)
 
 
@@ -437,24 +437,24 @@ class P4Mux(P4Expression):
         self.then_val = then_val
         self.else_val = else_val
 
-    def eval(self, context):
-        cond = z3.simplify(context.resolve_expr(self.cond))
+    def eval(self, ctx):
+        cond = z3.simplify(ctx.resolve_expr(self.cond))
 
         # handle side effects for function and table calls
         if z3.is_true(cond):
-            return context.resolve_expr(self.then_val)
+            return ctx.resolve_expr(self.then_val)
         if z3.is_false(cond):
-            return context.resolve_expr(self.else_val)
+            return ctx.resolve_expr(self.else_val)
 
-        var_store, chain_copy = context.checkpoint()
-        forward_cond_copy = context.tmp_forward_cond
-        context.tmp_forward_cond = z3.And(forward_cond_copy, cond)
-        then_expr = context.resolve_expr(self.then_val)
-        then_vars = context.get_attrs()
-        context.restore(var_store, chain_copy)
-        context.tmp_forward_cond = forward_cond_copy
+        var_store, chain_copy = ctx.checkpoint()
+        forward_cond_copy = ctx.tmp_forward_cond
+        ctx.tmp_forward_cond = z3.And(forward_cond_copy, cond)
+        then_expr = ctx.resolve_expr(self.then_val)
+        then_vars = ctx.get_attrs()
+        ctx.restore(var_store, chain_copy)
+        ctx.tmp_forward_cond = forward_cond_copy
 
-        else_expr = context.resolve_expr(self.else_val)
-        merge_attrs(context, cond, then_vars)
+        else_expr = ctx.resolve_expr(self.else_val)
+        merge_attrs(ctx, cond, then_vars)
 
         return handle_mux(cond, then_expr, else_expr)

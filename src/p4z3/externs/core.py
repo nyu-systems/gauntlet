@@ -30,12 +30,12 @@ from p4z3.parser import ParserException
 '''
 
 
-def detect_hdr_stack_next(context, hdr_ref):
+def detect_hdr_stack_next(ctx, hdr_ref):
     while isinstance(hdr_ref, P4Member):
         member = hdr_ref.member
         hdr_ref = hdr_ref.lval
         if member == "next":
-            hdr_ref = context.resolve_reference(hdr_ref)
+            hdr_ref = ctx.resolve_reference(hdr_ref)
             if isinstance(hdr_ref, HeaderStackInstance):
                 return hdr_ref
     return None
@@ -54,23 +54,23 @@ class packet_in(P4Extern):
         class extract_1(P4Method):
             hdr_param_name = "hdr"
 
-            def extract_hdr(self, context, merged_args):
+            def extract_hdr(self, ctx, merged_args):
                 hdr = merged_args[self.hdr_param_name].p4_val
-                # apply the local and parent extern type contexts
-                for type_name, p4_type in self.extern_context.items():
-                    context.add_type(type_name, context.get_type(p4_type))
-                for type_name, p4_type in self.type_context.items():
-                    context.add_type(type_name, context.get_type(p4_type))
+                # apply the local and parent extern type ctxs
+                for type_name, p4_type in self.extern_ctx.items():
+                    ctx.add_type(type_name, ctx.get_type(p4_type))
+                for type_name, p4_type in self.type_ctx.items():
+                    ctx.add_type(type_name, ctx.get_type(p4_type))
 
                 # advance the header index if a next field has been accessed
-                hdr_stack = detect_hdr_stack_next(context, hdr)
+                hdr_stack = detect_hdr_stack_next(ctx, hdr)
                 if hdr_stack:
                     compare = hdr_stack.locals["nextIndex"] >= hdr_stack.locals["size"]
                     if z3.simplify(compare) == z3.BoolVal(True):
                         raise ParserException("Index out of bounds!")
 
                 # grab the hdr value
-                hdr_expr = context.resolve_expr(hdr)
+                hdr_expr = ctx.resolve_expr(hdr)
 
                 hdr_expr.activate()
                 bind_const = z3.Const(
@@ -83,23 +83,23 @@ class packet_in(P4Extern):
                     hdr_stack.locals["nextIndex"] += 1
                 self.call_counter += 1
 
-            def __call__(self, context, *args, **kwargs):
+            def __call__(self, ctx, *args, **kwargs):
                 merged_args = merge_parameters(self.params, *args, **kwargs)
                 # this means default expressions have been used, no input
                 if not merged_args:
                     return
-                self.extract_hdr(context, merged_args)
+                self.extract_hdr(ctx, merged_args)
 
         class extract_2(extract_1):
             hdr_param_name = "variableSizeHeader"
 
-            def __call__(self, context, *args, **kwargs):
+            def __call__(self, ctx, *args, **kwargs):
                 merged_args = merge_parameters(self.params, *args, **kwargs)
                 # this means default expressions have been used, no input
                 if not merged_args:
                     return
-                self.extract_hdr(context, merged_args)
-                field_size = context.resolve_expr(
+                self.extract_hdr(ctx, merged_args)
+                field_size = ctx.resolve_expr(
                     merged_args["variableFieldSizeInBits"].p4_val)
                 # self.pkt_cursor += field_size
 
@@ -131,7 +131,7 @@ class packet_in(P4Extern):
         # ADVANCE #
         class advance(P4Method):
 
-            def eval_callable(self, context, merged_args, var_buffer):
+            def eval_callable(self, ctx, merged_args, var_buffer):
                 # self.pkt_cursor += merged_args["sizeInBits"]
                 pass
 

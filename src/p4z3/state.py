@@ -73,26 +73,26 @@ class P4Context():
             slice_r = outer_slice_r + slice_r
         return lval, slice_l, slice_r
 
-    def set_slice(self, context, lval, rval):
-        slice_l = context.resolve_expr(lval.slice_l)
-        slice_r = context.resolve_expr(lval.slice_r)
+    def set_slice(self, ctx, lval, rval):
+        slice_l = ctx.resolve_expr(lval.slice_l)
+        slice_r = ctx.resolve_expr(lval.slice_r)
         lval = lval.val
         lval, slice_l, slice_r = self.find_nested_slice(lval, slice_l, slice_r)
 
         # need to resolve everything first, these can be members
-        lval_expr = context.resolve_expr(lval)
+        lval_expr = ctx.resolve_expr(lval)
 
         # z3 requires the extract value to be a bitvector, so we must cast ints
         # actually not sure where this could happen...
         if isinstance(lval_expr, int):
             lval_expr = lval_expr.as_bitvec
 
-        rval_expr = context.resolve_expr(rval)
+        rval_expr = ctx.resolve_expr(rval)
 
         lval_expr_max = lval_expr.size() - 1
         if slice_l == lval_expr_max and slice_r == 0:
             # slice is full lval, nothing to do
-            context.set_or_add_var(lval, rval_expr)
+            ctx.set_or_add_var(lval, rval_expr)
             return
         assemble = []
         if slice_l < lval_expr_max:
@@ -106,7 +106,7 @@ class P4Context():
             # right slice is larger than zero, leave that chunk unchanged
             assemble.append(z3.Extract(slice_r - 1, 0, lval_expr))
         rval_expr = z3.Concat(*assemble)
-        context.set_or_add_var(lval, rval_expr)
+        ctx.set_or_add_var(lval, rval_expr)
         return
 
     def set_or_add_var(self, lval, rval, new_decl=False):
@@ -119,9 +119,9 @@ class P4Context():
         # now that all the preprocessing is done we can assign the value
         log.debug("Setting %s(%s) to %s(%s) ",
                   lval, type(lval), rval, type(rval))
-        context, lval_val = self.find_context(lval)
-        if not context or new_decl:
-            context = self
+        ctx, lval_val = self.find_context(lval)
+        if not ctx or new_decl:
+            ctx = self
 
         # rvals could be a list, unroll the assignment
         if isinstance(rval, list) and lval_val is not None:
@@ -135,14 +135,14 @@ class P4Context():
                 raise TypeError(
                     f"set_list {type(lval)} not supported!")
             return
-        context.locals[lval] = rval
+        ctx.locals[lval] = rval
 
     def resolve_reference(self, var):
         if isinstance(var, P4Member):
             return var.eval(self)
         if isinstance(var, str):
-            context, val = self.find_context(var)
-            if not context:
+            ctx, val = self.find_context(var)
+            if not ctx:
                 raise RuntimeError(f"Variable {var} not found!")
             return val
         return var
@@ -155,9 +155,9 @@ class StaticContext(P4Context):
     def __init__(self):
         super(StaticContext, self).__init__()
         self.extern_extensions = {}
-        self.master_context = self
+        self.master_ctx = self
         self.p4_state = None
-        self.parent_context = None
+        self.parent_ctx = None
 
     def add_extern_extensions(self, extern_extensions):
         self.extern_extensions = {
@@ -221,27 +221,27 @@ class StaticContext(P4Context):
         return type_name
 
     def find_context(self, var):
-        context = self
+        ctx = self
         try:
-            return context, context.locals[var]
+            return ctx, ctx.locals[var]
         except KeyError:
-            context = context.parent_context
+            ctx = ctx.parent_ctx
         # nothing found, empty result
         return None, None
 
 
 class LocalContext(P4Context):
-    def __init__(self, parent_context, var_buffer):
+    def __init__(self, parent_ctx, var_buffer):
         super(LocalContext, self).__init__()
-        self.parent_context = parent_context
-        self.master_context = parent_context.master_context
+        self.parent_ctx = parent_ctx
+        self.master_ctx = parent_ctx.master_ctx
         self.var_buffer = var_buffer
         self.has_returned = False
         # to merge the return exprs after a callable has completed
         self.return_exprs = deque()
         # to merge all the return states after a callable has completed
         self.return_states = deque()
-        # this can be used to perform return casts in the current context
+        # this can be used to perform return casts in the current ctx
         self.return_type = None
         self.forward_conds = deque()
         self.tmp_forward_cond = z3.BoolVal(True)
@@ -255,7 +255,7 @@ class LocalContext(P4Context):
     def declare_var(self, lval, rval):
         self.locals[lval] = rval
 
-    def copy_out(self, context):
+    def copy_out(self, ctx):
         # restore any variables that may have been overridden
         # with copy-out we copy from left to right
         # values on the right override values on the left
@@ -268,7 +268,7 @@ class LocalContext(P4Context):
             log.debug("Resetting %s to %s", par_name, type(par_val))
             # value has not existed previously, ignore
             if par_val is not None:
-                context.set_or_add_var(par_name, par_val)
+                ctx.set_or_add_var(par_name, par_val)
 
             # if the param was copy-out, we copy the value we retrieved
             # back to the original input reference
@@ -276,87 +276,87 @@ class LocalContext(P4Context):
                 log.debug("Copy-out: %s to %s", val, par_ref)
                 # copy it back to the input reference
                 # this assumes an lvalue as input
-                context.set_or_add_var(par_ref, val)
+                ctx.set_or_add_var(par_ref, val)
 
     def get_p4_state(self):
-        return self.master_context.p4_state
+        return self.master_ctx.p4_state
 
     def set_p4_state(self, p4_state):
-        self.master_context.p4_state = p4_state
+        self.master_ctx.p4_state = p4_state
 
     def add_extern_extensions(self, extern_extensions):
-        self.master_context.add_extern_extensions(extern_extensions)
+        self.master_ctx.add_extern_extensions(extern_extensions)
 
     def get_extern_extensions(self):
-        return self.master_context.get_extern_extensions()
+        return self.master_ctx.get_extern_extensions()
 
     def get_attrs(self):
         attr_dict = {}
-        context = self
-        while not isinstance(context, StaticContext):
-            for var_name, var_val in context.locals.items():
+        ctx = self
+        while not isinstance(ctx, StaticContext):
+            for var_name, var_val in ctx.locals.items():
                 attr_dict[var_name] = var_val
-            context = context.parent_context
+            ctx = ctx.parent_ctx
         return attr_dict
 
     def copy_attrs(self):
         attr_copy = {}
-        context = self
-        # copy everything except the first context, which are the global values
-        while not isinstance(context, StaticContext):
-            for attr_name, attr_val in context.locals.items():
+        ctx = self
+        # copy everything except the first ctx, which are the global values
+        while not isinstance(ctx, StaticContext):
+            for attr_name, attr_val in ctx.locals.items():
                 if isinstance(attr_val, StructInstance):
                     attr_val = copy.copy(attr_val)
                 attr_copy[attr_name] = attr_val
-            context = context.parent_context
+            ctx = ctx.parent_ctx
         return attr_copy
 
     def checkpoint(self):
         var_store = self.copy_attrs()
         return var_store, []
 
-    def restore(self, var_store, context=None):
+    def restore(self, var_store, ctx=None):
         for attr_name, attr_val in var_store.items():
             self.set_or_add_var(attr_name, attr_val)
 
     def set_exited(self, exit_state):
-        self.master_context.p4_state.has_exited = exit_state
+        self.master_ctx.p4_state.has_exited = exit_state
 
     def get_exited(self):
-        return self.master_context.p4_state.has_exited
+        return self.master_ctx.p4_state.has_exited
 
     def add_exit_state(self, cond, exit_state):
-        self.master_context.p4_state.exit_states.append((cond, exit_state))
+        self.master_ctx.p4_state.exit_states.append((cond, exit_state))
 
     def get_exit_states(self):
-        return self.master_context.p4_state.exit_states
+        return self.master_ctx.p4_state.exit_states
 
     def get_type(self, type_name):
-        context = self
+        ctx = self
         if isinstance(type_name, TypeSpecializer):
-            return type_name.eval(context)
+            return type_name.eval(ctx)
         if isinstance(type_name, str):
-            while not isinstance(context, StaticContext):
+            while not isinstance(ctx, StaticContext):
                 try:
-                    return context.type_map[type_name]
+                    return ctx.type_map[type_name]
                 except KeyError:
-                    context = context.parent_context
+                    ctx = ctx.parent_ctx
                     continue
-            # try the static context
-            return context.type_map[type_name]
+            # try the static ctx
+            return ctx.type_map[type_name]
         return type_name
 
     def find_context(self, var):
-        context = self
-        while not isinstance(context, StaticContext):
+        ctx = self
+        while not isinstance(ctx, StaticContext):
             try:
-                return context, context.locals[var]
+                return ctx, ctx.locals[var]
             except KeyError:
-                context = context.parent_context
+                ctx = ctx.parent_ctx
                 continue
-        # try the static context
+        # try the static ctx
         try:
-            return context, context.locals[var]
+            return ctx, ctx.locals[var]
         except KeyError:
             # nothing found, empty result
             return None, None
@@ -405,12 +405,12 @@ class P4State():
             ctx.set_or_add_var(
                 arg_name, member_constructor(self.const), True)
 
-    def get_members(self, context):
+    def get_members(self, ctx):
         ''' This method returns the current representation of the object in z3
         logic. This function has a side-effect, validity may be modified.'''
         members = []
         for member_name, _ in self.members:
-            member_val = context.resolve_reference(member_name)
+            member_val = ctx.resolve_reference(member_name)
             if isinstance(member_val, StructInstance):
                 # first we need to make sure that validity is correct
                 members.extend(member_val.flatten(None))

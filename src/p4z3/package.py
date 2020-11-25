@@ -33,7 +33,7 @@ class P4Package(P4Callable):
         self.type_params = type_params
         self.type_ctx = {}
 
-    def init_type_params(self, context, *args, **kwargs):
+    def init_type_params(self, ctx, *args, **kwargs):
         init_package = copy.copy(self)
         for idx, t_param in enumerate(init_package.type_params):
             init_package.type_ctx[t_param] = args[idx]
@@ -61,7 +61,7 @@ class P4Package(P4Callable):
         pipe_val = pipe_val.bind_to_ctrl_type(type_ctx, ctrl_type)
         return pipe_val, ctrl_type
 
-    def initialize(self, context, *args, **kwargs):
+    def initialize(self, ctx, *args, **kwargs):
         merged_args = merge_parameters(self.params, *args, **kwargs)
         for pipe_name, pipe_arg in merged_args.items():
             log.info("Loading %s pipe...", pipe_name)
@@ -70,23 +70,23 @@ class P4Package(P4Callable):
                 # for some reason, the argument is uninitialized.
                 # FIXME: This should not happen. Why?
                 continue
-            pipe_val = context.resolve_expr(pipe_arg.p4_val)
+            pipe_val = ctx.resolve_expr(pipe_arg.p4_val)
             if isinstance(pipe_val, P4Control):
                 # create the z3 representation of this control state
-                type_ctx = LocalContext(context, {})
+                type_ctx = LocalContext(ctx, {})
                 pipe_val, ctrl_type = self.type_inference(type_ctx, pipe_val, pipe_arg)
-                ctx = LocalContext(context, {})
+                sub_ctx = LocalContext(ctx, {})
                 p4_state = create_p4_state(
-                    ctx, type_ctx, pipe_name, pipe_val.params)
-                ctx.set_p4_state(p4_state)
+                    sub_ctx, type_ctx, pipe_name, pipe_val.params)
+                sub_ctx.set_p4_state(p4_state)
                 # initialize the call with its own params we collected
                 # this is essentially the input packet
                 args = []
                 for param in pipe_val.params:
                     args.append(param.name)
-                pipe_val.apply(ctx, *args)
+                pipe_val.apply(sub_ctx, *args)
                 # after executing the pipeline get its z3 representation
-                z3_function = p4_state.create_z3_representation(ctx)
+                z3_function = p4_state.create_z3_representation(sub_ctx)
                 # all done, that is our P4 representation!
                 self.pipes[pipe_name] = (
                     z3_function, p4_state.members, pipe_val)
@@ -95,7 +95,7 @@ class P4Package(P4Callable):
                 self.pipes[pipe_name] = (var, [], pipe_val)
             elif isinstance(pipe_val, P4Package):
                 # execute the package by calling its initializer
-                pipe_val.initialize(context)
+                pipe_val.initialize(ctx)
                 # resolve all the sub_pipes
                 for sub_pipe_name, sub_pipe_val in pipe_val.pipes.items():
                     sub_pipe_name = f"{pipe_name}_{sub_pipe_name}"
