@@ -1,5 +1,5 @@
 import operator as op
-from p4z3.base import log, z3_cast, z3, copy, gen_instance, handle_mux
+from p4z3.base import log, z3_cast, z3, copy, handle_mux
 from p4z3.base import StructInstance, P4Expression, P4ComplexType
 from p4z3.base import merge_attrs, UNDEF_LABEL
 
@@ -15,7 +15,7 @@ class P4Initializer(P4Expression):
             # no type defined, return just the value
             return val
         else:
-            instance = gen_instance(ctx, UNDEF_LABEL, self.instance_type)
+            instance = ctx.gen_instance(UNDEF_LABEL, self.instance_type)
 
         if isinstance(val, StructInstance):
             # copy the reference if we initialize with another complex type
@@ -224,12 +224,12 @@ class P4land(P4BinaryOp):
         # boolean expressions can short-circuit
         # so we save the result of the right-hand expression and merge
         lval_expr = ctx.resolve_expr(self.lval)
-        var_store, chain_copy = ctx.checkpoint()
+        var_store = ctx.checkpoint()
         forward_cond_copy = ctx.tmp_forward_cond
         ctx.tmp_forward_cond = z3.And(forward_cond_copy, lval_expr)
         rval_expr = ctx.resolve_expr(self.rval)
         else_vars = ctx.get_attrs()
-        ctx.restore(var_store, chain_copy)
+        ctx.restore(var_store)
         ctx.tmp_forward_cond = forward_cond_copy
         merge_attrs(ctx, lval_expr, else_vars)
         return self.operator(lval_expr, rval_expr)
@@ -244,12 +244,12 @@ class P4lor(P4BinaryOp):
         # boolean expressions can short-circuit
         # so we save the result of the right-hand expression and merge
         lval_expr = ctx.resolve_expr(self.lval)
-        var_store, chain_copy = ctx.checkpoint()
+        var_store = ctx.checkpoint()
         forward_cond_copy = ctx.tmp_forward_cond
         ctx.tmp_forward_cond = z3.And(forward_cond_copy, z3.Not(lval_expr))
         rval_expr = ctx.resolve_expr(self.rval)
         else_vars = ctx.get_attrs()
-        ctx.restore(var_store, chain_copy)
+        ctx.restore(var_store)
         ctx.tmp_forward_cond = forward_cond_copy
         merge_attrs(ctx, z3.Not(lval_expr), else_vars)
 
@@ -421,7 +421,7 @@ class P4Cast(P4BinaryOp):
     def eval(self, ctx):
         lval_expr = ctx.resolve_expr(self.lval)
 
-        rval_expr = ctx.get_type(self.rval)
+        rval_expr = ctx.resolve_type(self.rval)
 
         # it can happen that we cast to a complex type...
         if isinstance(rval_expr, P4ComplexType):
@@ -446,12 +446,12 @@ class P4Mux(P4Expression):
         if z3.is_false(cond):
             return ctx.resolve_expr(self.else_val)
 
-        var_store, chain_copy = ctx.checkpoint()
+        var_store = ctx.checkpoint()
         forward_cond_copy = ctx.tmp_forward_cond
         ctx.tmp_forward_cond = z3.And(forward_cond_copy, cond)
         then_expr = ctx.resolve_expr(self.then_val)
         then_vars = ctx.get_attrs()
-        ctx.restore(var_store, chain_copy)
+        ctx.restore(var_store)
         ctx.tmp_forward_cond = forward_cond_copy
 
         else_expr = ctx.resolve_expr(self.else_val)

@@ -58,9 +58,9 @@ class packet_in(P4Extern):
                 hdr = merged_args[self.hdr_param_name].p4_val
                 # apply the local and parent extern type ctxs
                 for type_name, p4_type in self.extern_ctx.items():
-                    ctx.add_type(type_name, ctx.get_type(p4_type))
+                    ctx.add_type(type_name, ctx.resolve_type(p4_type))
                 for type_name, p4_type in self.type_ctx.items():
-                    ctx.add_type(type_name, ctx.get_type(p4_type))
+                    ctx.add_type(type_name, ctx.resolve_type(p4_type))
 
                 # advance the header index if a next field has been accessed
                 hdr_stack = detect_hdr_stack_next(ctx, hdr)

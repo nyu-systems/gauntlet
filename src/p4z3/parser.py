@@ -21,7 +21,7 @@ class P4Parser(P4Control):
     def compute_loop_bound(self, ctx):
         sizes = []
         for param in self.params:
-            p4_type = ctx.get_type(param.p4_type)
+            p4_type = ctx.resolve_type(param.p4_type)
             self.collect_stack_sizes(p4_type, sizes)
         if sizes:
             max_size = max(sizes)
@@ -31,7 +31,7 @@ class P4Parser(P4Control):
 
     def apply(self, ctx, *args, **kwargs):
         for type_name, p4_type in self.type_ctx.items():
-            ctx.add_type(type_name, ctx.get_type(p4_type))
+            ctx.add_type(type_name, ctx.resolve_type(p4_type))
         # disable unrolling for now, we do not really need it for validation
         # and with it, tests take unpleasantly long
         # self.statements.max_loop = self.compute_loop_bound(ctx)
@@ -54,14 +54,14 @@ class RejectState(P4Expression):
 
         cond = z3.And(z3.Not(z3.Or(*forward_conds)),
                       z3.And(*tmp_forward_conds))
-        var_store, ctxs = ctx.checkpoint()
+        var_store = ctx.checkpoint()
         for member_name, _ in ctx.get_p4_state().members:
             member_val = ctx.resolve_reference(member_name)
             if isinstance(member_val, StructInstance):
                 member_val.deactivate()
             ctx.add_exit_state(
                 cond, ctx.get_p4_state().get_members(ctx))
-        ctx.restore(var_store, ctxs)
+        ctx.restore(var_store)
         ctx.set_exited(True)
         ctx.forward_conds.append(ctx.tmp_forward_cond)
 
@@ -105,7 +105,7 @@ class ParserNode():
             case_expr = ctx.resolve_expr(parser_cond)
             cond = build_select_cond(ctx, case_expr, match_list)
             # state forks here
-            var_store, ctxs = ctx.checkpoint()
+            var_store = ctx.checkpoint()
             ctx.tmp_forward_cond = z3.And(forward_cond_copy, cond)
             parser_node.eval(ctx)
             select_conds.append(cond)
@@ -114,7 +114,7 @@ class ParserNode():
                     (ctx.tmp_forward_cond, ctx.get_attrs()))
             ctx.set_exited(False)
             ctx.has_returned = False
-            ctx.restore(var_store, ctxs)
+            ctx.restore(var_store)
 
         # this hits when no select matches
         cond = z3.Not(z3.Or(*select_conds))

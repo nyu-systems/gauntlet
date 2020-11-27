@@ -7,27 +7,6 @@ log = logging.getLogger(__name__)
 UNDEF_LABEL = "undefined"
 
 
-def gen_instance(ctx, var_name, p4z3_type):
-    p4z3_type = ctx.get_type(p4z3_type)
-    if isinstance(p4z3_type, P4ComplexType):
-        z3_cls = p4z3_type.instantiate(var_name)
-        # this instance is fresh, so bind to itself
-        z3_cls.bind(z3_cls.const)
-        return z3_cls
-    elif isinstance(p4z3_type, StaticType):
-        # static complex type, just return
-        return p4z3_type
-    elif isinstance(p4z3_type, z3.SortRef):
-        return z3.Const(var_name, p4z3_type)
-    elif isinstance(p4z3_type, list):
-        instantiated_list = []
-        for idx, z3_type in enumerate(p4z3_type):
-            const = z3.Const(f"{var_name}_{idx}", z3_type)
-            instantiated_list.append(const)
-        return instantiated_list
-    raise RuntimeError(f"{p4z3_type} instantiation not supported!")
-
-
 def z3_cast(val, to_type):
 
     # some checks to guarantee that the inputs are usable
@@ -104,6 +83,19 @@ def merge_attrs(target_cls, cond, then_attrs):
             target_cls.set_or_add_var(then_name, if_expr)
 
 
+def merge_list(cond, then_list, else_list):
+    merged_list = []
+    for idx, then_val in enumerate(then_list):
+        else_val = else_list[idx]
+        if isinstance(then_val, list):
+            # note how we append, we do not extend
+            # we want to maintain the nesting structure
+            merged_list.append(merge_list(cond, then_val, else_val))
+        else:
+            merged_list.append(z3.If(cond, then_val, else_val))
+    return merged_list
+
+
 def mux_merge(cond, target, else_attrs):
     for idx, (member_name, _) in enumerate(target.fields):
         then_val = target.resolve_reference(member_name)
@@ -164,18 +156,7 @@ def handle_mux(cond, then_expr, else_expr):
 
     # we have to return a nested list when dealing with two lists
     if isinstance(then_expr, list) and isinstance(else_expr, list):
-        def list_merge(then_list, else_list):
-            merged_list = []
-            for idx, then_val in enumerate(then_list):
-                else_val = else_list[idx]
-                if isinstance(then_val, list):
-                    # note how we append, we do not extend
-                    # we want to maintain the nesting structure
-                    merged_list.append(list_merge(then_val, else_val))
-                else:
-                    merged_list.append(z3.If(cond, then_val, else_val))
-            return merged_list
-        merged_list = list_merge(then_expr, else_expr)
+        merged_list = merge_list(cond, then_expr, else_expr)
         return merged_list
 
     # assume normal z3 types at this point
@@ -222,17 +203,17 @@ class Member:
 
 class P4Z3Class():
 
-    def eval(self, p4_state):
+    def eval(self, ctx):
         raise NotImplementedError("Method eval not implemented!")
 
 
 class P4Expression(P4Z3Class):
-    def eval(self, p4_state):
+    def eval(self, ctx):
         raise NotImplementedError("Method eval not implemented!")
 
 
 class P4Statement(P4Z3Class):
-    def eval(self, p4_state):
+    def eval(self, ctx):
         raise NotImplementedError("Method eval not implemented!")
 
 
@@ -240,8 +221,17 @@ class DefaultExpression(P4Z3Class):
     def __init__(self):
         pass
 
-    def eval(self, p4_state):
+    def eval(self, ctx):
         pass
+
+
+class OptionalExpression(P4Expression):
+    def __init__(self, name, z3_type):
+        self.name = name
+        self.z3_type = z3_type
+
+    def eval(self, ctx):
+        return ctx.gen_instance(f"opt_{self.name}", self.z3_type)
 
 
 class P4Range(P4Z3Class):
@@ -249,7 +239,7 @@ class P4Range(P4Z3Class):
         self.min = range_min
         self.max = range_max
 
-    def eval(self, p4_state):
+    def eval(self, ctx):
         pass
 
 
@@ -258,7 +248,7 @@ class P4Mask(P4Z3Class):
         self.value = value
         self.mask = mask
 
-    def eval(self, p4_state):
+    def eval(self, ctx):
         pass
 
 
@@ -271,7 +261,7 @@ class P4Declaration(P4Statement):
         self.lval = lval
         self.rval = rval
 
-    def compute_rval(self, _p4_state):
+    def compute_rval(self, _ctx):
         return self.rval
 
     def eval(self, ctx):
@@ -286,14 +276,14 @@ class ValueDeclaration(P4Declaration):
     def compute_rval(self, ctx):
         # this will only resolve expressions no other classes
         # FIXME: Untangle this a bit
-        z3_type = ctx.get_type(self.z3_type)
+        z3_type = ctx.resolve_type(self.z3_type)
         if self.rval is not None:
             rval = ctx.resolve_expr(self.rval)
             if isinstance(rval, int):
                 if isinstance(z3_type, (z3.BitVecSortRef)):
                     rval = z3_cast(rval, z3_type)
             elif isinstance(rval, list):
-                instance = gen_instance(ctx, UNDEF_LABEL, z3_type)
+                instance = ctx.gen_instance(UNDEF_LABEL, z3_type)
                 instance.set_list(rval)
                 rval = instance
             elif z3_type != rval.sort():
@@ -302,7 +292,7 @@ class ValueDeclaration(P4Declaration):
                     f"does not match with input type {rval.sort()}"
                 raise RuntimeError(msg)
         else:
-            rval = gen_instance(ctx, UNDEF_LABEL, z3_type)
+            rval = ctx.gen_instance(UNDEF_LABEL, z3_type)
         return rval
 
 
@@ -321,9 +311,6 @@ class TypeDeclaration(P4Z3Class):
         self.p4_type = p4_type
 
 
-
-
-
 class InstanceDeclaration(ValueDeclaration):
     def __init__(self, lval, p4z3_type, *args, **kwargs):
         super(InstanceDeclaration, self).__init__(lval, p4z3_type)
@@ -331,12 +318,13 @@ class InstanceDeclaration(ValueDeclaration):
         self.kwargs = kwargs
 
     def compute_rval(self, ctx):
-        z3_type = ctx.get_type(self.rval)
+        z3_type = ctx.resolve_type(self.rval)
         z3_type = z3_type.initialize(ctx, *self.args, **self.kwargs)
         return z3_type
 
-    def eval(self, p4_state):
-        p4_state.set_or_add_var(self.lval, self.compute_rval(p4_state), True)
+    def eval(self, ctx):
+        z3_type = self.compute_rval(ctx)
+        ctx.set_or_add_var(self.lval, z3_type, True)
 
 
 class P4Member(P4Expression):
@@ -452,10 +440,10 @@ class P4Slice(P4Expression):
         self.slice_l = slice_l
         self.slice_r = slice_r
 
-    def eval(self, p4_state):
-        val = p4_state.resolve_expr(self.val)
-        slice_l = p4_state.resolve_expr(self.slice_l)
-        slice_r = p4_state.resolve_expr(self.slice_r)
+    def eval(self, ctx):
+        val = ctx.resolve_expr(self.val)
+        slice_l = ctx.resolve_expr(self.slice_l)
+        slice_r = ctx.resolve_expr(self.slice_r)
 
         if isinstance(val, int):
             val = val.as_bitvec
@@ -598,7 +586,7 @@ class StructType(P4ComplexType):
         flat_names = []
         for idx, (member_name, member_type) in enumerate(self.fields):
             try:
-                member_type = ctx.get_type(member_type)
+                member_type = ctx.resolve_type(member_type)
             except KeyError:
                 # A generic type, just use the string for now
                 pass
@@ -645,7 +633,7 @@ class StructType(P4ComplexType):
         init_struct = copy.copy(self)
         # bind the types and set the type ctx
         for idx, t_param in enumerate(init_struct.type_params):
-            arg = type_ctx.get_type(args[idx])
+            arg = type_ctx.resolve_type(args[idx])
             type_ctx.add_type(t_param, arg)
         init_struct.initialize(type_ctx)
         return init_struct
@@ -774,11 +762,11 @@ class HeaderInstance(StructInstance):
                 self.set_or_add_var(member_name, member_const)
         self.valid = z3.BoolVal(False)
 
-    def isValid(self, _p4_state=None):
+    def isValid(self, _ctx=None):
         # This is a built-in
         return self.valid
 
-    def setValid(self, p4_state):
+    def setValid(self, ctx):
         if self.union_parent:
             # this is a hacky way to invalidate other fields
             # in the case that this header is part of a union
@@ -788,11 +776,11 @@ class HeaderInstance(StructInstance):
                 # check whether the header is the same object
                 # any other header is now invalid
                 if member_hdr is not self:
-                    member_hdr.setInvalid(p4_state)
+                    member_hdr.setInvalid(ctx)
         # This is a built-in
         self.activate()
 
-    def setInvalid(self, _p4_state):
+    def setInvalid(self, _ctx):
         if self.union_parent:
             # this is a hacky way to invalidate other fields
             # in the case that this header is part of a union
@@ -862,7 +850,7 @@ class HeaderUnionInstance(StructInstance):
             valid_list.append(member_hdr.isValid())
         return z3.simplify(z3.Or(*valid_list))
 
-    def isValid(self, _p4_state=None):
+    def isValid(self, _ctx=None):
         # This is a built-in
         return self.valid
 
@@ -968,25 +956,25 @@ class HeaderStackInstance(StructInstance):
         # FIXME: This should be undefined...
         self.locals["lastIndex"] = self.locals["nextIndex"]
 
-    def push_front(self, p4_state, count):
+    def push_front(self, ctx, count):
         # This is a built-in defined in the spec
         for hdr_idx in range(0, self.locals["size"]):
             if hdr_idx < count:
                 hdr = self.locals[f"{hdr_idx}"]
-                hdr.setInvalid(p4_state)
+                hdr.setInvalid(ctx)
         self.locals["nextIndex"] += count
         if z3.is_true(z3.simplify(self.locals["nextIndex"] > self.locals["size"])):
             self.locals["nextIndex"] = z3.BitVecVal(self.locals["size"], 32)
         self.locals["lastIndex"] = self.locals["nextIndex"]
 
-    def pop_front(self, p4_state, count):
+    def pop_front(self, ctx, count):
         # This is a built-in defined in the spec
         last_range = self.locals["size"] - count
         last_range = 0 if last_range < 0 else last_range
         for hdr_idx in range(last_range, self.locals["size"]):
             if hdr_idx < self.locals["size"] - 1:
                 hdr = self.locals[f"{hdr_idx}"]
-                hdr.setInvalid(p4_state)
+                hdr.setInvalid(ctx)
 
         self.locals["nextIndex"] -= count
         self.locals["lastIndex"] = self.locals["nextIndex"]
@@ -1069,7 +1057,7 @@ class P4Extern(StaticType):
         init_extern = copy.copy(self)
         # bind the types and set the type ctx
         for idx, t_param in enumerate(init_extern.type_params):
-            arg = ctx.get_type(args[idx])
+            arg = ctx.resolve_type(args[idx])
             init_extern.type_ctx[t_param] = arg
         # the types bound in an extern also apply to its objects
         for method_list in init_extern.locals.values():

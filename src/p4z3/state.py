@@ -13,13 +13,14 @@ from p4z3.base import P4Extern, P4Declaration, ControlDeclaration
 
 from p4z3.z3int import Z3Int
 
+
 class TypeSpecializer():
     def __init__(self, p4z3_type, *args):
         self.p4z3_type = p4z3_type
         self.args = args
 
     def eval(self, ctx):
-        p4z3_type = ctx.get_type(self.p4z3_type)
+        p4z3_type = ctx.resolve_type(self.p4z3_type)
         type_ctx = LocalContext(ctx, {})
         return p4z3_type.init_type_params(type_ctx, *self.args)
 
@@ -33,9 +34,32 @@ class P4Context():
     def find_context(self, var):
         raise NotImplementedError("Method find_context not implemented!")
 
+    def resolve_type(self, type_name):
+        raise NotImplementedError("Method resolve_type not implemented!")
+
+    def gen_instance(self, var_name, p4z3_type):
+        p4z3_type = self.resolve_type(p4z3_type)
+        if isinstance(p4z3_type, P4ComplexType):
+            z3_cls = p4z3_type.instantiate(var_name)
+            # this instance is fresh, so bind to itself
+            z3_cls.bind(z3_cls.const)
+            return z3_cls
+        elif isinstance(p4z3_type, StaticType):
+            # static complex type, just return
+            return p4z3_type
+        elif isinstance(p4z3_type, z3.SortRef):
+            return z3.Const(var_name, p4z3_type)
+        elif isinstance(p4z3_type, list):
+            instantiated_list = []
+            for idx, z3_type in enumerate(p4z3_type):
+                const = z3.Const(f"{var_name}_{idx}", z3_type)
+                instantiated_list.append(const)
+            return instantiated_list
+        raise RuntimeError(f"{p4z3_type} instantiation not supported!")
+
     def resolve_expr(self, expr):
         # Resolves to z3 and z3p4 expressions
-        # ints, lists, and dicts are also okay
+        # ints and lists  are also okay
 
         # resolve potential string references first
         log.debug("Resolving %s", expr)
@@ -120,17 +144,16 @@ class P4Context():
         log.debug("Setting %s(%s) to %s(%s) ",
                   lval, type(lval), rval, type(rval))
         ctx, lval_val = self.find_context(lval)
-        if not ctx or new_decl:
+        if new_decl or not ctx:
             ctx = self
 
         # rvals could be a list, unroll the assignment
         if isinstance(rval, list) and lval_val is not None:
             if isinstance(lval_val, StructInstance):
                 lval_val.set_list(rval)
-            elif isinstance(lval_val, list):
+            elif isinstance(lval, str):
                 # TODO: Decide whether this makes sense
-                for idx, sub_rval in enumerate(rval):
-                    self.set_or_add_var(sub_rval, lval_val[idx])
+                log.warning("Skipping assignment %s to %s", rval, lval)
             else:
                 raise TypeError(
                     f"set_list {type(lval)} not supported!")
@@ -171,7 +194,7 @@ class StaticContext(P4Context):
             name = p4_class.name
             self.add_type(name, p4_class)
         elif isinstance(p4_class, TypeDeclaration):
-            p4_type = self.get_type(p4_class.p4_type)
+            p4_type = self.resolve_type(p4_class.p4_type)
             self.add_type(p4_class.name, p4_type)
         elif isinstance(p4_class, ControlDeclaration):
             self.set_or_add_var(p4_class.ctrl.name, p4_class.ctrl)
@@ -182,7 +205,7 @@ class StaticContext(P4Context):
             # and their type is actually the z3 type, not the class type
             name = p4_class.name
             self.set_or_add_var(name, p4_class)
-            p4_type = self.get_type(p4_class.z3_type)
+            p4_type = self.resolve_type(p4_class.z3_type)
             self.add_type(name, p4_type)
         elif isinstance(p4_class, P4Declaration):
             name = p4_class.lval
@@ -199,7 +222,7 @@ class StaticContext(P4Context):
         name = f"{z3_type}{num}"
         p4_stack = HeaderStack(name, self, [z3_type] * num)
         self.declare_global(p4_stack)
-        return self.get_type(name)
+        return self.resolve_type(name)
 
     def get_value(self, expr):
         val = self.resolve_expr(expr)
@@ -213,7 +236,7 @@ class StaticContext(P4Context):
             return self.locals["main"]
         return None
 
-    def get_type(self, type_name):
+    def resolve_type(self, type_name):
         if isinstance(type_name, str):
             return self.type_map[type_name]
         if isinstance(type_name, TypeSpecializer):
@@ -294,8 +317,9 @@ class LocalContext(P4Context):
         attr_dict = {}
         ctx = self
         while not isinstance(ctx, StaticContext):
-            for var_name, var_val in ctx.locals.items():
-                attr_dict[var_name] = var_val
+            for attr_name, var_val in ctx.locals.items():
+                if attr_name not in attr_dict:
+                    attr_dict[attr_name] = var_val
             ctx = ctx.parent_ctx
         return attr_dict
 
@@ -305,17 +329,18 @@ class LocalContext(P4Context):
         # copy everything except the first ctx, which are the global values
         while not isinstance(ctx, StaticContext):
             for attr_name, attr_val in ctx.locals.items():
-                if isinstance(attr_val, StructInstance):
-                    attr_val = copy.copy(attr_val)
-                attr_copy[attr_name] = attr_val
+                if attr_name not in attr_copy:
+                    if isinstance(attr_val, StructInstance):
+                        attr_val = copy.copy(attr_val)
+                    attr_copy[attr_name] = attr_val
             ctx = ctx.parent_ctx
         return attr_copy
 
     def checkpoint(self):
         var_store = self.copy_attrs()
-        return var_store, []
+        return var_store
 
-    def restore(self, var_store, ctx=None):
+    def restore(self, var_store):
         for attr_name, attr_val in var_store.items():
             self.set_or_add_var(attr_name, attr_val)
 
@@ -331,7 +356,7 @@ class LocalContext(P4Context):
     def get_exit_states(self):
         return self.master_ctx.p4_state.exit_states
 
-    def get_type(self, type_name):
+    def resolve_type(self, type_name):
         ctx = self
         if isinstance(type_name, TypeSpecializer):
             return type_name.eval(ctx)
@@ -380,7 +405,7 @@ class P4State():
         flat_args = []
         idx = 0
         for z3_arg_name, z3_arg_type in self.members:
-            z3_arg_type = ctx.get_type(z3_arg_type)
+            z3_arg_type = ctx.resolve_type(z3_arg_type)
             if isinstance(z3_arg_type, P4ComplexType):
                 member_cls = z3_arg_type.instantiate(f"{self.name}.{idx}")
                 propagate_validity_bit(member_cls)

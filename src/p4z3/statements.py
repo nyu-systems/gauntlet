@@ -1,6 +1,6 @@
 from collections import OrderedDict
 from p4z3.base import log, DefaultExpression, copy, z3_cast, merge_attrs, z3
-from p4z3.base import StructInstance, P4Statement, gen_instance
+from p4z3.base import StructInstance, P4Statement
 from p4z3.base import ParserException
 from p4z3.callables import P4Table
 from p4z3.parser import RejectState
@@ -64,7 +64,7 @@ class IfStatement(P4Statement):
         forward_cond_copy = ctx.tmp_forward_cond
         then_vars = None
         if not z3.is_false(cond):
-            var_store, ctxs = ctx.checkpoint()
+            var_store = ctx.checkpoint()
             ctx.tmp_forward_cond = z3.And(forward_cond_copy, cond)
             try:
                 self.then_block.eval(ctx)
@@ -74,17 +74,17 @@ class IfStatement(P4Statement):
                 then_vars = ctx.get_attrs()
             ctx.set_exited(False)
             ctx.has_returned = False
-            ctx.restore(var_store, ctxs)
+            ctx.restore(var_store)
 
         if not z3.is_true(cond):
-            var_store, ctxs = ctx.checkpoint()
+            var_store = ctx.checkpoint()
             ctx.tmp_forward_cond = z3.And(forward_cond_copy, z3.Not(cond))
             try:
                 self.else_block.eval(ctx)
             except ParserException:
                 RejectState().eval(ctx)
             if ctx.get_exited() or ctx.has_returned:
-                ctx.restore(var_store, ctxs)
+                ctx.restore(var_store)
             ctx.set_exited(False)
             ctx.has_returned = False
 
@@ -123,7 +123,7 @@ class SwitchStatement(P4Statement):
             # matches the condition OR all the other fall-through switches
             case_match = z3.Or(case_match, *fall_through_matches)
             fall_through_matches.clear()
-            var_store, ctxs = ctx.checkpoint()
+            var_store = ctx.checkpoint()
             ctx.tmp_forward_cond = z3.And(
                 forward_cond_copy, case_match)
             case_block.eval(ctx)
@@ -132,15 +132,15 @@ class SwitchStatement(P4Statement):
                 case_exprs.append((case_match, then_vars))
             ctx.has_returned = False
             ctx.set_exited(False)
-            ctx.restore(var_store, ctxs)
+            ctx.restore(var_store)
             case_matches.append(case_match)
-        var_store, ctxs = ctx.checkpoint()
+        var_store = ctx.checkpoint()
         # process the default expression
         cond = z3.Not(z3.Or(*case_matches))
         ctx.tmp_forward_cond = z3.And(forward_cond_copy, cond)
         self.default_case.eval(ctx)
         if ctx.has_returned or ctx.get_exited():
-            ctx.restore(var_store, ctxs)
+            ctx.restore(var_store)
         ctx.has_returned = False
         ctx.set_exited(False)
         ctx.tmp_forward_cond = forward_cond_copy
@@ -230,7 +230,7 @@ class P4Return(P4Statement):
             # we return a complex typed expression list, instantiate
             if isinstance(expr, list):
                 # name is meaningless here so keep it empty
-                instance = gen_instance(ctx, "", ctx.return_type)
+                instance = ctx.gen_instance("", ctx.return_type)
                 instance.set_list(expr)
                 expr = instance
 
@@ -249,7 +249,7 @@ class P4Exit(P4Statement):
     def eval(self, ctx):
         # FIXME: This checkpointing should not be necessary
         # Figure out what is going on
-        var_store, ctxs = ctx.checkpoint()
+        var_store = ctx.checkpoint()
         forward_conds = []
         tmp_forward_conds = []
         sub_ctx = ctx
@@ -265,5 +265,5 @@ class P4Exit(P4Statement):
             ctx.add_exit_state(
                 cond, ctx.get_p4_state().get_members(ctx))
             ctx.set_exited(True)
-        ctx.restore(var_store, ctxs)
+        ctx.restore(var_store)
         ctx.forward_conds.append(ctx.tmp_forward_cond)
