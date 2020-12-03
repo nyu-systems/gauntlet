@@ -18,7 +18,7 @@ bugs
 
 
 ### Bug Tables
-Last Updated: 2020-10-31
+Last Updated: 2020-12-03
 
 The bug tables provide the latest, detailed breakdown of all the issues we have filed in the open-source repositories.
 
@@ -112,7 +112,7 @@ Fixed: :heavy_check_mark:&nbsp;&nbsp;&nbsp;&nbsp;Confirmed: :exclamation:&nbsp;&
 | [Fix: Predication issue (2564)](https://github.com/p4lang/p4c/pull/2564)              | [2564.p4](validation/pull_request/2564.p4)  | Mid end | :heavy_check_mark: |
 | [Fix: Issue #2004 parser duplicated matches not optimized out (2591)](https://github.com/p4lang/p4c/pull/2591)              | [2591.p4](validation/pull_request/2591.p4)  | Mid end | :heavy_check_mark: |
 | [Predication: Another problem (2613)](https://github.com/p4lang/p4c/issues/2613)              | [2564.p4](validation/fixed/2613.p4)  | Mid end | :heavy_check_mark: |
-| [StrengthReduction: Incorrect slice optimization (2614)](https://github.com/p4lang/p4c/issues/2614)              | [2614.p4](validation/fixed/2614.p4)  | Front end | :heavy_check_mark: |
+| :tada: (Bug No 100!) [StrengthReduction: Incorrect slice optimization (2614)](https://github.com/p4lang/p4c/issues/2614)              | [2614.p4](validation/fixed/2614.p4)  | Front end | :heavy_check_mark: |
 
 #### Tofino Crash Bugs (P4Studio 9.3.0)
 
