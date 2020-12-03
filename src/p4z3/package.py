@@ -2,7 +2,7 @@ from collections import OrderedDict
 from p4z3.base import z3, log, copy
 from p4z3.base import P4Extern, StaticType
 from p4z3.state import LocalContext, P4State
-from p4z3.callables import P4Callable, P4Control, merge_parameters
+from p4z3.callables import P4Control, merge_parameters
 
 
 def create_p4_state(ctx, type_ctx, name, p4_params):

@@ -109,7 +109,10 @@ Fixed: :heavy_check_mark:&nbsp;&nbsp;&nbsp;&nbsp;Confirmed: :exclamation:&nbsp;&
 | [Side effects in StructInitializers (2488)](https://github.com/p4lang/p4c/issues/2488)            | [2488.p4](validation/fixed/2488.p4)    | Front end | :heavy_check_mark: |
 | [Follow-up on slice arguments (2498)](https://github.com/p4lang/p4c/issues/2498)            | [2498.p4](validation/fixed/2498.p4)                | Front end | :heavy_check_mark: |
 | [Side-effect function call in table key (2546b)](https://github.com/p4lang/p4c/issues/2546)           | [2546b.p4](validation/2546b.p4)              | Mid end | :exclamation: |
-| [Fix: Predication issue (2564)](https://github.com/p4lang/p4c/pull/2564)              | [2564.p4](validation/fixed/2564.p4)  | Mid end | :heavy_check_mark: |
+| [Fix: Predication issue (2564)](https://github.com/p4lang/p4c/pull/2564)              | [2564.p4](validation/pull_request/2564.p4)  | Mid end | :heavy_check_mark: |
+| [Fix: Issue #2004 parser duplicated matches not optimized out (2591)](https://github.com/p4lang/p4c/pull/2591)              | [2591.p4](validation/pull_request/2591.p4)  | Mid end | :heavy_check_mark: |
+| [Predication: Another problem (2613)](https://github.com/p4lang/p4c/issues/2613)              | [2564.p4](validation/fixed/2613.p4)  | Mid end | :heavy_check_mark: |
+| [StrengthReduction: Incorrect slice optimization (2614)](https://github.com/p4lang/p4c/issues/2614)              | [2614.p4](validation/fixed/2614.p4)  | Front end | :heavy_check_mark: |
 
 #### Tofino Crash Bugs (P4Studio 9.3.0)
 

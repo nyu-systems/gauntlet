@@ -93,7 +93,7 @@ wget -N https://archive.apache.org/dist/thrift/0.13.0/thrift-0.13.0.tar.gz
 tar -xvf thrift-0.13.0.tar.gz
 cd thrift-0.13.0/
 ./bootstrap.sh
-./configure
+./configure --without-rs --without-nodejs
 make
 sudo make install
 sudo ldconfig
