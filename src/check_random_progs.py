@@ -4,14 +4,15 @@ import logging
 import argparse
 from multiprocessing import Pool
 from functools import wraps
+from pathlib import Path
 import errno
 import os
 import signal
 import time
+import json
 
-from pathlib import Path
 import p4z3.util as util
-
+import validate_p4_translation as validation
 
 # configure logging
 log = logging.getLogger(__name__)
@@ -277,6 +278,25 @@ def check(idx, config):
             log.error("Found a new bug!")
             dump_result(result, CRASH_BUG_DIR, p4_file)
             dump_file(CRASH_BUG_DIR, p4_file)
+            if config["do_prune"]:
+                info_file = CRASH_BUG_DIR.joinpath(f"{p4_file.stem}_info.json")
+                info = validation.INFO
+                # customize the main info with the new information
+                info["compiler"] = str(config["compiler_bin"])
+                info["exit_code"] = result.returncode
+                info["p4z3_bin"] = str(P4Z3_BIN)
+                info["out_dir"] = str(CRASH_BUG_DIR)
+                info["input_file"] = str(p4_file)
+                info["allow_undef"] = False
+                info["err_string"] = result.stderr.decode("utf-8")
+                log.error("Dumping configuration to %s.", info_file)
+                with open(info_file, 'w') as json_file:
+                    json.dump(info, json_file, indent=2, sort_keys=True)
+                p4_cmd = f"{PRUNER_BIN} "
+                p4_cmd += f"--config {info_file} "
+                p4_cmd += f" {CRASH_BUG_DIR.joinpath(f'{p4_file.stem}.p4')} "
+                log.error("Pruning P4 file with command %s ", p4_cmd)
+                util.start_process(p4_cmd)
         # reset the dump directory
         util.del_dir(dump_dir)
         return result
