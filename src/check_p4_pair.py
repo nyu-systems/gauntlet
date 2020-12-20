@@ -39,19 +39,19 @@ def debug_msg(p4_files):
 
 
 def print_validation_error(prog_before, prog_after, model):
-    z3_prog_before, input_names_before, _ = prog_before
-    z3_prog_after, input_names_after, _ = prog_after
+    z3_prog_before, p4_state_before, _ = prog_before
+    z3_prog_after, p4_state_after, _ = prog_after
     error_string = "Detected an equivalence violation!\n"
     error_string += "\nPROGRAM BEFORE\n"
-    error_string += get_hdr_table(z3_prog_before, input_names_before)
+    error_string += get_hdr_table(z3_prog_before, p4_state_before.members)
     error_string += "\n\nPROGRAM AFTER\n"
-    error_string += get_hdr_table(z3_prog_after, input_names_after)
+    error_string += get_hdr_table(z3_prog_after, p4_state_after.members)
     error_string += "\n\nPROPOSED INPUT BEGIN\n"
     for decl in model.decls():
         value = model[decl]
         if isinstance(value, z3.DatatypeRef):
             error_string += "HEADER %s =\n" % decl
-            error_string += get_hdr_table(value, input_names_before)
+            error_string += get_hdr_table(value, p4_state_before.members)
         else:
             error_string += "%s = %s" % (decl, value)
         error_string += "\n--\n"

@@ -105,13 +105,14 @@ def get_flat_members(names):
     return flat_members
 
 
-def reconstruct_input(pipe_name, package, pipe_cls):
+def reconstruct_input(pipe_name, p4_state, pipe_cls):
     # these names are not quite accurate
     if isinstance(pipe_cls, P4Extern):
         initial_state = z3.Const(f"{pipe_name}", pipe_cls.z3_type)
     else:
-        p4_state = package.p4_state.set_context(pipe_name, pipe_cls.params)
-        initial_state = p4_state.get_z3_repr()
+        prog_ctx = StaticContext()
+        p4_state.initialize(prog_ctx)
+        initial_state = p4_state.get_z3_repr(prog_ctx)
 
     inital_inputs = initial_state.children()
     return inital_inputs
@@ -139,11 +140,11 @@ def handle_nested_ifs(pipe_name, flat_members, inputs, outputs):
         zipped_list = zip(flat_members, inputs, else_outputs)
 
 
-def print_z3_data(pipe_name, pipe_val, package):
-    z3_datatype, p4_z3_objs, pipe_cls = pipe_val
+def print_z3_data(pipe_name, pipe_val):
+    z3_datatype, p4_state, pipe_cls = pipe_val
     z3_datatype = z3.simplify(z3_datatype)
-    flat_members = get_flat_members(p4_z3_objs)
-    inputs = reconstruct_input(pipe_name, package, pipe_cls)
+    flat_members = get_flat_members(p4_state.members)
+    inputs = reconstruct_input(pipe_name, p4_state, pipe_cls)
     outputs = z3_datatype.children()
     if z3.z3util.is_app_of(z3_datatype, z3.Z3_OP_ITE):
         handle_nested_ifs(pipe_name, flat_members, inputs, outputs)
@@ -172,7 +173,7 @@ def main(args):
              time_str, ms)
     if result == util.EXIT_SUCCESS:
         for pipe_name, pipe_val in package.get_pipes().items():
-            print_z3_data(pipe_name, pipe_val, package)
+            print_z3_data(pipe_name, pipe_val)
     return result
 
 
