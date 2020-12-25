@@ -334,6 +334,7 @@ class P4Member(P4Expression):
     def __init__(self, lval, member):
         self.lval = lval
         self.member = member
+        self.evaluated = False
 
     def eval(self, ctx):
         if isinstance(self.lval, P4Index):
@@ -379,6 +380,8 @@ class P4Index(P4Member):
     def eval(self, ctx, target_member=None):
         lval = ctx.resolve_expr(self.lval)
         index = ctx.resolve_expr(self.member)
+        self.member = index
+        self.evaluated = True
         if isinstance(index, z3.ExprRef):
             index = z3.simplify(index)
         if isinstance(index, int):
@@ -397,7 +400,10 @@ class P4Index(P4Member):
 
     def set_value(self, ctx, rval, target_member=None):
         lval = ctx.resolve_expr(self.lval)
-        index = ctx.resolve_expr(self.member)
+        if not self.evaluated:
+            index = ctx.resolve_expr(self.member)
+        else:
+            index = self.member
         if isinstance(index, z3.ExprRef):
             index = z3.simplify(index)
         if isinstance(index, int):
@@ -825,6 +831,17 @@ class HeaderInstance(StructInstance):
         result.locals["setValid"] = result.setValid
         result.locals["setInvalid"] = result.setInvalid
         return result
+
+
+class UnionType(StructType):
+    def instantiate(self, name, member_id=0):
+        return UnionInstance(name, self, member_id)
+
+class UnionInstance(StructInstance):
+
+    def __init__(self, name, p4z3_type, member_id):
+        # TODO: Check if this class is implemented correctly...
+        super(UnionInstance, self).__init__(name, p4z3_type, member_id)
 
 
 class HeaderUnionType(StructType):
