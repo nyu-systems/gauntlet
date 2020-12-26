@@ -5,25 +5,20 @@ from p4z3.state import LocalContext, P4State
 from p4z3.callables import P4Control, merge_parameters
 
 
-def create_p4_state(ctx, type_ctx, name, p4_params):
-    stripped_args = []
+def create_state_args(state_ctx, type_ctx, p4_params):
+    state_args = []
     instances = {}
-    for extern_name, extern in ctx.get_extern_extensions().items():
-        ctx.add_type(extern_name, extern)
     for param in p4_params:
         p4_type = type_ctx.resolve_type(param.p4_type)
         if param.mode in ("inout", "out"):
             # only inouts or outs matter as output
-            stripped_args.append((param.name, p4_type))
+            state_args.append((param.name, p4_type))
         else:
             # for other inputs we can instantiate something
             instance = type_ctx.gen_instance(param.name, p4_type)
             instances[param.name] = instance
-    for instance_name, instance_val in instances.items():
-        ctx.set_or_add_var(instance_name, instance_val)
-    p4_state = P4State(name, stripped_args)
-    p4_state.initialize(ctx)
-    return p4_state
+            state_ctx.set_or_add_var(param.name, instance)
+    return state_args
 
 class P4Package(StaticType):
 
@@ -35,7 +30,7 @@ class P4Package(StaticType):
         self.type_params = type_params
         self.type_ctx = {}
 
-    def init_type_params(self, ctx, *args, **kwargs):
+    def init_type_params(self, _ctx, *args, **kwargs):
         init_package = copy.copy(self)
         for idx, t_param in enumerate(init_package.type_params):
             init_package.type_ctx[t_param] = args[idx]
@@ -63,6 +58,17 @@ class P4Package(StaticType):
         pipe_val = pipe_val.bind_to_ctrl_type(type_ctx, ctrl_type)
         return pipe_val
 
+    def build_state_ctx(self, main_ctx, pipe_name, pipe_arg, pipe_val):
+        type_ctx = LocalContext(main_ctx, {})
+        pipe_val = self.type_inference(type_ctx, pipe_val, pipe_arg)
+        state_ctx = LocalContext(main_ctx, {})
+        for extern_name, extern in main_ctx.get_extern_extensions().items():
+            state_ctx.add_type(extern_name, extern)
+        state_args = create_state_args(state_ctx, type_ctx, pipe_val.params)
+        p4_state = P4State(pipe_name, state_args)
+        p4_state.initialize(state_ctx)
+        return state_ctx, p4_state
+
     def initialize(self, ctx, *args, **kwargs):
         merged_args = merge_parameters(self.params, *args, **kwargs)
         for pipe_name, pipe_arg in merged_args.items():
@@ -70,26 +76,22 @@ class P4Package(StaticType):
             pipe_val = ctx.resolve_expr(pipe_arg.p4_val)
             if isinstance(pipe_val, P4Control):
                 # create the z3 representation of this control state
-                type_ctx = LocalContext(ctx, {})
-                pipe_val = self.type_inference(type_ctx, pipe_val, pipe_arg)
-                sub_ctx = LocalContext(ctx, {})
-                p4_state = create_p4_state(
-                    sub_ctx, type_ctx, pipe_name, pipe_val.params)
-                sub_ctx.set_p4_state(p4_state)
+                state_ctx, p4_state = self.build_state_ctx(
+                    ctx, pipe_name, pipe_arg, pipe_val)
+                state_ctx.set_p4_state(p4_state)
                 # initialize the call with its own params we collected
                 # this is essentially the input packet
                 args = []
                 for param in pipe_val.params:
                     args.append(param.name)
-                pipe_val.apply(sub_ctx, *args)
+                pipe_val.apply(state_ctx, *args)
                 # after executing the pipeline get its z3 representation
-                z3_function = p4_state.create_z3_representation(sub_ctx)
+                z3_function = p4_state.create_z3_representation(state_ctx)
                 # all done, that is our P4 representation!
-                self.pipes[pipe_name] = (
-                    z3_function, p4_state.members, pipe_val)
+                self.pipes[pipe_name] = (z3_function, p4_state, pipe_val)
             elif isinstance(pipe_val, P4Extern):
                 var = z3.Const(f"{pipe_name}{pipe_val.name}", pipe_val.z3_type)
-                self.pipes[pipe_name] = (var, [], pipe_val)
+                self.pipes[pipe_name] = (var, None, pipe_val)
             elif isinstance(pipe_val, P4Package):
                 # execute the package by calling its initializer
                 # pipe_val.initialize(ctx)
@@ -99,7 +101,7 @@ class P4Package(StaticType):
                     self.pipes[sub_pipe_name] = sub_pipe_val
             elif isinstance(pipe_val, z3.ExprRef):
                 # for some reason simple expressions are also possible.
-                self.pipes[pipe_name] = (pipe_val, [], pipe_val)
+                self.pipes[pipe_name] = (pipe_val, None, pipe_val)
             else:
                 raise RuntimeError(
                     f"Unsupported value {pipe_val}, type {type(pipe_val)}."

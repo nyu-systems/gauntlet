@@ -128,7 +128,7 @@ def get_stf_str(flat_input, flat_output, dont_care_map):
     return stf_str
 
 
-def get_semantics(config):
+def get_prog_semantics(config):
     p4_input = config["p4_input"]
     out_dir = config["out_dir"]
     py_file = Path(f"{out_dir}/{p4_input.stem}.py")
@@ -143,13 +143,13 @@ def get_semantics(config):
         util.copy_file([p4_input, py_file], fail_dir)
         return None, result.returncode
     package, result = get_z3_formulization(py_file)
-    z3_prog = package.get_pipes()
+    pipe_val = package.get_pipes()
     if result != util.EXIT_SUCCESS:
         if fail_dir and result != util.EXIT_SKIPPED:
             util.check_dir(fail_dir)
             util.copy_file([p4_input, py_file], fail_dir)
-        return z3_prog, result
-    return z3_prog, util.EXIT_SUCCESS
+        return pipe_val, result
+    return pipe_val, util.EXIT_SUCCESS
 
 
 def run_bmv2_test(out_dir, p4_input, use_psa=False):
@@ -409,15 +409,15 @@ def dissect_conds(config, conditions):
 
 def get_main_formula(config):
     # get the semantic representation of the original program
-    z3_main_prog, result = get_semantics(config)
+    pipes, result = get_prog_semantics(config)
     if result != util.EXIT_SUCCESS:
         return result
     # we currently ignore all other pipelines and focus on the ingress pipeline
-    main_formula, main_map, pipe_cls = z3_main_prog[config["pipe_name"]]
+    main_formula, p4_state, _ = pipes[config["pipe_name"]]
     pkt_range = None
     idx = 0
     # FIXME: Make this more robust, assume HEADER_VAR is always first
-    for member_name, member_type in main_map:
+    for member_name, member_type in p4_state.members:
         if member_name == HEADER_VAR:
             pkt_range = slice(idx, idx + len(member_type.flat_names))
     if not pkt_range:

@@ -402,6 +402,8 @@ class P4State():
         self.has_exited = False
 
     def initialize(self, ctx):
+        # clear the flat names
+        self.flat_names = []
         flat_args = []
         idx = 0
         for z3_arg_name, z3_arg_type in self.members:

@@ -29,6 +29,18 @@ PASSES += "FrontEnd,MidEnd,PassManager "
 # this emits all passes, but that is too much right now...
 # PASSES += "\"^(?!.*::.*).*\" "
 
+INFO = {"compiler": str(P4C_BIN),
+        "exit_code": util.EXIT_SUCCESS,
+        "prog_before": "",
+        "prog_after": "",
+        "p4z3_bin": str(P4Z3_BIN),
+        "out_dir": str(PASS_DIR),
+        "input_file": "",
+        "allow_undef": False,
+        "validation_bin": f"python3 {__file__}",
+        "err_string": "",
+        }
+
 
 def generate_p4_dump(p4c_bin, p4_file, p4_dmp_dir):
     p4_cmd = f"{p4c_bin} "
@@ -143,16 +155,16 @@ def prune_passes(p4_passes):
 
 def validate_translation(p4_file, target_dir, p4c_bin,
                          allow_undef=False, dump_info=False):
-    info = {"compiler": str(p4c_bin),
-            "exit_code": util.EXIT_SUCCESS,
-            "prog_before": None,
-            "prog_after": None,
-            "p4z3_bin": str(P4Z3_BIN),
-            "out_dir": str(target_dir),
-            "input_file": str(p4_file),
-            "allow_undef": allow_undef,
-            "validation_bin": f"python3 {__file__}",
-            }
+    info = INFO
+
+    # customize the main info with the new information
+    info["compiler"] = str(p4c_bin)
+    info["exit_code"] = util.EXIT_SUCCESS
+    info["p4z3_bin"] = str(P4Z3_BIN)
+    info["out_dir"] = str(target_dir)
+    info["input_file"] = str(p4_file)
+    info["allow_undef"] = allow_undef
+    info["validation_bin"] = f"python3 {__file__}"
 
     log.info("\n" + "-" * 70)
     log.info("Analysing %s", p4_file)
