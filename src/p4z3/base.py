@@ -327,20 +327,20 @@ class InstanceDeclaration(ValueDeclaration):
         ctx.set_or_add_var(self.lval, z3_type, True)
 
 
-class P4Member(P4Expression):
+class P4Member():
 
-    __slots__ = ["lval", "member"]
+    __slots__ = ["lval", "member", "evaluated"]
 
     def __init__(self, lval, member):
         self.lval = lval
         self.member = member
         self.evaluated = False
 
-    def eval(self, ctx):
-        if isinstance(self.lval, P4Index):
-            return self.lval.eval(ctx, self.member)
-        lval = ctx.resolve_expr(self.lval)
-        return lval.resolve_reference(self.member)
+    # def eval(self, ctx):
+    #     if isinstance(self.lval, P4Index):
+    #         return self.lval.eval(ctx, self.member)
+    #     lval = ctx.resolve_expr(self.lval)
+    #     return lval.resolve_reference(self.member)
 
     def set_value(self, ctx, rval):
         if isinstance(self.lval, P4Index):
@@ -357,46 +357,46 @@ class P4Index(P4Member):
     # FIXME: This class is an absolute nightmare. Completely broken
     __slots__ = ["lval", "member"]
 
-    def resolve_runtime_index(self, lval, target_member, index):
-        if target_member:
-            max_idx = lval.locals["size"]
-            return_expr = lval.locals[str(
-                0)].resolve_reference(target_member)
-            for hdr_idx in range(1, max_idx):
-                cond = index == hdr_idx
-                val = lval.locals[f"{hdr_idx}"].resolve_reference(
-                    target_member)
-                return_expr = handle_mux(cond, val, return_expr)
-            return return_expr
-        else:
-            max_idx = lval.locals["size"]
-            return_expr = lval.locals["0"]
-            for hdr_idx in range(1, max_idx):
-                cond = index == hdr_idx
-                return_expr = handle_mux(
-                    cond, lval.locals[f"{hdr_idx}"], return_expr)
-            return return_expr
+    # def resolve_runtime_index(self, lval, target_member, index):
+    #     if target_member:
+    #         max_idx = lval.locals["size"]
+    #         return_expr = lval.locals[str(
+    #             0)].resolve_reference(target_member)
+    #         for hdr_idx in range(1, max_idx):
+    #             cond = index == hdr_idx
+    #             val = lval.locals[f"{hdr_idx}"].resolve_reference(
+    #                 target_member)
+    #             return_expr = handle_mux(cond, val, return_expr)
+    #         return return_expr
+    #     else:
+    #         max_idx = lval.locals["size"]
+    #         return_expr = lval.locals["0"]
+    #         for hdr_idx in range(1, max_idx):
+    #             cond = index == hdr_idx
+    #             return_expr = handle_mux(
+    #                 cond, lval.locals[f"{hdr_idx}"], return_expr)
+    #         return return_expr
 
-    def eval(self, ctx, target_member=None):
-        lval = ctx.resolve_expr(self.lval)
-        index = ctx.resolve_expr(self.member)
-        self.member = index
-        self.evaluated = True
-        if isinstance(index, z3.ExprRef):
-            index = z3.simplify(index)
-        if isinstance(index, int):
-            index = str(index)
-        elif isinstance(index, z3.BitVecNumRef):
-            index = str(index.as_long())
-        elif isinstance(index, z3.BitVecRef):
-            return self.resolve_runtime_index(lval, target_member, index)
-        else:
-            raise RuntimeError(f"Unsupported index {type(index)}!")
-        expr = lval.resolve_reference(index)
-        if target_member:
-            return expr.resolve_reference(target_member)
-        else:
-            return expr
+    # def eval(self, ctx, target_member=None):
+    #     lval = ctx.resolve_expr(self.lval)
+    #     index = ctx.resolve_expr(self.member)
+    #     self.member = index
+    #     self.evaluated = True
+    #     if isinstance(index, z3.ExprRef):
+    #         index = z3.simplify(index)
+    #     if isinstance(index, int):
+    #         index = str(index)
+    #     elif isinstance(index, z3.BitVecNumRef):
+    #         index = str(index.as_long())
+    #     elif isinstance(index, z3.BitVecRef):
+    #         return self.resolve_runtime_index(lval, target_member, index)
+    #     else:
+    #         raise RuntimeError(f"Unsupported index {type(index)}!")
+    #     expr = lval.resolve_reference(index)
+    #     if target_member:
+    #         return expr.resolve_reference(target_member)
+    #     else:
+    #         return expr
 
     def set_value(self, ctx, rval, target_member=None):
         lval = ctx.resolve_expr(self.lval)
