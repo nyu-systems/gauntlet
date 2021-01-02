@@ -334,11 +334,13 @@ class P4Member():
     def __init__(self, lval, member):
         self.lval = lval
         self.member = member
-        self.evaluated = False
 
-    def set_value(self, ctx, rval):
-        target = ctx.resolve_reference(self.lval)
-        target.set_or_add_var(self.member, rval)
+    def set_value(self, ctx, rval, reuse_index=False):
+        if isinstance(self.lval, P4Index):
+            self.lval.set_value(ctx, rval, self.member, reuse_index)
+        else:
+            target = ctx.resolve_reference(self.lval)
+            target.set_or_add_var(self.member, rval)
 
     def __repr__(self):
         return f"{self.lval}.{self.member}"
@@ -346,34 +348,60 @@ class P4Member():
 
 class P4Index(P4Member):
     # FIXME: This class is an absolute nightmare. Completely broken
-    __slots__ = ["lval", "member", "evaluated"]
+    __slots__ = ["lval", "member", "evaluated", "saved_member", "saved_lval"]
 
-    def set_value(self, ctx, rval):
-        lval = ctx.resolve_expr(self.lval)
-        if not self.evaluated:
-            index = ctx.resolve_expr(self.member)
+    def __init__(self, lval, member):
+        self.lval = lval
+        self.member = member
+        self.evaluated = False
+        self.saved_lval = lval
+        self.saved_member = member
+
+    def set_value(self, ctx, rval, target_member=None, reuse_index=False):
+        if self.evaluated and reuse_index:
+            index = self.saved_member
+            lval = self.saved_lval
+            log.info(index)
         else:
-            index = self.member
+            index = ctx.resolve_expr(self.member)
+            lval = ctx.resolve_expr(self.lval)
+            self.saved_lval = index
+            self.saved_member = lval
+            self.evaluated = True
+
         if isinstance(index, z3.ExprRef):
             index = z3.simplify(index)
+
+        if isinstance(index, z3.BitVecRef):
+            max_idx = lval.resolve_reference("size")
+            if target_member:
+                for hdr_idx in range(max_idx):
+                    hdr = lval.resolve_reference(str(hdr_idx))
+                    cur_val = hdr.resolve_reference(target_member)
+                    if_expr = handle_mux(index == hdr_idx, rval, cur_val)
+                    hdr.set_or_add_var(target_member, if_expr)
+            else:
+                for hdr_idx in range(max_idx):
+                    hdr = lval.resolve_reference(str(hdr_idx))
+                    if_expr = handle_mux(index == hdr_idx, rval, hdr)
+                    lval.set_or_add_var(hdr_idx, if_expr)
+            return
+
         if isinstance(index, int):
             index = str(index)
         elif isinstance(index, z3.BitVecNumRef):
             index = str(index.as_long())
-        elif isinstance(index, z3.BitVecRef):
-            max_idx = lval.locals["size"]
-            for hdr_idx in range(1, max_idx):
-                cond = index == hdr_idx
-                mux_expr = handle_mux(cond, rval,
-                                      ctx.locals[f"{hdr_idx}"])
-                lval.set_or_add_var(hdr_idx, mux_expr)
-            return
         else:
             raise RuntimeError(f"Unsupported index {type(index)}!")
-        lval.set_or_add_var(index, rval)
+
+        if target_member:
+            hdr = lval.resolve_reference(str(index))
+            hdr.set_or_add_var(target_member, rval)
+        else:
+            lval.set_or_add_var(index, rval)
 
     def __repr__(self):
-        return f"{self.lval}.[{self.member}]"
+        return f"{self.lval}[{self.member}]"
 
 
 class P4Slice(P4Expression):
@@ -457,9 +485,9 @@ class P4ComplexInstance():
         # whenever we set a list, the target instances becomes valid
         self.valid = z3.BoolVal(True)
 
-    def set_or_add_var(self, lval, rval):
+    def set_or_add_var(self, lval, rval, reuse_index=False):
         if isinstance(lval, P4Member):
-            lval.set_value(self, rval)
+            lval.set_value(self, rval, reuse_index=reuse_index)
             return
         # rvals could be a list, unroll the assignment
         if isinstance(rval, list) and lval in self.locals:
@@ -1037,7 +1065,6 @@ class P4Extern(StaticType):
         for method_name, method in self.locals.items():
             result.locals[method_name] = copy.copy(method)
         return result
-
 
 
 class P4ControlType(P4Extern):

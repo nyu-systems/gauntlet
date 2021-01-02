@@ -446,11 +446,11 @@ class P4Mux(P4Expression):
         if z3.is_false(cond):
             return ctx.resolve_expr(self.else_val)
 
-        var_store = ctx.checkpoint()
         forward_cond_copy = ctx.tmp_forward_cond
         ctx.tmp_forward_cond = z3.And(forward_cond_copy, cond)
+        var_store = ctx.checkpoint()
         then_expr = ctx.resolve_expr(self.then_val)
-        then_vars = ctx.get_attrs()
+        then_vars = ctx.copy_attrs()
         ctx.restore(var_store)
         ctx.tmp_forward_cond = forward_cond_copy
 

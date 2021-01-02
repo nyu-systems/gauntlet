@@ -221,6 +221,7 @@ def validate(dump_dir, p4_file, log_file, config):
             p4_cmd = f"{PRUNER_BIN} "
             p4_cmd += f"--config {info_file} "
             p4_cmd += f" {bug_dir.joinpath(f'{p4_file.stem}.p4')} "
+            p4_cmd += f" --working-dir {bug_dir.joinpath(f'{p4_file.stem}')}"
             log.info("Pruning P4 file with command %s ", p4_cmd)
             util.start_process(p4_cmd)
     return result

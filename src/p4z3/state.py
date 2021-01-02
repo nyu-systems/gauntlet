@@ -156,12 +156,12 @@ class P4Context():
         ctx.set_or_add_var(lval, rval_expr)
         return
 
-    def set_or_add_var(self, lval, rval, new_decl=False):
+    def set_or_add_var(self, lval, rval, new_decl=False, reuse_index=False):
         if isinstance(lval, P4Slice):
             self.set_slice(self, lval, rval)
             return
         if isinstance(lval, P4Member):
-            lval.set_value(self, rval)
+            lval.set_value(self, rval, reuse_index=reuse_index)
             return
         # now that all the preprocessing is done we can assign the value
         log.debug("Setting %s(%s) to %s(%s) ",
@@ -185,11 +185,12 @@ class P4Context():
 
     def resolve_reference(self, var):
         if isinstance(var, P4Index):
-            lval = self.resolve_expr(var.lval)
             index = self.resolve_expr(var.member)
-            var.member = index
-            index = get_index(lval, index)
+            lval = self.resolve_expr(var.lval)
+            var.saved_member = index
+            var.saved_lval = lval
             var.evaluated = True
+            index = get_index(lval, index)
             var = lval.resolve_reference(index)
         elif isinstance(var, P4Member):
             lval = self.resolve_expr(var.lval)
@@ -329,7 +330,7 @@ class LocalContext(P4Context):
                 log.debug("Copy-out: %s to %s", val, par_ref)
                 # copy it back to the input reference
                 # this assumes an lvalue as input
-                ctx.set_or_add_var(par_ref, val)
+                ctx.set_or_add_var(par_ref, val, reuse_index=True)
 
     def get_p4_state(self):
         return self.master_ctx.p4_state
