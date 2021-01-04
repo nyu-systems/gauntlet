@@ -1,7 +1,7 @@
-name: pytest
+name: test
 on: [push, pull_request]
 jobs:
-  pytest:
+  test:
     runs-on: ubuntu-18.04
     steps:
     - uses: actions/checkout@v1
