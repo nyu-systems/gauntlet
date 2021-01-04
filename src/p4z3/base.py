@@ -361,7 +361,6 @@ class P4Index(P4Member):
         if self.evaluated and reuse_index:
             index = self.saved_member
             lval = self.saved_lval
-            log.info(index)
         else:
             index = ctx.resolve_expr(self.member)
             lval = ctx.resolve_expr(self.lval)
