@@ -28,11 +28,11 @@ class TypeSpecializer():
 def resolve_runtime_index(lval, index):
     max_idx = lval.locals["size"]
     return_expr = lval.locals["0"]
-    for hdr_idx in range(max_idx):
+    for hdr_idx in range(1, max_idx):
         cond = index == hdr_idx
         return_expr = handle_mux(
             cond, lval.locals[f"{hdr_idx}"], return_expr)
-        return return_expr
+    return return_expr
 
 
 def get_index(sub_ctx, index):
@@ -185,11 +185,9 @@ class P4Context():
 
     def resolve_reference(self, var):
         if isinstance(var, P4Index):
-
             index = self.resolve_expr(var.member)
             lval = self.resolve_expr(var.lval)
             var.saved_member = index
-            var.saved_lval = lval
             var.evaluated = True
             index = get_index(lval, index)
             var = lval.resolve_reference(index)

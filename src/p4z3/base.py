@@ -112,6 +112,10 @@ def handle_mux(cond, then_expr, else_expr):
 
     # we may return complex types, we have to unroll these
     if isinstance(then_expr, StructInstance):
+        # we want to avoid side-effects when merging
+        # we are creating a new expression
+        # TODO: Think about a more efficient method
+        then_expr = copy.copy(then_expr)
         # record the validity
         then_valid = then_expr.valid
         # if the else expression is complex, we grab a list of the fields
@@ -134,6 +138,10 @@ def handle_mux(cond, then_expr, else_expr):
 
     # repeat the same check if the else expression is complex
     if isinstance(else_expr, StructInstance):
+        # we want to avoid side-effects when merging
+        # we are creating a new expression
+        # TODO: Think about a more efficient method
+        else_expr = copy.copy(else_expr)
         # record the validity
         else_valid = else_expr.valid
         # if the else expression is complex, we grab a list of the fields
@@ -360,18 +368,19 @@ class P4Index(P4Member):
     def set_value(self, ctx, rval, target_member=None, reuse_index=False):
         if self.evaluated and reuse_index:
             index = self.saved_member
-            lval = self.saved_lval
         else:
             index = ctx.resolve_expr(self.member)
-            lval = ctx.resolve_expr(self.lval)
-            self.saved_lval = index
-            self.saved_member = lval
+            self.saved_member = index
             self.evaluated = True
-
+        lval = ctx.resolve_expr(self.lval)
         if isinstance(index, z3.ExprRef):
             index = z3.simplify(index)
 
-        if isinstance(index, z3.BitVecRef):
+        if isinstance(index, int):
+            index = str(index)
+        elif isinstance(index, z3.BitVecNumRef):
+            index = str(index.as_long())
+        elif isinstance(index, z3.BitVecRef):
             max_idx = lval.resolve_reference("size")
             if target_member:
                 for hdr_idx in range(max_idx):
@@ -385,11 +394,6 @@ class P4Index(P4Member):
                     if_expr = handle_mux(index == hdr_idx, rval, hdr)
                     lval.set_or_add_var(hdr_idx, if_expr)
             return
-
-        if isinstance(index, int):
-            index = str(index)
-        elif isinstance(index, z3.BitVecNumRef):
-            index = str(index.as_long())
         else:
             raise RuntimeError(f"Unsupported index {type(index)}!")
 
