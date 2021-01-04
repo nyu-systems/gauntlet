@@ -5,9 +5,9 @@ import copy
 import z3
 from p4z3.base import log
 from p4z3.base import StaticType, P4Z3Class, P4Expression
-from p4z3.base import P4Slice, P4ComplexType, P4Member
+from p4z3.base import P4Slice, P4ComplexType, P4Member, P4Index
 from p4z3.base import StructInstance, P4ComplexInstance, HeaderStack
-from p4z3.base import z3_cast, propagate_validity_bit
+from p4z3.base import z3_cast, propagate_validity_bit, handle_mux
 from p4z3.base import TypeDeclaration, Enum
 from p4z3.base import P4Extern, P4Declaration, ControlDeclaration
 
@@ -24,6 +24,29 @@ class TypeSpecializer():
         type_ctx = LocalContext(ctx, {})
         return p4z3_type.init_type_params(type_ctx, *self.args)
 
+
+def resolve_runtime_index(lval, index):
+    max_idx = lval.locals["size"]
+    return_expr = lval.locals["0"]
+    for hdr_idx in range(max_idx):
+        cond = index == hdr_idx
+        return_expr = handle_mux(
+            cond, lval.locals[f"{hdr_idx}"], return_expr)
+        return return_expr
+
+
+def get_index(sub_ctx, index):
+    if isinstance(index, z3.ExprRef):
+        index = z3.simplify(index)
+    if isinstance(index, int):
+        index = str(index)
+    elif isinstance(index, z3.BitVecNumRef):
+        index = str(index.as_long())
+    elif isinstance(index, z3.BitVecRef):
+        index = resolve_runtime_index(sub_ctx, index)
+    else:
+        raise RuntimeError(f"Unsupported index {type(index)}!")
+    return index
 
 class P4Context():
 
@@ -63,7 +86,7 @@ class P4Context():
 
         # resolve potential string references first
         log.debug("Resolving %s", expr)
-        if isinstance(expr, str):
+        if isinstance(expr, (str, P4Member)):
             expr = self.resolve_reference(expr)
         if isinstance(expr, P4Expression):
             # We got a P4 expression, recurse and resolve...
@@ -133,12 +156,12 @@ class P4Context():
         ctx.set_or_add_var(lval, rval_expr)
         return
 
-    def set_or_add_var(self, lval, rval, new_decl=False):
+    def set_or_add_var(self, lval, rval, new_decl=False, reuse_index=False):
         if isinstance(lval, P4Slice):
             self.set_slice(self, lval, rval)
             return
         if isinstance(lval, P4Member):
-            lval.set_value(self, rval)
+            lval.set_value(self, rval, reuse_index=reuse_index)
             return
         # now that all the preprocessing is done we can assign the value
         log.debug("Setting %s(%s) to %s(%s) ",
@@ -161,13 +184,22 @@ class P4Context():
         ctx.locals[lval] = rval
 
     def resolve_reference(self, var):
-        if isinstance(var, P4Member):
-            return var.eval(self)
-        if isinstance(var, str):
-            ctx, val = self.find_context(var)
+        if isinstance(var, P4Index):
+
+            index = self.resolve_expr(var.member)
+            lval = self.resolve_expr(var.lval)
+            var.saved_member = index
+            var.saved_lval = lval
+            var.evaluated = True
+            index = get_index(lval, index)
+            var = lval.resolve_reference(index)
+        elif isinstance(var, P4Member):
+            lval = self.resolve_expr(var.lval)
+            var = lval.resolve_reference(var.member)
+        elif isinstance(var, str):
+            ctx, var = self.find_context(var)
             if not ctx:
                 raise RuntimeError(f"Variable {var} not found!")
-            return val
         return var
 
     def add_type(self, type_name, type_val):
@@ -299,7 +331,7 @@ class LocalContext(P4Context):
                 log.debug("Copy-out: %s to %s", val, par_ref)
                 # copy it back to the input reference
                 # this assumes an lvalue as input
-                ctx.set_or_add_var(par_ref, val)
+                ctx.set_or_add_var(par_ref, val, reuse_index=True)
 
     def get_p4_state(self):
         return self.master_ctx.p4_state

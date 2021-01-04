@@ -342,7 +342,7 @@ class P4Method(P4Callable):
                 # we do not know whether the expression is valid afterwards
                 propagate_validity_bit(arg_expr)
             # (in)outs are left-values so the arg_ref must be a string
-            ctx.set_or_add_var(arg_ref, arg_expr)
+            ctx.set_or_add_var(arg_ref, arg_expr, reuse_index=True)
 
     def __call__(self, ctx, *args, **kwargs):
         merged_args = merge_parameters(self.params, *args, **kwargs)
@@ -568,7 +568,7 @@ class P4Table(P4Callable):
             if idx > action_args_len:
                 # this is a ctrl argument, generate an input
                 ctrl_arg = ctx.gen_instance(f"{self.name}{param.name}",
-                                        param.p4_type)
+                                            param.p4_type)
                 merged_action_args.append(ctrl_arg)
             else:
                 merged_action_args.append(action_args[idx])

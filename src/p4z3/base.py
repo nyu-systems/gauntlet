@@ -327,27 +327,20 @@ class InstanceDeclaration(ValueDeclaration):
         ctx.set_or_add_var(self.lval, z3_type, True)
 
 
-class P4Member(P4Expression):
+class P4Member():
 
-    __slots__ = ["lval", "member"]
+    __slots__ = ["lval", "member", "evaluated"]
 
     def __init__(self, lval, member):
         self.lval = lval
         self.member = member
-        self.evaluated = False
 
-    def eval(self, ctx):
+    def set_value(self, ctx, rval, reuse_index=False):
         if isinstance(self.lval, P4Index):
-            return self.lval.eval(ctx, self.member)
-        lval = ctx.resolve_expr(self.lval)
-        return lval.resolve_reference(self.member)
-
-    def set_value(self, ctx, rval):
-        if isinstance(self.lval, P4Index):
-            self.lval.set_value(ctx, rval, self.member)
-            return
-        target = ctx.resolve_reference(self.lval)
-        target.set_or_add_var(self.member, rval)
+            self.lval.set_value(ctx, rval, self.member, reuse_index)
+        else:
+            target = ctx.resolve_reference(self.lval)
+            target.set_or_add_var(self.member, rval)
 
     def __repr__(self):
         return f"{self.lval}.{self.member}"
@@ -355,89 +348,59 @@ class P4Member(P4Expression):
 
 class P4Index(P4Member):
     # FIXME: This class is an absolute nightmare. Completely broken
-    __slots__ = ["lval", "member"]
+    __slots__ = ["lval", "member", "evaluated", "saved_member", "saved_lval"]
 
-    def resolve_runtime_index(self, lval, target_member, index):
-        if target_member:
-            max_idx = lval.locals["size"]
-            return_expr = lval.locals[str(
-                0)].resolve_reference(target_member)
-            for hdr_idx in range(1, max_idx):
-                cond = index == hdr_idx
-                val = lval.locals[f"{hdr_idx}"].resolve_reference(
-                    target_member)
-                return_expr = handle_mux(cond, val, return_expr)
-            return return_expr
-        else:
-            max_idx = lval.locals["size"]
-            return_expr = lval.locals["0"]
-            for hdr_idx in range(1, max_idx):
-                cond = index == hdr_idx
-                return_expr = handle_mux(
-                    cond, lval.locals[f"{hdr_idx}"], return_expr)
-            return return_expr
+    def __init__(self, lval, member):
+        self.lval = lval
+        self.member = member
+        self.evaluated = False
+        self.saved_lval = lval
+        self.saved_member = member
 
-    def eval(self, ctx, target_member=None):
-        lval = ctx.resolve_expr(self.lval)
-        index = ctx.resolve_expr(self.member)
-        self.member = index
-        self.evaluated = True
-        if isinstance(index, z3.ExprRef):
-            index = z3.simplify(index)
-        if isinstance(index, int):
-            index = str(index)
-        elif isinstance(index, z3.BitVecNumRef):
-            index = str(index.as_long())
-        elif isinstance(index, z3.BitVecRef):
-            return self.resolve_runtime_index(lval, target_member, index)
+    def set_value(self, ctx, rval, target_member=None, reuse_index=False):
+        if self.evaluated and reuse_index:
+            index = self.saved_member
+            lval = self.saved_lval
         else:
-            raise RuntimeError(f"Unsupported index {type(index)}!")
-        expr = lval.resolve_reference(index)
-        if target_member:
-            return expr.resolve_reference(target_member)
-        else:
-            return expr
-
-    def set_value(self, ctx, rval, target_member=None):
-        lval = ctx.resolve_expr(self.lval)
-        if not self.evaluated:
             index = ctx.resolve_expr(self.member)
-        else:
-            index = self.member
+            lval = ctx.resolve_expr(self.lval)
+            self.saved_lval = index
+            self.saved_member = lval
+            self.evaluated = True
+
         if isinstance(index, z3.ExprRef):
             index = z3.simplify(index)
-        if isinstance(index, int):
-            index = str(index)
-        elif isinstance(index, z3.BitVecNumRef):
-            index = str(index.as_long())
-        elif isinstance(index, z3.BitVecRef):
+
+        if isinstance(index, z3.BitVecRef):
+            max_idx = lval.resolve_reference("size")
             if target_member:
-                max_idx = lval.locals["size"]
                 for hdr_idx in range(max_idx):
-                    hdr = lval.locals[f"{hdr_idx}"]
-                    cond = index == hdr_idx
+                    hdr = lval.resolve_reference(str(hdr_idx))
                     cur_val = hdr.resolve_reference(target_member)
-                    if_expr = z3.If(cond, rval, cur_val)
+                    if_expr = handle_mux(index == hdr_idx, rval, cur_val)
                     hdr.set_or_add_var(target_member, if_expr)
             else:
-                max_idx = lval.locals["size"]
-                for hdr_idx in range(1, max_idx):
-                    cond = index == hdr_idx
-                    mux_expr = handle_mux(cond, rval,
-                                          ctx.locals[f"{hdr_idx}"])
-                    lval.set_or_add_var(hdr_idx, mux_expr)
+                for hdr_idx in range(max_idx):
+                    hdr = lval.resolve_reference(str(hdr_idx))
+                    if_expr = handle_mux(index == hdr_idx, rval, hdr)
+                    lval.set_or_add_var(hdr_idx, if_expr)
             return
+
+        if isinstance(index, int):
+            index = str(index)
+        elif isinstance(index, z3.BitVecNumRef):
+            index = str(index.as_long())
         else:
             raise RuntimeError(f"Unsupported index {type(index)}!")
 
         if target_member:
-            hdr = lval.locals[f"{index}"]
+            hdr = lval.resolve_reference(str(index))
             hdr.set_or_add_var(target_member, rval)
         else:
             lval.set_or_add_var(index, rval)
 
     def __repr__(self):
-        return f"{self.lval}.[{self.member}]"
+        return f"{self.lval}[{self.member}]"
 
 
 class P4Slice(P4Expression):
@@ -505,8 +468,9 @@ class P4ComplexInstance():
 
     def resolve_reference(self, var):
         if isinstance(var, P4Member):
-            return var.eval(self)
-        if isinstance(var, str):
+            lval = self.locals[var.lval]
+            var = lval.resolve_reference(var.member)
+        elif isinstance(var, str):
             return self.locals[var]
         return var
 
@@ -520,9 +484,9 @@ class P4ComplexInstance():
         # whenever we set a list, the target instances becomes valid
         self.valid = z3.BoolVal(True)
 
-    def set_or_add_var(self, lval, rval):
+    def set_or_add_var(self, lval, rval, reuse_index=False):
         if isinstance(lval, P4Member):
-            lval.set_value(self, rval)
+            lval.set_value(self, rval, reuse_index=reuse_index)
             return
         # rvals could be a list, unroll the assignment
         if isinstance(rval, list) and lval in self.locals:
@@ -1009,7 +973,15 @@ class HeaderStackInstance(StructInstance):
 
 
 class StaticType():
-    pass
+    locals = {}
+
+    def resolve_reference(self, var):
+        if isinstance(var, P4Member):
+            lval = self.locals[var.lval]
+            var = lval.resolve_reference(var.member)
+        elif isinstance(var, str):
+            var = self.locals[var]
+        return var
 
 class Enum(StaticType):
 
@@ -1023,13 +995,6 @@ class Enum(StaticType):
 
     def instantiate(self, _name, _member_id=0):
         return self
-
-    def resolve_reference(self, var):
-        if isinstance(var, P4Member):
-            return var.eval(self)
-        if isinstance(var, str):
-            return self.locals[var]
-        return var
 
     def __eq__(self, other):
         if isinstance(other, z3.ExprRef):
@@ -1099,13 +1064,6 @@ class P4Extern(StaticType):
         for method_name, method in self.locals.items():
             result.locals[method_name] = copy.copy(method)
         return result
-
-    def resolve_reference(self, var):
-        if isinstance(var, P4Member):
-            return var.eval(self)
-        if isinstance(var, str):
-            var = self.locals[var]
-        return var
 
 
 class P4ControlType(P4Extern):
