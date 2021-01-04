@@ -1,10 +1,23 @@
 from collections import OrderedDict
 from p4z3.base import log, DefaultExpression, copy, z3_cast, merge_attrs, z3
 from p4z3.base import StructInstance, P4Statement
-from p4z3.base import ParserException
+from p4z3.base import ParserException, P4Index, P4Member
 from p4z3.callables import P4Table
 from p4z3.parser import RejectState
 from p4z3.state import StaticContext
+
+
+def resolve_index(ctx, lval):
+    if isinstance(lval, P4Index):
+        index = ctx.resolve_expr(lval.member)
+        sub_lval, _ = resolve_index(ctx, lval.lval)
+        return P4Index(sub_lval, index), True
+    elif isinstance(lval, P4Member):
+        sub_lval, has_changed = resolve_index(ctx, lval.lval)
+        if has_changed:
+            return P4Member(sub_lval, lval.member), True
+        return lval, False
+    return lval, False
 
 
 class AssignmentStatement(P4Statement):
@@ -17,15 +30,21 @@ class AssignmentStatement(P4Statement):
         self.rval = rval
 
     def eval(self, ctx):
+        # An assignment, written with the = sign, first evaluates its left
+        # sub-expression to an l-value, then evaluates its right sub-expression
+        # to a value, and finally copies the value into the l-value. Derived
+        # types (e.g. structs) are copied recursively, and all components of
+        # headers are copied, including “validity” bits. Assignment is not
+        # defined for extern values.
         log.debug("Assigning %s to %s ", self.rval, self.lval)
+        lval, _ = resolve_index(ctx, self.lval)
         rval_expr = ctx.resolve_expr(self.rval)
         # in assignments all complex types values are copied
         if isinstance(rval_expr, StructInstance):
             rval_expr = copy.copy(rval_expr)
         if isinstance(rval_expr, int):
-            lval = ctx.resolve_expr(self.lval)
-            rval_expr = z3_cast(rval_expr, lval.sort())
-        ctx.set_or_add_var(self.lval, rval_expr)
+            rval_expr = z3_cast(rval_expr, ctx.resolve_expr(self.lval).sort())
+        ctx.set_or_add_var(lval, rval_expr)
 
 
 class MethodCallStmt(P4Statement):
