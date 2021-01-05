@@ -3,8 +3,21 @@ from p4z3.state import LocalContext
 from p4z3.base import z3, log, copy, merge_attrs, OptionalExpression
 from p4z3.base import z3_cast, handle_mux, StructInstance
 from p4z3.base import P4Z3Class, P4Mask, P4ComplexType, UNDEF_LABEL
-from p4z3.base import DefaultExpression, propagate_validity_bit
-from p4z3.base import P4Expression, P4Argument, P4Range, ListType
+from p4z3.base import DefaultExpression, propagate_validity_bit, P4Member
+from p4z3.base import P4Expression, P4Argument, P4Range, ListType, P4Index
+
+
+def resolve_index(ctx, lval):
+    if isinstance(lval, P4Index):
+        index = ctx.resolve_expr(lval.member)
+        sub_lval, _ = resolve_index(ctx, lval.lval)
+        return P4Index(sub_lval, index), True
+    elif isinstance(lval, P4Member):
+        sub_lval, has_changed = resolve_index(ctx, lval.lval)
+        if has_changed:
+            return P4Member(sub_lval, lval.member), True
+        return lval, False
+    return lval, False
 
 
 def save_variables(ctx, merged_args):
@@ -97,8 +110,7 @@ class P4Callable(P4Z3Class):
 
     def eval(self, ctx, *args, **kwargs):
         merged_args = merge_parameters(self.params, *args, **kwargs)
-        var_buffer = save_variables(ctx, merged_args)
-        param_buffer = self.copy_in(ctx, merged_args)
+        param_buffer, var_buffer = self.copy_in(ctx, merged_args)
         # only add the ctx after all the arguments have been resolved
         sub_ctx = LocalContext(ctx, var_buffer)
         # now we can set the arguments without influencing subsequent variables
@@ -120,9 +132,18 @@ class P4Callable(P4Z3Class):
 
     def copy_in(self, ctx, merged_args):
         param_buffer = OrderedDict()
+        var_buffer = OrderedDict()
         for param_name, arg in merged_args.items():
+            # We need to resolve array indices appropriately
+            arg_expr, _ = resolve_index(ctx, arg.p4_val)
+            try:
+                param_val = ctx.resolve_reference(param_name)
+                var_buffer[param_name] = (arg.mode, arg_expr, param_val)
+            except RuntimeError:
+                # if the variable name does not exist, set the value to None
+                var_buffer[param_name] = (arg.mode, arg_expr, None)
             # Sometimes expressions are passed, resolve those first
-            arg_expr = ctx.resolve_expr(arg.p4_val)
+            arg_expr = ctx.resolve_expr(arg_expr)
             # it can happen that we receive a list
             # infer the type, generate, and set
             try:
@@ -157,7 +178,7 @@ class P4Callable(P4Z3Class):
             log.debug("Copy-in: %s to %s", arg_expr, param_name)
             # buffer the value, do NOT set it yet
             param_buffer[param_name] = arg_expr
-        return param_buffer
+        return param_buffer, var_buffer
 
     def resolve_reference(self, var):
         return self.locals[var]
@@ -342,7 +363,7 @@ class P4Method(P4Callable):
                 # we do not know whether the expression is valid afterwards
                 propagate_validity_bit(arg_expr)
             # (in)outs are left-values so the arg_ref must be a string
-            ctx.set_or_add_var(arg_ref, arg_expr, reuse_index=True)
+            ctx.set_or_add_var(arg_ref, arg_expr)
 
     def __call__(self, ctx, *args, **kwargs):
         merged_args = merge_parameters(self.params, *args, **kwargs)

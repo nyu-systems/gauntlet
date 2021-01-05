@@ -157,9 +157,10 @@ def handle_mux(cond, then_expr, else_expr):
         else:
             RuntimeError(f"Complex merge not supported for {then_expr}!")
         # start to merge the variables
-        mux_merge(cond, else_expr, then_expr)
+        mux_merge(z3.Not(cond), else_expr, then_expr)
         # merge the validity of the return expressions
-        propagate_validity_bit(else_expr, z3.If(cond, else_valid, then_valid))
+        propagate_validity_bit(else_expr, z3.If(
+            z3.Not(cond), else_valid, then_valid))
         return else_expr
 
     # we have to return a nested list when dealing with two lists
@@ -343,12 +344,12 @@ class P4Member():
         self.lval = lval
         self.member = member
 
-    def set_value(self, ctx, rval, reuse_index=False):
+    def set_value(self, ctx, rval):
         if isinstance(self.lval, P4Index):
-            self.lval.set_value(ctx, rval, self.member, reuse_index)
-        else:
-            target = ctx.resolve_reference(self.lval)
-            target.set_or_add_var(self.member, rval)
+            self.lval.set_value(ctx, rval, self.member)
+            return
+        target = ctx.resolve_reference(self.lval)
+        target.set_or_add_var(self.member, rval)
 
     def __repr__(self):
         return f"{self.lval}.{self.member}"
@@ -361,18 +362,11 @@ class P4Index(P4Member):
     def __init__(self, lval, member):
         self.lval = lval
         self.member = member
-        self.evaluated = False
-        self.saved_lval = lval
-        self.saved_member = member
 
-    def set_value(self, ctx, rval, target_member=None, reuse_index=False):
-        if self.evaluated and reuse_index:
-            index = self.saved_member
-        else:
-            index = ctx.resolve_expr(self.member)
-            self.saved_member = index
-            self.evaluated = True
-        lval = ctx.resolve_expr(self.lval)
+    def set_value(self, ctx, rval, target_member=None):
+        index = ctx.resolve_expr(self.member)
+        lval = ctx.resolve_reference(self.lval)
+
         if isinstance(index, z3.ExprRef):
             index = z3.simplify(index)
 
@@ -488,9 +482,9 @@ class P4ComplexInstance():
         # whenever we set a list, the target instances becomes valid
         self.valid = z3.BoolVal(True)
 
-    def set_or_add_var(self, lval, rval, reuse_index=False):
+    def set_or_add_var(self, lval, rval):
         if isinstance(lval, P4Member):
-            lval.set_value(self, rval, reuse_index=reuse_index)
+            lval.set_value(self, rval)
             return
         # rvals could be a list, unroll the assignment
         if isinstance(rval, list) and lval in self.locals:

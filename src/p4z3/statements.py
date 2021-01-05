@@ -1,23 +1,9 @@
 from collections import OrderedDict
 from p4z3.base import log, DefaultExpression, copy, z3_cast, merge_attrs, z3
-from p4z3.base import StructInstance, P4Statement
-from p4z3.base import ParserException, P4Index, P4Member
-from p4z3.callables import P4Table
+from p4z3.base import StructInstance, P4Statement, ParserException
+from p4z3.callables import P4Table, resolve_index
 from p4z3.parser import RejectState
 from p4z3.state import StaticContext
-
-
-def resolve_index(ctx, lval):
-    if isinstance(lval, P4Index):
-        index = ctx.resolve_expr(lval.member)
-        sub_lval, _ = resolve_index(ctx, lval.lval)
-        return P4Index(sub_lval, index), True
-    elif isinstance(lval, P4Member):
-        sub_lval, has_changed = resolve_index(ctx, lval.lval)
-        if has_changed:
-            return P4Member(sub_lval, lval.member), True
-        return lval, False
-    return lval, False
 
 
 class AssignmentStatement(P4Statement):
