@@ -375,9 +375,10 @@ class P4Method(P4Callable):
         method_args = {}
         for param_name, arg in merged_args.items():
             # we need to resolve "in" too because of side-effects
-            arg_expr = sub_ctx.resolve_expr(arg.p4_val)
+            p4_val, _ = resolve_index(ctx, arg.p4_val)
+            arg_expr = sub_ctx.resolve_expr(p4_val)
             method_args[param_name] = (
-                arg.mode, arg.p4_val, arg_expr, arg.p4_type)
+                arg.mode, p4_val, arg_expr, arg.p4_type)
         for type_name, p4_type in self.type_ctx.items():
             sub_ctx.add_type(type_name, sub_ctx.resolve_type(p4_type))
 

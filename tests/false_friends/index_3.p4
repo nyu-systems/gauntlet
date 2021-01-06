@@ -23,6 +23,7 @@ struct Headers {
 bit<8> simple_function(out bit<8> dummy) {
     return 1;
 }
+
 parser p(packet_in pkt, out Headers hdr) {
     state start {
         transition parse_hdrs;

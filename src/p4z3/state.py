@@ -25,29 +25,6 @@ class TypeSpecializer():
         return p4z3_type.init_type_params(type_ctx, *self.args)
 
 
-def resolve_runtime_index(lval, index):
-    max_idx = lval.locals["size"]
-    return_expr = lval.locals["0"]
-    for hdr_idx in range(1, max_idx):
-        cond = index == hdr_idx
-        return_expr = handle_mux(
-            cond, lval.locals[f"{hdr_idx}"], return_expr)
-    return return_expr
-
-
-def get_index(sub_ctx, index):
-    if isinstance(index, z3.ExprRef):
-        index = z3.simplify(index)
-    if isinstance(index, int):
-        index = str(index)
-    elif isinstance(index, z3.BitVecNumRef):
-        index = str(index.as_long())
-    elif isinstance(index, z3.BitVecRef):
-        index = resolve_runtime_index(sub_ctx, index)
-    else:
-        raise RuntimeError(f"Unsupported index {type(index)}!")
-    return index
-
 class P4Context():
 
     def __init__(self):
@@ -184,14 +161,8 @@ class P4Context():
         ctx.locals[lval] = rval
 
     def resolve_reference(self, var):
-        if isinstance(var, P4Index):
-            index = self.resolve_expr(var.member)
-            lval = self.resolve_expr(var.lval)
-            index = get_index(lval, index)
-            var = lval.resolve_reference(index)
-        elif isinstance(var, P4Member):
-            lval = self.resolve_expr(var.lval)
-            var = lval.resolve_reference(var.member)
+        if isinstance(var, P4Member):
+            var = var.resolve(self)
         elif isinstance(var, str):
             ctx, var = self.find_context(var)
             if not ctx:

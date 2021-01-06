@@ -1,4 +1,5 @@
 #include <core.p4>
+
 header ethernet_t {
     bit<48> dst_addr;
     bit<48> src_addr;
@@ -6,12 +7,12 @@ header ethernet_t {
 }
 
 header H {
-    bit<32>  a;
+    bit<8> a;
 }
 
 struct Headers {
-    ethernet_t eth_hdr;
-    H[2]  h;
+    ethernet_t    eth_hdr;
+    H[2] h;
 }
 
 parser p(packet_in pkt, out Headers hdr) {
@@ -19,17 +20,23 @@ parser p(packet_in pkt, out Headers hdr) {
         transition parse_hdrs;
     }
     state parse_hdrs {
-        pkt.extract(hdr.eth_hdr);
         transition accept;
     }
 }
 
+bit<3> max(in bit<3> val, in bit<3> bound) {
+    return (val < bound ? val : bound);
+}
+
 control ingress(inout Headers h) {
-    action do_something(inout bit<32> val) {
-        val = (h.eth_hdr.eth_type == 1 ? 32w1 : 32w2);
+    bool bool_val = true;
+    action perform_action() {
+        if (bool_val) {
+            h.h[max(3w0, 3w1)].a = 1;
+        }
     }
     apply {
-        do_something(h.h[0].a);
+        perform_action();
     }
 }
 

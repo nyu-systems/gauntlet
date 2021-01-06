@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 import copy
+import types
 import logging
 import z3
 log = logging.getLogger(__name__)
@@ -159,8 +160,8 @@ def handle_mux(cond, then_expr, else_expr):
         # start to merge the variables
         mux_merge(z3.Not(cond), else_expr, then_expr)
         # merge the validity of the return expressions
-        propagate_validity_bit(else_expr, z3.If(
-            z3.Not(cond), else_valid, then_valid))
+        propagate_validity_bit(else_expr, z3.If(cond, then_valid, else_valid))
+        log.info(else_expr.valid)
         return else_expr
 
     # we have to return a nested list when dealing with two lists
@@ -338,11 +339,17 @@ class InstanceDeclaration(ValueDeclaration):
 
 class P4Member():
 
-    __slots__ = ["lval", "member", "evaluated"]
+    __slots__ = ["lval", "member"]
 
     def __init__(self, lval, member):
         self.lval = lval
         self.member = member
+
+    def resolve(self, ctx):
+        if isinstance(self.lval, P4Index):
+            return self.lval.resolve(ctx, self.member)
+        lval = ctx.resolve_expr(self.lval)
+        return lval.resolve_reference(self.member)
 
     def set_value(self, ctx, rval):
         if isinstance(self.lval, P4Index):
@@ -356,16 +363,64 @@ class P4Member():
 
 
 class P4Index(P4Member):
-    # FIXME: This class is an absolute nightmare. Completely broken
-    __slots__ = ["lval", "member", "evaluated", "saved_member", "saved_lval"]
+    # FIXME: Still an absolute nightmare of a class.
+    # How to handle symbolic indices?
+    def resolve(self, ctx, target_member=None):
+        index = ctx.resolve_expr(self.member)
+        lval = ctx.resolve_expr(self.lval)
+        if isinstance(index, z3.ExprRef):
+            index = z3.simplify(index)
+        if isinstance(index, int):
+            index = str(index)
+        elif isinstance(index, z3.BitVecNumRef):
+            index = str(index.as_long())
+        elif isinstance(index, z3.BitVecRef):
+            max_idx = lval.locals["size"]
+            if target_member:
+                hdr = lval.locals["0"]
+                return_expr = hdr.resolve_reference(target_member)
+                if isinstance(return_expr, types.MethodType):
+                    # FIXME This is complete insanity to handle method calls
+                    # this will probably break with any other constellation
+                    prev_valid = hdr.valid
+                    return_expr(ctx)
+                    hdr.valid = z3.If(index == 0, hdr.valid, prev_valid)
+                    return_expr = lval.locals["0"]
+                    for hdr_idx in range(1, max_idx):
+                        cond = index == hdr_idx
+                        hdr = lval.resolve_reference(str(hdr_idx))
+                        prev_valid = hdr.valid
+                        caller = hdr.resolve_reference(target_member)
+                        caller(ctx)
+                        hdr.valid = z3.If(cond, hdr.valid, prev_valid)
+                        return_expr = handle_mux(cond, hdr, return_expr)
+                    return return_expr.isValid
+                for hdr_idx in range(1, max_idx):
+                    hdr = lval.resolve_reference(str(hdr_idx))
+                    cur_val = hdr.resolve_reference(target_member)
+                    cond = index == hdr_idx
+                    return_expr = handle_mux(
+                        z3.Not(cond), return_expr, cur_val)
+                return return_expr
+            # this needs to be its own copy
+            # we do not want to modify when resolving
+            return_expr = copy.copy(lval.locals["0"])
+            for hdr_idx in range(1, max_idx):
+                cond = index == hdr_idx
+                return_expr = handle_mux(
+                    z3.Not(cond), return_expr, lval.locals[str(hdr_idx)])
+            return return_expr
+        else:
+            raise RuntimeError(f"Unsupported index {type(index)}!")
 
-    def __init__(self, lval, member):
-        self.lval = lval
-        self.member = member
+        hdr = lval.resolve_reference(index)
+        if target_member:
+            return hdr.resolve_reference(target_member)
+        return hdr
 
     def set_value(self, ctx, rval, target_member=None):
         index = ctx.resolve_expr(self.member)
-        lval = ctx.resolve_reference(self.lval)
+        lval = ctx.resolve_expr(self.lval)
 
         if isinstance(index, z3.ExprRef):
             index = z3.simplify(index)
@@ -386,7 +441,7 @@ class P4Index(P4Member):
                 for hdr_idx in range(max_idx):
                     hdr = lval.resolve_reference(str(hdr_idx))
                     if_expr = handle_mux(index == hdr_idx, rval, hdr)
-                    lval.set_or_add_var(hdr_idx, if_expr)
+                    lval.set_or_add_var(str(hdr_idx), if_expr)
             return
         else:
             raise RuntimeError(f"Unsupported index {type(index)}!")
@@ -466,8 +521,7 @@ class P4ComplexInstance():
 
     def resolve_reference(self, var):
         if isinstance(var, P4Member):
-            lval = self.locals[var.lval]
-            var = lval.resolve_reference(var.member)
+            return var.resolve(self)
         elif isinstance(var, str):
             return self.locals[var]
         return var
