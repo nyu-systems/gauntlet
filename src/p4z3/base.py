@@ -108,67 +108,43 @@ def mux_merge(cond, target, else_attrs):
             target.set_or_add_var(member_name, if_expr)
 
 
-def handle_mux(cond, then_expr, else_expr):
-    # TODO: Simplify this
+def merge_structs(cond, target, else_expr):
+    # we want to avoid side-effects when merging
+    # since we are creating a new expression
+    # TODO: Think about a more efficient method
+    target = copy.copy(target)
+    # record the validity
+    then_valid = target.valid
+    # if the else expression is complex, we grab a list of the fields
+    if isinstance(else_expr, StructInstance):
+        else_valid = else_expr.valid
+        fields = []
+        for member_name, _ in else_expr.fields:
+            fields.append(else_expr.resolve_reference(member_name))
+        else_expr = fields
+    # if we have a list initializer, it will make the target value valid
+    elif isinstance(else_expr, list):
+        else_valid = z3.BoolVal(True)
+    else:
+        RuntimeError(f"Complex merge not supported for {else_expr}!")
+    # start to merge the variables
+    mux_merge(cond, target, else_expr)
+    # merge the validity of the return expressions
+    propagate_validity_bit(target, z3.If(cond, then_valid, else_valid))
+    return target
 
+
+def handle_mux(cond, then_expr, else_expr):
     # we may return complex types, we have to unroll these
     if isinstance(then_expr, StructInstance):
-        # we want to avoid side-effects when merging
-        # we are creating a new expression
-        # TODO: Think about a more efficient method
-        then_expr = copy.copy(then_expr)
-        # record the validity
-        then_valid = then_expr.valid
-        # if the else expression is complex, we grab a list of the fields
-        if isinstance(else_expr, StructInstance):
-            else_valid = else_expr.valid
-            fields = []
-            for member_name, _ in else_expr.fields:
-                fields.append(else_expr.resolve_reference(member_name))
-            else_expr = fields
-        # if we have a list initializer, it will make the target value valid
-        elif isinstance(else_expr, list):
-            else_valid = z3.BoolVal(True)
-        else:
-            RuntimeError(f"Complex merge not supported for {else_expr}!")
-        # start to merge the variables
-        mux_merge(cond, then_expr, else_expr)
-        # merge the validity of the return expressions
-        propagate_validity_bit(then_expr, z3.If(cond, then_valid, else_valid))
-        return then_expr
-
+        return merge_structs(cond, then_expr, else_expr)
     # repeat the same check if the else expression is complex
     if isinstance(else_expr, StructInstance):
-        # we want to avoid side-effects when merging
-        # we are creating a new expression
-        # TODO: Think about a more efficient method
-        else_expr = copy.copy(else_expr)
-        # record the validity
-        else_valid = else_expr.valid
-        # if the else expression is complex, we grab a list of the fields
-        if isinstance(then_expr, StructInstance):
-            then_valid = then_expr.valid
-            fields = []
-            for member_name, _ in then_expr.fields:
-                fields.append(then_expr.resolve_reference(member_name))
-            then_expr = fields
-        # if we have a list initializer, it will make the target value valid
-        elif isinstance(then_expr, list):
-            then_valid = z3.BoolVal(True)
-        else:
-            RuntimeError(f"Complex merge not supported for {then_expr}!")
-        # start to merge the variables
-        mux_merge(z3.Not(cond), else_expr, then_expr)
-        # merge the validity of the return expressions
-        propagate_validity_bit(else_expr, z3.If(cond, then_valid, else_valid))
-        log.info(else_expr.valid)
-        return else_expr
-
+        return merge_structs(z3.Not(cond), else_expr, then_expr)
     # we have to return a nested list when dealing with two lists
     if isinstance(then_expr, list) and isinstance(else_expr, list):
         merged_list = merge_list(cond, then_expr, else_expr)
         return merged_list
-
     # assume normal z3 types at this point
     # this will fail if there is an unexpected input
     return z3.If(cond, then_expr, else_expr)
@@ -206,7 +182,7 @@ class P4Argument:
 @dataclass
 class Member:
     __slots__ = ["name", "p4_type", "width"]
-    name: str
+    name: object
     p4_type: object
     width: int
 
@@ -343,6 +319,10 @@ class P4Member():
 
     def __init__(self, lval, member):
         self.lval = lval
+        # if not isinstance(member, str):
+        #     msg = "P4Member: Member must be of type str but is type"
+        #     msg += f" {type(member)} with value {member} ."
+        #     raise TypeError(msg)
         self.member = member
 
     def resolve(self, ctx):
@@ -362,12 +342,59 @@ class P4Member():
         return f"{self.lval}.{self.member}"
 
 
+def resolve_runtime_index(ctx, lval, index, target_member):
+    max_idx = lval.locals["size"]
+    if target_member:
+        # get the first member as type indicator
+        hdr = lval.locals["0"]
+        # target_member should be a string so need for "resolve_reference"
+        return_expr = hdr.locals[target_member]
+        if isinstance(return_expr, types.MethodType):
+            # FIXME This is complete insanity to handle method calls
+            # this will probably break with any other constellation
+            # preserve the valid value before the method call
+            # TODO: This should get all variables, not just validity
+            prev_valid = hdr.valid
+            # execute the call
+            # TODO: We need to reset side effects after merging
+            return_expr(ctx)
+            hdr.valid = z3.If(index == 0, hdr.valid, prev_valid)
+            return_expr = lval.locals["0"]
+            for hdr_idx in range(1, max_idx):
+                cond = index == hdr_idx
+                hdr = lval.locals[str(hdr_idx)]
+                # preserve the valid value before the method call
+                prev_valid = hdr.valid
+                # get the method
+                caller = hdr.locals[target_member]
+                # execute the call
+                caller(ctx)
+                hdr.valid = z3.If(cond, hdr.valid, prev_valid)
+                return_expr = handle_mux(cond, hdr, return_expr)
+            # return a dummy function...
+            return return_expr.isValid
+        # we start from 1 because we already resolved the first header
+        for hdr_idx in range(1, max_idx):
+            hdr = lval.locals[str(hdr_idx)]
+            cur_val = hdr.locals[target_member]
+            cond = index == hdr_idx
+            return_expr = handle_mux(cond, cur_val, return_expr)
+        return return_expr
+    return_expr = lval.locals["0"]
+    for hdr_idx in range(1, max_idx):
+        cond = index == hdr_idx
+        return_expr = handle_mux(cond, lval.locals[str(hdr_idx)], return_expr)
+    return return_expr
+
+
 class P4Index(P4Member):
     # FIXME: Still an absolute nightmare of a class.
     # How to handle symbolic indices?
+
     def resolve(self, ctx, target_member=None):
         index = ctx.resolve_expr(self.member)
         lval = ctx.resolve_expr(self.lval)
+        # resolve the index expression
         if isinstance(index, z3.ExprRef):
             index = z3.simplify(index)
         if isinstance(index, int):
@@ -375,45 +402,12 @@ class P4Index(P4Member):
         elif isinstance(index, z3.BitVecNumRef):
             index = str(index.as_long())
         elif isinstance(index, z3.BitVecRef):
-            max_idx = lval.locals["size"]
-            if target_member:
-                hdr = lval.locals["0"]
-                return_expr = hdr.resolve_reference(target_member)
-                if isinstance(return_expr, types.MethodType):
-                    # FIXME This is complete insanity to handle method calls
-                    # this will probably break with any other constellation
-                    prev_valid = hdr.valid
-                    return_expr(ctx)
-                    hdr.valid = z3.If(index == 0, hdr.valid, prev_valid)
-                    return_expr = lval.locals["0"]
-                    for hdr_idx in range(1, max_idx):
-                        cond = index == hdr_idx
-                        hdr = lval.resolve_reference(str(hdr_idx))
-                        prev_valid = hdr.valid
-                        caller = hdr.resolve_reference(target_member)
-                        caller(ctx)
-                        hdr.valid = z3.If(cond, hdr.valid, prev_valid)
-                        return_expr = handle_mux(cond, hdr, return_expr)
-                    return return_expr.isValid
-                for hdr_idx in range(1, max_idx):
-                    hdr = lval.resolve_reference(str(hdr_idx))
-                    cur_val = hdr.resolve_reference(target_member)
-                    cond = index == hdr_idx
-                    return_expr = handle_mux(
-                        z3.Not(cond), return_expr, cur_val)
-                return return_expr
-            # this needs to be its own copy
-            # we do not want to modify when resolving
-            return_expr = copy.copy(lval.locals["0"])
-            for hdr_idx in range(1, max_idx):
-                cond = index == hdr_idx
-                return_expr = handle_mux(
-                    z3.Not(cond), return_expr, lval.locals[str(hdr_idx)])
-            return return_expr
+            # if the index is a runtime value, we need to apply special care
+            return resolve_runtime_index(ctx, lval, index, target_member)
         else:
             raise RuntimeError(f"Unsupported index {type(index)}!")
-
         hdr = lval.resolve_reference(index)
+        # if a target member is set, we need to resolve that member
         if target_member:
             return hdr.resolve_reference(target_member)
         return hdr
@@ -422,6 +416,7 @@ class P4Index(P4Member):
         index = ctx.resolve_expr(self.member)
         lval = ctx.resolve_expr(self.lval)
 
+        # simplify the index first
         if isinstance(index, z3.ExprRef):
             index = z3.simplify(index)
 
@@ -430,24 +425,26 @@ class P4Index(P4Member):
         elif isinstance(index, z3.BitVecNumRef):
             index = str(index.as_long())
         elif isinstance(index, z3.BitVecRef):
-            max_idx = lval.resolve_reference("size")
+            # if the index is a runtime value, we need to set a new value
+            max_idx = lval.locals["size"]
             if target_member:
+                # there is a member after the index, forward the assignment
                 for hdr_idx in range(max_idx):
-                    hdr = lval.resolve_reference(str(hdr_idx))
-                    cur_val = hdr.resolve_reference(target_member)
+                    hdr = lval.locals[str(hdr_idx)]
+                    cur_val = hdr.locals[target_member]
                     if_expr = handle_mux(index == hdr_idx, rval, cur_val)
                     hdr.set_or_add_var(target_member, if_expr)
             else:
                 for hdr_idx in range(max_idx):
-                    hdr = lval.resolve_reference(str(hdr_idx))
+                    hdr = lval.locals[str(hdr_idx)]
                     if_expr = handle_mux(index == hdr_idx, rval, hdr)
                     lval.set_or_add_var(str(hdr_idx), if_expr)
             return
         else:
             raise RuntimeError(f"Unsupported index {type(index)}!")
-
+        # if a target member is present, we need to set that member instead
         if target_member:
-            hdr = lval.resolve_reference(str(index))
+            hdr = lval.locals[str(index)]
             hdr.set_or_add_var(target_member, rval)
         else:
             lval.set_or_add_var(index, rval)
@@ -618,6 +615,7 @@ class StructType(P4ComplexType):
                 # retrieve it is flat list of fields
                 # append it to the member list
                 for sub_member in member_type.flat_names:
+                    # FIXME: this is not the right way to construct a member...
                     member = Member(P4Member(member_name, sub_member.name),
                                     sub_member.p4_type,
                                     sub_member.width)
