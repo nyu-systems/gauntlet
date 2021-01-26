@@ -9,7 +9,7 @@ UNDEF_LABEL = "undefined"
 
 
 def z3_cast(val, to_type):
-
+    # FIXME: Unify to_type properly
     # some checks to guarantee that the inputs are usable
     if isinstance(val, (z3.BoolSortRef, z3.BoolRef)):
         # Convert boolean variables to a bit vector representation
@@ -21,11 +21,12 @@ def z3_cast(val, to_type):
         # this works for bitvectors and integers, we convert any bools before
         # if val is not a single bit vector, this will (intentionally) fail
         return val == z3.BitVecVal(1, 1)
-
     # from here on we assume we are working with integer or bitvector types
     if isinstance(to_type, (z3.BitVecSortRef, z3.BitVecRef)):
         # It can happen that we get a bitvector type as target, get its size.
         to_type_size = to_type.size()
+    elif not isinstance(to_type, int) and to_type == z3.IntSort():
+        return val.as_long()
     else:
         to_type_size = to_type
 
@@ -272,6 +273,10 @@ class ValueDeclaration(P4Declaration):
                 instance = ctx.gen_instance(UNDEF_LABEL, z3_type)
                 instance.set_list(rval)
                 rval = instance
+            elif z3_type == z3.IntSort():
+                # at this point rval can not be an int any more
+                # cast any bitvector value to long, no runtime is allowed
+                return rval.as_long()
             elif z3_type != rval.sort():
                 msg = f"There was an problem setting {self.lval} to {rval}. " \
                     f"Type Mismatch! Target type {z3_type} " \
