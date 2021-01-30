@@ -71,6 +71,8 @@ Fixed: :heavy_check_mark:&nbsp;&nbsp;&nbsp;&nbsp;Confirmed: :exclamation:&nbsp;&
 | [Calling an extern with a local variable: read-only error (2545)](https://github.com/p4lang/p4c/issues/2545)            | [2545.p4](crash/fixed/2545.p4)         | Mid end | :heavy_check_mark: |
 | [Side-effect function call in table key (2546b)](https://github.com/p4lang/p4c/issues/2546)           | [2546b.p4](crash/2546b.p4)                   | Front end | :exclamation: |
 | [Compiler Bug : Null firstCall (2597)](https://github.com/p4lang/p4c/issues/2597)           | [2597.p4](crash/fixed/2597.p4)                   | Front end | :heavy_check_mark: |
+| [Compiler Bug: Exiting with SIGSEGV (2648)](https://github.com/p4lang/p4c/issues/2648)           | [2648.p4](crash/2648.p4)                   | Mid end | :heavy_check_mark: |
+
 | [simple_switch died with return code -6 (887)](https://github.com/p4lang/behavioral-model/issues/887) | [887.p4](simple_switch/fixed/887.p4) | Back end | :heavy_check_mark: |
 
 #### P4C Semantic Bugs
@@ -114,6 +116,7 @@ Fixed: :heavy_check_mark:&nbsp;&nbsp;&nbsp;&nbsp;Confirmed: :exclamation:&nbsp;&
 | [Fix: Issue #2004 parser duplicated matches not optimized out (2591)](https://github.com/p4lang/p4c/pull/2591)              | [2591.p4](validation/pull_request/2591.p4)  | Mid end | :heavy_check_mark: |
 | [Predication: Another problem (2613)](https://github.com/p4lang/p4c/issues/2613)              | [2564.p4](validation/fixed/2613.p4)  | Mid end | :heavy_check_mark: |
 | :tada: (Bug No 100!) [StrengthReduction: Incorrect slice optimization (2614)](https://github.com/p4lang/p4c/issues/2614)              | [2614.p4](validation/fixed/2614.p4)  | Front end | :heavy_check_mark: |
+| [Some more predication issues (2647)](https://github.com/p4lang/p4c/issues/2647)              | [2647a.p4](validation/2647a.p4)  | Mid end | :exclamation: |
 
 #### Tofino Crash Bugs (P4Studio 9.3.0)
 

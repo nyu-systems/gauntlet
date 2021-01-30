@@ -54,9 +54,13 @@ def run_p4_to_py(p4_file, py_file, config, option_str=""):
 def fill_values(flat_input):
     input_values = []
     for val in flat_input:
-        if isinstance(val, z3.BitVecNumRef):
-            bitvec_val = val.as_long()
-            bitvec_hex_width = math.ceil(val.size() / 4)
+        if isinstance(val, (z3.BitVecRef, z3.BoolRef)):
+            if isinstance(val, z3.BoolRef):
+                bitvec_val = 1 if z3.is_true(val) else 0
+                bitvec_hex_width = math.ceil(1 / 4)
+            else:
+                bitvec_val = val.as_long()
+                bitvec_hex_width = math.ceil(val.size() / 4)
             hex_str = f"{bitvec_val:0{bitvec_hex_width}X}"
             input_values.append(hex_str)
         else:
@@ -291,8 +295,11 @@ def run_stf_test(config, stf_str):
 def assemble_dont_care_map(flat_list, dont_care_vals):
     dont_care_map = []
     for var in flat_list:
-        if isinstance(var, z3.BitVecRef):
-            bitvec_hex_width = math.ceil(var.size() / 4)
+        if isinstance(var, (z3.BitVecRef, z3.BoolRef)):
+            if isinstance(var, z3.BoolRef):
+                bitvec_hex_width = math.ceil(1 / 4)
+            else:
+                bitvec_hex_width = math.ceil(var.size() / 4)
             dont_care = False
             for dont_care_val in dont_care_vals:
                 if dont_care_val in str(var):
@@ -304,6 +311,7 @@ def assemble_dont_care_map(flat_list, dont_care_vals):
             else:
                 bitvec_map = ["."] * bitvec_hex_width
             dont_care_map.extend(bitvec_map)
+
         else:
             raise RuntimeError(f"Type {type(var)} not supported!")
     return dont_care_map

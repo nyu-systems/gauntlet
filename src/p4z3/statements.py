@@ -142,19 +142,20 @@ class SwitchStatement(P4Statement):
         var_store = ctx.checkpoint()
         # process the default expression
         cond = z3.Not(z3.Or(*case_matches))
-        ctx.tmp_forward_cond = z3.And(forward_cond_copy, cond)
-        self.default_case.eval(ctx)
-        if ctx.has_returned or ctx.get_exited():
-            ctx.restore(var_store)
-        ctx.has_returned = False
-        ctx.set_exited(False)
-        ctx.tmp_forward_cond = forward_cond_copy
+        if not z3.is_false(cond):
+            ctx.tmp_forward_cond = z3.And(forward_cond_copy, cond)
+            self.default_case.eval(ctx)
+            if ctx.has_returned or ctx.get_exited():
+                ctx.restore(var_store)
+            ctx.has_returned = False
+            ctx.set_exited(False)
+            ctx.tmp_forward_cond = forward_cond_copy
         # merge all the expressions in reverse order
         for cond, then_vars in reversed(case_exprs):
             merge_attrs(ctx, cond, then_vars)
 
     def eval_switch_table_matches(self, ctx, table):
-        cases = {}
+        cases = OrderedDict()
         if table.immutable:
             # if the table is immutable we can only match on const entries
             for c_keys, (action_name, _) in table.const_entries:
@@ -186,11 +187,18 @@ class SwitchStatement(P4Statement):
         else:
             # otherwise we are dealing with a normal table
             # just insert the match entries combined with the hit expression
+            add_default = None
             for case_name, case_block in self.case_blocks.items():
                 match_var = table.tbl_action
                 action = table.actions[case_name][0]
                 match_cond = z3.And(table.locals["hit"], (action == match_var))
                 cases[case_name] = (match_cond, case_block)
+                # we need to check if the default is in the cases
+                # this implies that the "default" case can never be executed
+                if case_name == table.default_action[1]:
+                    add_default = (case_name, (z3.BoolVal(True), case_block))
+            if add_default:
+                cases[add_default[0]] = add_default[1]
         return cases
 
     def eval_switch_expr_matches(self, ctx, switch_expr):
