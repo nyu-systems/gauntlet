@@ -197,7 +197,7 @@ class SwitchStatement(P4Statement):
                 # this implies that the "default" case can never be executed
                 if case_name == table.default_action[1]:
                     add_default = (case_name, (z3.BoolVal(True), case_block))
-            if add_default:
+            if add_default and len(table.actions) == len(cases):
                 cases[add_default[0]] = add_default[1]
         return cases
 

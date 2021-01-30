@@ -26,8 +26,8 @@ control ingress(inout Headers h) {
 
     action simple_action() {
         h.eth_hdr.src_addr = 1;
-
     }
+    action NoAction_dummy() {}
     table simple_table {
         key = {
             48w1: exact @name("Vmhbwk") ;
@@ -35,6 +35,7 @@ control ingress(inout Headers h) {
         actions = {
             simple_action();
             NoAction();
+            NoAction_dummy();
         }
     }
     apply {
