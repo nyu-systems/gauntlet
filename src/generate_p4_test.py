@@ -52,20 +52,23 @@ def run_p4_to_py(p4_file, py_file, config, option_str=""):
 
 
 def fill_values(flat_input):
-    input_values = []
+    input_bits = []
     for val in flat_input:
         if isinstance(val, (z3.BitVecRef, z3.BoolRef)):
             if isinstance(val, z3.BoolRef):
                 bitvec_val = 1 if z3.is_true(val) else 0
-                bitvec_hex_width = math.ceil(1 / 4)
+                bitvec_width = 1
             else:
                 bitvec_val = val.as_long()
-                bitvec_hex_width = math.ceil(val.size() / 4)
-            hex_str = f"{bitvec_val:0{bitvec_hex_width}X}"
-            input_values.append(hex_str)
+                bitvec_width = val.size()
+            input_bits.append(f"{bitvec_val:0{bitvec_width}b}")
         else:
             raise RuntimeError(f"Type {type(val)} not supported!")
-    return input_values
+    hex_str = ""
+    if input_bits:
+        bit_str = "".join(input_bits)
+        hex_str = "%0*X" % ((len(bit_str) + 3) // 4, int(bit_str, 2))
+    return hex_str
 
 
 def convert_to_stf(input_values):
@@ -100,11 +103,7 @@ def insert_spaces(text, dist):
 
 
 def overlay_dont_care_map(flat_output, dont_care_map):
-    output_values = fill_values(flat_output)
-    out_pkt_list = []
-    for val in output_values:
-        if isinstance(val, str):
-            out_pkt_list.extend(list(val))
+    out_pkt_list = list(fill_values(flat_output))
     for idx, marker in enumerate(dont_care_map):
         # this is an uninterpreted value, it can be anything
         if marker == "*":
@@ -113,16 +112,15 @@ def overlay_dont_care_map(flat_output, dont_care_map):
         # since the header is marked as invalid
         elif marker == "x":
             out_pkt_list[idx] = ""
-    return out_pkt_list
+    return "".join(out_pkt_list)
 
 
 def get_stf_str(flat_input, flat_output, dont_care_map):
     # both the input and the output variable are then used to generate
     # a stf file with an input and expected output packet on port 0
     log.info("Generating stf string...")
-    input_pkt_str = "".join(fill_values(flat_input))
-    flat_output = overlay_dont_care_map(flat_output, dont_care_map)
-    output_pkt_str = "".join(flat_output)
+    input_pkt_str = fill_values(flat_input)
+    output_pkt_str = overlay_dont_care_map(flat_output, dont_care_map)
 
     stf_str = "packet 0 "
     stf_str += insert_spaces(input_pkt_str, 2)
@@ -293,13 +291,14 @@ def run_stf_test(config, stf_str):
 
 
 def assemble_dont_care_map(flat_list, dont_care_vals):
-    dont_care_map = []
+
+    dont_care_bit_map = []
     for var in flat_list:
         if isinstance(var, (z3.BitVecRef, z3.BoolRef)):
             if isinstance(var, z3.BoolRef):
-                bitvec_hex_width = math.ceil(1 / 4)
+                bitvec_hex_width = 1
             else:
-                bitvec_hex_width = math.ceil(var.size() / 4)
+                bitvec_hex_width = var.size()
             dont_care = False
             for dont_care_val in dont_care_vals:
                 if dont_care_val in str(var):
@@ -310,10 +309,31 @@ def assemble_dont_care_map(flat_list, dont_care_vals):
                 bitvec_map = ["*"] * bitvec_hex_width
             else:
                 bitvec_map = ["."] * bitvec_hex_width
-            dont_care_map.extend(bitvec_map)
-
+            dont_care_bit_map.extend(bitvec_map)
         else:
             raise RuntimeError(f"Type {type(var)} not supported!")
+
+    dont_care_map = []
+    invalid_fwd = False
+    dont_care_fwd = False
+    count = 0
+    for var in dont_care_bit_map:
+        count += 1
+        if var == "x":
+            invalid_fwd = True
+        elif var == "*":
+            dont_care_fwd = True
+        if count % 4 == 0:
+            if invalid_fwd:
+                dont_care_map.append("x")
+            elif dont_care_fwd:
+                dont_care_map.append("*")
+            else:
+                dont_care_map.append(".")
+            dont_care_fwd = False
+            invalid_fwd = False
+            count = 0
+
     return dont_care_map
 
 
@@ -382,14 +402,14 @@ def dissect_conds(config, conditions):
                 if "_valid" in str(cond_var):
                     # let's assume that every input header is valid
                     # we have no choice right now
-                    undefined_conds.append(cond_var == True)
+                    undefined_conds.append(cond_var)
                 else:
                     # all keys must be false for now
                     # FIXME: Some of them should be usable
                     if isinstance(cond_var, z3.BitVecRef):
                         undefined_conds.append(cond_var == 0)
                     elif isinstance(cond_var, z3.BoolRef):
-                        undefined_conds.append(cond_var == False)
+                        undefined_conds.append(z3.Not(cond_var))
                 has_undefined_var = True
         if has_member and not (has_table_key or has_table_action or has_undefined_var):
             controllable_conds.append(cond)
