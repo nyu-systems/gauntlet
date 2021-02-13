@@ -1,5 +1,8 @@
 #include <core.p4>
 #include <v1model.p4>
+bit<3> id(in bit<3> val) {
+    return val;
+}
 
 header ethernet_t {
     bit<48> dst_addr;
@@ -7,13 +10,26 @@ header ethernet_t {
     bit<16> eth_type;
 }
 
+header H {
+    bit<8> a;
+}
+
+header I {
+    bit<3> idx;
+    bit<5> padding;
+}
 
 struct Headers {
     ethernet_t eth_hdr;
+    H[2]  h;
+    I i;
 }
 
-struct Meta {
+bit<8> simple_function(out bit<8> dummy) {
+    return 1;
 }
+
+struct Meta {}
 
 parser p(packet_in pkt, out Headers hdr, inout Meta m, inout standard_metadata_t sm) {
     state start {
@@ -21,33 +37,16 @@ parser p(packet_in pkt, out Headers hdr, inout Meta m, inout standard_metadata_t
     }
     state parse_hdrs {
         pkt.extract(hdr.eth_hdr);
+        pkt.extract(hdr.h.next);
+        pkt.extract(hdr.h.next);
+        pkt.extract(hdr.i);
         transition accept;
     }
 }
 
 control ingress(inout Headers h, inout Meta m, inout standard_metadata_t sm) {
-    action call_action(inout bit<48> val) { }
-    table simple_table {
-        key = {
-        }
-        actions = {
-        }
-    }
     apply {
-        bit<16> simple_val = 16w2;
-        call_action(h.eth_hdr.src_addr);
-        if (simple_val <= 5) {
-            return;
-        } else {
-            switch (simple_table.apply().action_run) {
-                default: {
-                    h.eth_hdr.dst_addr = 48w32;
-                }
-            }
-
-        }
-        h.eth_hdr.eth_type = 1;
-
+        simple_function(h.h[id(h.i.idx)].a);
     }
 }
 
@@ -57,7 +56,13 @@ control update(inout Headers h, inout Meta m) { apply {} }
 
 control egress(inout Headers h, inout Meta m, inout standard_metadata_t sm) { apply {} }
 
-control deparser(packet_out b, in Headers h) { apply {b.emit(h);} }
-
+control deparser(packet_out pkt, in Headers h) {
+    apply {
+        pkt.emit(h.eth_hdr);
+        pkt.emit(h.h[0]);
+        pkt.emit(h.h[1]);
+        pkt.emit(h.i);
+    }
+}
 V1Switch(p(), vrfy(), ingress(), egress(), update(), deparser()) main;
 
