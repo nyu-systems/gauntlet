@@ -30,7 +30,6 @@ echo "Installing P4C dependencies..."
 
 # Install pip and python
 sudo apt install -y python3
-sudo apt install -y python
 sudo apt install -y python3-pip
 sudo apt install -y python3-setuptools
 
@@ -53,7 +52,6 @@ sudo apt install -y bison \
 sudo apt install -y libprotoc-dev protobuf-compiler
 
 # install python packages using pip
-pip3 install --upgrade pip
 pip3 install --user wheel
 pip3 install --user pyroute2 ipaddr ply scapy
 
@@ -83,25 +81,25 @@ sudo apt install -y automake \
     libssl-dev \
     libnanomsg-dev \
     libgrpc-dev
-# this only works on Ubuntu 19.10+...
-# sudo apt install libthrift-dev
 
-# unfortunately we still have to install thrift the manual way...
+
 echo "Installing thrift dependency."
-cd ${MODULE_DIR}/behavioral-model
-wget -N https://archive.apache.org/dist/thrift/0.13.0/thrift-0.13.0.tar.gz
-tar -xvf thrift-0.13.0.tar.gz
-cd thrift-0.13.0/
-./bootstrap.sh
-./configure --without-rs --without-nodejs
-make
-sudo make install
-sudo ldconfig
+# this only works on Ubuntu 19.10+...
+if sudo apt install libthrift-dev ; then
+    echo "Installed thrift with apt."
+else
+# unfortunately we still have to install thrift the manual way...
+    cd ${MODULE_DIR}/behavioral-model
+    wget -N https://archive.apache.org/dist/thrift/0.13.0/thrift-0.13.0.tar.gz
+    tar -xvf thrift-0.13.0.tar.gz
+    cd thrift-0.13.0/
+    ./bootstrap.sh
+    ./configure --without-rs --without-nodejs
+    make
+    sudo make install
+    sudo ldconfig
+fi
 
-# behavioral model still uses Python2...
-# this may not work on newer versions of Ubuntu
-sudo apt install -y python-pip || true
-pip install --user thrift==0.13.0
 pip3 install --user thrift==0.13.0
 
 # build the behavioral model
