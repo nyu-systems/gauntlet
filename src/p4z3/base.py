@@ -378,15 +378,15 @@ def resolve_runtime_index(ctx, lval, index, target_member):
                 return_expr = handle_mux(cond, hdr, return_expr)
             # return a dummy function...
             return return_expr.isValid
-        # we start from 1 because we already resolved the first header
-        for hdr_idx in range(1, max_idx):
+        return_expr = ctx.gen_instance("undefined", hdr.locals[target_member].sort())
+        for hdr_idx in range(max_idx):
             hdr = lval.locals[str(hdr_idx)]
             cur_val = hdr.locals[target_member]
             cond = index == hdr_idx
             return_expr = handle_mux(cond, cur_val, return_expr)
         return return_expr
-    return_expr = lval.locals["0"]
-    for hdr_idx in range(1, max_idx):
+    return_expr = ctx.gen_instance("undefined", lval.locals["0"].sort())
+    for hdr_idx in range(max_idx):
         cond = index == hdr_idx
         return_expr = handle_mux(cond, lval.locals[str(hdr_idx)], return_expr)
     return return_expr
@@ -434,6 +434,7 @@ class P4Index(P4Member):
             max_idx = lval.locals["size"]
             if target_member:
                 # there is a member after the index, forward the assignment
+                # if the index is out of range, nothing happens.
                 for hdr_idx in range(max_idx):
                     hdr = lval.locals[str(hdr_idx)]
                     cur_val = hdr.locals[target_member]

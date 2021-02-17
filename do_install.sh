@@ -45,8 +45,7 @@ sudo apt install -y bison \
                     libfl-dev \
                     libgc-dev \
                     libgmp-dev \
-                    pkg-config \
-                    python-setuptools
+                    pkg-config
 
 # This only works on Ubuntu 18+
 sudo apt install -y libprotoc-dev protobuf-compiler
@@ -85,7 +84,8 @@ sudo apt install -y automake \
 
 echo "Installing thrift dependency."
 # this only works on Ubuntu 19.10+...
-if sudo apt install libthrift-dev ; then
+if sudo apt install -y libthrift-dev ; then
+    sudo apt install -y thrift-compiler
     echo "Installed thrift with apt."
 else
 # unfortunately we still have to install thrift the manual way...
