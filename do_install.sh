@@ -116,10 +116,11 @@ fi
 
 # grab the toz3 extension for the p4 compiler
 mkdir -p ${MODULE_DIR}/p4c/extensions
-# only install bludgeon if we are not running in travis
-if test -z $TRAVIS; then
-     ln -sf ${MODULE_DIR}/bludgeon ${MODULE_DIR}/p4c/extensions/bludgeon
-     ln -sf ${MODULE_DIR}/pruner ${MODULE_DIR}/p4c/extensions/pruner
+# only install bludgeon if we are not running in CI
+if [ "$RUN_CI" == "ON" ]; then
+    echo "Also linking extra modules..."
+    ln -sf ${MODULE_DIR}/bludgeon ${MODULE_DIR}/p4c/extensions/bludgeon
+    ln -sf ${MODULE_DIR}/pruner ${MODULE_DIR}/p4c/extensions/pruner
 fi
 ln -sf ${MODULE_DIR}/toz3 ${MODULE_DIR}/p4c/extensions/toz3
 
