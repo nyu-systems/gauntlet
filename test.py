@@ -28,7 +28,6 @@ P4_DIR = FILE_DIR.joinpath("modules/p4c/testdata/p4_16_samples/")
 # p4c binaries
 P4C_BIN = FILE_DIR.joinpath("modules/p4c/build/p4test")
 
-
 # ***** P4-16 Standard Tests *****
 
 # these tests show pathological behavior and can currently not be tested
@@ -76,7 +75,6 @@ for test in list(FALSE_FRIENDS_DIR.glob("*")):
         continue
     false_friends.add(name)
 
-
 # ***** tests that should *NOT* trigger a violation bug when allow_undefined
 # is enabled*****
 
@@ -93,12 +91,13 @@ for test in list(UNDEFINED_DIR.glob("*")):
         continue
     undefined_tests.add(name)
 
-
 # ***** broken tests, need fixing *****
 xfails = [
     "complex2.p4",  # runtime index, now idea how to resolve this madness
     "issue1334.p4",  # overloading, this test should normally not be skipped
     "shadow-after-use.p4",  # very specific shadowing
+    "tuple3",  # not implemented yet
+    "tuple4",  # not implemented yet
 ]
 
 
@@ -114,8 +113,11 @@ def run_z3p4_test(p4_file, target_dir):
     if p4_file.name in bad_tests:
         pytest.skip(f"Skipping slow test {p4_file}.")
         return util.EXIT_SKIPPED
-    result = tv_check.validate_translation(
-        p4_file, target_dir, P4C_BIN, allow_undef=True, dump_info=False)
+    result = tv_check.validate_translation(p4_file,
+                                           target_dir,
+                                           P4C_BIN,
+                                           allow_undef=True,
+                                           dump_info=False)
     if result == util.EXIT_UNDEF:
         msg = "Ignored undefined behavior in %s" % p4_file
         warnings.warn(msg)
@@ -140,14 +142,14 @@ def run_violation_test(test_folder, allow_undefined=True):
 
 
 def run_undef_test(p4_file, target_dir):
-    result = tv_check.validate_translation(
-        p4_file, target_dir, P4C_BIN, True, False)
+    result = tv_check.validate_translation(p4_file, target_dir, P4C_BIN, True,
+                                           False)
     if result == util.EXIT_SKIPPED:
         pytest.skip(f"Skipping file {p4_file}.")
     elif result == util.EXIT_VIOLATION:
         return util.EXIT_FAILURE
-    result = tv_check.validate_translation(
-        p4_file, target_dir, P4C_BIN, False, False)
+    result = tv_check.validate_translation(p4_file, target_dir, P4C_BIN, False,
+                                           False)
     if result != util.EXIT_VIOLATION:
         return util.EXIT_FAILURE
     return util.EXIT_SUCCESS
