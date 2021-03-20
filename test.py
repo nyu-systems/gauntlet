@@ -31,7 +31,13 @@ P4C_BIN = FILE_DIR.joinpath("modules/p4c/build/p4test")
 # ***** P4-16 Standard Tests *****
 
 # these tests show pathological behavior and can currently not be tested
-bad_tests = []
+bad_tests = [
+    "parser-unroll-switch_20160512.p4",  # does not terminate
+    "parser-unroll-test1.p4",  # does not terminate
+    "parser-unroll-test2.p4",  # does not terminate
+    "parser-unroll-test3.p4",  # does not terminate
+    "parser-unroll-test4.p4",  # does not terminate
+]
 # create a list of all the programs in the p4c test folder
 p416_tests = set()
 
