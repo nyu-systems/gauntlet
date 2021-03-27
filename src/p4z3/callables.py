@@ -65,7 +65,6 @@ def merge_parameters(params, *args, **kwargs):
 
 
 class MethodCallExpr(P4Expression):
-
     def __init__(self, p4_method, type_args, *args, **kwargs):
         self.p4_method = p4_method
         self.args = args
@@ -164,7 +163,8 @@ class P4Callable(P4Z3Class):
                 arg_expr = z3_cast(arg_expr, p4_type)
             # need to work with an independent copy
             # the purpose is to handle indirect assignments in an action
-            if arg.mode in ("in", "inout") and isinstance(arg_expr, StructInstance):
+            if arg.mode in ("in", "inout") and isinstance(
+                    arg_expr, StructInstance):
                 arg_expr = copy.copy(arg_expr)
             if arg.mode == "out":
                 # outs are left-values so the arg must be a string
@@ -185,7 +185,6 @@ class P4Callable(P4Z3Class):
 
 
 class ConstCallExpr(P4Expression):
-
     def __init__(self, p4_method, *args, **kwargs):
         self.p4_method = p4_method
         self.args = args
@@ -197,7 +196,6 @@ class ConstCallExpr(P4Expression):
 
 
 class P4Action(P4Callable):
-
     def eval_callable(self, ctx, merged_args, var_buffer):
         # actions can modify global variables so do not save the p4 state
         # the only variables that do need to be restored are copy-ins/outs
@@ -206,8 +204,8 @@ class P4Action(P4Callable):
     def __call__(self, ctx, *args, **kwargs):
         return self.eval(ctx, *args, **kwargs)
 
-class P4Function(P4Action):
 
+class P4Function(P4Action):
     def __init__(self, name, params, return_type, body):
         super(P4Function, self).__init__(name, params, body)
         self.return_type = return_type
@@ -232,9 +230,10 @@ class P4Function(P4Action):
                     return_expr = z3.If(then_cond, then_expr, return_expr)
         return return_expr
 
-class P4Control(P4Callable):
 
-    def __init__(self, name, type_params, params, const_params, body, local_decls):
+class P4Control(P4Callable):
+    def __init__(self, name, type_params, params, const_params, body,
+                 local_decls):
         super(P4Control, self).__init__(name, params, body)
         self.local_decls = local_decls
         self.type_params = type_params
@@ -270,8 +269,8 @@ class P4Control(P4Callable):
 
     def initialize(self, ctx, *args, **kwargs):
         ctrl_copy = copy.copy(self)
-        ctrl_copy.merged_consts = merge_parameters(
-            ctrl_copy.const_params, *args, **kwargs)
+        ctrl_copy.merged_consts = merge_parameters(ctrl_copy.const_params,
+                                                   *args, **kwargs)
         # also bind types, because for reasons you can bind types everywhere...
         for idx, const_param in enumerate(ctrl_copy.const_params):
             # this means the type is generic
@@ -320,7 +319,6 @@ class P4Control(P4Callable):
 
 
 class P4Method(P4Callable):
-
     def __init__(self, name, type_params, params):
         super(P4Method, self).__init__(name, params)
         # P4Methods, which are also black-box functions, can have return types
@@ -377,8 +375,7 @@ class P4Method(P4Callable):
             # we need to resolve "in" too because of side-effects
             p4_val, _ = resolve_index(ctx, arg.p4_val)
             arg_expr = sub_ctx.resolve_expr(p4_val)
-            method_args[param_name] = (
-                arg.mode, p4_val, arg_expr, arg.p4_type)
+            method_args[param_name] = (arg.mode, p4_val, arg_expr, arg.p4_type)
         for type_name, p4_type in self.type_ctx.items():
             sub_ctx.add_type(type_name, sub_ctx.resolve_type(p4_type))
 
@@ -449,13 +446,11 @@ def resolve_action(action_expr):
         action_name = action_expr
         action_args = []
     else:
-        raise TypeError(
-            f"Expected a method call, got {type(action_name)}!")
+        raise TypeError(f"Expected a method call, got {type(action_name)}!")
     return action_name, action_args
 
 
 class P4Table(P4Callable):
-
     def __init__(self, name, **properties):
         super(P4Table, self).__init__(name, params={})
         self.keys = []
@@ -536,10 +531,10 @@ class P4Table(P4Callable):
                 # If the shift exceeds the bit width, everything will be zero
                 # but that does not matter
                 # TODO: Test this?
-                mask_var = z3.BitVec(
-                    f"{self.name}_table_mask_{index}", key_sort)
-                lpm_mask = z3.BitVecVal(
-                    2**key_sort.size() - 1, key_sort) << mask_var
+                mask_var = z3.BitVec(f"{self.name}_table_mask_{index}",
+                                     key_sort)
+                lpm_mask = z3.BitVecVal(2**key_sort.size() - 1,
+                                        key_sort) << mask_var
                 match = (key_eval & lpm_mask) == (key_match & lpm_mask)
                 key_pairs.append(match)
             elif key_type == "ternary":
@@ -580,26 +575,28 @@ class P4Table(P4Callable):
                 raise RuntimeError(f"Key type {key_type} not supported!")
         return z3.And(key_pairs)
 
-    def eval_action(self, ctx, action_name, action_args):
+    def eval_action(self, ctx, action_name, action_args, act_idx):
         p4_action = ctx.resolve_reference(action_name)
         if not isinstance(p4_action, P4Action):
             raise TypeError(f"Expected a P4Action got {type(p4_action)}!")
         merged_action_args = []
         action_args_len = len(action_args) - 1
+        ctrl_arg_idx = 0
         for idx, param in enumerate(p4_action.params):
             if idx > action_args_len:
                 # this is a ctrl argument, generate an input
-                ctrl_arg = ctx.gen_instance(f"{self.name}{param.name}",
-                                            param.p4_type)
+                ctrl_arg = ctx.gen_instance(
+                    f"{self.name}{act_idx}_{ctrl_arg_idx}", param.p4_type)
                 merged_action_args.append(ctrl_arg)
+                ctrl_arg_idx += 1
             else:
                 merged_action_args.append(action_args[idx])
         return p4_action(ctx, *merged_action_args)
 
     def eval_default(self, ctx):
-        _, action_name, action_args = self.default_action
+        act_idx, action_name, action_args = self.default_action
         log.debug("Evaluating default action...")
-        return self.eval_action(ctx, action_name, action_args)
+        return self.eval_action(ctx, action_name, action_args, act_idx)
 
     def get_const_matches(self, ctx, c_keys):
         matches = []
@@ -617,8 +614,7 @@ class P4Table(P4Callable):
             if isinstance(c_key_expr, P4Range):
                 x = ctx.resolve_expr(c_key_expr.min)
                 y = ctx.resolve_expr(c_key_expr.max)
-                c_key_eval = z3.And(z3.ULE(x, key_eval),
-                                    z3.UGE(y, key_eval))
+                c_key_eval = z3.And(z3.ULE(x, key_eval), z3.UGE(y, key_eval))
                 matches.append(c_key_eval)
             elif isinstance(c_key_expr, P4Mask):
                 # TODO: Unclear about the role of side-effects here
@@ -633,7 +629,8 @@ class P4Table(P4Callable):
 
     def eval_const_entries(self, ctx, action_exprs, action_matches):
         forward_cond_copy = ctx.tmp_forward_cond
-        for c_keys, (action_name, action_args) in reversed(self.const_entries):
+        for act_idx, (c_keys, (action_name, action_args)) in enumerate(
+                reversed(self.const_entries)):
 
             action_match = self.get_const_matches(ctx, c_keys)
             log.debug("Evaluating constant action %s...", action_name)
@@ -641,7 +638,7 @@ class P4Table(P4Callable):
             var_store = ctx.checkpoint()
             cond = z3.And(self.locals["hit"], action_match)
             ctx.tmp_forward_cond = z3.And(forward_cond_copy, cond)
-            self.eval_action(ctx, action_name, action_args)
+            self.eval_action(ctx, action_name, action_args, act_idx)
             if not ctx.get_exited():
                 action_exprs.append((cond, ctx.get_attrs()))
             ctx.set_exited(False)
@@ -657,7 +654,7 @@ class P4Table(P4Callable):
             var_store = ctx.checkpoint()
             cond = z3.And(self.locals["hit"], action_match)
             ctx.tmp_forward_cond = z3.And(forward_cond_copy, cond)
-            self.eval_action(ctx, act_name, act_args)
+            self.eval_action(ctx, act_name, act_args, act_id)
             if not ctx.get_exited():
                 action_exprs.append((cond, ctx.get_attrs()))
             ctx.set_exited(False)
