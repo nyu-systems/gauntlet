@@ -135,13 +135,9 @@ def run_z3p4_test(p4_file, target_dir):
 
 def run_violation_test(test_folder, allow_undefined=True):
     src_p4_file = test_folder.joinpath("orig.p4")
-    src_py_file = test_folder.joinpath(f"{src_p4_file.stem}.py")
-    tv_check.run_p4_to_py(src_p4_file, src_py_file)
     for p4_file in list(test_folder.glob("**/[0-9]*.p4")):
-        py_file = test_folder.joinpath(f"{p4_file.stem}.py")
-        tv_check.run_p4_to_py(p4_file, py_file)
         result, _ = z3_check.z3_check(
-            [str(src_py_file), str(py_file)], None, allow_undefined)
+            [str(src_p4_file), str(p4_file)], None, allow_undefined)
         if result != util.EXIT_VIOLATION:
             return util.EXIT_FAILURE
     return util.EXIT_SUCCESS

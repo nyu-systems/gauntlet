@@ -68,16 +68,32 @@ KNOWN_BUGS = [
 ]
 
 SUPPORT_MATRIX = {
-    "psa": {"random": True, "validation": True,
-            "blackbox": True, "compiler": PSA_BIN},
+    "psa": {
+        "random": True,
+        "validation": True,
+        "blackbox": True,
+        "compiler": PSA_BIN
+    },
     # Tofino does not allow insights into the individual passes
     # So we are forced to use the blackbox technique
-    "tna": {"random": True, "validation": False,
-            "blackbox": True, "compiler": TNA_BIN},
-    "top": {"random": True, "validation": True,
-            "blackbox": False, "compiler": P4TEST_BIN},
-    "v1model": {"random": True, "validation": True,
-                "blackbox": True, "compiler": SS_BIN},
+    "tna": {
+        "random": True,
+        "validation": False,
+        "blackbox": True,
+        "compiler": TNA_BIN
+    },
+    "top": {
+        "random": True,
+        "validation": True,
+        "blackbox": False,
+        "compiler": P4TEST_BIN
+    },
+    "v1model": {
+        "random": True,
+        "validation": True,
+        "blackbox": True,
+        "compiler": SS_BIN
+    },
 }
 
 
@@ -104,8 +120,9 @@ def generate_id():
     # try to generate a valid C identifier
     # first letter cannot be a number
     sw_id = random.choice(string.ascii_letters)
-    appendix = [random.choice(
-        string.ascii_letters + string.digits) for ch in range(4)]
+    appendix = [
+        random.choice(string.ascii_letters + string.digits) for ch in range(4)
+    ]
     sw_id += "".join(appendix)
     return sw_id
 
@@ -192,8 +209,8 @@ def validate_p4_blackbox(p4_file, target_dir, log_file, config):
 
 def validate(dump_dir, p4_file, log_file, config):
     try:
-        result = validate_p4(
-            p4_file, dump_dir, config["compiler_bin"], log_file)
+        result = validate_p4(p4_file, dump_dir, config["compiler_bin"],
+                             log_file)
     except TimeoutError:
         log.error("Validation timed out.")
         dump_file(TIMEOUT_DIR, p4_file)
@@ -201,8 +218,8 @@ def validate(dump_dir, p4_file, log_file, config):
         # reset the dump directory
         return util.EXIT_FAILURE
     if result != util.EXIT_SUCCESS:
-        info_file = p4_file.with_suffix(
-            "").joinpath(f"{p4_file.stem}_info.json")
+        info_file = p4_file.with_suffix("").joinpath(
+            f"{p4_file.stem}_info.json")
         bug_dir = None
         if result == util.EXIT_UNDEF:
             log.error("Found instance of unstable code!")
@@ -378,38 +395,62 @@ def main(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("-a", "--arch", dest="arch", default="top",
-                        type=str, help="Specify the back end to test.")
-    parser.add_argument("-b", "--use-blackbox", dest="use_blackbox",
+    parser.add_argument("-a",
+                        "--arch",
+                        dest="arch",
+                        default="top",
+                        type=str,
+                        help="Specify the back end to test.")
+    parser.add_argument("-b",
+                        "--use-blackbox",
+                        dest="use_blackbox",
                         action="store_true",
                         help="Use the blackbox technique instead of"
                         "translation validation.")
-    parser.add_argument("-v", "--validate", dest="do_validate",
+    parser.add_argument("-v",
+                        "--validate",
+                        dest="do_validate",
                         action="store_true",
                         help="Also perform validation on programs.")
-    parser.add_argument("-l", "--log_file", dest="log_file",
+    parser.add_argument("-l",
+                        "--log_file",
+                        dest="log_file",
                         default="random.log",
                         help="Specifies name of the log file.")
-    parser.add_argument("-i", "--iterations", dest="iterations",
-                        default=ITERATIONS, type=int,
+    parser.add_argument("-i",
+                        "--iterations",
+                        dest="iterations",
+                        default=ITERATIONS,
+                        type=int,
                         help="How many iterations to run.")
-    parser.add_argument("-p", "--num_processes", dest="num_processes",
-                        default=NUM_PROCESSES, type=int,
+    parser.add_argument("-p",
+                        "--num_processes",
+                        dest="num_processes",
+                        default=NUM_PROCESSES,
+                        type=int,
                         help="How many processes to launch.")
-    parser.add_argument("-o", "--out_dir", dest="out_dir",
+    parser.add_argument("-o",
+                        "--out_dir",
+                        dest="out_dir",
                         default=OUTPUT_DIR,
                         help="The output folder where all tests are dumped.")
-    parser.add_argument("-r", "--randomize-input", dest="randomize_input",
+    parser.add_argument("-r",
+                        "--randomize-input",
+                        dest="randomize_input",
                         action="store_true",
                         help="Whether to randomize the z3 input variables.")
-    parser.add_argument("-d", "--do-prune", dest="do_prune",
+    parser.add_argument("-d",
+                        "--do-prune",
+                        dest="do_prune",
                         action="store_true",
                         help="Turn on to try to prune errors.")
-    parser.add_argument("-ll", "--log_level", dest="log_level",
-                        default="INFO",
-                        choices=["CRITICAL", "ERROR", "WARNING",
-                                 "INFO", "DEBUG", "NOTSET"],
-                        help="The log level to choose.")
+    parser.add_argument(
+        "-ll",
+        "--log_level",
+        dest="log_level",
+        default="INFO",
+        choices=["CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG", "NOTSET"],
+        help="The log level to choose.")
     # Parse options and process argv
     arguments = parser.parse_args()
     # configure logging

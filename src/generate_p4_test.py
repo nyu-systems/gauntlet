@@ -1,21 +1,17 @@
 import argparse
 import logging
 import time
-import math
 import os
 import sys
 import itertools
 import signal
 from pathlib import Path
 
-
 import z3
 import p4z3.util as util
 from get_semantics import get_z3_formulization
 
-
 log = logging.getLogger(__name__)
-
 FILE_DIR = Path(__file__).parent.resolve()
 ROOT_DIR = FILE_DIR.parent
 P4Z3_BIN = ROOT_DIR.joinpath("modules/p4c/build/p4toz3")
@@ -168,6 +164,7 @@ def run_bmv2_test(out_dir, p4_input, use_psa=False):
         log.warning("run_bmv2_test: Caught Interrupt, exiting...")
         os.kill(test_proc.pid, signal.SIGINT)
         sys.exit(1)
+
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)
 
@@ -220,8 +217,10 @@ def run_tofino_test(out_dir, p4_input, stf_file_name):
 
     model_cmd = f"{TOFINO_DIR}/run_tofino_model.sh "
     model_cmd += f"-p {prog_name} "
-    proc = util.start_process(
-        model_cmd, preexec_fn=os.setsid, env=os_env, cwd=out_dir)
+    proc = util.start_process(model_cmd,
+                              preexec_fn=os.setsid,
+                              env=os_env,
+                              cwd=out_dir)
     procs.append(proc)
     # start the binary for the target in the background
     log.info("Launching switchd...")
@@ -232,8 +231,10 @@ def run_tofino_test(out_dir, p4_input, stf_file_name):
     switch_cmd = f"{TOFINO_DIR}/run_switchd.sh "
     switch_cmd += "--arch tofino "
     switch_cmd += f"-p {prog_name} "
-    proc = util.start_process(
-        switch_cmd, preexec_fn=os.setsid, env=os_env, cwd=out_dir)
+    proc = util.start_process(switch_cmd,
+                              preexec_fn=os.setsid,
+                              env=os_env,
+                              cwd=out_dir)
     procs.append(proc)
 
     # wait for a bit
@@ -255,6 +256,7 @@ def run_tofino_test(out_dir, p4_input, stf_file_name):
         os.kill(test_proc.pid, signal.SIGINT)
         os.kill(test_proc.pid, signal.SIGTERM)
         sys.exit(1)
+
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)
 
@@ -273,8 +275,8 @@ def run_stf_test(config, stf_str):
     with open(stf_file_name, 'w+') as stf_file:
         stf_file.write(stf_str)
     if config["arch"] == "tna":
-        result, stdout, stderr = run_tofino_test(
-            out_dir, p4_input, stf_file_name)
+        result, stdout, stderr = run_tofino_test(out_dir, p4_input,
+                                                 stf_file_name)
     elif config["arch"] == "v1model":
         result, stdout, stderr = run_bmv2_test(out_dir, p4_input)
     elif config["arch"] == "psa":
@@ -351,8 +353,10 @@ def get_dont_care_map(config, z3_input, pkt_range):
 
 
 # https://stackoverflow.com/questions/14141977/check-if-a-formula-is-a-term-in-z3py
-CONNECTIVE_OPS = [z3.Z3_OP_NOT, z3.Z3_OP_AND, z3.Z3_OP_OR, z3.Z3_OP_XOR,
-                  z3.Z3_OP_IMPLIES, z3.Z3_OP_IFF, z3.Z3_OP_ITE]
+CONNECTIVE_OPS = [
+    z3.Z3_OP_NOT, z3.Z3_OP_AND, z3.Z3_OP_OR, z3.Z3_OP_XOR, z3.Z3_OP_IMPLIES,
+    z3.Z3_OP_IFF, z3.Z3_OP_ITE
+]
 REL_OPS = [z3.Z3_OP_EQ, z3.Z3_OP_LE, z3.Z3_OP_LT, z3.Z3_OP_GE, z3.Z3_OP_GT]
 ALL_OPS = CONNECTIVE_OPS + REL_OPS
 
@@ -411,7 +415,8 @@ def dissect_conds(config, conditions):
                     elif isinstance(cond_var, z3.BoolRef):
                         undefined_conds.append(z3.Not(cond_var))
                 has_undefined_var = True
-        if has_member and not (has_table_key or has_table_action or has_undefined_var):
+        if has_member and not (has_table_key or has_table_action
+                               or has_undefined_var):
             controllable_conds.append(cond)
         elif has_undefined_var and not (has_table_key or has_table_action):
             pass
@@ -452,7 +457,8 @@ def get_main_formula(config):
         log.error("No valid input formula found!"
                   " Check if your variable names are correct.")
         log.error(
-            "This program checks for the \"%s\" variable in the pipe call.", HEADER_VAR)
+            "This program checks for the \"%s\" variable in the pipe call.",
+            HEADER_VAR)
         return None, None
     main_formula = z3.simplify(main_formula)
     return main_formula, pkt_range
@@ -476,11 +482,8 @@ def build_test(config, main_formula, cond_tuple, pkt_range):
     # or which headers we expect to be invalid
     # the tactic effectively simplifies the formula to a single expression
     # under the constraints we have defined
-    t = z3.Then(
-        z3.Tactic("propagate-values"),
-        z3.Tactic("ctx-solver-simplify"),
-        z3.Tactic("elim-and")
-    )
+    t = z3.Then(z3.Tactic("propagate-values"),
+                z3.Tactic("ctx-solver-simplify"), z3.Tactic("elim-and"))
     # this is the test string we assemble
     stf_str = ""
     for permut in permut_conds:
@@ -495,8 +498,8 @@ def build_test(config, main_formula, cond_tuple, pkt_range):
             # this does not work well yet... desperate hack
             # FIXME: Figure out a way to solve this, might not be solvable
             g = z3.Goal()
-            g.add(main_formula == output_const,
-                  avoid_matches, undefined_matches, z3.And(*permut))
+            g.add(main_formula == output_const, avoid_matches,
+                  undefined_matches, z3.And(*permut))
             log.debug(z3.tactics())
             log.info("Inferring simplified input and output")
             constrained_output = t.apply(g)
@@ -548,10 +551,16 @@ def main(args):
 
     if args.randomize_input:
         seed = int.from_bytes(os.getrandom(8), "big")
-        z3.set_param("smt.phase_selection", 5,
-                     "smt.random_seed", seed,
-                     "smt.arith.random_initial_value", True,
-                     "sat.phase", "random",)
+        z3.set_param(
+            "smt.phase_selection",
+            5,
+            "smt.random_seed",
+            seed,
+            "smt.arith.random_initial_value",
+            True,
+            "sat.phase",
+            "random",
+        )
 
     config = {}
     config["arch"] = args.arch
@@ -596,24 +605,40 @@ def main(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument("-i", "--p4_input", dest="p4_input", default=None,
+    parser.add_argument("-i",
+                        "--p4_input",
+                        dest="p4_input",
+                        default=None,
                         type=lambda x: util.is_valid_file(parser, x),
                         help="The main reference p4 file.")
-    parser.add_argument("-a", "--arch", dest="arch", default="v1model",
-                        type=str, help="Specify the back end to test.")
-    parser.add_argument("-o", "--out_dir", dest="out_dir", default=OUT_DIR,
+    parser.add_argument("-a",
+                        "--arch",
+                        dest="arch",
+                        default="v1model",
+                        type=str,
+                        help="Specify the back end to test.")
+    parser.add_argument("-o",
+                        "--out_dir",
+                        dest="out_dir",
+                        default=OUT_DIR,
                         help="The output folder where all passes are dumped.")
-    parser.add_argument("-l", "--log_file", dest="log_file",
+    parser.add_argument("-l",
+                        "--log_file",
+                        dest="log_file",
                         default="model.log",
                         help="Specifies name of the log file.")
-    parser.add_argument("-r", "--randomize-input", dest="randomize_input",
+    parser.add_argument("-r",
+                        "--randomize-input",
+                        dest="randomize_input",
                         action='store_true',
                         help="Whether to randomize the z3 input variables.")
-    parser.add_argument("-ll", "--log_level", dest="log_level",
-                        default="INFO",
-                        choices=["CRITICAL", "ERROR", "WARNING",
-                                 "INFO", "DEBUG", "NOTSET"],
-                        help="The log level to choose.")
+    parser.add_argument(
+        "-ll",
+        "--log_level",
+        dest="log_level",
+        default="INFO",
+        choices=["CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG", "NOTSET"],
+        help="The log level to choose.")
     # Parse options and process argv
     arguments = parser.parse_args()
     # configure logging
