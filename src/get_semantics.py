@@ -7,16 +7,13 @@ import time
 from datetime import datetime
 import z3
 
-
 from p4z3.contrib.tabulate import tabulate
 from p4z3.state import StaticContext, P4ComplexType, P4Extern
 
 import p4z3.util as util
 from p4z3.externs.core import core_externs
 
-
 sys.setrecursionlimit(15000)
-
 
 FILE_DIR = Path(__file__).parent.resolve()
 P4Z3_BIN = FILE_DIR.joinpath("../modules/p4c/build/p4toz3")
@@ -60,8 +57,7 @@ def get_py_module(prog_path):
     try:
         ctrl_module = import_prog(ctrl_dir, ctrl_name, ctrl_function)
     except (ImportError, SyntaxError) as e:
-        log.error(("Could not import the "
-                   "requested module: %s", e))
+        log.error(("Could not import the " "requested module: %s", e))
         return None
     return ctrl_module
 
@@ -135,8 +131,8 @@ def handle_nested_ifs(pipe_name, flat_members, inputs, outputs):
     else:
         zipped_list = zip(flat_members, inputs, else_outputs)
         table = tabulate(zipped_list, headers=["NAME", "INPUT", "OUTPUT"])
-        log.info("PIPE %s Condition:\n\"%s\"\n%s\n",
-                 pipe_name, z3.Not(cond), table)
+        log.info("PIPE %s Condition:\n\"%s\"\n%s\n", pipe_name, z3.Not(cond),
+                 table)
         zipped_list = zip(flat_members, inputs, else_outputs)
 
 
@@ -169,8 +165,7 @@ def main(args):
     time_str = time.strftime("%H hours %M minutes %S seconds",
                              time.gmtime(elapsed.total_seconds()))
     ms = elapsed.microseconds / 1000
-    log.info("Retrieving semantics took %s %s milliseconds.",
-             time_str, ms)
+    log.info("Retrieving semantics took %s %s milliseconds.", time_str, ms)
     if result == util.EXIT_SUCCESS:
         for pipe_name, pipe_val in package.get_pipes().items():
             print_z3_data(pipe_name, pipe_val)
@@ -179,21 +174,30 @@ def main(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument("-i", "--p4_input", dest="p4_input", default=None,
+    parser.add_argument("-i",
+                        "--p4_input",
+                        dest="p4_input",
+                        default=None,
                         type=lambda x: util.is_valid_file(parser, x),
                         help="The main input p4 file. This can either be a P4"
                         " program or the Python ToZ3 IR.")
-    parser.add_argument("-o", "--out_dir", dest="out_dir",
+    parser.add_argument("-o",
+                        "--out_dir",
+                        dest="out_dir",
                         default=OUT_DIR,
                         help="Where intermediate output is stored.")
-    parser.add_argument("-l", "--log_file", dest="log_file",
+    parser.add_argument("-l",
+                        "--log_file",
+                        dest="log_file",
                         default="semantics.log",
                         help="Specifies name of the log file.")
-    parser.add_argument("-ll", "--log_level", dest="log_level",
-                        default="INFO",
-                        choices=["CRITICAL", "ERROR", "WARNING",
-                                 "INFO", "DEBUG", "NOTSET"],
-                        help="The log level to choose.")
+    parser.add_argument(
+        "-ll",
+        "--log_level",
+        dest="log_level",
+        default="INFO",
+        choices=["CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG", "NOTSET"],
+        help="The log level to choose.")
     # Parse options and process argv
     arguments = parser.parse_args()
     # configure logging

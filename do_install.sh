@@ -114,7 +114,7 @@ cd ${SRC_DIR}
 fi
 
 
-# grab the toz3 extension for the p4 compiler
+# grab the toz3_v2 extension for the p4 compiler
 mkdir -p ${MODULE_DIR}/p4c/extensions
 # only install bludgeon if we are not running in CI
 if [ "$RUN_CI" == "ON" ]; then
@@ -122,7 +122,7 @@ if [ "$RUN_CI" == "ON" ]; then
     ln -sf ${MODULE_DIR}/bludgeon ${MODULE_DIR}/p4c/extensions/bludgeon
     ln -sf ${MODULE_DIR}/pruner ${MODULE_DIR}/p4c/extensions/pruner
 fi
-ln -sf ${MODULE_DIR}/toz3 ${MODULE_DIR}/p4c/extensions/toz3
+ln -sf ${MODULE_DIR}/toz3_v2 ${MODULE_DIR}/p4c/extensions/toz3_v2
 
 # build the p4 compiler
 echo "Building P4C..."

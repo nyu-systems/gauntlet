@@ -22,8 +22,8 @@ PASS_DIR = FILE_DIR.joinpath("../validated")
 
 
 PASSES = "--top4 "
+# PASSES += "FrontEnd "
 PASSES += "FrontEnd,MidEnd,PassManager "
-# PASSES += "FrontEnd,MidEnd,PassManager "
 # PASSES += "-vvvv "
 # passes with "::" in them are a little bit funky.. ignore those
 # this emits all passes, but that is too much right now...
@@ -102,7 +102,7 @@ def list_passes(p4c_bin, p4_file, p4_dmp_dir):
     p4_pass_cmd = f"{p4c_bin} -v "
     # p4_pass_cmd += f"-o {p4_dmp_dir} "
     p4_pass_cmd += f"{p4_file} 2>&1 "
-    # p4_pass_cmd += "| sed -e '/FrontEnd\\|MidEnd/!d' | "
+    # p4_pass_cmd += "| sed -e '/FrontEnd/!d' | "
     p4_pass_cmd += "| sed -e '/FrontEnd\\|MidEnd\\|PassManager/!d' | "
     p4_pass_cmd += "sed -e '/Writing program to/d' "
     # p4_pass_cmd += "| grep 'Writing program to' "
@@ -176,24 +176,11 @@ def validate_translation(p4_file, target_dir, p4c_bin,
     passes = prune_passes(passes)
     p4_py_files = []
     # for each emitted pass, generate a python representation
-    for p4_pass in passes:
-        p4_path = Path(p4_pass).stem
-        py_file = f"{target_dir}/{p4_path}.py"
-        result = run_p4_to_py(p4_pass, py_file)
-        if result.returncode != util.EXIT_SUCCESS:
-            log.error("Failed to translate P4 to Python.")
-            log.error("Compiler crashed!")
-            util.check_dir(fail_dir)
-            with open(f"{fail_dir}/error.txt", 'w+') as err_file:
-                err_file.write(result.stderr.decode("utf-8"))
-            util.copy_file([p4_pass, py_file], fail_dir)
-            return result.returncode
-        p4_py_files.append(f"{target_dir}/{p4_path}")
-    if len(p4_py_files) < 2:
+    if len(passes) < 2:
         log.warning("P4 file did not generate enough passes!")
         return util.EXIT_SKIPPED
     # perform the actual comparison
-    result, check_info = z3check.z3_check(p4_py_files, fail_dir, allow_undef)
+    result, check_info = z3check.z3_check(passes, fail_dir, allow_undef)
     # merge the two info dicts
     info["exit_code"] = result
     info = {**info, **check_info}

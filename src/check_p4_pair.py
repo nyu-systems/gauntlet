@@ -11,8 +11,8 @@ from p4z3.state import P4ComplexType
 
 sys.setrecursionlimit(15000)
 
-
 FILE_DIR = Path(__file__).parent.resolve()
+EQUALITY_BIN = FILE_DIR.joinpath("../modules/p4c/build/p4-check-equality")
 log = logging.getLogger(__name__)
 
 # We maintain a list of passes to skip for convenience
@@ -61,7 +61,7 @@ def print_validation_error(prog_before, prog_after, model):
 
 def handle_pyz3_error(fail_dir, p4_file):
     util.check_dir(fail_dir)
-    failed = [p4_file.with_suffix(".py"), p4_file.with_suffix(".p4")]
+    failed = [p4_file.with_suffix(".p4")]
     util.copy_file(failed, fail_dir)
 
 
@@ -240,6 +240,31 @@ def z3_check(prog_paths, fail_dir=None, allow_undef=False):
     if len(prog_paths) < 2:
         log.error("Equivalence checks require at least two input programs!")
         return util.EXIT_FAILURE, info
+    has_undef = False
+    prog_path_strs = [str(prog_path) for prog_path in prog_paths]
+    prog_str = ",".join(prog_path_strs)
+    cmd = f"{EQUALITY_BIN} "
+    cmd += f"{prog_str} "
+    lvl = log.getEffectiveLevel()
+    log.setLevel(logging.DEBUG)
+    ret = util.exec_process(cmd)
+    log.setLevel(lvl)
+    if ret.returncode != util.EXIT_SUCCESS:
+        return ret.returncode, info
+    if has_undef:
+        log.info("Passed all checks but encountered unstable code.")
+        return util.EXIT_UNDEF, info
+    log.info("Passed all checks!")
+    return util.EXIT_SUCCESS, info
+
+
+def z3_check_old(prog_paths, fail_dir=None, allow_undef=False):
+    # useful information to track
+    info = {}
+
+    if len(prog_paths) < 2:
+        log.error("Equivalence checks require at least two input programs!")
+        return util.EXIT_FAILURE, info
     z3_progs = []
     for p4_prog in prog_paths:
         p4_path = Path(p4_prog)
@@ -257,8 +282,8 @@ def z3_check(prog_paths, fail_dir=None, allow_undef=False):
     for idx in range(1, len(z3_progs)):
         p4_pre_path, pipes_pre = z3_progs[idx - 1]
         p4_post_path, pipes_post = z3_progs[idx]
-        log.info("\nComparing programs\n%s\n%s\n########",
-                 p4_pre_path.stem, p4_post_path.stem)
+        log.info("\nComparing programs\n%s\n%s\n########", p4_pre_path.stem,
+                 p4_post_path.stem)
         # sometimes we want to skip a specific pass
         if needs_skipping(str(p4_post_path)):
             continue
@@ -295,20 +320,30 @@ def main(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument("--progs", "-p", dest="progs",
-                        type=str, nargs='+', required=True,
+    parser.add_argument("--progs",
+                        "-p",
+                        dest="progs",
+                        type=str,
+                        nargs='+',
+                        required=True,
                         help="The ordered list of programs to compare.")
-    parser.add_argument("-u", "--allow_undefined", dest="allow_undef",
+    parser.add_argument("-u",
+                        "--allow_undefined",
+                        dest="allow_undef",
                         action="store_true",
                         help="Ignore changes in undefined behavior.")
-    parser.add_argument("-l", "--log_file", dest="log_file",
+    parser.add_argument("-l",
+                        "--log_file",
+                        dest="log_file",
                         default="check.log",
                         help="Specifies name of the log file.")
-    parser.add_argument("-ll", "--log_level", dest="log_level",
-                        default="INFO",
-                        choices=["CRITICAL", "ERROR", "WARNING",
-                                 "INFO", "DEBUG", "NOTSET"],
-                        help="The log level to choose.")
+    parser.add_argument(
+        "-ll",
+        "--log_level",
+        dest="log_level",
+        default="INFO",
+        choices=["CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG", "NOTSET"],
+        help="The log level to choose.")
     # Parse options and process argv
     arguments = parser.parse_args()
     # configure logging

@@ -60,21 +60,35 @@ def start_process(cmd, *args, out_file=subprocess.PIPE, **kwargs):
     if out_file is subprocess.STDOUT:
         proc = subprocess.Popen(cmd.split(), *args, **kwargs)
     elif out_file is subprocess.PIPE:
-        proc = subprocess.Popen(
-            cmd.split(), stdout=out_file, stderr=out_file, *args, **kwargs)
+        proc = subprocess.Popen(cmd.split(),
+                                stdout=out_file,
+                                stderr=out_file,
+                                *args,
+                                **kwargs)
     else:
         err = out_file + ".err"
         out = out_file + ".out"
         with open(out, "w+") as f_out, open(err, "w+") as f_err:
-            proc = subprocess.Popen(cmd.split(), stdout=f_out,
-                                    stderr=f_err, *args, **kwargs)
+            proc = subprocess.Popen(cmd.split(),
+                                    stdout=f_out,
+                                    stderr=f_err,
+                                    *args,
+                                    **kwargs)
     return proc
 
 
-def exec_process(cmd, *args, silent=False, **kwargs):
+def exec_process(cmd,
+                 *args,
+                 silent=False,
+                 stdout=subprocess.PIPE,
+                 stderr=subprocess.PIPE,
+                 **kwargs):
     log.debug("Executing %s ", cmd)
-    result = subprocess.run(cmd.split(), stdout=subprocess.PIPE,
-                            stderr=subprocess.PIPE, *args, **kwargs)
+    result = subprocess.run(cmd.split(),
+                            *args,
+                            stdout=stdout,
+                            stderr=stderr,
+                            **kwargs)
     if result.stdout:
         log.debug("Process output: %s", result.stdout.decode("utf-8"))
     if result.returncode != EXIT_SUCCESS and not silent:

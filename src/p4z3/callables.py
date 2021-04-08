@@ -20,19 +20,6 @@ def resolve_index(ctx, lval):
     return lval, False
 
 
-def save_variables(ctx, merged_args):
-    var_buffer = OrderedDict()
-    # save all the variables that may be overridden
-    for param_name, arg in merged_args.items():
-        try:
-            param_val = ctx.resolve_reference(param_name)
-            var_buffer[param_name] = (arg.mode, arg.p4_val, param_val)
-        except RuntimeError:
-            # if the variable name does not exist, set the value to None
-            var_buffer[param_name] = (arg.mode, arg.p4_val, None)
-    return var_buffer
-
-
 def merge_parameters(params, *args, **kwargs):
     # FIXME: This function could be a lot more efficient...
     # FIXME: Overloading does not work correctly here
@@ -289,7 +276,15 @@ class P4Control(P4Callable):
     def eval_callable(self, ctx, merged_args, var_buffer):
         # initialize the local ctx of the function for execution
 
-        merged_vars = save_variables(ctx, self.merged_consts)
+        merged_vars = OrderedDict()
+        # save all the variables that may be overridden
+        for param_name, arg in self.merged_consts.items():
+            try:
+                param_val = ctx.resolve_reference(param_name)
+                merged_vars[param_name] = (arg.mode, arg.p4_val, param_val)
+            except RuntimeError:
+                # if the variable name does not exist, set the value to None
+                merged_vars[param_name] = (arg.mode, arg.p4_val, None)
         ctx.prepend_to_buffer(merged_vars)
 
         for const_param_name, const_arg in self.merged_consts.items():

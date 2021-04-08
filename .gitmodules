@@ -16,6 +16,10 @@
     url = https://github.com/p4gauntlet/bludgeon
     path = modules/bludgeon
 
-[submodule "modules/pruner"]
+[submodule "pruner"]
     url = https://github.com/p4gauntlet/pruner
     path = modules/pruner
+
+[submodule "toz3_v2"]
+    url = https://github.com/p4gauntlet/toz3_v2
+    path = modules/toz3_v2

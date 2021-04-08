@@ -49,4 +49,4 @@ def pytest_collection_modifyitems(items, config):
     elif markexpr:
         config.option.markexpr = markexpr
     else:
-        config.option.markexpr = f"run_default"
+        config.option.markexpr = "run_default"
