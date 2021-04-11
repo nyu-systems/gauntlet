@@ -116,6 +116,7 @@ xfails = [
     "shadow-after-use.p4",  # very specific shadowing
     "tuple3.p4",  # not implemented yet
     "tuple4.p4",  # not implemented yet
+    "bit0-bmv2.p4",
     "actionAnnotations.p4",
     "action_fwd_ubpf.p4",
     "alias.p4",
