@@ -1,0 +1,20 @@
+---
+Checks:
+'clang-diagnostic-*,
+clang-analyzer-*,
+modernize-*,
+performance-*,
+readability-*,
+bugprone-*,
+cppcoreguidelines-*,
+boost-*,
+hicpp-*,
+misc-*,
+-modernize-use-trailing-return-type'
+WarningsAsErrors: ''
+HeaderFilterRegex: ''
+AnalyzeTemporaryDtors: false
+FormatStyle:     LLVM
+User:            fruffy
+...
+
