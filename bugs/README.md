@@ -58,7 +58,7 @@ Fixed: :heavy_check_mark:&nbsp;&nbsp;&nbsp;&nbsp;Confirmed: :exclamation:&nbsp;&
 | [Another expression with side-effects in table keys and actions (2362)](https://github.com/p4lang/p4c/issues/2362)            | [2362.p4](crash/2362.p4)                     | Front end | :exclamation: |
 | [No Definitions in Parser Loop (2373)](https://github.com/p4lang/p4c/issues/2373)            | [2373.p4](crash/fixed/2373.p4)         | Front end | :heavy_check_mark: |
 | [Crash when running end-to-end tests with simple switch (2375)](https://github.com/p4lang/p4c/issues/2375)            | [2375.p4](crash/fixed/2375.p4)         | Back end | :heavy_check_mark: |
-| [Compiler Bug: no definitions (2393)](https://github.com/p4lang/p4c/issues/2393)            | [2393.p4](crash/2393.p4)                     | Front end | :exclamation: |
+| [Compiler Bug: no definitions (2393)](https://github.com/p4lang/p4c/issues/2393)            | [2393.p4](crash/fixed/2393.p4)                     | Front end | :heavy_check_mark: |
 | [p4test: x: declaration not found (2435a)](https://github.com/p4lang/p4c/issues/2435)            | [2435a.p4](crash/fixed/2435a.p4)      | Mid end | :heavy_check_mark: |
 | [Range starting from zero: Can not shift by a negative value (2485)](https://github.com/p4lang/p4c/issues/2485)            | [2485.p4](crash/fixed/2485.p4)         | Mid end | :heavy_check_mark: |
 | [Conditional execution in actions with struct initializers (2486)](https://github.com/p4lang/p4c/issues/2486)            | [2486.p4](crash/denied/2486.p4)       | Mid end | :x:    |
@@ -71,7 +71,7 @@ Fixed: :heavy_check_mark:&nbsp;&nbsp;&nbsp;&nbsp;Confirmed: :exclamation:&nbsp;&
 | [Calling an extern with a local variable: read-only error (2545)](https://github.com/p4lang/p4c/issues/2545)            | [2545.p4](crash/fixed/2545.p4)         | Mid end | :heavy_check_mark: |
 | [Side-effect function call in table key (2546b)](https://github.com/p4lang/p4c/issues/2546)           | [2546b.p4](crash/2546b.p4)                   | Front end | :exclamation: |
 | [Compiler Bug : Null firstCall (2597)](https://github.com/p4lang/p4c/issues/2597)           | [2597.p4](crash/fixed/2597.p4)                   | Front end | :heavy_check_mark: |
-| [Compiler Bug: Exiting with SIGSEGV (2648)](https://github.com/p4lang/p4c/issues/2648)           | [2648.p4](crash/2648.p4)                   | Mid end | :heavy_check_mark: |
+| [Compiler Bug: Exiting with SIGSEGV (2648)](https://github.com/p4lang/p4c/issues/2648)           | [2648.p4](crash/fixed/2648.p4)                   | Mid end | :heavy_check_mark: |
 
 | [simple_switch died with return code -6 (887)](https://github.com/p4lang/behavioral-model/issues/887) | [887.p4](simple_switch/fixed/887.p4) | Back end | :heavy_check_mark: |
 
@@ -94,16 +94,16 @@ Fixed: :heavy_check_mark:&nbsp;&nbsp;&nbsp;&nbsp;Confirmed: :exclamation:&nbsp;&
 | [Predication pass leads to unsafe variable assignment (2248a)](https://github.com/p4lang/p4c/issues/2248)           | [2248a.p4](validation/fixed/2248a.p4)  | Mid end | :heavy_check_mark: |
 | [Predication pass leads to unsafe variable assignment (2248b)](https://github.com/p4lang/p4c/issues/2248)           | [2248b.p4](validation/fixed/2248b.p4)  | Mid end | :heavy_check_mark: |
 | [Missed side-effect case StrengthReduction (2287)](https://github.com/p4lang/p4c/issues/2287)            | [2287.p4](validation/fixed/2287.p4)    | Front end | :heavy_check_mark: |
-| [SideEffectOrdering: Regression? (2288a)](https://github.com/p4lang/p4c/issues/2288a)            | [2288a.p4](validation/2288a.p4)    | Front end | :exclamation: |
-| [SideEffectOrdering: Regression? (2288b)](https://github.com/p4lang/p4c/issues/2288b)            | [2288b.p4](validation/2288b.p4)    | Front end | :exclamation: |
+| [SideEffectOrdering: Regression? (2288a)](https://github.com/p4lang/p4c/issues/2288a)            | [2288a.p4](validation/fixed/2288a.p4)    | Front end | :heavy_check_mark: |
+| [SideEffectOrdering: Regression? (2288b)](https://github.com/p4lang/p4c/issues/2288b)            | [2288b.p4](validation/fixed/2288b.p4)    | Front end | :heavy_check_mark: |
 | [MoveInitializers and parser loops (2314)](https://github.com/p4lang/p4c/issues/2314)            | [2314.p4](validation/fixed/2314.p4)    | Front end | :heavy_check_mark: |
 | [More questions on setInvalid (2323)](https://github.com/p4lang/p4c/issues/2323)            | [2323.p4](validation/denied/2323.p4)  | Front end | :x:    |
 | [Another issue with Predication (2330)](https://github.com/p4lang/p4c/issues/2330)            | [2330.p4](validation/fixed/2330.p4)    | Mid end | :heavy_check_mark: |
 | [Another missed case of StrengthReduction (2343)](https://github.com/p4lang/p4c/issues/2343)            | [2343.p4](validation/fixed/2343.p4)    | Front end | :heavy_check_mark: |
 | [Inlining functions and duplicate table calls (2344)](https://github.com/p4lang/p4c/issues/2344)            | [2344.p4](validation/2344.p4)                | Mid end | :exclamation: |
 | [Incorrect transformation in Predication pass (2345b)](https://github.com/p4lang/p4c/issues/2345)           | [2345b.p4](validation/fixed/2345b.p4)  | Mid end | :heavy_check_mark: |
-| [Follow-up issue on exit statements (2358a)](https://github.com/p4lang/p4c/issues/2358)           | [2358a.p4](validation/2358a.p4)              | Front end | :exclamation: |
-| [Follow-up issue on exit statements (2358b)](https://github.com/p4lang/p4c/issues/2358)           | [2358b.p4](validation/2358b.p4)              | Front end | :question: |
+| [Follow-up issue on exit statements (2358a)](https://github.com/p4lang/p4c/issues/2358)           | [2358a.p4](validation/fixed/2358a.p4)              | Front end | :heavy_check_mark: |
+| [Follow-up issue on exit statements (2358b)](https://github.com/p4lang/p4c/issues/2358)           | [2358b.p4](validation/fixed/2358b.p4)              | Front end | :heavy_check_mark: |
 | [Def-Use and exit statements (2374)](https://github.com/p4lang/p4c/issues/2374)            | [2374.p4](validation/denied/2374.p4)  | Front end | :x:    |
 | [InlineActions also seems to handle exit statements incorrectly (2382)](https://github.com/p4lang/p4c/issues/2382)            | [2382.p4](validation/denied/2382.p4)  | Front end | :x:    |
 | [Clarification question on uninitialized local headers (2383)](https://github.com/p4lang/p4c/issues/2383)            | [2383.p4](validation/fixed/2383.p4)    | Mid end | :heavy_check_mark: |
