@@ -94,8 +94,8 @@ Fixed: :heavy_check_mark:&nbsp;&nbsp;&nbsp;&nbsp;Confirmed: :exclamation:&nbsp;&
 | [Predication pass leads to unsafe variable assignment (2248a)](https://github.com/p4lang/p4c/issues/2248)           | [2248a.p4](validation/fixed/2248a.p4)  | Mid end | :heavy_check_mark: |
 | [Predication pass leads to unsafe variable assignment (2248b)](https://github.com/p4lang/p4c/issues/2248)           | [2248b.p4](validation/fixed/2248b.p4)  | Mid end | :heavy_check_mark: |
 | [Missed side-effect case StrengthReduction (2287)](https://github.com/p4lang/p4c/issues/2287)            | [2287.p4](validation/fixed/2287.p4)    | Front end | :heavy_check_mark: |
-| [SideEffectOrdering: Regression? (2288a)](https://github.com/p4lang/p4c/issues/2288a)            | [2288a.p4](validation/fixed/2288a.p4)    | Front end | :heavy_check_mark: |
-| [SideEffectOrdering: Regression? (2288b)](https://github.com/p4lang/p4c/issues/2288b)            | [2288b.p4](validation/fixed/2288b.p4)    | Front end | :heavy_check_mark: |
+| [SideEffectOrdering: Regression? (2288a)](https://github.com/p4lang/p4c/issues/2288)            | [2288a.p4](validation/fixed/2288a.p4)    | Front end | :heavy_check_mark: |
+| [SideEffectOrdering: Regression? (2288b)](https://github.com/p4lang/p4c/issues/2288)            | [2288b.p4](validation/fixed/2288b.p4)    | Front end | :heavy_check_mark: |
 | [MoveInitializers and parser loops (2314)](https://github.com/p4lang/p4c/issues/2314)            | [2314.p4](validation/fixed/2314.p4)    | Front end | :heavy_check_mark: |
 | [More questions on setInvalid (2323)](https://github.com/p4lang/p4c/issues/2323)            | [2323.p4](validation/denied/2323.p4)  | Front end | :x:    |
 | [Another issue with Predication (2330)](https://github.com/p4lang/p4c/issues/2330)            | [2330.p4](validation/fixed/2330.p4)    | Mid end | :heavy_check_mark: |
