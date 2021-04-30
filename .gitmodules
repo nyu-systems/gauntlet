@@ -8,18 +8,10 @@
     path = modules/behavioral-model
     ignore = dirty
 
-[submodule "toz3"]
-    url = https://github.com/p4gauntlet/toz3
-    path = modules/toz3
-
 [submodule "bludgeon"]
     url = https://github.com/p4gauntlet/bludgeon
     path = modules/bludgeon
 
-[submodule "pruner"]
-    url = https://github.com/p4gauntlet/pruner
-    path = modules/pruner
-
-[submodule "toz3_v2"]
-    url = https://github.com/p4gauntlet/toz3_v2
-    path = modules/toz3_v2
+[submodule "toz3"]
+    url = https://github.com/p4gauntlet/toz3
+    path = modules/toz3

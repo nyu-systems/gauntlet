@@ -72,7 +72,6 @@ Fixed: :heavy_check_mark:&nbsp;&nbsp;&nbsp;&nbsp;Confirmed: :exclamation:&nbsp;&
 | [Side-effect function call in table key (2546b)](https://github.com/p4lang/p4c/issues/2546)           | [2546b.p4](crash/2546b.p4)                   | Front end | :exclamation: |
 | [Compiler Bug : Null firstCall (2597)](https://github.com/p4lang/p4c/issues/2597)           | [2597.p4](crash/fixed/2597.p4)                   | Front end | :heavy_check_mark: |
 | [Compiler Bug: Exiting with SIGSEGV (2648)](https://github.com/p4lang/p4c/issues/2648)           | [2648.p4](crash/fixed/2648.p4)                   | Mid end | :heavy_check_mark: |
-
 | [simple_switch died with return code -6 (887)](https://github.com/p4lang/behavioral-model/issues/887) | [887.p4](simple_switch/fixed/887.p4) | Back end | :heavy_check_mark: |
 
 #### P4C Semantic Bugs
