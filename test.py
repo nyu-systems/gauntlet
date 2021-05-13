@@ -42,7 +42,7 @@ bad_tests = [
 p416_tests = set()
 
 # this test is in a custom directory, we need to add it manually
-# p416_tests.add("fabric_20190420/fabric.p4")
+p416_tests.add("fabric_20190420/fabric.p4")
 
 # we only go one level deep
 for test in list(P4_DIR.glob("*.p4")):
@@ -110,79 +110,10 @@ for test in list(UNDEFINED_DIR.glob("*")):
 # ***** broken tests, need fixing *****
 xfails = [
     "issue1334.p4",  # overloading, this test should normally not be skipped
-    "tuple3.p4",  # not implemented yet
-    "tuple4.p4",  # not implemented yet
     "bit0-bmv2.p4",
-    "annotation-inline-propagate.p4",
-    "issue2726-bmv2.p4",
-    "issue2735-bmv2.p4",
-    "functors6.p4",
-    "functors7.p4",
-    "functors8.p4",
-    "functors9.p4",
-    "generic-struct-tuple.p4",
-    "generic-struct.p4",
-    "header-stack-ops-bmv2.p4",
-    "inline-control.p4",
-    "inline-control1.p4",
-    "issue1107.p4",
     "issue1208-1.p4",
-    "issue1333.p4",
-    "issue1566-bmv2.p4",
-    "issue1566.p4",
-    "issue1638.p4",
-    "issue1653-complex-bmv2.p4",
-    "issue1914-1.p4",
-    "issue1914-2.p4",
-    "issue1914.p4",
-    "issue1937-1-bmv2.p4",
-    "issue1937-3-bmv2.p4",
-    "issue2019-1.p4",
-    "issue2019.p4",
-    "issue2044-bmv2.p4",
-    "issue2201-1-bmv2.p4",
-    "issue2201-bmv2.p4",
-    "issue2273-1.p4",
-    "issue2273.p4",
-    "issue2303.p4",
-    "issue2391.p4",
-    "issue2599.p4",
     "issue2617.p4",
-    "issue2627.p4",
-    "issue313_1.p4",
-    "issue313_2.p4",
-    "issue47.p4",
-    "issue754.p4",
-    "list-compare.p4",
-    "logging.p4",
-    "named-arg1.p4",
-    "nested-tuple.p4",
-    "package.p4",
-    "psa-end-of-ingress-test-bmv2.p4",
-    "psa-example-digest-bmv2.p4",
-    "psa-example-register2-bmv2.p4",
-    "psa-hash.p4",
-    "psa-multicast-basic-2-bmv2.p4",
-    "psa-random.p4",
-    "psa-recirculate-no-meta-bmv2.p4",
-    "psa-register-complex-bmv2.p4",
-    "psa-register-read-write-2-bmv2.p4",
-    "psa-register-read-write-bmv2.p4",
-    "psa-register1.p4",
-    "psa-resubmit-bmv2.p4",
-    "psa-table-hit-miss.p4",
-    "psa-unicast-or-drop-bmv2.p4",
-    "serenum-expr.p4",
-    "simple-firewall_ubpf.p4",
-    "stack.p4",
-    "string.p4",
     "switch-expression.p4",
-    "table-entries-ser-enum-bmv2.p4",
-    "table-key-serenum.p4",
-    "tuple.p4",
-    "v1model-p4runtime-enumint-types1.p4",
-    "v1model-p4runtime-most-types1.p4",
-    "v1model-special-ops-bmv2.p4",
 ]
 
 
