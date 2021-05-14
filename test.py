@@ -58,7 +58,6 @@ violation_filter = [
     "parser_loop",  # needs some work around undefined behavior
     "2314_regression",
     "2591_regression",
-    "const_entries",
 ]
 violation_tests = set()
 for test in list(VIOLATION_DIR.glob("*")):
