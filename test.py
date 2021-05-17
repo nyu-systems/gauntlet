@@ -58,6 +58,8 @@ violation_filter = [
     "parser_loop",  # needs some work around undefined behavior
     "2314_regression",
     "2591_regression",
+    "out_params_1",
+    "out_params_2",
 ]
 violation_tests = set()
 for test in list(VIOLATION_DIR.glob("*")):
@@ -74,6 +76,8 @@ false_friends_filter = [
     "extern_arguments_3.p4",  # exit return value name
     "infinite_loop.p4",  # how to evaluate the output of an infinite loop?
     "bounded_loop.p4",  # how to handle this difference in undef behavior?
+    "petr4_masks.p4",
+    "petr4_ranges.p4",
 ]
 
 false_friends = set()
@@ -111,6 +115,40 @@ xfails = [
     "issue1334.p4",  # overloading, this test should normally not be skipped
     "bit0-bmv2.p4",
     "issue1208-1.p4",
+    "default.p4",
+    "enumCast.p4",
+    "issue1406.p4",
+    "issue1409-bmv2.p4",
+    "issue2465-bmv2.p4",
+    "issue2485.p4",
+    "generic-struct.p4",
+    "issue2617.p4",
+    "issue355-bmv2.p4",
+    "issue356-bmv2.p4",
+    "issue-2123-2-bmv2.p4",
+    "issue-2123-3-bmv2.p4",
+    "issue-2123.p4",
+    "issue1000-bmv2.p4",
+    "issue1768-bmv2.p4",
+    "issue1955.p4",
+    "nested_select.p4",
+    "issue995-bmv2.p4",
+    "issue774-4-bmv2.p4",
+    "issue774.p4",
+    "parser-conditional.p4",
+    "pvs-nested-struct.p4",
+    "pvs-struct-1-bmv2.p4",
+    "pvs-struct-2-bmv2.p4",
+    "pvs-struct-3-bmv2.p4",
+    "pvs.p4",
+    "reject.p4",
+    "select-struct.p4",
+    "psa-test.p4",
+    "pvs-bitstring-bmv2.p4",
+    "unreachable-accept.p4",
+    "v1model-p4runtime-enumint-types1.p4",
+    "v1model-p4runtime-most-types1.p4",
+    "ternary2-bmv2.p4",
 ]
 
 
