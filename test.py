@@ -111,8 +111,6 @@ xfails = [
     "issue1334.p4",  # overloading, this test should normally not be skipped
     "bit0-bmv2.p4",
     "issue1208-1.p4",
-    "issue2617.p4",
-    "switch-expression.p4",
 ]
 
 
