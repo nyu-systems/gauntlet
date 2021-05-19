@@ -58,8 +58,6 @@ violation_filter = [
     "parser_loop",  # needs some work around undefined behavior
     "2314_regression",
     "2591_regression",
-    "out_params_1",
-    "out_params_2",
 ]
 violation_tests = set()
 for test in list(VIOLATION_DIR.glob("*")):
@@ -74,10 +72,6 @@ for test in list(VIOLATION_DIR.glob("*")):
 false_friends_filter = [
     "extern_arguments_2.p4",  # exit return value name
     "extern_arguments_3.p4",  # exit return value name
-    "infinite_loop.p4",  # how to evaluate the output of an infinite loop?
-    "bounded_loop.p4",  # how to handle this difference in undef behavior?
-    "petr4_masks.p4",
-    "petr4_ranges.p4",
 ]
 
 false_friends = set()
@@ -112,14 +106,14 @@ for test in list(UNDEFINED_DIR.glob("*")):
 
 # ***** broken tests, need fixing *****
 xfails = [
-    "issue1334.p4",  # overloading, this test should normally not be skipped
+    # Overloading, this test should normally not be skipped
+    "issue1334.p4",
     "bit0-bmv2.p4",
     "issue1208-1.p4",
     "enumCast.p4",
     "issue2465-bmv2.p4",
     "generic-struct.p4",
-    "issue774-4-bmv2.p4",
-    "issue774.p4",
+    # How to evaluate the output of an infinite loop?
 ]
 
 
