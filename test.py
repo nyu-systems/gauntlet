@@ -57,7 +57,6 @@ for test in list(P4_DIR.glob("*.p4")):
 violation_filter = [
     "parser_loop",  # needs some work around undefined behavior
     "2314_regression",
-    "2591_regression",
 ]
 violation_tests = set()
 for test in list(VIOLATION_DIR.glob("*")):
@@ -70,8 +69,6 @@ for test in list(VIOLATION_DIR.glob("*")):
 
 # these programs show pathological behavior and can currently not be tested
 false_friends_filter = [
-    "extern_arguments_2.p4",  # exit return value name
-    "extern_arguments_3.p4",  # exit return value name
 ]
 
 false_friends = set()
@@ -111,9 +108,9 @@ xfails = [
     "bit0-bmv2.p4",
     "issue1208-1.p4",
     "enumCast.p4",
-    "issue2465-bmv2.p4",
     "generic-struct.p4",
     # How to evaluate the output of an infinite loop?
+    "gauntlet_infinite_loop.p4",
 ]
 
 

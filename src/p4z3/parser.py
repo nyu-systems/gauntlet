@@ -59,8 +59,8 @@ class RejectState(P4Expression):
             member_val = ctx.resolve_reference(member_name)
             if isinstance(member_val, StructInstance):
                 member_val.deactivate()
-            ctx.add_exit_state(
-                cond, ctx.get_p4_state().get_members(ctx))
+        ctx.add_exit_state(
+            cond, ctx.get_p4_state().get_members(ctx))
         ctx.restore(var_store)
         ctx.set_exited(True)
         ctx.forward_conds.append(ctx.tmp_forward_cond)
