@@ -10,7 +10,8 @@ cppcoreguidelines-*,
 boost-*,
 hicpp-*,
 misc-*,
--modernize-use-trailing-return-type'
+-modernize-use-trailing-return-type,
+-cppcoreguidelines-owning-memory'
 WarningsAsErrors: ''
 HeaderFilterRegex: ''
 AnalyzeTemporaryDtors: false
