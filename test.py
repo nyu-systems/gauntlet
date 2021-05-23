@@ -104,6 +104,10 @@ xfails = [
     "shadow-after-use.p4",  # very specific shadowing
     "tuple3.p4",  # not implemented yet
     "tuple4.p4",  # not implemented yet
+    "bit0-bmv2.p4",
+    "generic-struct-tuple.p4",
+    "generic-struct.p4",
+    "issue2627.p4",
 ]
 
 
