@@ -15,7 +15,7 @@
 - [Bugs Found in P4 Compilers](#bugs-found-in-p4-compilers)
 - [Citing This Project](#citing-this-project)
 
-DISCLAIMER: This project recently switched to a C++-based interpreter, which is not as feature-complete. If you are interested in the original and comprehensive Python-based interpreter, please check out the stable branch.
+DISCLAIMER: This project recently switched to a C++-based interpreter, which is not as feature-complete. If you are interested in the original and comprehensive Python-based interpreter, please check out the [old](https://github.com/p4gauntlet/gauntlet/tree/gauntlet_old) branch.
 
 Gauntlet is a set of tools designed to find bugs in programmable data-plane compilers. More precisely, Gauntlet targets the
 [P4 language](https://p4.org/) ecosystem and  the P4-16 reference compiler ([p4c](https://github.com/p4lang/p4c/)).
@@ -53,15 +53,15 @@ A typical crash checking workflow might be:
 ### Retrieving Gauntlet Semantics for a P4 Program
 For debugging purposes, you can run
 
-    bin/get_p4_semantics -i out.p4
+    bin/get_p4_semantics out.p4
 
 to retrieve the semantic representation of a particular P4 program. This will print the Z3 formula of each pipe in the package. These semantics can be used for equality comparison or test-case inference.
 
 ### Validating a P4C Program
 To validate that a program is compiled correctly by `p4c`, you can run
 
-     modules/p4c/build/p4bludgeon --output out.p4 --arch top && bin/validate_p4_translation -i out.p4
-`src/validate_p4_translation.py` checks if a sequence of P4 programs are all equivalent to each other using the `src/check_p4_pair.py` program as a sub routine. This sequence is produced by running p4c on an input P4 program. When p4c is run on an input P4 program, it produces a sequence of P4 programs, where each P4 program corresponds to the version of the input P4 program after a p4c optimization pass. This allows us to validate whether compilation/translation is working correctly and to pinpoint the faulty optimization pass if it isn't
+     modules/p4c/build/p4bludgeon --output out.p4 --arch top && bin/validate_p4_translation out.p4
+`bin/validate_p4_translation` checks if a sequence of P4 programs are all equivalent to each other using the `bin/check_prog_equality` program as a sub routine. This sequence is produced by running p4c on an input P4 program. When p4c is run on an input P4 program, it produces a sequence of P4 programs, where each P4 program corresponds to the version of the input P4 program after a p4c optimization pass. This allows us to validate whether compilation/translation is working correctly and to pinpoint the faulty optimization pass if it isn't
 working correctly.
 
 ### Model-Based Testing
@@ -70,7 +70,7 @@ Model-based testing requires the behavioral model or the Tofino compiler to be i
 
      modules/p4c/build/p4bludgeon --output out.p4 --arch v1model && bin/generate_test_case -i out.p4 -r
 This sequence of commands will first generate a random program, infer expected input and output values, convert them to a test file (in this case, they are stf files) and finally run a full test. If the observed output differs from the expected output, the tool will throw  an error. The `-r` flag denotes randomization of the input, it is optional.
-To run model-based testing for the Tofino backend, `sudo` will have to be used.
+To run model-based testing for the Tofino back end, `sudo` will have to be used.
 
      modules/p4c/build/p4bludgeon --output out.p4 --arch tna && sudo -E bin/generate_test_case -i out.p4 -r --arch tna
 

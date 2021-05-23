@@ -4,7 +4,6 @@ from pathlib import Path
 import pytest
 import src.p4z3.util as util
 import src.validate_p4_translation as tv_check
-import src.check_p4_pair as z3_check
 import warnings
 
 # configure logging
@@ -27,6 +26,8 @@ UNDEFINED_DIR = TEST_DIR.joinpath("undef_violated")
 P4_DIR = FILE_DIR.joinpath("modules/p4c/testdata/p4_16_samples/")
 # p4c binaries
 P4C_BIN = FILE_DIR.joinpath("modules/p4c/build/p4test")
+VALIDATE_BIN = FILE_DIR.joinpath("modules/p4c/build/p4validate")
+COMPARE_BIN = FILE_DIR.joinpath("modules/p4c/build/p4compare")
 
 # ***** P4-16 Standard Tests *****
 
@@ -68,8 +69,7 @@ for test in list(VIOLATION_DIR.glob("*")):
 # ***** tests that should *NOT* trigger a violation bug or fail*****
 
 # these programs show pathological behavior and can currently not be tested
-false_friends_filter = [
-]
+false_friends_filter = []
 
 false_friends = set()
 for test in list(FALSE_FRIENDS_DIR.glob("*")):
@@ -125,11 +125,11 @@ def run_z3p4_test(p4_file, target_dir):
     if p4_file.name in bad_tests:
         pytest.skip(f"Skipping slow test {p4_file}.")
         return util.EXIT_SKIPPED
-    result = tv_check.validate_translation(p4_file,
-                                           target_dir,
-                                           P4C_BIN,
-                                           allow_undef=True,
-                                           dump_info=False)
+    cmd = f"{VALIDATE_BIN} "
+    cmd += f"--dump-dir {target_dir} "
+    cmd += f"--compiler-bin {P4C_BIN} "
+    cmd += f" {p4_file} "
+    result = util.exec_process(cmd).returncode
     if result == util.EXIT_UNDEF:
         msg = "Ignored undefined behavior in %s" % p4_file
         warnings.warn(msg)
@@ -142,8 +142,8 @@ def run_z3p4_test(p4_file, target_dir):
 def run_violation_test(test_folder, allow_undefined=True):
     src_p4_file = test_folder.joinpath("orig.p4")
     for p4_file in list(test_folder.glob("**/[0-9]*.p4")):
-        result, _ = z3_check.z3_check(
-            [str(src_p4_file), str(p4_file)], None, allow_undefined)
+        cmd = f"{COMPARE_BIN} {src_p4_file},{p4_file} "
+        result = util.exec_process(cmd).returncode
         if result != util.EXIT_VIOLATION:
             return util.EXIT_FAILURE
     return util.EXIT_SUCCESS

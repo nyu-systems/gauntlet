@@ -12,7 +12,7 @@ from p4z3.state import P4ComplexType
 sys.setrecursionlimit(15000)
 
 FILE_DIR = Path(__file__).parent.resolve()
-EQUALITY_BIN = FILE_DIR.joinpath("../modules/p4c/build/p4-check-equality")
+EQUALITY_BIN = FILE_DIR.joinpath("../modules/p4c/build/p4compare")
 log = logging.getLogger(__name__)
 
 # We maintain a list of passes to skip for convenience
