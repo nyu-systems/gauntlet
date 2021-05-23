@@ -113,6 +113,9 @@ sudo make install
 cd ${SRC_DIR}
 fi
 
+# If the behavioral model dependencies did not cover filesystem
+# This is needed for the validation binaries
+sudo apt install libboost-filesystem-dev
 
 # grab the toz3 extension for the p4 compiler
 mkdir -p ${MODULE_DIR}/p4c/extensions
