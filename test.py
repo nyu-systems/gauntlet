@@ -85,13 +85,6 @@ for test in list(FALSE_FRIENDS_DIR.glob("*")):
 undefined_filter = [
     "NestedStructs_1",  # this actually does not throw an undefined error now
     "NestedStructs_2",  # this actually does not throw an undefined error now
-    "Inline_1",
-    "Inline_2",
-    "Inline_3",
-    "Inline_4",
-    "Inline_5",
-    "Inline_6",
-    "simple",
 ]
 
 undefined_tests = set()
@@ -139,10 +132,12 @@ def run_z3p4_test(p4_file, target_dir):
     return result
 
 
-def run_violation_test(test_folder, allow_undefined=True):
+def run_violation_test(test_folder, allow_undefined):
     src_p4_file = test_folder.joinpath("orig.p4")
     for p4_file in list(test_folder.glob("**/[0-9]*.p4")):
         cmd = f"{COMPARE_BIN} {src_p4_file},{p4_file} "
+        if allow_undefined:
+            cmd += "--allow-undefined "
         result = util.exec_process(cmd).returncode
         if result != util.EXIT_VIOLATION:
             return util.EXIT_FAILURE
@@ -188,7 +183,7 @@ def test_friends(request, test_name):
 @pytest.mark.parametrize("test_folder", sorted(violation_tests))
 def test_violation(test_folder):
     test_folder = VIOLATION_DIR.joinpath(test_folder)
-    assert run_violation_test(test_folder, True) == util.EXIT_SUCCESS
+    assert run_violation_test(test_folder, False) == util.EXIT_SUCCESS
 
 
 @pytest.mark.run_default
