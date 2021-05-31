@@ -183,7 +183,7 @@ def test_friends(request, test_name):
 @pytest.mark.parametrize("test_folder", sorted(violation_tests))
 def test_violation(test_folder):
     test_folder = VIOLATION_DIR.joinpath(test_folder)
-    assert run_violation_test(test_folder, False) == util.EXIT_SUCCESS
+    assert run_violation_test(test_folder, True) == util.EXIT_SUCCESS
 
 
 @pytest.mark.run_default
