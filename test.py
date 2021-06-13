@@ -4,7 +4,6 @@ from pathlib import Path
 import warnings
 import pytest
 import src.p4z3.util as util
-import src.validate_p4_translation as tv_check
 
 # configure logging
 log = logging.getLogger(__name__)
@@ -114,7 +113,7 @@ def prep_test(p4_name, p4_dir=P4_DIR):
     return p4_file, target_dir
 
 
-def run_z3p4_test(p4_file, target_dir):
+def run_z3p4_test(p4_file, target_dir, allow_undefined):
     if p4_file.name in bad_tests:
         pytest.skip("Skipping slow test %s." % p4_file)
         return util.EXIT_SKIPPED
@@ -124,9 +123,12 @@ def run_z3p4_test(p4_file, target_dir):
     cmd += " %s " % p4_file
     result = util.exec_process(cmd).returncode
     if result == util.EXIT_UNDEF:
-        msg = "Ignored undefined behavior in %s" % p4_file
-        warnings.warn(msg)
-        return util.EXIT_SUCCESS
+        if allow_undefined:
+            msg = "Ignored undefined behavior in %s" % p4_file
+            warnings.warn(msg)
+            return util.EXIT_SUCCESS
+        else:
+            return util.EXIT_VIOLATION
     if result == util.EXIT_SKIPPED:
         pytest.skip("Skipping file %s." % p4_file)
     return result
@@ -145,14 +147,12 @@ def run_violation_test(test_folder, allow_undefined):
 
 
 def run_undef_test(p4_file, target_dir):
-    result = tv_check.validate_translation(p4_file, target_dir, P4C_BIN, True,
-                                           False)
+    result = run_z3p4_test(p4_file, target_dir, True)
     if result == util.EXIT_SKIPPED:
         pytest.skip("Skipping file %s.", p4_file)
     elif result == util.EXIT_VIOLATION:
         return util.EXIT_FAILURE
-    result = tv_check.validate_translation(p4_file, target_dir, P4C_BIN, False,
-                                           False)
+    result = run_z3p4_test(p4_file, target_dir, False)
     if result != util.EXIT_VIOLATION:
         return util.EXIT_FAILURE
     return util.EXIT_SUCCESS
@@ -162,7 +162,7 @@ def run_undef_test(p4_file, target_dir):
 @pytest.mark.parametrize("test_name", sorted(p416_tests))
 def test_p4c(request, test_name, pytestconfig):
     p4_file, target_dir = prep_test(test_name)
-    request.node.custom_err = run_z3p4_test(p4_file, target_dir)
+    request.node.custom_err = run_z3p4_test(p4_file, target_dir, True)
     if p4_file.name in xfails and request.node.custom_err != util.EXIT_SUCCESS:
         pytest.xfail("Expecting %s to fail." % p4_file)
     if pytestconfig.getoption('--suppress-crashes'):
@@ -175,7 +175,7 @@ def test_p4c(request, test_name, pytestconfig):
 @pytest.mark.parametrize("test_name", sorted(false_friends))
 def test_friends(request, test_name):
     p4_file, target_dir = prep_test(test_name, FALSE_FRIENDS_DIR)
-    request.node.custom_err = run_z3p4_test(p4_file, target_dir)
+    request.node.custom_err = run_z3p4_test(p4_file, target_dir, True)
     assert request.node.custom_err == util.EXIT_SUCCESS
 
 
@@ -198,5 +198,5 @@ def test_undef_violation(test_folder):
 @pytest.mark.parametrize("test_name", xfails)
 def test_xfails(request, test_name):
     p4_file, target_dir = prep_test(test_name)
-    request.node.custom_err = run_z3p4_test(p4_file, target_dir)
+    request.node.custom_err = run_z3p4_test(p4_file, target_dir, True)
     assert request.node.custom_err == util.EXIT_SUCCESS
