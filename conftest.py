@@ -1,6 +1,6 @@
 
 import pytest
-import src.p4z3.util as util
+import src.util as util
 
 
 def pytest_addoption(parser):

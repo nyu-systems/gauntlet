@@ -3,7 +3,7 @@ from pathlib import Path
 
 import warnings
 import pytest
-import src.p4z3.util as util
+import src.util as util
 
 # configure logging
 log = logging.getLogger(__name__)

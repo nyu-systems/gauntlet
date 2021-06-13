@@ -10,7 +10,7 @@ from datetime import datetime
 
 from pathlib import Path
 
-import p4z3.util as util
+import util
 import check_p4_pair as z3check
 
 log = logging.getLogger(__name__)

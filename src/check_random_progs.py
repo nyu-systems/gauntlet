@@ -11,7 +11,7 @@ import signal
 import time
 import json
 
-import p4z3.util as util
+import util
 import validate_p4_translation as validation
 
 # configure logging

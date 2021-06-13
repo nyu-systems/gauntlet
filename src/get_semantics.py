@@ -10,7 +10,7 @@ import z3
 from p4z3.contrib.tabulate import tabulate
 from p4z3.state import StaticContext, P4ComplexType, P4Extern
 
-import p4z3.util as util
+import util
 from p4z3.externs.core import core_externs
 
 sys.setrecursionlimit(15000)

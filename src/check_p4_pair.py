@@ -6,7 +6,7 @@ import z3
 
 from p4z3.contrib.tabulate import tabulate
 from get_semantics import get_z3_formulization
-import p4z3.util as util
+import util
 from p4z3.state import P4ComplexType
 
 sys.setrecursionlimit(15000)

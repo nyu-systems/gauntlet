@@ -8,7 +8,7 @@ import signal
 from pathlib import Path
 
 import z3
-import p4z3.util as util
+import util
 from get_semantics import get_z3_formulization
 
 log = logging.getLogger(__name__)
