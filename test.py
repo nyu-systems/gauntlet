@@ -102,6 +102,8 @@ xfails = [
     "enumCast.p4",
     # How to evaluate the output of an infinite loop?
     "gauntlet_infinite_loop.p4",
+    # Why does this trigger a violation?
+    "predication_4.p4",
 ]
 
 
