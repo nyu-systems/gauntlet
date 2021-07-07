@@ -37,6 +37,7 @@ bad_tests = [
     "parser-unroll-test2.p4",  # does not terminate
     "parser-unroll-test3.p4",  # does not terminate
     "parser-unroll-test4.p4",  # does not terminate
+    "predication_issue_4.p4",  # False positive
 ]
 # create a list of all the programs in the p4c test folder
 p416_tests = set()
