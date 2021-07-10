@@ -42,9 +42,9 @@ Fixed: :heavy_check_mark:&nbsp;&nbsp;&nbsp;&nbsp;Confirmed: :exclamation:&nbsp;&
 | [Compiler Bug: Null cst (2206)](https://github.com/p4lang/p4c/issues/2206)            | [2206.p4](crash/fixed/2206.p4)         | Front end | :heavy_check_mark: |
 | [Compiler Bug: boost::too_few_args (2207)](https://github.com/p4lang/p4c/issues/2207)            | [2207.p4](crash/denied/2207.p4)       | Front end | :x:    |
 | [Predication pass leads to unsafe variable assignment (2248c)](https://github.com/p4lang/p4c/issues/2248)           | [2248c.p4](crash/fixed/2248c.p4)       | Mid end | :heavy_check_mark: |
-| [Compiler Bug: Null stat (2258a)](https://github.com/p4lang/p4c/issues/2258)            | [2258a.p4](crash/2258a.p4)                  | Front end | :exclamation: |
+| [Compiler Bug: Null stat (2258a)](https://github.com/p4lang/p4c/issues/2258)            | [2258a.p4](crash/fixed/2258a.p4)                  | Front end | :heavy_check_mark: |
 | ["error: Duplicates declaration" when initializing struct in function with integer values (2261)](https://github.com/p4lang/p4c/issues/2261)            | [2261.p4](crash/fixed/2261.p4)         | Front end | :heavy_check_mark: |
-| ["Compiler Bug Null stat" also triggered in action properties (2266)](https://github.com/p4lang/p4c/issues/2266)            | [2266.p4](crash/2266.p4)                     | Front end | :exclamation: |
+| ["Compiler Bug Null stat" also triggered in action properties (2266)](https://github.com/p4lang/p4c/issues/2266)            | [2266.p4](crash/fixed/2266.p4)                     | Front end | :heavy_check_mark: |
 | [Compiler Bug: visitor returned invalid type Vector<Declaration> for IndexedVector<StatOrDecl> (2289)](https://github.com/p4lang/p4c/issues/2289)            | [2289.p4](crash/fixed/2289.p4)         | Mid end | :heavy_check_mark: |
 | [Compiler Bug: Unexpected type <Type_Name> for nested headers (2290)](https://github.com/p4lang/p4c/issues/2290)            | [2290.p4](crash/fixed/2290.p4)         | Front end | :heavy_check_mark: |
 | [BMV2 Backend Compiler Bug unhandled case (2291)](https://github.com/p4lang/p4c/issues/2291)            | [2291.p4](crash/fixed/2291.p4)         | Back end | :heavy_check_mark: |
@@ -55,7 +55,7 @@ Fixed: :heavy_check_mark:&nbsp;&nbsp;&nbsp;&nbsp;Confirmed: :exclamation:&nbsp;&
 | [Negative bit index in Slice after shifting function output (2356)](https://github.com/p4lang/p4c/issues/2356)            | [2356.p4](crash/fixed/2356.p4)         | Front end | :heavy_check_mark: |
 | [Int as parameter and assignments (2357)](https://github.com/p4lang/p4c/issues/2357)            | [2357.p4](crash/fixed/2357.p4)         | Front end | :heavy_check_mark: |
 | [Mixing exits and returns in actions (2359)](https://github.com/p4lang/p4c/issues/2359)            | [2359.p4](crash/fixed/2359.p4)         | Mid end | :heavy_check_mark: |
-| [Another expression with side-effects in table keys and actions (2362)](https://github.com/p4lang/p4c/issues/2362)            | [2362.p4](crash/2362.p4)                     | Front end | :exclamation: |
+| [Another expression with side-effects in table keys and actions (2362)](https://github.com/p4lang/p4c/issues/2362)            | [2362.p4](crash/fixed/2362.p4)                     | Front end | :heavy_check_mark: |
 | [No Definitions in Parser Loop (2373)](https://github.com/p4lang/p4c/issues/2373)            | [2373.p4](crash/fixed/2373.p4)         | Front end | :heavy_check_mark: |
 | [Crash when running end-to-end tests with simple switch (2375)](https://github.com/p4lang/p4c/issues/2375)            | [2375.p4](crash/fixed/2375.p4)         | Back end | :heavy_check_mark: |
 | [Compiler Bug: no definitions (2393)](https://github.com/p4lang/p4c/issues/2393)            | [2393.p4](crash/fixed/2393.p4)                     | Front end | :heavy_check_mark: |
@@ -69,7 +69,7 @@ Fixed: :heavy_check_mark:&nbsp;&nbsp;&nbsp;&nbsp;Confirmed: :exclamation:&nbsp;&
 | [Some problems with function calls in struct initialization (2543b)](https://github.com/p4lang/p4c/issues/2543)           | [2543b.p4](crash/fixed/2543b.p4)       | Front end | :heavy_check_mark: |
 | [Compiler Bug: Could not find type of <Declaration_Variable> for declaration of same name (2544)](https://github.com/p4lang/p4c/issues/2544)            | [2544.p4](crash/fixed/2544.p4)                     | Front end | :heavy_check_mark: |
 | [Calling an extern with a local variable: read-only error (2545)](https://github.com/p4lang/p4c/issues/2545)            | [2545.p4](crash/fixed/2545.p4)         | Mid end | :heavy_check_mark: |
-| [Side-effect function call in table key (2546b)](https://github.com/p4lang/p4c/issues/2546)           | [2546b.p4](crash/2546b.p4)                   | Front end | :exclamation: |
+| [Side-effect function call in table key (2546b)](https://github.com/p4lang/p4c/issues/2546)           | [2546b.p4](crash/fixed/2546b.p4)                   | Front end | :heavy_check_mark: |
 | [Compiler Bug : Null firstCall (2597)](https://github.com/p4lang/p4c/issues/2597)           | [2597.p4](crash/fixed/2597.p4)                   | Front end | :heavy_check_mark: |
 | [Compiler Bug: Exiting with SIGSEGV (2648)](https://github.com/p4lang/p4c/issues/2648)           | [2648.p4](crash/fixed/2648.p4)                   | Mid end | :heavy_check_mark: |
 | [simple_switch died with return code -6 (887)](https://github.com/p4lang/behavioral-model/issues/887) | [887.p4](simple_switch/fixed/887.p4) | Back end | :heavy_check_mark: |
@@ -99,7 +99,7 @@ Fixed: :heavy_check_mark:&nbsp;&nbsp;&nbsp;&nbsp;Confirmed: :exclamation:&nbsp;&
 | [More questions on setInvalid (2323)](https://github.com/p4lang/p4c/issues/2323)            | [2323.p4](validation/denied/2323.p4)  | Front end | :x:    |
 | [Another issue with Predication (2330)](https://github.com/p4lang/p4c/issues/2330)            | [2330.p4](validation/fixed/2330.p4)    | Mid end | :heavy_check_mark: |
 | [Another missed case of StrengthReduction (2343)](https://github.com/p4lang/p4c/issues/2343)            | [2343.p4](validation/fixed/2343.p4)    | Front end | :heavy_check_mark: |
-| [Inlining functions and duplicate table calls (2344)](https://github.com/p4lang/p4c/issues/2344)            | [2344.p4](validation/2344.p4)                | Mid end | :exclamation: |
+| [Inlining functions and duplicate table calls (2344)](https://github.com/p4lang/p4c/issues/2344)            | [2344.p4](validation/fixed/2344.p4)                | Mid end | :heavy_check_mark: |
 | [Incorrect transformation in Predication pass (2345b)](https://github.com/p4lang/p4c/issues/2345)           | [2345b.p4](validation/fixed/2345b.p4)  | Mid end | :heavy_check_mark: |
 | [Follow-up issue on exit statements (2358a)](https://github.com/p4lang/p4c/issues/2358)           | [2358a.p4](validation/fixed/2358a.p4)              | Front end | :heavy_check_mark: |
 | [Follow-up issue on exit statements (2358b)](https://github.com/p4lang/p4c/issues/2358)           | [2358b.p4](validation/fixed/2358b.p4)              | Front end | :heavy_check_mark: |
@@ -110,12 +110,12 @@ Fixed: :heavy_check_mark:&nbsp;&nbsp;&nbsp;&nbsp;Confirmed: :exclamation:&nbsp;&
 | [Inlining controls with out parameters (2470)](https://github.com/p4lang/p4c/issues/2470)            | [2470.p4](validation/denied/2470.p4)  | Front end | :x:    |
 | [Side effects in StructInitializers (2488)](https://github.com/p4lang/p4c/issues/2488)            | [2488.p4](validation/fixed/2488.p4)    | Front end | :heavy_check_mark: |
 | [Follow-up on slice arguments (2498)](https://github.com/p4lang/p4c/issues/2498)            | [2498.p4](validation/fixed/2498.p4)                | Front end | :heavy_check_mark: |
-| [Side-effect function call in table key (2546b)](https://github.com/p4lang/p4c/issues/2546)           | [2546b.p4](validation/2546b.p4)              | Mid end | :exclamation: |
+| [Side-effect function call in table key (2546b)](https://github.com/p4lang/p4c/issues/2546)           | [2546b.p4](validation/fixed/2546b.p4)              | Mid end | :heavy_check_mark: |
 | [Fix: Predication issue (2564)](https://github.com/p4lang/p4c/pull/2564)              | [2564.p4](validation/pull_request/2564.p4)  | Mid end | :heavy_check_mark: |
 | [Fix: Issue #2004 parser duplicated matches not optimized out (2591)](https://github.com/p4lang/p4c/pull/2591)              | [2591.p4](validation/pull_request/2591.p4)  | Mid end | :heavy_check_mark: |
 | [Predication: Another problem (2613)](https://github.com/p4lang/p4c/issues/2613)              | [2564.p4](validation/fixed/2613.p4)  | Mid end | :heavy_check_mark: |
 | :tada: (Bug No 100!) [StrengthReduction: Incorrect slice optimization (2614)](https://github.com/p4lang/p4c/issues/2614)              | [2614.p4](validation/fixed/2614.p4)  | Front end | :heavy_check_mark: |
-| [Some more predication issues (2647)](https://github.com/p4lang/p4c/issues/2647)              | [2647a.p4](validation/2647a.p4)  | Mid end | :exclamation: |
+| [Some more predication issues (2647)](https://github.com/p4lang/p4c/issues/2647)              | [2647a.p4](validation/fixed/2647a.p4)  | Mid end | :heavy_check_mark: |
 
 #### Tofino Crash Bugs (P4Studio 9.3.0)
 

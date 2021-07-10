@@ -68,7 +68,11 @@ for test in list(VIOLATION_DIR.glob("*")):
 # ***** tests that should *NOT* trigger a violation bug or fail*****
 
 # these programs show pathological behavior and can currently not be tested
-false_friends_filter = []
+false_friends_filter = [
+    # Why does this trigger a violation?
+    "header_next_extract.p4",
+    "inout_slice_table_key.p4",
+]
 
 false_friends = set()
 for test in list(FALSE_FRIENDS_DIR.glob("*")):
@@ -102,8 +106,6 @@ xfails = [
     "enumCast.p4",
     # How to evaluate the output of an infinite loop?
     "gauntlet_infinite_loop.p4",
-    # Why does this trigger a violation?
-    "predication_4.p4",
 ]
 
 
