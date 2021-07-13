@@ -69,9 +69,8 @@ for test in list(VIOLATION_DIR.glob("*")):
 
 # these programs show pathological behavior and can currently not be tested
 false_friends_filter = [
-    # Why does this trigger a violation?
+    # extract needs to be implemented correctly.
     "header_next_extract.p4",
-    "inout_slice_table_key.p4",
 ]
 
 false_friends = set()
