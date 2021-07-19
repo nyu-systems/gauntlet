@@ -15,7 +15,7 @@
 - [Bugs Found in P4 Compilers](#bugs-found-in-p4-compilers)
 - [Citing This Project](#citing-this-project)
 
-DISCLAIMER: This project recently switched to a C++-based interpreter, which is not as feature-complete. If you are interested in the original and comprehensive Python-based interpreter, please check out the [old](https://github.com/p4gauntlet/gauntlet/tree/gauntlet_old) branch.
+DISCLAIMER: This project recently switched to a C++-based interpreter, which is not as feature-complete. For example, parser loops and the core extern functions are not implemented yet. The parser semantics are also not well tested. If you are interested in the original and comprehensive Python-based interpreter, please check out the [old](https://github.com/p4gauntlet/gauntlet/tree/gauntlet_old) branch.
 
 Gauntlet is a set of tools designed to find bugs in programmable data-plane compilers. More precisely, Gauntlet targets the
 [P4 language](https://p4.org/) ecosystem and  the P4-16 reference compiler ([p4c](https://github.com/p4lang/p4c/)).
