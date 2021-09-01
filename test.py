@@ -123,7 +123,9 @@ def run_z3p4_test(p4_file, target_dir, allow_undefined):
     cmd = "%s " % VALIDATE_BIN
     cmd += "--dump-dir %s " % target_dir
     cmd += "--compiler-bin %s " % P4C_BIN
-    cmd += " %s " % p4_file
+    if allow_undefined:
+        cmd += "--allow-undefined "
+    cmd += "%s " % p4_file
     result = util.exec_process(cmd).returncode
     if result == util.EXIT_UNDEF:
         if allow_undefined:
