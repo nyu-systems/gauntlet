@@ -1,4 +1,5 @@
 #include <core.p4>
+#include <v1model.p4>
 
 header ethernet_t {
     bit<48> dst_addr;
@@ -10,7 +11,9 @@ struct Headers {
     ethernet_t eth_hdr;
 }
 
-parser p(packet_in pkt, out Headers hdr) {
+struct Meta {}
+
+parser p(packet_in pkt, out Headers hdr, inout Meta m, inout standard_metadata_t sm) {
     state start {
         transition parse_hdrs;
     }
@@ -20,7 +23,7 @@ parser p(packet_in pkt, out Headers hdr) {
     }
 }
 
-control ingress(inout Headers h) {
+control ingress(inout Headers h, inout Meta m, inout standard_metadata_t sm) {
     bit<8> tmp_val = 1;
     action simple_action(inout bit<4> dummy) {
     }
@@ -40,8 +43,15 @@ control ingress(inout Headers h) {
     }
 }
 
-parser Parser(packet_in b, out Headers hdr);
-control Ingress(inout Headers hdr);
-package top(Parser p, Ingress ig);
-top(p(), ingress()) main;
+control vrfy(inout Headers h, inout Meta m) { apply {} }
 
+control update(inout Headers h, inout Meta m) { apply {} }
+
+control egress(inout Headers h, inout Meta m, inout standard_metadata_t sm) { apply {} }
+
+control deparser(packet_out pkt, in Headers h) {
+    apply {
+        pkt.emit(h.eth_hdr);
+    }
+}
+V1Switch(p(), vrfy(), ingress(), egress(), update(), deparser()) main;

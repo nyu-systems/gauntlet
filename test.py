@@ -103,6 +103,8 @@ xfails = [
     "bit0-bmv2.p4",
     "issue1208-1.p4",
     "enumCast.p4",
+    # Fails on an undefined violation that is acceptable.
+    "issue1989-bmv2.p4",
     # How to evaluate the output of an infinite loop?
     "gauntlet_infinite_loop.p4",
 ]
