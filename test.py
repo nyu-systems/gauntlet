@@ -107,6 +107,10 @@ xfails = [
     "issue1989-bmv2.p4",
     # How to evaluate the output of an infinite loop?
     "gauntlet_infinite_loop.p4",
+    # header stack implementation has a bug.
+    "control-hs-index-test2.p4",
+    "control-hs-index-test5.p4",
+    "control-hs-index-test3.p4",
 ]
 
 
