@@ -48,7 +48,7 @@ The Tofino test framework requires access to the SDK and a manual setup. Gauntle
 After successful installation, you can generate a random P4 program via the `modules/p4c/build/p4bludgeon out.p4 --arch top`  command. To generate Tofino code, the flag needs to be set to  `modules/p4c/build/p4bludgeon --output out.p4 --arch tna`.
 A typical crash checking workflow might be:
 
-    modules/p4c/build/p4bludgeon --output out.p4 --arch top && modules/p4c/build/p4c-bm2-ss out.p4
+    modules/p4c/build/p4bludgeon --output out.p4 --arch top && modules/p4c/build/p4test out.p4
 
 ### Retrieving Gauntlet Semantics for a P4 Program
 For debugging purposes, you can run
@@ -64,7 +64,7 @@ To validate that a program is compiled correctly by `p4c`, you can run
 `bin/validate_p4_translation` checks if a sequence of P4 programs are all equivalent to each other using the `bin/check_prog_equality` program as a sub routine. This sequence is produced by running p4c on an input P4 program. When p4c is run on an input P4 program, it produces a sequence of P4 programs, where each P4 program corresponds to the version of the input P4 program after a p4c optimization pass. This allows us to validate whether compilation/translation is working correctly and to pinpoint the faulty optimization pass if it isn't
 working correctly.
 
-### Model-Based Testing
+### Model-Based Testing [DEPRECATED]
 
 Model-based testing requires the behavioral model or the Tofino compiler to be installed. The correct binaries and include files need to be instrumented in the `src/generate_p4_test.py` file. An example command is
 
