@@ -5,9 +5,15 @@ jobs:
     runs-on: ubuntu-18.04
     steps:
     - uses: actions/checkout@v1
+    - name: ccache
+      uses: hendrikmuhs/ccache-action@v1
+      with:
+        key: ${{ matrix.os }}
+        max-size: 1000M
     - name: Install
       run: |
         ./do_install.sh RUN_CI=ON
-    - name: Test with pytest
+    - name: Test with CMake
       run: |
-        python3 -m pytest test.py -vrf
+        cd modules/p4c/build
+        ctest -j4 -R toz3-validate --output-on-failure --schedule-random
