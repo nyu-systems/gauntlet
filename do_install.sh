@@ -135,16 +135,4 @@ cmake .. -DCMAKE_BUILD_TYPE=RelWithDebInfo
 make -j `getconf _NPROCESSORS_ONLN`
 cd ../..
 
-echo "Installing Gauntlet Python dependencies..."
-# Install z3 locally
-pip3 install --upgrade --user z3-solver
-# Pytests for tests
-pip3 install --upgrade --user pytest
-# Run tests in parallel
-pip3 install --upgrade --user pytest-xdist
-# Python 3.6 compatibility
-pip3 install --upgrade --user dataclasses
-
-
-
 echo "Gauntlet installation completed successfully."
