@@ -1,7 +1,0 @@
-In file: /bf-sde/submodules/bf-p4c-compilers/p4c/extensions/bf-p4c/phv/action_phv_constraints.cpp:2138
-[31mCompiler Bug[0m: tofino/tofino-nyu/compiler_bugs/backend_crash/bug9_confirmed.p4(34): Slice W0bit[15..8]<--ingress::hdr.eth_hdr.eth_type<16> ^0 ^bit[0..231] deparsed exact_containers [8:15] must be written in action ingress.simple_assign/simple_assign
-    action simple_assign() {
-           ^^^^^^^^^^^^^
-
-No valid sections found in assembly file
-failed command assembler

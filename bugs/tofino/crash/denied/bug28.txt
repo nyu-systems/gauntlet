@@ -1,3 +1,0 @@
-In file: /bf-sde/submodules/bf-p4c-compilers/p4c/extensions/bf-p4c/mau/instruction_adjustment.cpp:203
-[31mCompiler Bug[0m: Constant lookup does not match the ActionFormat
-

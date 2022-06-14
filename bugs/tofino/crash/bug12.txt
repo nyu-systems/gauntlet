@@ -1,7 +1,0 @@
-warning: In action ingress.simple_action, write ingress::hdr.eth_hdr.eth_large[63:0]; and read 0 sizes do not match up
-warning: Instruction selection creates an instruction that the rest of the compiler cannot correctly interpret
-In file: /bf-sde/submodules/bf-p4c-compilers/p4c/extensions/bf-p4c/phv/allocate_phv.cpp:658
-[31mCompiler Bug[0m: Unable to find lo field slice associated with wide arithmetic operation W1bit[31..0]<--ingress::hdr.eth_hdr.eth_large<128> ^0 ^bit[0..271] deparsed solitary exact_containers wide_arith [96:127]
-
-No valid sections found in assembly file
-failed command assembler

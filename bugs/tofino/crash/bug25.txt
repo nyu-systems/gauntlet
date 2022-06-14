@@ -1,8 +1,0 @@
-warning: In action bug26l34, the following instruction has multiple action data parameters: add ingress::hdr.eth_hdr.eth_type;, 0, 65535
-warning: Instruction selection creates an instruction that the rest of the compiler cannot correctly interpret
-tofino/tofino-nyu/compiler_bugs/bug26.p4(34): warning: table tbl_bug26l34: In the ALU operation over container H0 in action bug26l34, the number of operands does not match the number of sources { add ingress::hdr.eth_hdr.eth_type;, 0, 65535; }
-        ig_tm_md.ucast_egress_port = 0;
-                                   ^
-warning: PHV allocation creates an invalid container action within a Tofino ALU
-bug26.tofino/pipe/bug26.bfa:85: error: src2 must be phv register
-failed command assembler

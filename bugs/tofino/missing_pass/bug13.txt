@@ -1,6 +1,0 @@
-In file: /bf-sde/submodules/bf-p4c-compilers/p4c/extensions/bf-p4c/mau/action_analysis.cpp:349
-[31mCompiler Bug[0m: bugs/tofino/missing_frontend_pass/bug13.p4(37): IR structure not yet handled by the ActionAnalysis pass: ingress::hdr.eth_hdr.eth_type > 2 ? 1 : 2;
-        h.eth_hdr.eth_type = 1 + (h.eth_hdr.eth_type > 2 ? 16w1 : 16w2);
-                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-Skipping assembler, assembly file is empty

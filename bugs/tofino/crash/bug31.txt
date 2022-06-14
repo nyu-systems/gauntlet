@@ -1,4 +1,0 @@
-terminate called after throwing an instance of 'Util::CompilerBug'
-  what():  In file: /bf-sde/submodules/bf-p4c-compilers/p4c/lib/crash.cpp:229
-[31mCompiler Bug[0m: Exiting with SIGSEGV
-
