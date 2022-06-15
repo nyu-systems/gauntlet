@@ -1,6 +1,0 @@
-bug5_confirmed.tofino/pipe/bug5_confirmed.bfa:107: error: Match group map doesn't match format size
-bug5_confirmed.tofino/pipe/bug5_confirmed.bfa:85: error: Depth of way doesn't match number of rams in table simple_table_0
-bug5_confirmed.tofino/pipe/bug5_confirmed.bfa:86: error: Depth of way doesn't match number of rams in table simple_table_0
-bug5_confirmed.tofino/pipe/bug5_confirmed.bfa:87: error: Depth of way doesn't match number of rams in table simple_table_0
-bug5_confirmed.tofino/pipe/bug5_confirmed.bfa:88: error: Depth of way doesn't match number of rams in table simple_table_0
-failed command assembler

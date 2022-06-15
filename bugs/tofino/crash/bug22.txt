@@ -1,7 +1,0 @@
-In file: /bf-sde/submodules/bf-p4c-compilers/p4c/extensions/bf-p4c/mau/action_analysis.cpp:349
-[31mCompiler Bug[0m: tofino/tofino-nyu/compiler_bugs/bug22.p4(39): IR structure not yet handled by the ActionAnalysis pass: 221 * ingress::hdr.eth_hdr.src_addr[7:0];
-        bit<8> tmp = (8w221 * (bit<8>)h.eth_hdr.src_addr |+| 8w51);
-                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-No valid sections found in assembly file
-failed command assembler

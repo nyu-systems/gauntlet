@@ -1,3 +1,0 @@
-bugs/tofino/bug4.p4(34): [--Werror=type-error] error: >>: width of left operand of shift needs to be specified
-        h.eth_hdr.eth_type = (1 >> h.eth_hdr.eth_type) % 2w1;
-                              ^^^^^^^^^^^^^^^^^^^^^^^

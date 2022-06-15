@@ -1,5 +1,0 @@
-In file: /bf-sde/submodules/bf-p4c-compilers/p4c/frontends/p4/functionsInlining.cpp:120
-[31mCompiler Bug[0m: bugs/tofino/unprocessed_new_crash_bugs/bug29.p4(40): (bit<16>)simple_fun();: expected a method call
-        h.eth_hdr.eth_type = (bit<16>)simple_fun();
-                             ^^^^^^^^^^^^^^^^^^^^^
-
