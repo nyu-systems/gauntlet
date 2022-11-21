@@ -1,16 +1,1 @@
-# SPDX-License-Identifier: GPL-2.0
-#
-# clang-format configuration file. Intended for clang-format >= 4.
-#
-# For more information, see:
-#
-#   Documentation/process/clang-format.rst
-#   https://clang.llvm.org/docs/ClangFormat.html
-#   https://clang.llvm.org/docs/ClangFormatStyleOptions.html
-#
----
-BasedOnStyle: LLVM
-IndentWidth: 4
-FixNamespaceComments: true
-SpacesBeforeTrailingComments: 2
-AccessModifierOffset: -3
+modules/p4c/.clang-format
