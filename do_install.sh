@@ -38,6 +38,9 @@ sudo apt install -y bison \
                     build-essential \
                     cmake \
                     git \
+                    ninja-build \
+                    clang \
+                    lld \
                     flex \
                     libboost-dev \
                     libboost-graph-dev \
@@ -113,10 +116,6 @@ sudo make install
 cd ${SRC_DIR}
 fi
 
-# If the behavioral model dependencies did not cover filesystem
-# This is needed for the validation binaries
-sudo apt install libboost-filesystem-dev
-
 # grab the toz3 extension for the p4 compiler
 mkdir -p ${MODULE_DIR}/p4c/extensions
 # only install bludgeon if we are not running in CI
@@ -131,8 +130,8 @@ echo "Building P4C..."
 cd ${MODULE_DIR}/p4c
 mkdir -p build
 cd build
-cmake .. -DCMAKE_BUILD_TYPE=RelWithDebInfo
-make -j `getconf _NPROCESSORS_ONLN`
+cmake .. -DCMAKE_EXPORT_COMPILE_COMMANDS=OFF -DCMAKE_LINKER=/usr/bin/lld -DCMAKE_CXX_COMPILER=/usr/bin/clang++ -DCMAKE_C_COMPILER=/usr/bin/clang  -DCMAKE_BUILD_TYPE=RelWithDebInfo -G Ninja -DCMAKE_UNITY_BUILD=ON -DENABLE_TEST_TOOLS=OFF -DENABLE_GTESTS=OFF -DENABLE_EBPF=OFF -DENABLE_UBPF=OFF -DENABLE_DPDK=OFF -DENABLE_P4TC=OFF -DENABLE_P4FMT=OFF -DENABLE_P4C_GRAPHS=OFF
+cmake --build .
 cd ../..
 
 echo "Gauntlet installation completed successfully."

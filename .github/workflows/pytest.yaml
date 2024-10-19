@@ -1,19 +1,39 @@
-name: test
-on: [push]
+name: "test-debian"
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+  merge_group:
+    branches: [master]
+
+# Cancel any preceding run on the pull request.
+concurrency:
+  group: test-p4c-debian-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
 jobs:
-  test:
-    runs-on: ubuntu-18.04
+  # Build with GCC and test P4C on Ubuntu 22.04.
+  test-ubuntu22:
+    runs-on: ubuntu-22.04
     steps:
-    - uses: actions/checkout@v1
-    - name: ccache
-      uses: hendrikmuhs/ccache-action@v1
-      with:
-        key: ${{ matrix.os }}
-        max-size: 1000M
-    - name: Install
-      run: |
-        ./do_install.sh RUN_CI=ON
-    - name: Test with CMake
-      run: |
-        cd modules/p4c/build
-        ctest -j4 -R toz3-validate --output-on-failure --schedule-random
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: ccache
+        uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          key: test-${{ runner.os }}-ubuntu22
+          max-size: 1000M
+
+      - name: Install
+        run: |
+          ./do_install.sh RUN_CI=ON
+
+      - name: Test with CMake
+        run: |
+          cd modules/p4c/build
+          ctest -j4 -R toz3-validate --output-on-failure --schedule-random
