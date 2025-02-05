@@ -1,8 +1,9 @@
 
-[![Build Status](https://travis-ci.com/p4gauntlet/gauntlet.svg?branch=master)](https://travis-ci.com/p4gauntlet/gauntlet)
+[![Build Status](https://github.com/nyu-systems/gauntlet/actions/workflows/pytest.yaml/badge.svg)](https://github.com/nyu-systems/gauntlet/actions/workflows/pytest.yaml)
 
 # The Gauntlet Tool Suite
 
+- [Introduction](#introduction)
 - [Requirements](#requirements)
   * [Frameworks for Model-Based Testing](#frameworks-for-model-based-testing)
 - [Instructions](#instructions)
@@ -15,7 +16,8 @@
 - [Bugs Found in P4 Compilers](#bugs-found-in-p4-compilers)
 - [Citing This Project](#citing-this-project)
 
-DISCLAIMER: This project recently switched to a C++-based interpreter, which is not as feature-complete. For example, parser loops and the core extern functions are not implemented yet. The parser semantics are also not well tested. If you are interested in the original and comprehensive Python-based interpreter, please check out the [old](https://github.com/p4gauntlet/gauntlet/tree/gauntlet_old) branch.
+## Introduction
+**DISCLAIMER**: This project has switched to a C++-based interpreter, which is not as feature-complete. For example, parser loops and the core extern functions are not implemented yet. The parser semantics are also not well tested. If you are interested in the original and comprehensive Python-based interpreter, please check out the [old](https://github.com/p4gauntlet/gauntlet/tree/gauntlet_old) branch.
 
 Gauntlet is a set of tools designed to find bugs in programmable data-plane compilers. More precisely, Gauntlet targets the
 [P4 language](https://p4.org/) ecosystem and  the P4-16 reference compiler ([p4c](https://github.com/p4lang/p4c/)).
@@ -31,7 +33,7 @@ The goal is to ensure that a P4 compiler correctly translates a given input P4 p
 For more details and a broad overview of the concepts in Gauntlet, refer to our [OSDI paper](https://www.usenix.org/conference/osdi20/presentation/ruffy).
 
 ##  Requirements
-This repository run best with a recent version of Ubuntu (18.04+). The minimum required Python version is 3.6 ([f-strings](https://www.python.org/dev/peps/pep-0498/)).
+This repository run best with a recent version of Ubuntu (22.04). The minimum required Python version is 3.6 ([f-strings](https://www.python.org/dev/peps/pep-0498/)).
 
 All tools require `p4c` to be installed. The fuzz tester and P4-to-Z3 converter are also p4c extensions which need to be copied or symlinked into the `extensions` folder of the compiler. The `do_install.sh` contains detailed command instructions. Most dependencies can be installed by running `./do_install.sh` in the source folder (**Careful**, the installation assumes root privileges and installs several large packages).
 
