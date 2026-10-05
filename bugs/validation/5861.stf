@@ -1,0 +1,9 @@
+# A terminating element: no parser error.
+packet 0 0001
+expect 0 00
+# No element bytes: the first extraction is short.
+packet 0 00
+expect 0 01
+# The first element requests another; the second extraction is short.
+packet 0 0000
+expect 0 01

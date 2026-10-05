@@ -1,0 +1,4 @@
+# Probe the literal v1.2.5 wording that any member's setInvalid clears the union.
+# BMv2's source behavior must be checked as well as the lowered program.
+packet 0 0007
+expect 0 00

@@ -18,7 +18,7 @@ bugs
 
 
 ### Bug Tables
-Last Updated: 2022-06-14
+Last Updated: 2026-10-16
 
 The bug tables provide the latest, detailed breakdown of all the issues we have filed in the open-source repositories.
 
@@ -116,6 +116,16 @@ Fixed: :heavy_check_mark:&nbsp;&nbsp;&nbsp;&nbsp;Confirmed: :exclamation:&nbsp;&
 | [Predication: Another problem (2613)](https://github.com/p4lang/p4c/issues/2613)              | [2564.p4](validation/fixed/2613.p4)  | Mid end | :heavy_check_mark: |
 | :tada: (Bug No 100!) [StrengthReduction: Incorrect slice optimization (2614)](https://github.com/p4lang/p4c/issues/2614)              | [2614.p4](validation/fixed/2614.p4)  | Front end | :heavy_check_mark: |
 | [Some more predication issues (2647)](https://github.com/p4lang/p4c/issues/2647)              | [2647a.p4](validation/fixed/2647a.p4)  | Mid end | :heavy_check_mark: |
+| [CopyStructures expands union copies into member copies (3842)](https://github.com/p4lang/p4c/issues/3842) | [3842.p4](validation/3842.p4) | Mid end | :question: |
+| [Inactive-member invalidation (4448)](https://github.com/p4lang/p4c/issues/4448) | [4448.p4](validation/4448.p4) | Back end (BMv2) | :question: |
+| [SimplifyDefUse removes an assignment observable after short extraction (5859)](https://github.com/p4lang/p4c/issues/5859) | [5859.p4](validation/5859.p4) | Front end | :question: |
+| [SideEffectOrdering evaluates lookahead before stack.next (5860)](https://github.com/p4lang/p4c/issues/5860) | [5860.p4](validation/5860.p4) | Front end | :question: |
+| [ParsersUnroll changes a short extraction's error (5861)](https://github.com/p4lang/p4c/issues/5861) | [5861.p4](validation/5861.p4) | Mid end | :question: |
+| [FlattenHeaderUnion changes validity on an invalid-member field write (5862)](https://github.com/p4lang/p4c/issues/5862) | [5862.p4](validation/5862.p4), [5862a.p4](validation/5862a.p4) | Mid end (DPDK) | :question: |
+| [FlattenHeaderUnion omits sibling invalidation after extraction (5863)](https://github.com/p4lang/p4c/issues/5863) | [5863.p4](validation/5863.p4), [5863a.p4](validation/5863a.p4) | Mid end (DPDK) | :question: |
+| [FlattenHeaderUnion inserts sibling invalidation into a retained union stack (5864)](https://github.com/p4lang/p4c/issues/5864) | [5864.p4](validation/5864.p4) | Mid end (p4test) | :question: |
+
+Reproduction notes: [parser rejection cases](validation/parser-errors.md) and [union and parser lowering cases](validation/union-lowering.md).
 
 #### BF-P4C Crash Bugs (P4Studio 9.9.0)
 

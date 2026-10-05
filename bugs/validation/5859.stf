@@ -1,0 +1,6 @@
+# Both extractions succeed; the final assignment executes.
+packet 0 0405
+expect 0 02
+# The second extraction rejects. The preceding assignment must survive.
+packet 0 04
+expect 0 01

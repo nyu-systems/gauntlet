@@ -1,0 +1,3 @@
+# Extracting a after b must invalidate b, leaving flags == 1.
+packet 0 000708
+expect 0 01

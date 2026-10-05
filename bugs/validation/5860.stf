@@ -1,0 +1,6 @@
+# First stack extraction is short: PacketTooShort.
+packet 0 00
+expect 0 01
+# Stack is full: evaluating stack.next must reject before the short lookahead.
+packet 0 0007
+expect 0 02

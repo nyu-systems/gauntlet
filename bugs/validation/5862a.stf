@@ -1,0 +1,3 @@
+# Only a is valid. Do not inspect the potentially clobbered union data.
+packet 0 0007
+expect 0 01
